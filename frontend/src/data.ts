@@ -432,7 +432,7 @@ export const VOCABULARY_DATABASE: VocabularyWord[] = [
 // The in-app vocabeo-style dictionary needs structured word-class + CEFR level
 // for filtering. The original VOCABULARY_DATABASE encodes these inside the
 // Mongolian `category` label, so we derive them here, then merge with the
-// Gemini-generated set into a single deduplicated DICTIONARY.
+// generated set into a single deduplicated DICTIONARY.
 
 function deriveWordClass(category: string, article?: string): WordClass {
   if (category.includes('Үйл үг')) return 'verb';
@@ -458,7 +458,7 @@ function withMetadata(word: VocabularyWord): VocabularyWord {
   };
 }
 
-// Curated core words first, then the Gemini-seeded set, then the full vocabeo.com
+// Curated core words first, then the seeded set, then the full vocabeo.com
 // frequency dictionary (6274 words). Deduped by sense — headword + word class +
 // English gloss — so curated entries win over duplicates while genuine homonyms
 // (e.g. "See" = lake vs sea, "gut" as adjective/adverb/noun) are each preserved.
@@ -467,7 +467,7 @@ export const DICTIONARY: VocabularyWord[] = (() => {
   const baseHeadwords = new Set<string>(); // curated + generated, keyed by headword
   const seenSense = new Set<string>();      // all entries, keyed by headword|class|english
 
-  // Curated core, then the Gemini-seeded set — deduped against each other by headword.
+  // Curated core, then the seeded set — deduped against each other by headword.
   for (const word of [...VOCABULARY_DATABASE, ...GENERATED_VOCABULARY]) {
     const w = withMetadata(word);
     const head = w.german.trim().toLowerCase();

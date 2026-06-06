@@ -210,7 +210,7 @@ export default function App() {
     setDictVisible(24);
   }, [dictSearch, dictClass, dictLevel]);
 
-  // Dedicated Professional AI Translator states
+  // Dedicated Professional Translator states
   const [translationInput, setTranslationInput] = useState('');
   const [translationLoading, setTranslationLoading] = useState(false);
   const [translationResult, setTranslationResult] = useState<{
@@ -811,7 +811,7 @@ export default function App() {
               }`}
             >
               <Sparkles className={`w-5 h-5 ${activeTab === 'translate' ? 'text-secondary-fixed text-purple-450' : ''}`} />
-              <span className="text-[14px] font-bold">AI Орчуулагч</span>
+              <span className="text-[14px] font-bold">Орчуулагч</span>
             </button>
           </li>
           <li>
@@ -956,7 +956,7 @@ export default function App() {
                   className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'translate' ? 'bg-white/15' : 'text-on-primary-container'}`}
                 >
                   <Sparkles className="w-5 h-5 text-purple-400" />
-                  <span>AI Орчуулагч</span>
+                  <span>Орчуулагч</span>
                 </button>
               </li>
               <li>
@@ -1857,7 +1857,7 @@ export default function App() {
                 </div>
               </aside>
 
-              {/* Right panel: Editor Area & Intelligent Gemini Feedback widget */}
+              {/* Right panel: Editor Area & Intelligent Feedback widget */}
               <section className="lg:col-span-8 flex flex-col gap-6">
                 <div className="bg-white border-2 border-on-background rounded-xl p-6 lg:p-8 flex flex-col gap-6 block-shadow">
                   <div>
@@ -1920,7 +1920,7 @@ export default function App() {
                           : 'bg-secondary text-on-secondary border-2 border-on-background hover:bg-on-secondary-fixed-variant'
                       }`}
                     >
-                      {writingLoading ? 'AI орчуулгыг шалгаж байна...' : 'Шалгах'}
+                      {writingLoading ? 'Орчуулгыг шалгаж байна...' : 'Шалгах'}
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -2416,7 +2416,7 @@ export default function App() {
               )}
 
               <p className="text-center text-[11px] text-outline font-sans mt-2">
-                Vocabeo.com-ийн загвараар бүтээв · орчуулгыг AI (Gemini) гүйцэтгэв
+                Vocabeo.com-ийн загвараар бүтээв
               </p>
             </div>
             )}
@@ -2424,7 +2424,7 @@ export default function App() {
           </div>
           )}
 
-          {/* Tab: AI Орчуулагч (Professional AI Translation & Lingua Helper) */}
+          {/* Tab: Орчуулагч (Professional Translation & Lingua Helper) */}
           {activeTab === 'translate' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-24 animate-fade-in font-sans">
               
@@ -2439,11 +2439,11 @@ export default function App() {
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-5 h-5 text-purple-500 fill-purple-300 animate-pulse" />
                       <h2 className="text-2xl font-black text-on-background font-space">
-                        AI Орчуулагч
+                        Орчуулагч
                       </h2>
                     </div>
                     <span className="text-[11px] font-space font-extrabold bg-[#0a0a16] text-purple-300 px-3 py-1 rounded-full border border-purple-500/20 uppercase tracking-widest">
-                      Gemini-3.5
+                      PRO
                     </span>
                   </div>
 
@@ -2510,7 +2510,7 @@ export default function App() {
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 fill-current text-purple-400" />
-                          AI-аар Нэгдсэн Орчуулга Хийх
+                          Нэгдсэн Орчуулга Хийх
                         </>
                       )}
                     </button>
@@ -2535,7 +2535,7 @@ export default function App() {
                       <div className="w-16 h-16 border-4 border-purple-100 border-t-purple-500 rounded-full animate-spin"></div>
                       <Sparkles className="w-6 h-6 text-purple-400 absolute inset-0 m-auto animate-pulse" />
                     </div>
-                    <h3 className="text-lg font-bold text-primary font-space mb-2">Герман Хэлний AI Үйлчилгээ</h3>
+                    <h3 className="text-lg font-bold text-primary font-space mb-2">Герман Хэлний Үйлчилгээ</h3>
                     <p className="text-xs text-stone-500 max-w-xs leading-normal">
                       Өгүүлбэрийг орчуулж, үгс бүрийн үндсэн хэлбэрийг олох болон хэл зүйн бүтцийг судалж байна.
                     </p>
@@ -2591,7 +2591,7 @@ export default function App() {
                     <div className="bg-white rounded-xl border-2 border-on-background p-6 block-shadow">
                       <h3 className="text-sm font-black text-purple-600 font-space mb-3 flex items-center gap-2">
                         <Lightbulb className="w-4 h-4 text-amber-500 fill-amber-300 animate-pulse" />
-                        БҮТЭЦ & ДҮРМИЙН ТАЙЛБАР (AI):
+                        БҮТЭЦ & ДҮРМИЙН ТАЙЛБАР:
                       </h3>
                       <p className="text-xs leading-relaxed text-stone-600 font-sans">
                         {translationResult.grammarExplanation}
@@ -3077,7 +3077,7 @@ export default function App() {
               >
                 {activeTab === 'translate' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-purple-400 rounded-b-full text-purple-400"></div>}
                 <Sparkles className="w-5 h-5 text-purple-400" />
-                <span className="text-[10px] font-bold font-space">AI Орч</span>
+                <span className="text-[10px] font-bold font-space">Орч</span>
               </button>
 
               <button 
