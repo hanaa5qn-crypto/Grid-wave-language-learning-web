@@ -3,7 +3,8 @@ import {
   Volume2, Play, Pause, CheckCircle, X, XCircle, AlertCircle,
   BookOpen, Headphones, Mic, Edit3, Languages, Settings, LogOut,
   Check, RotateCcw, Lightbulb, Flame, Award, ArrowRight, ArrowLeft,
-  ChevronRight, Sparkles, HelpCircle, GraduationCap, ExternalLink, Search, Library
+  ChevronRight, Sparkles, HelpCircle, GraduationCap, ExternalLink, Search, Library,
+  Square, AudioLines, Gauge, SpellCheck, MessageSquareText, ThumbsUp, Target
 } from 'lucide-react';
 import { TabType, VocabularyWord, WordClass, CEFRLevel } from './types';
 import {
@@ -18,6 +19,95 @@ import { EXAMS, EXAM_LEVEL_ORDER, ExamLevel } from './exams';
 
 // Union of all exam item types — they all share `topic`, `title`, `titleMn`.
 type ExamItem = ReadingItem | ListeningItem | WritingItem | SpeakingItem;
+
+// Rich AI feedback returned by /api/evaluate-speaking. All text fields are
+// Mongolian except `transcript` (German). Optional fields keep the older
+// text-only response shape working.
+interface SpeakingEvaluation {
+  isCorrect: boolean;
+  feedbackMessage: string;
+  analysis: string;
+  transcript?: string;
+  overallScore?: number;
+  pronunciationScore?: number;
+  fluencyScore?: number;
+  accentNote?: string;
+  pronunciationFeedback?: string;
+  grammarFeedback?: string;
+  vocabularyFeedback?: string;
+  strengths?: string[];
+  improvements?: string[];
+}
+
+// Rich free-writing feedback from /api/evaluate-composition. Mongolian text
+// fields, except `corrected` and each correction's German fragments. Used by the
+// writing library and every exam writing task to flag wrong grammar / wrong
+// words and recommend better wording.
+interface WritingCorrection {
+  original: string;     // the wrong German fragment the learner wrote
+  suggestion: string;   // the corrected / better German fragment
+  type: string;         // grammar | vocabulary | spelling | style
+  explanation: string;  // short Mongolian reason
+}
+interface WritingFeedback {
+  isCorrect: boolean;
+  feedbackMessage: string;
+  analysis: string;
+  corrected: string;
+  corrections?: WritingCorrection[];
+  overallScore?: number;
+  grammarScore?: number;
+  vocabularyScore?: number;
+  grammarFeedback?: string;
+  vocabularyFeedback?: string;
+  strengths?: string[];
+  improvements?: string[];
+}
+
+// Decode a recorded audio Blob (webm/opus, mp4/aac, …) and re-encode it as a
+// 16 kHz mono 16-bit WAV, returned base64-encoded. WAV is the format Gemini
+// reliably accepts, so this sidesteps browser codec/container differences.
+async function audioBlobToWavBase64(blob: Blob): Promise<string> {
+  const arrayBuffer = await blob.arrayBuffer();
+  const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+  const ctx: AudioContext = new AudioCtx();
+  const decoded = await ctx.decodeAudioData(arrayBuffer.slice(0));
+  ctx.close();
+
+  const targetRate = 16000;
+  const srcRate = decoded.sampleRate;
+  const srcData = decoded.getChannelData(0); // mono: first channel is enough
+  const ratio = srcRate / targetRate;
+  const outLen = Math.floor(srcData.length / ratio);
+  const samples = new Int16Array(outLen);
+  for (let i = 0; i < outLen; i++) {
+    const s = srcData[Math.floor(i * ratio)] || 0;
+    samples[i] = Math.max(-1, Math.min(1, s)) * 0x7fff;
+  }
+
+  const bytesPerSample = 2;
+  const buffer = new ArrayBuffer(44 + samples.length * bytesPerSample);
+  const view = new DataView(buffer);
+  const writeStr = (off: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i));
+  };
+  const dataLen = samples.length * bytesPerSample;
+  writeStr(0, 'RIFF'); view.setUint32(4, 36 + dataLen, true); writeStr(8, 'WAVE');
+  writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true); view.setUint32(24, targetRate, true);
+  view.setUint32(28, targetRate * bytesPerSample, true); view.setUint16(32, bytesPerSample, true);
+  view.setUint16(34, 16, true); writeStr(36, 'data'); view.setUint32(40, dataLen, true);
+  for (let i = 0; i < samples.length; i++) view.setInt16(44 + i * 2, samples[i], true);
+
+  // Base64-encode the WAV bytes in chunks (avoids call-stack limits on big files).
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+  }
+  return btoa(binary);
+}
 
 // Level filter chips shared by every skill-library browser.
 const LIB_LEVELS: (Level | 'all')[] = ['all', 'A1', 'A2', 'B1'];
@@ -154,14 +244,23 @@ export default function App() {
   // Microphone recording variables for Speaking (Screen 4)
   const [isRecording, setIsRecording] = useState(false);
   const [speakingTextEntered, setSpeakingTextEntered] = useState('');
-  const [speakingEvaluation, setSpeakingEvaluation] = useState<{
-    isCorrect: boolean;
-    analysis: string;
-    feedbackMessage: string;
-  } | null>(null);
+  const [speakingEvaluation, setSpeakingEvaluation] = useState<SpeakingEvaluation | null>(null);
   const [speakingLoading, setSpeakingLoading] = useState(false);
   const [voiceSupportMessage, setVoiceSupportMessage] = useState('');
   const recognitionRef = useRef<any>(null);
+  // The German sentence the AI judge currently grades against. Library items and
+  // the detailed lesson share one judge, so this ref carries whichever target is
+  // active into the async record/evaluate callbacks (which can't see render scope).
+  const speakTargetRef = useRef<string>(SPEAKING_LESSON.sentence);
+
+  // Real-audio recording (the "voice AI" path): capture the actual mic audio,
+  // re-encode to WAV in the browser, and send the bytes to Gemini to listen to.
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Translation writing exercise variables for Writing (Screen 6)
   const [writingInput, setWritingInput] = useState('');
@@ -172,6 +271,13 @@ export default function App() {
     explanation: string;
     feedbackMessage: string;
   } | null>(null);
+
+  // Rich AI writing check shared by the writing library AND every exam writing
+  // task. `writeFeedbackText` holds the exact text that was graded so the report
+  // can show it regardless of which textarea (library vs exam) submitted it.
+  const [writeFeedback, setWriteFeedback] = useState<WritingFeedback | null>(null);
+  const [writeFeedbackLoading, setWriteFeedbackLoading] = useState(false);
+  const [writeFeedbackText, setWriteFeedbackText] = useState('');
 
   // Flashcards state for Vocabulary Trainer (Screen 5) — draws from the dictionary
   // entries that already have a Mongolian translation, so the trainer stays polished.
@@ -241,12 +347,13 @@ export default function App() {
   const [examItemWrite, setExamItemWrite] = useState('');
   const [examItemTrans, setExamItemTrans] = useState(false);
 
-  // Reset the per-test sub-state when switching section or test.
+  // Reset the per-test sub-state when switching section or test. Also clears the
+  // shared speaking judge so a report never carries over to a different prompt.
   const selectExamSection = (sec: 'reading' | 'listening' | 'writing' | 'speaking') => {
-    setExamSec(sec); setExamItemIdx(0); setExamItemAns(null); setExamItemReveal(false); setExamItemWrite('');
+    setExamSec(sec); setExamItemIdx(0); setExamItemAns(null); setExamItemReveal(false); setExamItemWrite(''); resetSpeakingJudge(); resetWritingFeedback();
   };
   const selectExamItem = (idx: number) => {
-    setExamItemIdx(idx); setExamItemAns(null); setExamItemReveal(false); setExamItemWrite('');
+    setExamItemIdx(idx); setExamItemAns(null); setExamItemReveal(false); setExamItemWrite(''); resetSpeakingJudge(); resetWritingFeedback();
   };
   const [translationError, setTranslationError] = useState<string | null>(null);
 
@@ -295,7 +402,7 @@ export default function App() {
       rec.onresult = (e: any) => {
         const spoken = e.results[0][0].transcript;
         setSpeakingTextEntered(spoken);
-        evaluateSpeechText(spoken);
+        evaluateSpeechText(spoken, speakTargetRef.current);
       };
 
       rec.onerror = (e: any) => {
@@ -317,6 +424,15 @@ export default function App() {
     const bars = Array.from({ length: 42 }, () => Math.floor(Math.random() * 80) + 20);
     setWaveformWave(bars);
   }, []);
+
+  // Clean up any active recording resources when leaving the page.
+  useEffect(() => {
+    return () => {
+      if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+      mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+      if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
+    };
+  }, [recordedAudioUrl]);
 
   // Text-To-Speech Play helper (German voice standard audio synthesis)
   const speakGerman = (text: string, speedMultiplier = 1.0) => {
@@ -362,8 +478,9 @@ export default function App() {
     }
   };
 
-  // Evaluation trigger: Speaking
-  const evaluateSpeechText = async (text: string) => {
+  // Evaluation trigger: Speaking (TEXT path) — used by the type-to-test box and
+  // as a fallback when real audio recording isn't available.
+  const evaluateSpeechText = async (text: string, target: string = speakTargetRef.current) => {
     if (!text.trim()) return;
     setSpeakingLoading(true);
     try {
@@ -371,7 +488,7 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sentence: SPEAKING_LESSON.sentence,
+          sentence: target,
           spokenText: text
         })
       });
@@ -390,22 +507,108 @@ export default function App() {
     }
   };
 
-  // Toggle Microphone recording
-  const toggleMic = () => {
-    if (isRecording) {
-      recognitionRef.current?.stop();
-    } else {
-      setSpeakingEvaluation(null);
-      setSpeakingTextEntered('');
-      try {
-        recognitionRef.current?.start();
-      } catch (e) {
-        // Fallback for missing permissions
-        console.warn('Speech Recognition could not initiate directly:', e);
-        setIsRecording(true);
-        setVoiceSupportMessage('Микрофон холбогдож байна... (Та мөн Германоор шивж шалгуулах боломжтой)');
-      }
+  // Evaluation trigger: Speaking (AUDIO path) — the real "voice AI". Sends the
+  // actual recorded audio to Gemini so it can hear pronunciation and accent.
+  const evaluateSpeechAudio = async (blob: Blob, target: string = speakTargetRef.current) => {
+    setSpeakingLoading(true);
+    setVoiceSupportMessage('AI таны дуу хоолойг сонсож, дүн шинжилгээ хийж байна...');
+    try {
+      const wavBase64 = await audioBlobToWavBase64(blob);
+      const response = await fetch('/api/evaluate-speaking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sentence: target,
+          audio: wavBase64,
+          mimeType: 'audio/wav',
+        })
+      });
+      const data = await response.json();
+      setSpeakingEvaluation(data);
+      if (data.transcript) setSpeakingTextEntered(data.transcript);
+      setVoiceSupportMessage('Шинжилгээ бэлэн боллоо! Доороос үр дүнгээ хараарай.');
+    } catch (e) {
+      console.error('Audio evaluation failed:', e);
+      setVoiceSupportMessage('Дуу хоолой шинжлэхэд алдаа гарлаа. Доорх талбарт шивж туршина уу.');
+    } finally {
+      setSpeakingLoading(false);
     }
+  };
+
+  // Begin capturing real microphone audio via MediaRecorder. `target` is the
+  // German model sentence to grade against; stored on a ref so the async onstop
+  // callback evaluates the same item even if the user navigates afterwards.
+  const startAudioRecording = async (target: string = speakTargetRef.current) => {
+    speakTargetRef.current = target;
+    setSpeakingEvaluation(null);
+    setSpeakingTextEntered('');
+    if (recordedAudioUrl) { URL.revokeObjectURL(recordedAudioUrl); setRecordedAudioUrl(null); }
+
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      // Older browser: fall back to Web Speech API text recognition if present.
+      setVoiceSupportMessage('Таны хөтөч дуу бичлэгийг дэмжихгүй байна. Доорх талбарт шивж туршина уу.');
+      try { recognitionRef.current?.start(); } catch { /* no-op */ }
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      // Pick a mime type the browser actually supports (Chrome: webm, Safari: mp4).
+      const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+      const mimeType = candidates.find((t) => (window as any).MediaRecorder?.isTypeSupported?.(t)) || '';
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        if (blob.size > 0) {
+          setRecordedAudioUrl(URL.createObjectURL(blob));
+          await evaluateSpeechAudio(blob);
+        }
+      };
+
+      recorder.start();
+      setIsRecording(true);
+      setRecordSeconds(0);
+      recordTimerRef.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
+      setVoiceSupportMessage('Бичиж байна... Германоор хэлчихээд зогсоох товчийг дарна уу.');
+    } catch (e) {
+      console.error('Microphone access failed:', e);
+      setIsRecording(false);
+      setVoiceSupportMessage('Микрофон руу хандах боломжгүй байна. Зөвшөөрлөө шалгах эсвэл доор шивж туршина уу.');
+    }
+  };
+
+  // Stop recording; onstop handler runs the AI evaluation.
+  const stopAudioRecording = () => {
+    if (recordTimerRef.current) { clearInterval(recordTimerRef.current); recordTimerRef.current = null; }
+    try { mediaRecorderRef.current?.stop(); } catch { /* no-op */ }
+    setIsRecording(false);
+  };
+
+  // Toggle Microphone recording (real-audio voice-AI pipeline). `target` is the
+  // German model sentence the AI judge grades the recording against.
+  const toggleMic = (target: string = speakTargetRef.current) => {
+    if (isRecording) {
+      stopAudioRecording();
+    } else {
+      startAudioRecording(target);
+    }
+  };
+
+  // Clear the shared AI-judge state (report, typed text, recording playback).
+  // Called when switching speaking library items or modes so a stale report
+  // never lingers under a different prompt.
+  const resetSpeakingJudge = () => {
+    setSpeakingEvaluation(null);
+    setSpeakingTextEntered('');
+    setVoiceSupportMessage('');
+    if (recordedAudioUrl) { URL.revokeObjectURL(recordedAudioUrl); setRecordedAudioUrl(null); }
   };
 
   // Evaluation trigger: Writing
@@ -428,6 +631,53 @@ export default function App() {
       console.error(e);
     } finally {
       setWritingLoading(false);
+    }
+  };
+
+  // Clear the shared AI writing report. Called when switching writing library
+  // items/modes, exam items/sections, or main tabs so a report never lingers
+  // under a different prompt.
+  const resetWritingFeedback = () => {
+    setWriteFeedback(null);
+    setWriteFeedbackText('');
+  };
+
+  // Evaluation trigger: free writing (library + every exam writing task). Sends
+  // the learner's text plus the task context to the AI, which flags wrong grammar
+  // / wrong words and recommends better wording. `ctx` is the active item.
+  const checkComposition = async (
+    text: string,
+    ctx: { prompt: string; points: string[]; modelAnswer: string; level: string },
+  ) => {
+    if (!text.trim()) return;
+    setWriteFeedbackLoading(true);
+    setWriteFeedbackText(text);
+    setWriteFeedback(null);
+    try {
+      const response = await fetch('/api/evaluate-composition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: ctx.prompt,
+          points: ctx.points,
+          modelAnswer: ctx.modelAnswer,
+          level: ctx.level,
+          text,
+        }),
+      });
+      const data = await response.json();
+      setWriteFeedback(data);
+    } catch (e) {
+      console.error('Composition evaluation failed:', e);
+      setWriteFeedback({
+        isCorrect: false,
+        feedbackMessage: 'Алдаа гарлаа',
+        analysis: 'Шинжилгээ хийх үед алдаа гарлаа. Сүлжээгээ шалгаад дахин оролдоно уу.',
+        corrected: text,
+        corrections: [],
+      });
+    } finally {
+      setWriteFeedbackLoading(false);
     }
   };
 
@@ -501,11 +751,359 @@ export default function App() {
     }
   };
 
-  // Side bar navigation helper with auto menu closing on mobile
+  // Side bar navigation helper with auto menu closing on mobile. Clears the
+  // shared AI reports so a speaking/writing result never bleeds across tabs.
   const selectTab = (tab: TabType) => {
     setActiveTab(tab);
     setMobileMenuOpen(false);
+    resetSpeakingJudge();
+    resetWritingFeedback();
   };
+
+  // ---------------------------------------------------------------------------
+  // Shared AI speaking-judge UI. `target` is the German model sentence the recording
+  // (or typed text) is graded against. Reused by every library item AND the detailed
+  // lesson, so importing new speaking resources gets the AI judge automatically.
+  // ---------------------------------------------------------------------------
+  const renderSpeakingJudge = (target: string) => (
+    // Microphone Interface Area — real voice recording for the AI coach
+    <div className="w-full flex flex-col items-center justify-center relative py-6 bg-surface-container-low border-2 border-on-background border-dashed rounded-xl block-shadow my-4">
+
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 bg-primary-container border-2 border-on-background text-[11px] font-black font-space rounded-full uppercase tracking-wider block-shadow">
+        <AudioLines className="w-3.5 h-3.5" /> Дуут AI багш
+      </span>
+
+      <div className="relative flex items-center justify-center mb-6">
+        <button
+          onClick={() => toggleMic(target)}
+          disabled={speakingLoading && !isRecording}
+          title={isRecording ? 'Зогсоох' : 'Бичиж эхлэх'}
+          className={`relative z-10 w-24 h-24 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none border-2 border-on-background cursor-pointer block-shadow disabled:opacity-60 disabled:cursor-not-allowed ${
+            isRecording ? 'bg-error text-white animate-ripple' : 'bg-secondary'
+          }`}
+        >
+          {isRecording ? <Square className="w-9 h-9 fill-current" /> : <Mic className="w-10 h-10 stroke-[2.5px]" />}
+        </button>
+      </div>
+
+      <h4 className="text-xl font-black text-secondary font-sans mb-1 flex items-center gap-2">
+        {isRecording && <span className="w-2.5 h-2.5 rounded-full bg-error animate-pulse" />}
+        {speakingLoading && !isRecording
+          ? 'AI сонсож байна...'
+          : isRecording
+            ? `Бичиж байна  ${String(Math.floor(recordSeconds / 60)).padStart(2, '0')}:${String(recordSeconds % 60).padStart(2, '0')}`
+            : 'Бичихийн тулд дарна уу'}
+      </h4>
+      <p className="text-sm font-semibold text-outline text-center px-4 max-w-md">
+        {voiceSupportMessage || 'Микрофон дээр дарж германаар чанга ярина уу. Дуусаад зогсоох товчийг дарвал AI таны дуу хоолойг сонсож, дуудлага, аялга, дүрэм, үгсийн санг үнэлнэ.'}
+      </p>
+
+      {/* Playback of the learner's own recording */}
+      {recordedAudioUrl && !isRecording && (
+        <div className="mt-5 w-full max-w-sm px-4 flex flex-col items-center gap-1.5">
+          <p className="text-[11px] font-space text-outline font-bold uppercase">Таны бичлэг:</p>
+          <audio src={recordedAudioUrl} controls className="w-full h-10" />
+        </div>
+      )}
+
+      {/* Text alternative input field for users with missing micro permissions */}
+      <div className="mt-6 w-full max-w-sm px-4 flex flex-col gap-2">
+        <p className="text-[11px] font-space text-outline font-bold uppercase text-center">Эсвэл дуу бичихгүйгээр шивж туршина уу:</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Германаар бичнэ үү (e.g., Wie geht es Ihnen?)"
+            value={speakingTextEntered}
+            onChange={(e) => setSpeakingTextEntered(e.target.value)}
+            maxLength={500}
+            className="flex-grow bg-white border-2 border-on-background font-bold text-sm px-3 py-2 rounded-xl outline-none focus:border-primary transition-all text-slate-900"
+          />
+          <button
+            onClick={() => evaluateSpeechText(speakingTextEntered, target)}
+            disabled={!speakingTextEntered.trim() || speakingLoading}
+            className="px-4 py-2 border-2 border-on-background text-sm font-bold bg-primary text-white rounded-xl block-shadow cursor-pointer disabled:opacity-50"
+          >
+            {speakingLoading ? 'Үнэлж байна...' : 'Шалгах'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSpeakingReport = (target: string) => (
+    // AI voice-coach report — pronunciation, accent, grammar, vocabulary
+    !speakingEvaluation ? null : (
+      <div className="w-full flex flex-col gap-4 animate-scale-up">
+
+        {/* Headline + summary */}
+        <div className="w-full bg-white border-2 border-on-background rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow">
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 border-on-background shrink-0 block-shadow ${
+            speakingEvaluation.isCorrect ? 'bg-secondary-container' : 'bg-error-container'
+          }`}>
+            {speakingEvaluation.isCorrect ? <CheckCircle className="w-5 h-5 text-secondary" /> : <AlertCircle className="w-5 h-5 text-error" />}
+          </div>
+          <div className="flex-grow">
+            <h5 className="text-lg font-black text-on-surface mb-1 font-sans">{speakingEvaluation.feedbackMessage}</h5>
+            <p className="text-sm text-on-surface-variant leading-relaxed font-sans">{speakingEvaluation.analysis}</p>
+          </div>
+        </div>
+
+        {/* Score row (only when the AI returned numeric scores) */}
+        {typeof speakingEvaluation.overallScore === 'number' && (
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Нийт оноо', value: speakingEvaluation.overallScore, icon: Target },
+              { label: 'Дуудлага', value: speakingEvaluation.pronunciationScore, icon: AudioLines },
+              { label: 'Чөлөөтэй байдал', value: speakingEvaluation.fluencyScore, icon: Gauge },
+            ].filter((s) => typeof s.value === 'number').map((s, i) => {
+              const v = s.value as number;
+              const tone = v >= 75 ? 'text-secondary' : v >= 50 ? 'text-yellow-600' : 'text-error';
+              const barTone = v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-yellow-500' : 'bg-error';
+              return (
+                <div key={i} className="bg-white border-2 border-on-background rounded-xl p-4 block-shadow flex flex-col items-center text-center">
+                  <s.icon className={`w-5 h-5 mb-1 ${tone}`} />
+                  <span className={`text-3xl font-black font-space ${tone}`}>{v}</span>
+                  <span className="text-[10px] font-bold uppercase text-outline tracking-wide mt-0.5">{s.label}</span>
+                  <div className="w-full h-1.5 bg-surface-container-high rounded-full mt-2 overflow-hidden">
+                    <div className={`h-full ${barTone} rounded-full transition-all`} style={{ width: `${v}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* What the AI heard */}
+        {speakingEvaluation.transcript && (
+          <div className="w-full bg-surface-container-low border-2 border-on-background rounded-xl p-4 block-shadow">
+            <p className="text-[11px] font-space font-bold uppercase text-outline mb-1 flex items-center gap-1.5">
+              <MessageSquareText className="w-3.5 h-3.5" /> AI сонссон нь
+            </p>
+            <p className="text-base font-bold text-on-surface font-sans">"{speakingEvaluation.transcript}"</p>
+          </div>
+        )}
+
+        {/* Detailed feedback cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { label: 'Дуудлага', text: speakingEvaluation.pronunciationFeedback, icon: AudioLines, tint: 'bg-primary-container' },
+            { label: 'Аялга', text: speakingEvaluation.accentNote, icon: Languages, tint: 'bg-secondary-container' },
+            { label: 'Дүрэм', text: speakingEvaluation.grammarFeedback, icon: SpellCheck, tint: 'bg-error-container' },
+            { label: 'Үгсийн сан', text: speakingEvaluation.vocabularyFeedback, icon: BookOpen, tint: 'bg-primary-container' },
+          ].filter((c) => c.text).map((c, i) => (
+            <div key={i} className="bg-white border-2 border-on-background rounded-xl p-4 block-shadow">
+              <p className="text-xs font-black uppercase text-on-surface mb-1.5 flex items-center gap-1.5">
+                <span className={`w-6 h-6 rounded-full ${c.tint} border-2 border-on-background flex items-center justify-center`}>
+                  <c.icon className="w-3.5 h-3.5" />
+                </span>
+                {c.label}
+              </p>
+              <p className="text-sm text-on-surface-variant leading-relaxed font-sans">{c.text}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Strengths / improvements */}
+        {((speakingEvaluation.strengths?.length || 0) > 0 || (speakingEvaluation.improvements?.length || 0) > 0) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {(speakingEvaluation.strengths?.length || 0) > 0 && (
+              <div className="bg-secondary-container/40 border-2 border-secondary rounded-xl p-4">
+                <p className="text-xs font-black uppercase text-secondary mb-2 flex items-center gap-1.5"><ThumbsUp className="w-4 h-4" /> Сайн байгаа тал</p>
+                <ul className="space-y-1.5">
+                  {speakingEvaluation.strengths!.map((s, i) => (
+                    <li key={i} className="text-sm text-on-surface font-medium flex items-start gap-2"><Check className="w-4 h-4 text-secondary shrink-0 mt-0.5" />{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(speakingEvaluation.improvements?.length || 0) > 0 && (
+              <div className="bg-error-container/40 border-2 border-error rounded-xl p-4">
+                <p className="text-xs font-black uppercase text-error mb-2 flex items-center gap-1.5"><Target className="w-4 h-4" /> Сайжруулах зүйл</p>
+                <ul className="space-y-1.5">
+                  {speakingEvaluation.improvements!.map((s, i) => (
+                    <li key={i} className="text-sm text-on-surface font-medium flex items-start gap-2"><ArrowRight className="w-4 h-4 text-error shrink-0 mt-0.5" />{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => speakGerman(target)}
+            className="px-4 py-2 bg-surface border-2 border-on-background rounded-lg text-xs font-bold text-primary hover:bg-surface-container transition-colors font-space flex items-center gap-2 block-shadow cursor-pointer"
+          >
+            <Volume2 className="w-4 h-4" /> Загвар дуудлага сонсох
+          </button>
+          <button
+            onClick={() => toggleMic(target)}
+            disabled={isRecording || speakingLoading}
+            className="px-4 py-2 bg-secondary border-2 border-on-background rounded-lg text-xs font-bold text-white hover:scale-[1.02] transition-transform font-space flex items-center gap-2 block-shadow cursor-pointer disabled:opacity-50"
+          >
+            <RotateCcw className="w-4 h-4" /> Дахин бичих
+          </button>
+        </div>
+      </div>
+    )
+  );
+
+  // ---------------------------------------------------------------------------
+  // Shared AI writing checker. Reused by the writing library AND every exam
+  // writing task, so importing new writing resources gets the AI check
+  // automatically. `text` is the learner's input; `ctx` is the active item.
+  // ---------------------------------------------------------------------------
+  const renderWritingChecker = (
+    text: string,
+    ctx: { prompt: string; points: string[]; modelAnswer: string; level: string },
+  ) => (
+    <>
+      <div className="mt-4">
+        <button
+          onClick={() => checkComposition(text, ctx)}
+          disabled={!text.trim() || writeFeedbackLoading}
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Sparkles className="w-4 h-4" /> {writeFeedbackLoading ? 'AI шалгаж байна...' : 'AI-аар шалгуулах'}
+        </button>
+      </div>
+      {renderCompositionReport()}
+    </>
+  );
+
+  const renderCompositionReport = () => (
+    !writeFeedback ? null : (
+      <div className="w-full flex flex-col gap-4 mt-5 animate-scale-up">
+
+        {/* Headline + summary */}
+        <div className="w-full bg-white border-2 border-on-background rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow">
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 border-on-background shrink-0 block-shadow ${
+            writeFeedback.isCorrect ? 'bg-secondary-container' : 'bg-error-container'
+          }`}>
+            {writeFeedback.isCorrect ? <CheckCircle className="w-5 h-5 text-secondary" /> : <AlertCircle className="w-5 h-5 text-error" />}
+          </div>
+          <div className="flex-grow">
+            <h5 className="text-lg font-black text-on-surface mb-1 font-sans">{writeFeedback.feedbackMessage}</h5>
+            <p className="text-sm text-on-surface-variant leading-relaxed font-sans">{writeFeedback.analysis}</p>
+          </div>
+        </div>
+
+        {/* Score row (only when the AI returned numeric scores) */}
+        {typeof writeFeedback.overallScore === 'number' && (
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Нийт оноо', value: writeFeedback.overallScore, icon: Target },
+              { label: 'Дүрэм', value: writeFeedback.grammarScore, icon: SpellCheck },
+              { label: 'Үгсийн сан', value: writeFeedback.vocabularyScore, icon: BookOpen },
+            ].filter((s) => typeof s.value === 'number').map((s, i) => {
+              const v = s.value as number;
+              const tone = v >= 75 ? 'text-secondary' : v >= 50 ? 'text-yellow-600' : 'text-error';
+              const barTone = v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-yellow-500' : 'bg-error';
+              return (
+                <div key={i} className="bg-white border-2 border-on-background rounded-xl p-4 block-shadow flex flex-col items-center text-center">
+                  <s.icon className={`w-5 h-5 mb-1 ${tone}`} />
+                  <span className={`text-3xl font-black font-space ${tone}`}>{v}</span>
+                  <span className="text-[10px] font-bold uppercase text-outline tracking-wide mt-0.5">{s.label}</span>
+                  <div className="w-full h-1.5 bg-surface-container-high rounded-full mt-2 overflow-hidden">
+                    <div className={`h-full ${barTone} rounded-full transition-all`} style={{ width: `${v}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* What you wrote vs the corrected version */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {writeFeedbackText && (
+            <div className="bg-surface-container-low border-2 border-on-background rounded-xl p-4 block-shadow">
+              <p className="text-[11px] font-space font-bold uppercase text-outline mb-1 flex items-center gap-1.5">
+                <Edit3 className="w-3.5 h-3.5" /> Таны бичсэн нь
+              </p>
+              <p className="text-sm text-on-surface font-sans whitespace-pre-line leading-relaxed">{writeFeedbackText}</p>
+            </div>
+          )}
+          {writeFeedback.corrected && (
+            <div className="bg-secondary-container/30 border-2 border-secondary rounded-xl p-4 block-shadow">
+              <p className="text-[11px] font-space font-bold uppercase text-secondary mb-1 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> Засаж сайжруулсан хувилбар
+              </p>
+              <p className="text-sm text-on-surface font-medium font-sans whitespace-pre-line leading-relaxed">{writeFeedback.corrected}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Specific corrections — wrong grammar / wrong word → better wording */}
+        {(writeFeedback.corrections?.length || 0) > 0 && (
+          <div className="bg-white border-2 border-on-background rounded-xl p-4 block-shadow">
+            <p className="text-xs font-black uppercase text-on-surface mb-3 flex items-center gap-1.5">
+              <SpellCheck className="w-4 h-4 text-primary" /> Засварууд ({writeFeedback.corrections!.length})
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {writeFeedback.corrections!.map((c, i) => (
+                <div key={i} className="border-2 border-on-background rounded-lg p-3 bg-surface-container-low">
+                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                    <span className="text-sm font-bold text-error line-through font-mono">{c.original}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-outline shrink-0" />
+                    <span className="text-sm font-bold text-secondary font-mono">{c.suggestion}</span>
+                    <span className="text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary-container border border-on-background text-on-surface">{c.type}</span>
+                  </div>
+                  <p className="text-xs text-on-surface-variant leading-relaxed">{c.explanation}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Grammar / vocabulary summary cards */}
+        {(writeFeedback.grammarFeedback || writeFeedback.vocabularyFeedback) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[
+              { label: 'Дүрэм', text: writeFeedback.grammarFeedback, icon: SpellCheck, tint: 'bg-error-container' },
+              { label: 'Үгсийн сан', text: writeFeedback.vocabularyFeedback, icon: BookOpen, tint: 'bg-primary-container' },
+            ].filter((c) => c.text).map((c, i) => (
+              <div key={i} className="bg-white border-2 border-on-background rounded-xl p-4 block-shadow">
+                <p className="text-xs font-black uppercase text-on-surface mb-1.5 flex items-center gap-1.5">
+                  <span className={`w-6 h-6 rounded-full ${c.tint} border-2 border-on-background flex items-center justify-center`}>
+                    <c.icon className="w-3.5 h-3.5" />
+                  </span>
+                  {c.label}
+                </p>
+                <p className="text-sm text-on-surface-variant leading-relaxed font-sans">{c.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Strengths / improvements */}
+        {((writeFeedback.strengths?.length || 0) > 0 || (writeFeedback.improvements?.length || 0) > 0) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {(writeFeedback.strengths?.length || 0) > 0 && (
+              <div className="bg-secondary-container/40 border-2 border-secondary rounded-xl p-4">
+                <p className="text-xs font-black uppercase text-secondary mb-2 flex items-center gap-1.5"><ThumbsUp className="w-4 h-4" /> Сайн байгаа тал</p>
+                <ul className="space-y-1.5">
+                  {writeFeedback.strengths!.map((s, i) => (
+                    <li key={i} className="text-sm text-on-surface font-medium flex items-start gap-2"><Check className="w-4 h-4 text-secondary shrink-0 mt-0.5" />{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {(writeFeedback.improvements?.length || 0) > 0 && (
+              <div className="bg-error-container/40 border-2 border-error rounded-xl p-4">
+                <p className="text-xs font-black uppercase text-error mb-2 flex items-center gap-1.5"><Target className="w-4 h-4" /> Сайжруулах зүйл</p>
+                <ul className="space-y-1.5">
+                  {writeFeedback.improvements!.map((s, i) => (
+                    <li key={i} className="text-sm text-on-surface font-medium flex items-start gap-2"><ArrowRight className="w-4 h-4 text-error shrink-0 mt-0.5" />{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  );
 
   return (
     <div className="bg-background text-white font-sans min-h-screen flex flex-col md:flex-row relative overflow-x-hidden">
@@ -1536,11 +2134,11 @@ export default function App() {
 
               {/* Library vs detailed-lesson mode toggle */}
               <div className="flex items-center gap-2 mb-6 max-w-md">
-                <button onClick={() => setSpeakMode('library')}
+                <button onClick={() => { setSpeakMode('library'); resetSpeakingJudge(); }}
                   className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${speakMode === 'library' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
                   <Library className="w-4 h-4" /> Номын сан ({SPEAKING_LIBRARY.length})
                 </button>
-                <button onClick={() => setSpeakMode('lesson')}
+                <button onClick={() => { setSpeakMode('lesson'); resetSpeakingJudge(); }}
                   className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${speakMode === 'lesson' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
                   <Mic className="w-4 h-4" /> Дэлгэрэнгүй хичээл
                 </button>
@@ -1563,7 +2161,7 @@ export default function App() {
                       </div>
                       <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
                         {filtered.map(r => (
-                          <button key={r.id} onClick={() => { setLibSpeakId(r.id); setLibSpeakReveal(false); }}
+                          <button key={r.id} onClick={() => { setLibSpeakId(r.id); setLibSpeakReveal(false); resetSpeakingJudge(); }}
                             className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libSpeakId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
@@ -1617,6 +2215,11 @@ export default function App() {
                         </div>
                       )}
                       <p className="text-[11px] text-on-surface-variant mt-4 italic">Зөвлөмж: эхлээд өөрөө чангаар хэлж үзээд, дараа нь загвартай харьцуулаарай.</p>
+
+                      {/* AI judge — graded against this item's model answer. Every imported
+                          speaking resource gets it automatically because it is data-driven. */}
+                      {renderSpeakingJudge(item.modelAnswer)}
+                      {renderSpeakingReport(item.modelAnswer)}
                     </section>
                   </div>
                 );
@@ -1661,76 +2264,9 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Microphone Interface Area */}
-              <div className="w-full flex flex-col items-center justify-center relative py-6 bg-surface-container-low border-2 border-on-background border-dashed rounded-xl block-shadow my-4">
-                
-                <div className="relative flex items-center justify-center mb-6">
-                  <button 
-                    onClick={toggleMic}
-                    className={`relative z-10 w-24 h-24 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none border-2 border-on-background cursor-pointer block-shadow ${
-                      isRecording ? 'bg-secondary-container text-on-secondary-fixed animate-ripple' : 'bg-secondary'
-                    }`}
-                  >
-                    <Mic className="w-10 h-10 stroke-[2.5px]" />
-                  </button>
-                </div>
+              {renderSpeakingJudge(SPEAKING_LESSON.sentence)}
 
-                <h4 className="text-xl font-black text-secondary font-sans mb-1">
-                  {isRecording ? 'Амьд бичлэг эхэлсэн' : 'Эхлүүлэхийн тулд дарна уу'}
-                </h4>
-                <p className="text-sm font-semibold text-outline text-center px-4">
-                  {voiceSupportMessage || 'Бичлэгээ дуусгахдаа микрофон дээр дахин дарна уу.'}
-                </p>
-
-                {/* Text alternative input field for users with missing micro permissions */}
-                <div className="mt-6 w-full max-w-sm px-4 flex flex-col gap-2">
-                  <p className="text-[11px] font-space text-outline font-bold uppercase text-center">Заавал дуу бичихгүйгээр турших шивэх талбар:</p>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text"
-                      placeholder="Германаар бичнэ үү (e.g., Wie geht es Ihnen?)"
-                      value={speakingTextEntered}
-                      onChange={(e) => setSpeakingTextEntered(e.target.value)}
-                      className="flex-grow bg-white border-2 border-on-background font-bold text-sm px-3 py-2 rounded-xl outline-none focus:border-primary transition-all text-slate-900"
-                    />
-                    <button 
-                      onClick={() => evaluateSpeechText(speakingTextEntered)}
-                      disabled={!speakingTextEntered.trim() || speakingLoading}
-                      className="px-4 py-2 border-2 border-on-background text-sm font-bold bg-primary text-white rounded-xl block-shadow cursor-pointer disabled:opacity-50"
-                    >
-                      {speakingLoading ? 'Үнэлж байна...' : 'Шалгах'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Dynamic Evaluated Speech bubble response (Screen 4 success/error visual widget) */}
-              {speakingEvaluation && (
-                <div className="w-full bg-white border-2 border-on-background rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow transition-all animate-scale-up">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 border-on-background shrink-0 block-shadow ${
-                    speakingEvaluation.isCorrect ? 'bg-secondary-container' : 'bg-error-container'
-                  }`}>
-                    {speakingEvaluation.isCorrect ? <CheckCircle className="w-5 h-5 text-secondary" /> : <AlertCircle className="w-5 h-5 text-error" />}
-                  </div>
-                  <div className="flex-grow">
-                    <h5 className="text-md font-black text-on-surface mb-1 font-sans">
-                      {speakingEvaluation.feedbackMessage}
-                    </h5>
-                    <p className="text-sm text-on-surface-variant leading-relaxed font-sans">
-                      {speakingEvaluation.analysis}
-                    </p>
-                    <div className="mt-4 flex gap-3">
-                      <button 
-                        onClick={() => speakGerman(SPEAKING_LESSON.sentence)}
-                        className="px-4 py-2 bg-surface border-2 border-on-background rounded-lg text-xs font-bold text-primary hover:bg-surface-container transition-colors font-space flex items-center gap-2 block-shadow cursor-pointer"
-                      >
-                        <Volume2 className="w-4 h-4" />
-                        Дахин сонсох
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {renderSpeakingReport(SPEAKING_LESSON.sentence)}
             </div>
               )}
             </div>
@@ -1742,11 +2278,11 @@ export default function App() {
 
               {/* Library vs detailed-lesson mode toggle */}
               <div className="flex items-center gap-2 mb-6 max-w-md">
-                <button onClick={() => setWriteMode('library')}
+                <button onClick={() => { setWriteMode('library'); resetWritingFeedback(); }}
                   className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${writeMode === 'library' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
                   <Library className="w-4 h-4" /> Номын сан ({WRITING_LIBRARY.length})
                 </button>
-                <button onClick={() => setWriteMode('lesson')}
+                <button onClick={() => { setWriteMode('lesson'); resetWritingFeedback(); }}
                   className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${writeMode === 'lesson' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
                   <Edit3 className="w-4 h-4" /> Дэлгэрэнгүй хичээл
                 </button>
@@ -1770,7 +2306,7 @@ export default function App() {
                       </div>
                       <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
                         {filtered.map(r => (
-                          <button key={r.id} onClick={() => { setLibWriteId(r.id); setLibWriteText(''); setLibWriteReveal(false); }}
+                          <button key={r.id} onClick={() => { setLibWriteId(r.id); setLibWriteText(''); setLibWriteReveal(false); resetWritingFeedback(); }}
                             className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libWriteId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
@@ -1796,7 +2332,7 @@ export default function App() {
                       </div>
 
                       <textarea value={libWriteText} onChange={(e) => setLibWriteText(e.target.value)}
-                        placeholder="Энд герман хэлээр бичнэ үү..." rows={6}
+                        placeholder="Энд герман хэлээр бичнэ үү..." rows={6} maxLength={2000}
                         className="w-full px-3 py-2 text-sm border-2 border-on-background rounded-lg bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:border-secondary resize-y" />
 
                       <div className="flex items-center justify-between mt-3">
@@ -1814,6 +2350,10 @@ export default function App() {
                           <p className="text-xs text-on-surface-variant whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-secondary/30 italic">{item.modelMn}</p>
                         </div>
                       )}
+
+                      {/* AI writing check — flags wrong grammar / words and recommends
+                          better wording. Data-driven, so new imports get it automatically. */}
+                      {renderWritingChecker(libWriteText, { prompt: item.prompt, points: item.points, modelAnswer: item.modelAnswer, level: item.level })}
                     </section>
                   </div>
                 );
@@ -2833,7 +3373,7 @@ export default function App() {
                               <p className="text-sm font-bold text-on-surface mb-2">{w.prompt}</p>
                               <ul className="text-xs text-on-surface-variant space-y-1 list-disc list-inside">{w.points.map((p, i) => <li key={i}>{p}</li>)}</ul>
                             </div>
-                            <textarea value={examItemWrite} onChange={(e) => setExamItemWrite(e.target.value)} placeholder="Энд герман хэлээр бичнэ үү..." rows={6}
+                            <textarea value={examItemWrite} onChange={(e) => setExamItemWrite(e.target.value)} placeholder="Энд герман хэлээр бичнэ үү..." rows={6} maxLength={2000}
                               className="w-full px-3 py-2 text-sm border-2 border-on-background rounded-lg bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:border-secondary resize-y" />
                             <div className="flex items-center justify-between mt-3">
                               <span className="text-[11px] text-on-surface-variant">{words} үг</span>
@@ -2849,6 +3389,9 @@ export default function App() {
                                 <p className="text-xs text-on-surface-variant whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-secondary/30 italic">{w.modelMn}</p>
                               </div>
                             )}
+
+                            {/* AI writing check for the exam writing task. */}
+                            {renderWritingChecker(examItemWrite, { prompt: w.prompt, points: w.points, modelAnswer: w.modelAnswer, level: w.level })}
                           </>
                         );
                       })()}
@@ -2884,6 +3427,10 @@ export default function App() {
                               </div>
                             )}
                             <p className="text-[11px] text-on-surface-variant mt-4 italic">Зөвлөмж: эхлээд өөрөө чангаар хэлж үзээд, дараа нь загвартай харьцуулаарай.</p>
+
+                            {/* AI judge for exam speaking — graded against this item's model answer. */}
+                            {renderSpeakingJudge(sp.modelAnswer)}
+                            {renderSpeakingReport(sp.modelAnswer)}
                           </>
                         );
                       })()}
