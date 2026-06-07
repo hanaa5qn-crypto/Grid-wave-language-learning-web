@@ -129,7 +129,7 @@ test('App UI interaction with Speech Recognition Mock integration', async () => 
   });
 
   // Verify we are on the speak tab by checking for the record instruction text
-  expect(getByText('Эхлүүлэхийн тулд дарна уу')).toBeInTheDocument();
+  expect(getByText('Бичихийн тулд дарна уу')).toBeInTheDocument();
 
   // Find the record button
   const allButtons = document.querySelectorAll('button');
@@ -148,9 +148,9 @@ test('App UI interaction with Speech Recognition Mock integration', async () => 
   });
 
   // Now, the mock SpeechRecognition start is correct and triggers onstart() immediately,
-  // so isRecording becomes true.
-  expect(getByText('Амьд бичлэг эхэлсэн')).toBeInTheDocument();
-  expect(queryByText('Эхлүүлэхийн тулд дарна уу')).toBeNull();
+  // so isRecording becomes true (the heading switches to the live "Бичиж байна … mm:ss").
+  expect(getByText(/Бичиж байна/)).toBeInTheDocument();
+  expect(queryByText('Бичихийн тулд дарна уу')).toBeNull();
 
   // Wait for the mock transcription (50ms timeout in mock) to finish
   await act(async () => {
@@ -158,7 +158,7 @@ test('App UI interaction with Speech Recognition Mock integration', async () => 
   });
 
   // After the timeout, isRecording should be back to false
-  expect(queryByText('Амьд бичлэг эхэлсэн')).toBeNull();
-  expect(getByText('Эхлүүлэхийн тулд дарна уу')).toBeInTheDocument();
+  expect(queryByText(/Бичиж байна/)).toBeNull();
+  expect(getByText('Бичихийн тулд дарна уу')).toBeInTheDocument();
 });
 

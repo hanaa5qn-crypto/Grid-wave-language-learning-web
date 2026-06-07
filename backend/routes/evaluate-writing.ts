@@ -1,19 +1,27 @@
 import { Type } from '@google/genai';
 import type { Express } from 'express';
-import { getAIClient } from '../lib/ai';
 import { cleanText } from '../lib/cleanText';
+import { aiClientWithinBudget, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
 
 export function registerEvaluateWritingRoute(app: Express) {
   app.post('/api/evaluate-writing', async (req, res) => {
-    const { promptText, targetSentence, userTranslation } = req.body;
+    if (rateLimited(clientIp(req))) {
+      res.setHeader('Retry-After', '60');
+      return res.status(429).json({ error: 'Хэт олон хүсэлт. Хэсэг хүлээгээд дахин оролдоно уу.' });
+    }
+
+    const promptText = clampText(req.body?.promptText);
+    const targetSentence = clampText(req.body?.targetSentence);
+    const userTranslation = clampText(req.body?.userTranslation);
 
     if (!userTranslation) {
       return res.status(400).json({ error: 'Translation path is empty' });
     }
 
-    const ai = getAIClient();
+    const ai = aiClientWithinBudget();
 
     if (ai) {
+      consumeBudget();
       try {
         const response = await ai.models.generateContent({
           model: 'gemini-3.5-flash',

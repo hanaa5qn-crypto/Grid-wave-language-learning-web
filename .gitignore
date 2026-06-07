@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local tooling / agent artifacts (not part of the app)
+.antigravity/
+.playwright-mcp/
+.vscode/

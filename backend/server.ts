@@ -10,7 +10,11 @@ const frontendDir = path.join(projectRoot, 'frontend');
 dotenv.config({ path: path.join(projectRoot, '.env') });
 
 export const app = express();
-app.use(express.json());
+// Trust the first proxy hop (ngrok / Cloud Run) so req.ip is the real client IP,
+// which the per-IP AI rate limiter relies on.
+app.set('trust proxy', 1);
+// Larger limit so base64-encoded audio recordings from the speaking section fit.
+app.use(express.json({ limit: '25mb' }));
 
 const PORT = 3000;
 
