@@ -1,4 +1,5 @@
 import express from 'express';
+import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import { registerApiRoutes } from './routes';
@@ -21,6 +22,28 @@ const PORT = Number(process.env.PORT) || 3000;
 
 registerApiRoutes(app);
 
+function resolveDistPath() {
+  const candidates = [
+    path.join(projectRoot, 'dist'),
+    projectRoot,
+    path.join(projectRoot, 'frontend', 'dist'),
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(path.join(candidate, 'index.html'))) ?? candidates[0];
+}
+
+function registerProductionStatic() {
+  const distPath = resolveDistPath();
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
+if (process.env.NODE_ENV === 'production') {
+  registerProductionStatic();
+}
+
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     // Vite is only needed for the local dev server, so it's loaded lazily here.
@@ -33,12 +56,6 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(projectRoot, 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
   }
 
   app.listen(PORT, '0.0.0.0', () => {
