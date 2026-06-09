@@ -28,7 +28,7 @@ export interface PaidPlan {
   aiAccess: boolean;       // unlimited AI
 }
 
-const DEFAULT_FOUNDER_EMAILS = ['hanaa5qn@icloud.com'];
+const DEFAULT_FOUNDER_EMAILS = ['hanaa5qn@gmail.com'];
 
 function envAmount(name: string, fallback: number): number {
   const value = Number((process.env[name] ?? '').trim());

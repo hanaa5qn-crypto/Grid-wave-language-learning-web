@@ -19,7 +19,7 @@ export type ExamSection = 'reading' | 'listening' | 'writing' | 'speaking';
 export type BillingInterval = 'month' | 'year';
 
 // Founder accounts: always full access, no payment needed.
-export const FOUNDER_EMAILS = ['hanaa5qn@icloud.com'];
+export const FOUNDER_EMAILS = ['hanaa5qn@gmail.com'];
 
 // Free tier: only the first N questions of the exam question bank.
 export const FREE_QUESTION_LIMIT = 10;
