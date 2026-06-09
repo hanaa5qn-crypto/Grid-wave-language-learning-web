@@ -2267,7 +2267,7 @@ export default function App() {
                     value={dictSearch}
                     onChange={(e) => setDictSearch(e.target.value)}
                     placeholder="Герман эсвэл монгол үгээр хайх..."
-                    className="w-full bg-surface-container-low border-2 border-on-background rounded-xl pl-12 pr-10 py-3 text-md font-bold text-slate-900 focus:border-secondary outline-none transition-all placeholder:text-outline placeholder:font-normal shadow-inner"
+                    className="w-full bg-surface-container-low border-2 border-on-background rounded-xl pl-12 pr-10 py-3 text-md font-bold text-white focus:border-secondary outline-none transition-all placeholder:text-outline placeholder:font-normal shadow-inner"
                   />
                   {dictSearch && (
                     <button
