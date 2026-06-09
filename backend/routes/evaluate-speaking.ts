@@ -2,6 +2,7 @@ import { Type } from '@google/genai';
 import type { Express } from 'express';
 import { cleanText } from '../lib/cleanText';
 import { aiClientWithinBudget, audioTooLarge, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
+import { generateContentWithRetry } from '../lib/ai';
 
 // Rich JSON shape returned to the frontend. Every text field is written in
 // Mongolian (the app's UI language); `transcript` stays in German.
@@ -111,7 +112,7 @@ export function registerEvaluateSpeakingRoute(app: Express) {
           parts.push({ inlineData: { mimeType: mimeType || 'audio/wav', data: audioData } });
         }
 
-        const response = await ai.models.generateContent({
+        const response = await generateContentWithRetry(ai, {
           model: 'gemini-2.5-flash',
           contents: [{ role: 'user', parts }],
           config: {

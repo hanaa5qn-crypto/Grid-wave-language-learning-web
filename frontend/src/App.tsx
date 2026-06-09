@@ -987,6 +987,12 @@ function LearnerApp() {
       if (data.isCorrect) recordStudyActivity('lesson:writing-translation');
     } catch (e) {
       console.error(e);
+      setWritingEvaluation({
+        isCorrect: false,
+        corrected: writingInput,
+        explanation: 'Үнэлгээ хийх явцад алдаа гарлаа. Сүлжээ эсвэл Тохиргоо хэсэгт API түлхүүрээ шалгаад дахин оролдоно уу.',
+        feedbackMessage: 'Алдаа гарлаа'
+      });
     } finally {
       setWritingLoading(false);
     }
