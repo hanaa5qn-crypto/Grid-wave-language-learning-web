@@ -15,6 +15,16 @@ export interface UserProfile {
   studySecondsByDate?: Record<string, number>;
   createdAt?: string;
   lastActiveAt?: string;
+  // Spaced repetition state per vocabulary word (SM-2 style)
+  srsByWord?: Record<string, { ease: number; intervalDays: number; reps: number; due: string; lastReviewed: string }>;
+  // Mistake log — failed MCQ activity ids for review queue (most recent first)
+  mistakeIds?: string[];
+  // Onboarding wizard completion flag
+  onboardingDone?: boolean;
+  // Daily study goal in minutes (set during onboarding)
+  dailyGoalMinutes?: number;
+  // Streak freeze: how many 1-day grace days the user has available
+  streakFreezeCount?: number;
   billing?: {
     plan?: string;
     status?: string;
@@ -50,7 +60,8 @@ export const DEFAULT_PROFILES: UserProfile[] = [
       { day: 'Баасан', hours: 1.5 },
       { day: 'Бямба', hours: 2.5 },
       { day: 'Ням', hours: 1.8 }
-    ]
+    ],
+    onboardingDone: true
   },
   {
     email: 'nomin@gmail.com',
@@ -75,7 +86,8 @@ export const DEFAULT_PROFILES: UserProfile[] = [
       { day: 'Баасан', hours: 0.8 },
       { day: 'Бямба', hours: 3.0 },
       { day: 'Ням', hours: 2.0 }
-    ]
+    ],
+    onboardingDone: true
   },
   {
     email: 'gerel@gmail.com',
@@ -100,7 +112,8 @@ export const DEFAULT_PROFILES: UserProfile[] = [
       { day: 'Баасан', hours: 0.4 },
       { day: 'Бямба', hours: 1.0 },
       { day: 'Ням', hours: 0.8 }
-    ]
+    ],
+    onboardingDone: true
   },
   {
     email: 'anar@gmail.com',
@@ -125,7 +138,8 @@ export const DEFAULT_PROFILES: UserProfile[] = [
       { day: 'Баасан', hours: 2.8 },
       { day: 'Бямба', hours: 4.0 },
       { day: 'Ням', hours: 3.5 }
-    ]
+    ],
+    onboardingDone: true
   }
 ];
 
@@ -190,6 +204,11 @@ export function createCustomProfile(
     completedActivityIds: [],
     studyDays: [],
     studySecondsByDate: {},
+    srsByWord: {},
+    mistakeIds: [],
+    onboardingDone: false,
+    dailyGoalMinutes: 15,
+    streakFreezeCount: 1,
     createdAt: now,
     lastActiveAt: now,
     billing: {

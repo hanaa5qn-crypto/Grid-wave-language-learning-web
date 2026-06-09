@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Volume2, Play, Pause, CheckCircle, X, XCircle, AlertCircle,
   BookOpen, Headphones, Mic, Edit3, Languages, Settings, LogOut,
   Check, RotateCcw, Lightbulb, Flame, Award, ArrowRight, ArrowLeft,
   ChevronRight, Sparkles, HelpCircle, GraduationCap, ExternalLink, Search, Library,
   Square, AudioLines, Gauge, SpellCheck, MessageSquareText, ThumbsUp, Target,
-  Mail, Lock, Loader2, QrCode, CreditCard
+  Mail, Lock, Loader2, QrCode, CreditCard, Shield, Calendar, Clock, Zap,
+  ListChecks, BarChart3
 } from 'lucide-react';
 import { TabType, VocabularyWord, WordClass, CEFRLevel } from './types';
 import { DICTIONARY } from './data';
@@ -23,6 +24,16 @@ import {
 } from './auth';
 import { isFirebaseConfigured, getStorageInstance, getAuthInstance } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import {
+  SrsMap, reviewSrs, srsWordKey, orderTrainerWords, countDueWords, isDue,
+  calculateStreakWithGrace, StreakResult,
+  buildUnitsForLevel, unitProgress, isUnitPassed, isUnitUnlocked, lockedItemIds, Unit, UnitActivity, UNIT_PASS_RATIO,
+  addMistake, clearMistake, resolveMistakes, MistakeRef,
+  buildTodaySession, TodaySession,
+  localDateKey as learningLocalDateKey,
+} from './learning';
+import OnboardingWizard from './OnboardingWizard';
+import GrammarTipCard from './GrammarTipCard';
 
 // Union of all exam item types — they all share `topic`, `title`, `titleMn`.
 type ExamItem = ReadingItem | ListeningItem | WritingItem | SpeakingItem;
@@ -42,6 +53,8 @@ const TRACKABLE_ACTIVITY_TOTAL =
     (sum, exam) => sum + exam.reading.length + exam.listening.length + exam.speaking.length + exam.writing.length,
     0,
   );
+
+const TRAINER_WORDS = DICTIONARY.filter((w) => w.mongolian.trim().length > 0);
 
 function localDateKey(date = new Date()): string {
   const year = date.getFullYear();
@@ -75,22 +88,7 @@ function buildLearningCurve(studySecondsByDate: Record<string, number> = {}): Us
 }
 
 function calculateStreak(studyDays: string[] = [], today = new Date()): number {
-  const daySet = new Set(studyDays);
-  let cursor = localDateKey(today);
-
-  if (!daySet.has(cursor)) {
-    const yesterday = localDateKey(addDays(today, -1));
-    if (!daySet.has(yesterday)) return 0;
-    cursor = yesterday;
-  }
-
-  let count = 0;
-  let date = dateFromLocalKey(cursor);
-  while (daySet.has(localDateKey(date))) {
-    count += 1;
-    date = addDays(date, -1);
-  }
-  return count;
+  return calculateStreakWithGrace(studyDays, today).streak;
 }
 
 function calculateProgress(completedActivityIds: string[] = []): number {
@@ -107,7 +105,11 @@ function normalizeProfileMetrics(profile: UserProfile): UserProfile {
   const completedActivityIds = Array.from(new Set(profile.completedActivityIds ?? []));
   const studyDays = Array.from(new Set(profile.studyDays ?? [])).sort();
   const studySecondsByDate = profile.studySecondsByDate ?? {};
-  const streak = calculateStreak(studyDays);
+  
+  // Calculate streak with grace using learning.ts engine
+  const streakRes = calculateStreakWithGrace(studyDays);
+  const streak = streakRes.streak;
+  
   const progress = calculateProgress(completedActivityIds);
   return {
     ...profile,
@@ -118,6 +120,12 @@ function normalizeProfileMetrics(profile: UserProfile): UserProfile {
     progress,
     completedLessons: completedActivityIds.length,
     learningCurve: buildLearningCurve(studySecondsByDate),
+    // Ensure all custom profile fields are present
+    srsByWord: profile.srsByWord ?? {},
+    mistakeIds: profile.mistakeIds ?? [],
+    onboardingDone: profile.onboardingDone ?? false,
+    dailyGoalMinutes: profile.dailyGoalMinutes ?? 15,
+    streakFreezeCount: profile.streakFreezeCount ?? 1,
   };
 }
 
@@ -478,7 +486,10 @@ function LearnerApp() {
   // Resource Library (50+ items per skill) — browse/select state for each tab.
   const [libReadId, setLibReadId] = useState<number>(READING_LIBRARY[0].id);
   const [libReadAnswer, setLibReadAnswer] = useState<number | null>(null);
-  const [libReadTrans, setLibReadTrans] = useState<boolean>(true);
+  // Translation starts hidden so the learner reads/attempts first and only
+  // reveals the Mongolian once stuck. Follows the "auto-show" setting if the
+  // user opts into always-on translations.
+  const [libReadTrans, setLibReadTrans] = useState<boolean>(readTranslateEnabled);
   const [libReadLevel, setLibReadLevel] = useState<Level | 'all'>('all');
 
   const [libListenId, setLibListenId] = useState<number>(LISTENING_LIBRARY[0].id);
@@ -494,6 +505,16 @@ function LearnerApp() {
   const [libWriteText, setLibWriteText] = useState<string>('');
   const [libWriteReveal, setLibWriteReveal] = useState<boolean>(false);
   const [libWriteLevel, setLibWriteLevel] = useState<Level | 'all'>('all');
+
+  const lockedActivityIds = useMemo(() => {
+    if (!currentUser) return { read: new Set<number>(), listen: new Set<number>(), speak: new Set<number>(), write: new Set<number>() };
+    const levelUnits = buildUnitsForLevel(currentUser.targetLevel as Level);
+    return lockedItemIds(levelUnits, new Set(completedActivityIds));
+  }, [currentUser?.targetLevel, completedActivityIds]);
+
+  const dueCount = useMemo(() => {
+    return countDueWords(TRAINER_WORDS, currentUser?.srsByWord ?? {});
+  }, [currentUser?.srsByWord, TRAINER_WORDS]);
 
   // Audio player variables for Listening (Screen 2)
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -548,7 +569,6 @@ function LearnerApp() {
   // Flashcards state for Vocabulary Trainer (Screen 5) — draws from the dictionary
   // entries that already have a Mongolian translation, so the trainer stays polished.
   // (The Browse dictionary below shows the full set incl. words still awaiting Mongolian.)
-  const TRAINER_WORDS = useMemo(() => DICTIONARY.filter((w) => w.mongolian.trim().length > 0), []);
   const [currentVocabIndex, setCurrentVocabIndex] = useState(0);
   const [vocabList, setVocabList] = useState<VocabularyWord[]>([...TRAINER_WORDS]);
   const [vocabFlipped, setVocabFlipped] = useState(false);
@@ -1120,11 +1140,37 @@ function LearnerApp() {
   // Vocabulary list card selections
   const handleVocabAction = (knows: boolean) => {
     setVocabFlipped(false);
+    if (vocabList.length === 0) return;
+    const word = vocabList[currentVocabIndex];
+    const key = srsWordKey(word);
+    
+    const profile = currentUserRef.current;
+    if (profile) {
+      const currentSrsByWord = profile.srsByWord ?? {};
+      const prevEntry = currentSrsByWord[key];
+      const nextEntry = reviewSrs(prevEntry, knows);
+      
+      const nextSrs = {
+        ...currentSrsByWord,
+        [key]: nextEntry
+      };
+      
+      const actId = activityKey('vocab', word.rank ?? `${word.german}-${word.mongolian}`);
+      const nextCompleted = knows 
+        ? Array.from(new Set([...(profile.completedActivityIds ?? []), actId]))
+        : (profile.completedActivityIds ?? []);
+        
+      applyMetricProfile({
+        ...profile,
+        srsByWord: nextSrs,
+        completedActivityIds: nextCompleted,
+      });
+    }
+
     if (knows) {
       setVocabMemorizedCount(prev => Math.min(prev + 1, vocabTotalCount));
-      const word = vocabList[currentVocabIndex];
-      recordStudyActivity(activityKey('vocab', word.rank ?? `${word.german}-${word.mongolian}`));
     }
+    
     // Advance carousel index
     setTimeout(() => {
       setCurrentVocabIndex(prev => (prev + 1) % vocabList.length);
@@ -1143,6 +1189,46 @@ function LearnerApp() {
     }
   };
 
+  // Central function to launch activities from suggested sections or unit curriculum path
+  const startActivity = (tab: 'read' | 'listen' | 'speak' | 'write', itemId: number) => {
+    if (tab === 'read') {
+      const item = READING_LIBRARY.find((r) => r.id === itemId);
+      if (item) {
+        setLibReadId(item.id);
+        setLibReadAnswer(null);
+        setLibReadTrans(false);
+        setLibReadLevel(item.level);
+        setActiveTab('read');
+      }
+    } else if (tab === 'listen') {
+      const item = LISTENING_LIBRARY.find((l) => l.id === itemId);
+      if (item) {
+        setLibListenId(item.id);
+        setLibListenAnswer(null);
+        setLibListenTrans(false);
+        setLibListenLevel(item.level);
+        setActiveTab('listen');
+      }
+    } else if (tab === 'speak') {
+      const item = SPEAKING_LIBRARY.find((s) => s.id === itemId);
+      if (item) {
+        setLibSpeakId(item.id);
+        setLibSpeakReveal(false);
+        resetSpeakingJudge();
+        setLibSpeakLevel(item.level);
+        setActiveTab('speak');
+      }
+    } else if (tab === 'write') {
+      const item = WRITING_LIBRARY.find((w) => w.id === itemId);
+      if (item) {
+        setLibWriteId(item.id);
+        resetWritingFeedback();
+        setLibWriteLevel(item.level);
+        setActiveTab('write');
+      }
+    }
+  };
+
   // Side bar navigation helper with auto menu closing on mobile. Clears the
   // shared AI reports so a speaking/writing result never bleeds across tabs.
   const selectTab = (tab: TabType) => {
@@ -1150,6 +1236,12 @@ function LearnerApp() {
     setMobileMenuOpen(false);
     resetSpeakingJudge();
     resetWritingFeedback();
+    
+    if (tab === 'vocab') {
+      const ordered = orderTrainerWords(TRAINER_WORDS, currentUserRef.current?.srsByWord ?? {});
+      setVocabList(ordered);
+      setCurrentVocabIndex(0);
+    }
   };
 
   const logoutUser = () => {
@@ -1751,6 +1843,15 @@ function LearnerApp() {
   const renderProfileTab = () => {
     if (!currentUser) return null;
 
+    const todaySession = buildTodaySession(
+      currentUser.targetLevel,
+      new Set(completedActivityIds),
+      currentUser.srsByWord ?? {},
+      TRAINER_WORDS
+    );
+    const unresolvedMistakes = resolveMistakes(currentUser.mistakeIds ?? []);
+    const currentUnits = buildUnitsForLevel(currentUser.targetLevel as Level);
+
     const completedCount = completedActivityIds.length;
     const lastStudyDay = studyDays[studyDays.length - 1];
     // We draw an SVG line chart representing study hours (learningCurve)
@@ -1801,6 +1902,182 @@ function LearnerApp() {
               >
                 <LogOut className="w-4 h-4" /> Гарах
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Today's Session & Mistake Log Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Today's Session Card */}
+          <div className="lg:col-span-8 bg-white/5 border border-purple-500/20 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow space-y-4">
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-purple-400 animate-bounce" />
+              <h2 className="text-xl font-extrabold text-purple-300 font-space">Өнөөдрийн Даалгавар</h2>
+            </div>
+            <p className="text-slate-400 text-xs font-semibold">
+              Суралцах хэвшлийг хадгалахад туслах өнөөдрийн санал болгож буй дасгалууд:
+            </p>
+            
+            {todaySession && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                {/* Reading suggestion */}
+                {todaySession.reading ? (
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                    <div className="flex items-center gap-3 overflow-hidden mr-2">
+                      <span className="p-2.5 bg-blue-500/10 text-blue-400 rounded-lg shrink-0">
+                        <BookOpen className="w-5 h-5" />
+                      </span>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] text-blue-400 font-bold uppercase font-space">УНШИХ</p>
+                        <p className="text-sm font-bold text-white truncate">{todaySession.reading.titleMn}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => startActivity('read', todaySession.reading!.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                    >
+                      Эхлэх
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center p-4 bg-white/5 border border-white/5 opacity-55 rounded-xl">
+                    <span className="p-2.5 bg-slate-800 text-slate-500 rounded-lg shrink-0 mr-3">
+                      <BookOpen className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase font-space">УНШИХ</p>
+                      <p className="text-xs text-slate-400 font-medium">Бүгд дууссан</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Listening suggestion */}
+                {todaySession.listening ? (
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                    <div className="flex items-center gap-3 overflow-hidden mr-2">
+                      <span className="p-2.5 bg-purple-500/10 text-purple-400 rounded-lg shrink-0">
+                        <Headphones className="w-5 h-5" />
+                      </span>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] text-purple-400 font-bold uppercase font-space">СОНСОХ</p>
+                        <p className="text-sm font-bold text-white truncate">{todaySession.listening.titleMn}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => startActivity('listen', todaySession.listening!.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                    >
+                      Эхлэх
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center p-4 bg-white/5 border border-white/5 opacity-55 rounded-xl">
+                    <span className="p-2.5 bg-slate-800 text-slate-500 rounded-lg shrink-0 mr-3">
+                      <Headphones className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase font-space">СОНСОХ</p>
+                      <p className="text-xs text-slate-400 font-medium">Бүгд дууссан</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Speaking suggestion */}
+                {todaySession.speaking ? (
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                    <div className="flex items-center gap-3 overflow-hidden mr-2">
+                      <span className="p-2.5 bg-green-500/10 text-green-400 rounded-lg shrink-0">
+                        <Mic className="w-5 h-5" />
+                      </span>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] text-green-400 font-bold uppercase font-space">ЯРИХ</p>
+                        <p className="text-sm font-bold text-white truncate">{todaySession.speaking.titleMn}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => startActivity('speak', todaySession.speaking!.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                    >
+                      Эхлэх
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center p-4 bg-white/5 border border-white/5 opacity-55 rounded-xl">
+                    <span className="p-2.5 bg-slate-800 text-slate-500 rounded-lg shrink-0 mr-3">
+                      <Mic className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p className="text-[10px] text-slate-550 font-bold uppercase font-space">ЯРИХ</p>
+                      <p className="text-xs text-slate-400 font-medium">Бүгд дууссан</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Vocab review suggestion */}
+                {todaySession.dueWordCount > 0 ? (
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                    <div className="flex items-center gap-3 overflow-hidden mr-2">
+                      <span className="p-2.5 bg-amber-500/10 text-amber-400 rounded-lg shrink-0">
+                        <RotateCcw className="w-5 h-5" />
+                      </span>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] text-amber-400 font-bold uppercase font-space">ҮГСИЙН САН</p>
+                        <p className="text-sm font-bold text-white truncate">{todaySession.dueWordCount} үг давтах</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => selectTab('vocab')}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                    >
+                      Давтах
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center p-4 bg-white/5 border border-white/5 opacity-55 rounded-xl">
+                    <span className="p-2.5 bg-slate-800 text-slate-500 rounded-lg shrink-0 mr-3">
+                      <RotateCcw className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase font-space">ҮГСИЙН САН</p>
+                      <p className="text-xs text-slate-400 font-medium font-space">Сэргээх үг байхгүй</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Mistakes Card */}
+          <div className="lg:col-span-4 bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow space-y-4">
+            <div className="flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-red-400 animate-pulse" />
+              <h2 className="text-xl font-extrabold text-red-300 font-space">Миний Алдаанууд</h2>
+            </div>
+            <p className="text-slate-400 text-xs font-semibold">
+              Дахин давтах алдаатай дасгалууд:
+            </p>
+            
+            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+              {unresolvedMistakes.length > 0 ? (
+                unresolvedMistakes.map((m, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-red-950/20 border border-red-500/20 rounded-xl hover:border-red-500/40 transition-colors">
+                    <div className="overflow-hidden mr-2">
+                      <span className="text-[9px] font-space bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30 uppercase font-black">{m.tab === 'read' ? 'Унших' : 'Сонсох'}</span>
+                      <p className="text-xs font-bold text-white truncate mt-1">{m.titleMn}</p>
+                    </div>
+                    <button
+                      onClick={() => startActivity(m.tab, m.itemId)}
+                      className="px-3 py-1.5 bg-red-500 hover:bg-red-650 text-white font-bold rounded-lg text-[10px] cursor-pointer transition-colors shrink-0"
+                    >
+                      Засах
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-slate-500 text-xs font-bold font-sans">
+                  ✨ Тэмдэглэгдсэн алдаа байхгүй. Хичээлээ алдаагүй үргэлжлүүлнэ үү!
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1964,6 +2241,132 @@ function LearnerApp() {
                 </svg>
               </div>
             </div>
+
+            {/* Lesson Path: Curriculum structure */}
+            <div className="space-y-4 pt-6 border-t border-white/10">
+              <h3 className="text-xl font-extrabold flex items-center gap-2 text-purple-300">
+                <Shield className="w-5 h-5 text-purple-400" /> Сургалтын зам ({currentUser.targetLevel})
+              </h3>
+              <p className="text-slate-400 text-xs font-semibold font-sans">
+                Түвшин бүрт тохирсон сэдвүүд. Хэсэг бүрийг {Math.round(UNIT_PASS_RATIO * 100)}%-иас дээш амжилттай дуусгаснаар дараагийн хэсэг нээгдэнэ.
+              </p>
+              
+              <div className="space-y-4 mt-3">
+                {currentUnits.map((unit, idx) => {
+                  const unlocked = isUnitUnlocked(currentUnits, idx, new Set(completedActivityIds));
+                  const progress = unitProgress(unit, new Set(completedActivityIds));
+                  const passed = isUnitPassed(unit, new Set(completedActivityIds));
+                  const percent = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+                  
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`relative overflow-hidden rounded-2xl border transition-all p-5 block-shadow ${
+                        unlocked 
+                          ? passed 
+                            ? 'bg-purple-950/20 border-purple-500/40' 
+                            : 'bg-white/5 border border-white/10 hover:border-purple-500/30' 
+                          : 'bg-slate-950/40 border border-white/5 opacity-60'
+                      }`}
+                    >
+                      {/* Top Bar of unit card */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-black font-space text-sm shrink-0 border ${
+                            unlocked 
+                              ? passed 
+                                ? 'bg-purple-500/10 border-purple-500 text-purple-400' 
+                                : 'bg-blue-500/10 border-blue-500 text-blue-400' 
+                              : 'bg-white/5 border border-white/10 text-slate-500'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <h4 className="font-extrabold text-white text-base font-space">
+                              {unit.title} {passed && ' (Дууссан)'}
+                            </h4>
+                            <p className="text-xs text-slate-400 font-sans">
+                              {progress.done} / {progress.total} дасгал хийсэн ({percent}%)
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          {unlocked ? (
+                            passed ? (
+                              <span className="text-[11px] font-space bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full border border-purple-500/30 font-bold">Дууссан</span>
+                            ) : (
+                              <span className="text-[11px] font-space bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30 font-bold animate-pulse">Идэвхтэй</span>
+                            )
+                          ) : (
+                            <span className="text-[11px] font-space bg-white/5 text-slate-500 px-3 py-1 rounded-full border border-white/10 font-bold">Түгжигдсэн</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Progress bar inside unit card */}
+                      {unlocked && (
+                        <div className="w-full h-2 bg-white/5 border border-white/10 rounded-full overflow-hidden mb-4">
+                          <div 
+                            className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Activities detail nested inside the unit */}
+                      {unlocked && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                          {unit.activities.map((act, aIdx) => {
+                            const isDone = completedActivityIds.includes(act.activityId);
+                            const skillNames = {
+                              read: 'Унших',
+                              listen: 'Сонсох',
+                              speak: 'Ярих',
+                              write: 'Бичих',
+                            };
+                            const skillIcons = {
+                              read: <BookOpen className="w-3.5 h-3.5" />,
+                              listen: <Headphones className="w-3.5 h-3.5" />,
+                              speak: <Mic className="w-3.5 h-3.5" />,
+                              write: <Edit3 className="w-3.5 h-3.5" />,
+                            };
+                            return (
+                              <button
+                                key={aIdx}
+                                onClick={() => startActivity(act.tab, act.itemId)}
+                                className={`flex items-center justify-between text-left p-3 rounded-xl border text-xs font-bold cursor-pointer transition-colors ${
+                                  isDone 
+                                    ? 'bg-purple-950/10 border-purple-500/20 text-slate-300 hover:bg-purple-950/20' 
+                                    : 'bg-white/5 border border-white/10 text-white hover:border-purple-500/40 hover:bg-white/10'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 overflow-hidden mr-2">
+                                  <span className={`p-1.5 rounded-lg shrink-0 ${
+                                    isDone ? 'bg-purple-500/10 text-purple-400' : 'bg-white/5 text-slate-300'
+                                  }`}>
+                                    {skillIcons[act.tab]}
+                                  </span>
+                                  <div className="overflow-hidden text-left">
+                                    <p className="text-[10px] text-slate-400 uppercase font-space">{skillNames[act.tab]}</p>
+                                    <p className="font-bold truncate max-w-[180px] text-white">{act.titleMn}</p>
+                                  </div>
+                                </div>
+                                {isDone ? (
+                                  <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                                ) : (
+                                  <ArrowRight className="w-4 h-4 text-slate-500 shrink-0" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Right Column: Tailored Suggestions */}
@@ -2041,6 +2444,23 @@ function LearnerApp() {
 
   if (!currentUser) {
     return <LoginScreen />;
+  }
+
+  if (currentUser && !currentUser.onboardingDone) {
+    return (
+      <OnboardingWizard
+        userName={currentUser.name}
+        onComplete={(data) => {
+          applyMetricProfile({
+            ...currentUser,
+            onboardingDone: true,
+            learningGoal: data.goal,
+            targetLevel: data.level,
+            dailyGoalMinutes: data.dailyGoalMinutes,
+          });
+        }}
+      />
+    );
   }
 
   return (
@@ -2357,7 +2777,14 @@ function LearnerApp() {
               }`}
             >
               <Languages className={`w-5 h-5 ${activeTab === 'vocab' ? 'text-secondary-fixed' : ''}`} />
-              <span className="text-[14px] font-bold">Үгсийн сан</span>
+              <span className="text-[14px] font-bold flex-grow flex justify-between items-center pr-4">
+                <span>Үгсийн сан</span>
+                {dueCount > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-black font-space px-2 py-0.5 rounded-full">
+                    {dueCount}
+                  </span>
+                )}
+              </span>
             </button>
           </li>
           <li>
@@ -2524,7 +2951,14 @@ function LearnerApp() {
                   className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'vocab' ? 'bg-white/15' : 'text-on-primary-container'}`}
                 >
                   <Languages className="w-5 h-5" />
-                  <span>Үгсийн сан</span>
+                  <span className="flex-grow flex justify-between items-center pr-4">
+                    <span>Үгсийн сан</span>
+                    {dueCount > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-black font-space px-2 py-0.5 rounded-full">
+                        {dueCount}
+                      </span>
+                    )}
+                  </span>
                 </button>
               </li>
               <li>
@@ -2625,64 +3059,117 @@ function LearnerApp() {
                         ))}
                       </div>
                       <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
-                        {filtered.map(r => (
-                          <button key={r.id} onClick={() => { setLibReadId(r.id); setLibReadAnswer(null); }}
-                            className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libReadId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                              <span className="text-xs font-bold text-on-surface truncate">{r.titleMn}</span>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
-                          </button>
-                        ))}
+                        {filtered.map(r => {
+                          const isLocked = lockedActivityIds.read.has(r.id) && r.level === currentUser?.targetLevel;
+                          return (
+                            <button key={r.id} onClick={() => { setLibReadId(r.id); setLibReadAnswer(null); setLibReadTrans(readTranslateEnabled); }}
+                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libReadId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                  {isLocked && <span>🔒</span>}
+                                  {r.titleMn}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </aside>
 
                     {/* Reader */}
-                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                        <div className="flex gap-2">
-                          <button onClick={() => speakGerman(item.text, audioSpeed === '0.8' ? 0.8 : 1.0)} title="Сонсох"
-                            className="p-2 border-2 border-on-background rounded-full bg-surface-container hover:scale-105 transition-transform text-on-surface block-shadow cursor-pointer">
-                            <Volume2 className="w-5 h-5" />
-                          </button>
-                          <button onClick={() => setLibReadTrans(v => !v)}
-                            className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libReadTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
-                            <Languages className="w-4 h-4" /> {libReadTrans ? 'Нуух' : 'Орчуулга'}
+                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-slate-800">
+                      {lockedActivityIds.read.has(item.id) && item.level === currentUser?.targetLevel ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <Shield className="w-8 h-8" />
+                          </div>
+                          <h2 className="text-xl font-bold text-slate-800">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-slate-500 max-w-sm font-sans font-medium">
+                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
+                          </p>
+                          <button 
+                            onClick={() => selectTab('profile')}
+                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                          >
+                            Сургалтын зам руу очих
                           </button>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                            <div className="flex gap-2">
+                              <button onClick={() => speakGerman(item.text, audioSpeed === '0.8' ? 0.8 : 1.0)} title="Сонсох"
+                                className="p-2 border-2 border-on-background rounded-full bg-surface-container hover:scale-105 transition-transform text-on-surface block-shadow cursor-pointer">
+                                <Volume2 className="w-5 h-5" />
+                              </button>
+                              <button onClick={() => setLibReadTrans(v => !v)}
+                                className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libReadTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
+                                <Languages className="w-4 h-4" /> {libReadTrans ? 'Нуух' : 'Орчуулга'}
+                              </button>
+                            </div>
+                          </div>
 
-                      <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface mb-1 tracking-tight">{item.title}</h2>
-                      <p className="text-sm text-on-surface-variant mb-5">{item.titleMn}</p>
+                          <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface mb-1 tracking-tight">{item.title}</h2>
+                          <p className="text-sm text-on-surface-variant mb-5">{item.titleMn}</p>
 
-                      <p className="text-lg leading-relaxed text-on-surface whitespace-pre-line font-medium">{renderRichGerman(item.text)}</p>
-                      {libReadTrans && (
-                        <p className="text-sm leading-relaxed text-on-surface-variant whitespace-pre-line mt-4 pt-4 border-t border-outline-variant/50 italic">{item.translation}</p>
+                          <p className="text-lg leading-relaxed text-on-surface whitespace-pre-line font-medium">{renderRichGerman(item.text)}</p>
+                          {libReadTrans && (
+                            <p className="text-sm leading-relaxed text-on-surface-variant whitespace-pre-line mt-4 pt-4 border-t border-outline-variant/50 italic">{item.translation}</p>
+                          )}
+
+                          {/* Comprehension question */}
+                          <div className="mt-6 pt-5 border-t border-outline-variant">
+                            <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах:</p>
+                            <p className="text-base font-bold text-on-surface mb-3">{item.question}</p>
+                            <div className="mb-4 flex flex-wrap gap-2">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border-2 border-on-background text-xs font-semibold rounded-full font-space block-shadow text-on-surface">
+                                <Lightbulb className="w-4 h-4 text-orange-500 fill-orange-500" />
+                                {item.hint ?? 'Санамж: тодруулсан үг дээр дарж утга, дуудлагыг нь үзээрэй.'}
+                              </span>
+                            </div>
+                            <MCQBlock
+                              choices={item.choices}
+                              correctIndex={item.correctIndex}
+                              selectedAnswer={libReadAnswer}
+                              feedbackText={item.explanation}
+                              onSelect={(index) => {
+                                setLibReadAnswer(index);
+                                const actId = activityKey('library:read', item.id);
+                                if (index === item.correctIndex) {
+                                  recordStudyActivity(actId);
+                                  
+                                  const profile = currentUserRef.current;
+                                  if (profile && profile.mistakeIds?.includes(actId)) {
+                                    applyMetricProfile({
+                                      ...profile,
+                                      mistakeIds: clearMistake(profile.mistakeIds, actId),
+                                    });
+                                  }
+                                } else {
+                                  const profile = currentUserRef.current;
+                                  if (profile) {
+                                    applyMetricProfile({
+                                      ...profile,
+                                      mistakeIds: addMistake(profile.mistakeIds, actId),
+                                    });
+                                  }
+                                }
+                              }}
+                            />
+                            {libReadAnswer !== null && libReadAnswer !== item.correctIndex && (
+                              <GrammarTipCard
+                                correctAnswer={item.choices[item.correctIndex]}
+                                explanation={item.explanation}
+                                germanContext={item.text}
+                                level={item.level}
+                              />
+                            )}
+                          </div>
+                        </>
                       )}
-
-                      {/* Comprehension question */}
-                      <div className="mt-6 pt-5 border-t border-outline-variant">
-                        <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах:</p>
-                        <p className="text-base font-bold text-on-surface mb-3">{item.question}</p>
-                        <div className="mb-4 flex flex-wrap gap-2">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border-2 border-on-background text-xs font-semibold rounded-full font-space block-shadow text-on-surface">
-                            <Lightbulb className="w-4 h-4 text-orange-500 fill-orange-500" />
-                            {item.hint ?? 'Санамж: тодруулсан үг дээр дарж утга, дуудлагыг нь үзээрэй.'}
-                          </span>
-                        </div>
-                        <MCQBlock
-                          choices={item.choices}
-                          correctIndex={item.correctIndex}
-                          selectedAnswer={libReadAnswer}
-                          feedbackText={item.explanation}
-                          onSelect={(index) => {
-                            setLibReadAnswer(index);
-                            if (index === item.correctIndex) recordStudyActivity(activityKey('library:read', item.id));
-                          }}
-                        />
-                      </div>
                     </section>
                   </div>
                 );
@@ -2713,78 +3200,131 @@ function LearnerApp() {
                         ))}
                       </div>
                       <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
-                        {filtered.map(r => (
-                          <button key={r.id} onClick={() => { setLibListenId(r.id); setLibListenAnswer(null); }}
-                            className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libListenId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                              <span className="text-xs font-bold text-on-surface truncate">{r.titleMn}</span>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
-                          </button>
-                        ))}
+                        {filtered.map(r => {
+                          const isLocked = lockedActivityIds.listen.has(r.id) && r.level === currentUser?.targetLevel;
+                          return (
+                            <button key={r.id} onClick={() => { setLibListenId(r.id); setLibListenAnswer(null); setLibListenTrans(readTranslateEnabled); }}
+                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libListenId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                  {isLocked && <span>🔒</span>}
+                                  {r.titleMn}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </aside>
 
-                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow">
-                      <div className="flex items-center justify-between mb-5">
-                        <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                        <button onClick={() => setLibListenTrans(v => !v)}
-                          className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libListenTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
-                          <Languages className="w-4 h-4" /> {libListenTrans ? 'Нуух' : 'Текст'}
-                        </button>
-                      </div>
-
-                      <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mb-1">{item.titleMn}</h2>
-                      <p className="text-xs text-on-surface-variant mb-5">{item.title}</p>
-
-                      {/* Play controls */}
-                      <div className="flex flex-col items-center gap-3 py-6 bg-surface-container-low border-2 border-on-background rounded-xl mb-5">
-                        <button onClick={() => speakGerman(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0)}
-                          className="w-16 h-16 rounded-full bg-secondary text-white border-2 border-on-background flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
-                          <Volume2 className="w-7 h-7" />
-                        </button>
-                        <p className="text-xs text-on-surface-variant">Бичлэгийг сонсохын тулд дарна уу (2 удаа)</p>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => setAudioSpeed('0.8')}
-                            className={`px-3 py-1 rounded-full border-2 border-on-background text-[11px] font-bold font-space cursor-pointer block-shadow ${audioSpeed === '0.8' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'}`}>
-                            0.8x (Удаан)
-                          </button>
-                          <button onClick={() => setAudioSpeed('1.0')}
-                            className={`px-3 py-1 rounded-full border-2 border-on-background text-[11px] font-bold font-space cursor-pointer block-shadow ${audioSpeed === '1.0' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'}`}>
-                            1.0x (Хэвийн)
+                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-slate-800">
+                      {lockedActivityIds.listen.has(item.id) && item.level === currentUser?.targetLevel ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <Shield className="w-8 h-8" />
+                          </div>
+                          <h2 className="text-xl font-bold text-slate-800">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-slate-500 max-w-sm font-sans font-medium">
+                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
+                          </p>
+                          <button 
+                            onClick={() => selectTab('profile')}
+                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                          >
+                            Сургалтын зам руу очих
                           </button>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between mb-5">
+                            <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                            <button onClick={() => setLibListenTrans(v => !v)}
+                              className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libListenTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
+                              <Languages className="w-4 h-4" /> {libListenTrans ? 'Нуух' : 'Текст'}
+                            </button>
+                          </div>
 
-                      {libListenTrans && (
-                        <div className="bg-surface-container-low border-l-4 border-secondary rounded-lg p-3 mb-5">
-                          <p className="text-sm text-on-surface font-medium whitespace-pre-line">{renderRichGerman(item.audioText)}</p>
-                          <p className="text-xs text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/50 italic">{item.transcriptMn}</p>
-                        </div>
+                          <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mb-1">{item.titleMn}</h2>
+                          <p className="text-xs text-on-surface-variant mb-5">{item.title}</p>
+
+                          {/* Play controls */}
+                          <div className="flex flex-col items-center gap-3 py-6 bg-surface-container-low border-2 border-on-background rounded-xl mb-5">
+                            <button onClick={() => speakGerman(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0)}
+                              className="w-16 h-16 rounded-full bg-secondary text-white border-2 border-on-background flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
+                              <Volume2 className="w-7 h-7" />
+                            </button>
+                            <p className="text-xs text-on-surface-variant font-sans">Бичлэгийг сонсохын тулд дарна уу (2 удаа)</p>
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => setAudioSpeed('0.8')}
+                                className={`px-3 py-1 rounded-full border-2 border-on-background text-[11px] font-bold font-space cursor-pointer block-shadow ${audioSpeed === '0.8' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                                0.8x (Удаан)
+                              </button>
+                              <button onClick={() => setAudioSpeed('1.0')}
+                                className={`px-3 py-1 rounded-full border-2 border-on-background text-[11px] font-bold font-space cursor-pointer block-shadow ${audioSpeed === '1.0' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                                1.0x (Хэвийн)
+                              </button>
+                            </div>
+                          </div>
+
+                          {libListenTrans && (
+                            <div className="bg-surface-container-low border-l-4 border-secondary rounded-lg p-3 mb-5">
+                              <p className="text-sm text-on-surface font-medium whitespace-pre-line">{renderRichGerman(item.audioText)}</p>
+                              <p className="text-xs text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/50 italic">{item.transcriptMn}</p>
+                            </div>
+                          )}
+
+                          {/* Comprehension */}
+                          <div className="pt-5 border-t border-outline-variant">
+                            <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах:</p>
+                            <p className="text-base font-bold text-on-surface mb-3">{item.question}</p>
+                            <div className="mb-4 flex flex-wrap gap-2">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border-2 border-on-background text-xs font-semibold rounded-full font-space block-shadow text-on-surface">
+                                <Lightbulb className="w-4 h-4 text-orange-500 fill-orange-500" />
+                                {item.hint ?? 'Санамж: "Текст" товчийг дарж, тодруулсан үг дээр дарна уу.'}
+                              </span>
+                            </div>
+                            <MCQBlock
+                              choices={item.choices}
+                              correctIndex={item.correctIndex}
+                              selectedAnswer={libListenAnswer}
+                              feedbackText={item.explanation}
+                              onSelect={(index) => {
+                                setLibListenAnswer(index);
+                                const actId = activityKey('library:listen', item.id);
+                                if (index === item.correctIndex) {
+                                  recordStudyActivity(actId);
+                                  
+                                  const profile = currentUserRef.current;
+                                  if (profile && profile.mistakeIds?.includes(actId)) {
+                                    applyMetricProfile({
+                                      ...profile,
+                                      mistakeIds: clearMistake(profile.mistakeIds, actId),
+                                    });
+                                  }
+                                } else {
+                                  const profile = currentUserRef.current;
+                                  if (profile) {
+                                    applyMetricProfile({
+                                      ...profile,
+                                      mistakeIds: addMistake(profile.mistakeIds, actId),
+                                    });
+                                  }
+                                }
+                              }}
+                            />
+                            {libListenAnswer !== null && libListenAnswer !== item.correctIndex && (
+                              <GrammarTipCard
+                                correctAnswer={item.choices[item.correctIndex]}
+                                explanation={item.explanation}
+                                germanContext={item.audioText}
+                                level={item.level}
+                              />
+                            )}
+                          </div>
+                        </>
                       )}
-
-                      {/* Comprehension */}
-                      <div className="pt-5 border-t border-outline-variant">
-                        <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах:</p>
-                        <p className="text-base font-bold text-on-surface mb-3">{item.question}</p>
-                        <div className="mb-4 flex flex-wrap gap-2">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border-2 border-on-background text-xs font-semibold rounded-full font-space block-shadow text-on-surface">
-                            <Lightbulb className="w-4 h-4 text-orange-500 fill-orange-500" />
-                            {item.hint ?? 'Санамж: "Текст" товчийг дарж, тодруулсан үг дээр дарна уу.'}
-                          </span>
-                        </div>
-                        <MCQBlock
-                          choices={item.choices}
-                          correctIndex={item.correctIndex}
-                          selectedAnswer={libListenAnswer}
-                          feedbackText={item.explanation}
-                          onSelect={(index) => {
-                            setLibListenAnswer(index);
-                            if (index === item.correctIndex) recordStudyActivity(activityKey('library:listen', item.id));
-                          }}
-                        />
-                      </div>
                     </section>
                   </div>
                 );
@@ -2814,23 +3354,47 @@ function LearnerApp() {
                         ))}
                       </div>
                       <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
-                        {filtered.map(r => (
-                          <button key={r.id} onClick={() => { setLibSpeakId(r.id); setLibSpeakReveal(false); resetSpeakingJudge(); }}
-                            className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libSpeakId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                              <span className="text-xs font-bold text-on-surface truncate">{r.titleMn}</span>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
-                          </button>
-                        ))}
+                        {filtered.map(r => {
+                          const isLocked = lockedActivityIds.speak.has(r.id) && r.level === currentUser?.targetLevel;
+                          return (
+                            <button key={r.id} onClick={() => { setLibSpeakId(r.id); setLibSpeakReveal(false); resetSpeakingJudge(); }}
+                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libSpeakId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                  {isLocked && <span>🔒</span>}
+                                  {r.titleMn}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </aside>
 
-                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow">
-                      <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                      <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mt-4 mb-1">{item.titleMn}</h2>
-                      <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
+                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-slate-800">
+                      {lockedActivityIds.speak.has(item.id) && item.level === currentUser?.targetLevel ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <Shield className="w-8 h-8" />
+                          </div>
+                          <h2 className="text-xl font-bold text-slate-800">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-slate-500 max-w-sm font-sans font-medium">
+                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
+                          </p>
+                          <button 
+                            onClick={() => selectTab('profile')}
+                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                          >
+                            Сургалтын зам руу очих
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                          <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mt-4 mb-1">{item.titleMn}</h2>
+                          <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
 
                       {/* Task prompt */}
                       <div className="bg-surface-container-low border-l-4 border-secondary rounded-lg p-4 mb-5">
@@ -2874,8 +3438,10 @@ function LearnerApp() {
                           speaking resource gets it automatically because it is data-driven. */}
                       {renderSpeakingJudge(item.modelAnswer)}
                       {renderSpeakingReport(item.modelAnswer)}
-                    </section>
-                  </div>
+                    </>
+                  )}
+                </section>
+              </div>
                 );
               })()}
 
@@ -2904,23 +3470,47 @@ function LearnerApp() {
                         ))}
                       </div>
                       <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
-                        {filtered.map(r => (
-                          <button key={r.id} onClick={() => { setLibWriteId(r.id); setLibWriteText(''); setLibWriteReveal(false); resetWritingFeedback(); }}
-                            className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libWriteId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                              <span className="text-xs font-bold text-on-surface truncate">{r.titleMn}</span>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
-                          </button>
-                        ))}
+                        {filtered.map(r => {
+                          const isLocked = lockedActivityIds.write.has(r.id) && r.level === currentUser?.targetLevel;
+                          return (
+                            <button key={r.id} onClick={() => { setLibWriteId(r.id); setLibWriteText(''); setLibWriteReveal(false); resetWritingFeedback(); }}
+                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libWriteId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                  {isLocked && <span>🔒</span>}
+                                  {r.titleMn}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </aside>
 
-                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow">
-                      <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                      <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mt-4 mb-1">{item.titleMn}</h2>
-                      <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
+                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-slate-800">
+                      {lockedActivityIds.write.has(item.id) && item.level === currentUser?.targetLevel ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <Shield className="w-8 h-8" />
+                          </div>
+                          <h2 className="text-xl font-bold text-slate-800">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-slate-500 max-w-sm font-sans font-medium">
+                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
+                          </p>
+                          <button 
+                            onClick={() => selectTab('profile')}
+                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                          >
+                            Сургалтын зам руу очих
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                          <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mt-4 mb-1">{item.titleMn}</h2>
+                          <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
 
                       <div className="bg-surface-container-low rounded-lg p-4 mb-4">
                         <p className="text-xs font-space font-bold uppercase text-primary mb-1">Даалгавар:</p>
@@ -2953,9 +3543,11 @@ function LearnerApp() {
                       {/* AI writing check — flags wrong grammar / words and recommends
                           better wording. Data-driven, so new imports get it automatically. */}
                       {renderWritingChecker(libWriteText, { prompt: item.prompt, points: item.points, modelAnswer: item.modelAnswer, level: item.level })}
-                    </section>
-                  </div>
-                );
+                    </>
+                  )}
+                </section>
+              </div>
+            );
               })()}
 
             </div>
@@ -3945,10 +4537,10 @@ function LearnerApp() {
                   <div className="flex justify-between items-center p-3 border-2 border-on-background rounded-xl bg-white select-none block-shadow">
                     <div>
                       <h5 className="text-sm font-bold">Орчуулга автоматаар харуулах</h5>
-                      <p className="text-[11px] text-outline">Унших зохиолд Монгол орчуулгыг үргэлж хамт харуулна.</p>
+                      <p className="text-[11px] text-outline">Унших, сонсох зохиолд орчуулгыг шууд харуулна. Унтраалттай үед эхлээд өөрөө уншиж, гацсан үедээ "Орчуулга" товчоор нээнэ.</p>
                     </div>
-                    <button 
-                      onClick={() => setReadTranslateEnabled(prev => !prev)}
+                    <button
+                      onClick={() => setReadTranslateEnabled(prev => { const next = !prev; setLibReadTrans(next); setLibListenTrans(next); return next; })}
                       className={`w-12 h-6 rounded-full transition-colors relative border border-on-background block-shadow cursor-pointer ${
                         readTranslateEnabled ? 'bg-secondary' : 'bg-slate-300'
                       }`}
