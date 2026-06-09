@@ -1,6 +1,7 @@
 import { VocabularyWord, ReadingExercise, WordClass, CEFRLevel } from './types';
 import { GENERATED_VOCABULARY } from './generatedVocabulary';
 import { VOCABEO_VOCABULARY } from './vocabeoVocabulary';
+import { MONGOLIAN_GLOSSES } from './mongolianGlosses';
 
 export const VOCABULARY_DATABASE: VocabularyWord[] = [
   {
@@ -451,9 +452,17 @@ function deriveLevel(category: string): CEFRLevel {
 }
 
 function withMetadata(word: VocabularyWord): VocabularyWord {
+  const wordClass = word.wordClass ?? deriveWordClass(word.category, word.article);
+  // The vocabeo-generated bulk only ships English glosses; fill Mongolian from
+  // the batch-translated gloss map (see scripts/fillMongolianGlosses.ts).
+  const mongolian = word.mongolian?.trim()
+    || MONGOLIAN_GLOSSES[`${word.german}|${word.wordClass ?? ''}`]
+    || word.english
+    || '';
   return {
     ...word,
-    wordClass: word.wordClass ?? deriveWordClass(word.category, word.article),
+    mongolian,
+    wordClass,
     level: word.level ?? deriveLevel(word.category),
   };
 }
