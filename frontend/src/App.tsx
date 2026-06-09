@@ -1675,7 +1675,7 @@ export default function App() {
                   </button>
                 </div>
 
-                <h4 className="text-xl font-black text-secondary font-sans mb-1">
+                <h4 className="text-xl font-white text-secondary font-sans mb-1">
                   {isRecording ? 'Амьд бичлэг эхэлсэн' : 'Эхлүүлэхийн тулд дарна уу'}
                 </h4>
                 <p className="text-sm font-semibold text-outline text-center px-4">
