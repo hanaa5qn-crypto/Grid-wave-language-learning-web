@@ -5,7 +5,7 @@ import {
   Check, RotateCcw, Lightbulb, Flame, Award, ArrowRight, ArrowLeft,
   ChevronRight, Sparkles, HelpCircle, GraduationCap, ExternalLink, Search, Library,
   Square, AudioLines, Gauge, SpellCheck, MessageSquareText, ThumbsUp, Target,
-  Mail, Lock, Loader2
+  Mail, Lock, Loader2, QrCode, CreditCard
 } from 'lucide-react';
 import { TabType, VocabularyWord, WordClass, CEFRLevel } from './types';
 import {
@@ -166,6 +166,55 @@ interface WritingFeedback {
   vocabularyFeedback?: string;
   strengths?: string[];
   improvements?: string[];
+}
+
+interface PaymentMethodsResponse {
+  plan: {
+    plan: string;
+    amountMnt: number | null;
+    currency: string;
+    interval: string;
+  };
+  qpay: {
+    status: 'ready' | 'needs_config';
+    missing: string[];
+    supports: string[];
+  };
+  alternatives: Array<{
+    id: string;
+    name: string;
+    status: string;
+    supports: string[];
+    note: string;
+  }>;
+}
+
+interface QPayCheckoutResponse {
+  provider: 'qpay';
+  senderInvoiceNo: string;
+  providerInvoiceId: string;
+  plan: string;
+  amountMnt: number;
+  currency: 'MNT';
+  qrText?: string;
+  qrImage?: string;
+  shortUrl?: string;
+  urls?: Array<{ name?: string; description?: string; link?: string }>;
+}
+
+function formatMnt(amountMnt: number | null | undefined): string {
+  if (!amountMnt) return 'Үнэ тохируулаагүй';
+  return new Intl.NumberFormat('mn-MN', {
+    style: 'currency',
+    currency: 'MNT',
+    maximumFractionDigits: 0,
+  }).format(amountMnt);
+}
+
+function qpayQrImageSrc(qrImage?: string): string | null {
+  if (!qrImage) return null;
+  if (qrImage.startsWith('data:') || qrImage.startsWith('http')) return qrImage;
+  return `data:image/png;base64,${qrImage}`;
 }
 
 async function audioBlobToWavBlob(blob: Blob): Promise<Blob> {
@@ -350,6 +399,12 @@ function LearnerApp() {
   // True until Firebase reports whether a saved session exists, so we can show a
   // loading screen instead of briefly flashing the login page on refresh.
   const [authLoading, setAuthLoading] = useState<boolean>(!isTest);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodsResponse | null>(null);
+  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false);
+  const [paymentActionLoading, setPaymentActionLoading] = useState(false);
+  const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState<{ type: 'info' | 'success' | 'error'; text: string } | null>(null);
+  const [qpayCheckout, setQpayCheckout] = useState<QPayCheckoutResponse | null>(null);
 
   // Session & UI States
   const [activeTab, setActiveTab] = useState<TabType>('read');
@@ -1133,6 +1188,93 @@ function LearnerApp() {
     logOutUser().catch((err) => console.warn('Sign out failed:', err));
   };
 
+  const loadPaymentMethods = async () => {
+    setPaymentMethodsLoading(true);
+    try {
+      const response = await fetch('/api/payments/methods');
+      if (!response.ok) throw new Error('Could not load payment methods.');
+      const data = await response.json();
+      setPaymentMethods(data);
+    } catch (err) {
+      console.warn('Payment methods load failed:', err);
+      setPaymentMessage({ type: 'error', text: 'Төлбөрийн сонголтуудыг ачаалж чадсангүй.' });
+    } finally {
+      setPaymentMethodsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!currentUser || isTest) return;
+    loadPaymentMethods();
+  }, [currentUser?.email, isTest]);
+
+  const getCurrentIdToken = async () => {
+    if (!isFirebaseConfigured) throw new Error('Firebase тохиргоо дутуу байна.');
+    const user = getAuthInstance().currentUser;
+    if (!user) throw new Error('Төлбөр эхлүүлэхийн тулд дахин нэвтэрнэ үү.');
+    return user.getIdToken();
+  };
+
+  const startQPayCheckout = async () => {
+    setPaymentActionLoading(true);
+    setPaymentMessage(null);
+    try {
+      const token = await getCurrentIdToken();
+      const response = await fetch('/api/payments/qpay/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ plan: paymentMethods?.plan.plan ?? 'Monthly' }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'QPay төлбөр эхлүүлэхэд алдаа гарлаа.');
+
+      setQpayCheckout(data);
+      setPaymentMessage({ type: 'info', text: 'QPay нэхэмжлэл үүслээ. QR уншуулах эсвэл банкны апп сонгоно уу.' });
+    } catch (err: any) {
+      setPaymentMessage({ type: 'error', text: err?.message || 'QPay төлбөр эхлүүлэхэд алдаа гарлаа.' });
+    } finally {
+      setPaymentActionLoading(false);
+    }
+  };
+
+  const checkQPayPaymentStatus = async () => {
+    if (!qpayCheckout) return;
+    setPaymentStatusLoading(true);
+    setPaymentMessage(null);
+    try {
+      const token = await getCurrentIdToken();
+      const response = await fetch(`/api/payments/qpay/invoices/${encodeURIComponent(qpayCheckout.senderInvoiceNo)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'QPay төлөв шалгахад алдаа гарлаа.');
+
+      if (data.paid || data.status === 'paid') {
+        if (data.billing && currentUserRef.current) {
+          const nextProfile = normalizeProfileMetrics({
+            ...currentUserRef.current,
+            billing: {
+              ...currentUserRef.current.billing,
+              ...data.billing,
+            },
+          });
+          currentUserRef.current = nextProfile;
+          setCurrentUser(nextProfile);
+        }
+        setPaymentMessage({ type: 'success', text: 'Төлбөр баталгаажлаа. Эрх идэвхтэй боллоо.' });
+      } else {
+        setPaymentMessage({ type: 'info', text: 'QPay дээр төлбөр хараахан баталгаажаагүй байна.' });
+      }
+    } catch (err: any) {
+      setPaymentMessage({ type: 'error', text: err?.message || 'QPay төлөв шалгахад алдаа гарлаа.' });
+    } finally {
+      setPaymentStatusLoading(false);
+    }
+  };
+
   // ---------------------------------------------------------------------------
   // Shared AI speaking-judge UI. `target` is the German model sentence the recording
   // (or typed text) is graded against. Reused by every library item AND the detailed
@@ -1478,6 +1620,161 @@ function LearnerApp() {
     )
   );
 
+  const renderBillingCard = () => {
+    if (!currentUser) return null;
+
+    const billing = currentUser.billing ?? {};
+    const activeBilling = ['active', 'paid', 'trialing'].includes((billing.status ?? '').toLowerCase());
+    const plan = paymentMethods?.plan;
+    const qpayReady = paymentMethods?.qpay.status === 'ready';
+    const qrSrc = qpayQrImageSrc(qpayCheckout?.qrImage);
+    const priceLabel = formatMnt(plan?.amountMnt ?? (billing.monthlyAmountCents ? billing.monthlyAmountCents / 100 : null));
+
+    return (
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 block-shadow space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+          <div className="flex-grow space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-300">
+                <CreditCard className="w-5 h-5" />
+              </span>
+              <div>
+                <p className="text-xs text-slate-400 font-black uppercase font-space">Төлбөр / Subscription</p>
+                <h2 className="text-xl font-extrabold text-white">
+                  {activeBilling ? `${billing.plan ?? 'Monthly'} эрх идэвхтэй` : 'QPay төлбөрөөр эрх нээх'}
+                </h2>
+              </div>
+              <span className={`lg:ml-auto px-3 py-1 rounded-full text-[11px] font-black border ${
+                activeBilling
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  : 'bg-white/5 border-white/10 text-slate-300'
+              }`}>
+                {activeBilling ? 'ACTIVE' : (billing.status ?? 'FREE').toUpperCase()}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-slate-950/50 border border-white/10 rounded-xl p-4">
+                <p className="text-[10px] text-slate-500 font-black uppercase font-space">Plan</p>
+                <p className="text-sm font-extrabold text-white">{plan?.plan ?? billing.plan ?? 'Monthly'}</p>
+              </div>
+              <div className="bg-slate-950/50 border border-white/10 rounded-xl p-4">
+                <p className="text-[10px] text-slate-500 font-black uppercase font-space">Price</p>
+                <p className="text-sm font-extrabold text-white">{priceLabel}</p>
+              </div>
+              <div className="bg-slate-950/50 border border-white/10 rounded-xl p-4">
+                <p className="text-[10px] text-slate-500 font-black uppercase font-space">Provider</p>
+                <p className="text-sm font-extrabold text-white">QPay first</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-[11px] font-bold text-emerald-200">QPay QR</span>
+              <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/30 rounded-full text-[11px] font-bold text-blue-200">Bank app deeplink</span>
+              <span className="px-3 py-1 bg-purple-500/10 border border-purple-500/30 rounded-full text-[11px] font-bold text-purple-200">Bonum: Apple Pay / Google Pay next</span>
+            </div>
+
+            {paymentMethods?.alternatives?.length ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {paymentMethods.alternatives.map((method) => (
+                  <div key={method.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                    <p className="text-sm font-extrabold text-slate-100">{method.name}</p>
+                    <p className="text-[11px] text-slate-400 font-semibold mt-1">{method.note}</p>
+                    <p className="text-[10px] text-slate-500 font-bold mt-2 uppercase">{method.supports.join(' / ')}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="w-full lg:w-[320px] bg-slate-950/60 border border-white/10 rounded-2xl p-5 space-y-4">
+            <button
+              onClick={startQPayCheckout}
+              disabled={!qpayReady || paymentActionLoading || activeBilling}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:bg-white/10 disabled:text-slate-500 text-slate-950 border border-emerald-300/40 rounded-xl font-black text-sm cursor-pointer disabled:cursor-not-allowed transition-colors"
+            >
+              {paymentActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+              {activeBilling ? 'Эрх идэвхтэй' : 'QPay төлбөр үүсгэх'}
+            </button>
+
+            {!qpayReady && !paymentMethodsLoading && (
+              <p className="text-[11px] text-slate-400 leading-relaxed font-semibold">
+                QPay live болгохын тулд сервер дээр merchant credentials, Firebase Admin credentials, мөн MNT үнийг тохируулна.
+              </p>
+            )}
+
+            {paymentMethodsLoading && (
+              <p className="text-[11px] text-slate-400 font-semibold flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Төлбөрийн тохиргоо уншиж байна...
+              </p>
+            )}
+
+            {paymentMessage && (
+              <div className={`border rounded-xl p-3 text-[12px] font-bold leading-relaxed ${
+                paymentMessage.type === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                  : paymentMessage.type === 'error'
+                    ? 'bg-red-500/10 border-red-500/30 text-red-200'
+                    : 'bg-blue-500/10 border-blue-500/30 text-blue-200'
+              }`}>
+                {paymentMessage.text}
+              </div>
+            )}
+
+            {qpayCheckout && (
+              <div className="space-y-4">
+                {qrSrc ? (
+                  <img src={qrSrc} alt="QPay QR" className="w-full aspect-square object-contain bg-white rounded-xl p-3" />
+                ) : (
+                  <div className="w-full aspect-square bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-center p-4 text-xs text-slate-400 font-bold">
+                    QPay QR image хараахан ирээгүй байна.
+                  </div>
+                )}
+
+                {qpayCheckout.shortUrl && (
+                  <a
+                    href={qpayCheckout.shortUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl text-xs font-bold text-white transition-colors"
+                  >
+                    QPay checkout нээх <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+
+                {(qpayCheckout.urls?.length ?? 0) > 0 && (
+                  <div className="grid grid-cols-1 gap-2 max-h-44 overflow-y-auto pr-1">
+                    {qpayCheckout.urls!.slice(0, 8).map((url, index) => (
+                      <a
+                        key={`${url.name ?? 'bank'}-${index}`}
+                        href={url.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[11px] font-bold text-slate-200"
+                      >
+                        <span>{url.name || url.description || 'Bank app'}</span>
+                        <ExternalLink className="w-3 h-3 text-slate-500" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={checkQPayPaymentStatus}
+                  disabled={paymentStatusLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-400/30 rounded-xl text-xs font-black text-blue-200 disabled:opacity-60"
+                >
+                  {paymentStatusLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Төлбөр шалгах
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
 
   // Render Profile / Dashboard View
   const renderProfileTab = () => {
@@ -1581,6 +1878,8 @@ function LearnerApp() {
             </div>
           </div>
         </div>
+
+        {renderBillingCard()}
 
         {/* Goal and Suggestions */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

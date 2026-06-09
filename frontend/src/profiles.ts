@@ -21,6 +21,8 @@ export interface UserProfile {
     monthlyAmountCents?: number;
     lifetimeValueCents?: number;
     currency?: string;
+    provider?: string;
+    currentPeriodEnd?: string;
   };
 }
 

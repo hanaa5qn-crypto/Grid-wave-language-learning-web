@@ -32,6 +32,19 @@ For this app, QPay direct means fewer middle layers and a straightforward backen
 flow: `POST /api/payments/qpay/checkout` creates an invoice, and
 `POST /api/payments/qpay/webhook` confirms it and updates Firestore.
 
+Implementation status:
+
+- `GET /api/payments/methods` returns QPay readiness plus planned alternatives.
+- `POST /api/payments/qpay/checkout` creates a QPay invoice for the signed-in
+  Firebase user.
+- `POST /api/payments/qpay/webhook` verifies a paid invoice through QPay and
+  writes `payments` plus `users/{uid}.billing`.
+- `GET /api/payments/qpay/invoices/:senderInvoiceNo` lets the frontend poll the
+  invoice after the learner pays.
+
+The implementation intentionally stays off Vercel deployment configuration. It
+needs runtime env vars before it becomes live.
+
 ## Provider Comparison
 
 | Provider | Best fit | Notes |
@@ -42,6 +55,19 @@ flow: `POST /api/payments/qpay/checkout` creates an invoice, and
 | Golomt/SocialPay | Secondary method | Popular wallet/bank app, but direct merchant API documentation is less central than QPay/Bonum/Byl for this app's checkout needs. |
 | MonPay | Secondary wallet/ecosystem | Has merchant/open API references and meaningful reach, but less compelling as the first single checkout integration unless user demand is specifically MonPay-heavy. |
 | Toki Pay | Secondary wallet/ecosystem | Useful local wallet, but public merchant API evidence is weaker for this app than QPay/Bonum/Byl. |
+
+## Apple Pay / Google Pay Track
+
+Google Pay officially launched in Mongolia on 2025-11-18 according to the Bank
+of Mongolia. Google Wallet Help now lists supported Mongolian banks/cards,
+including Bonum Mastercard credit/debit cards, Golomt Mastercard cards, M Bank
+Visa cards, Trade and Development Bank Mastercard/Visa cards, and XacBank Visa
+debit cards.
+
+For this app, Apple Pay / Google Pay should be treated as the **second rail**
+after QPay, not a replacement for QPay. Bonum is the clearest next candidate
+because it presents itself as a Mongolia payment service provider for Apple Pay
+and Google Pay, while also supporting gateway/card style payments.
 
 ## Subscription Strategy
 
@@ -108,6 +134,10 @@ For QPay direct:
 - Callback/webhook verification rules.
 - Confirmation of whether the launch uses one-off invoices, QPay subscription,
   or card token payment.
+- `QPAY_MONTHLY_AMOUNT_MNT` once the subscription price is chosen.
+- Firebase Admin credentials for server-side webhook writes:
+  `FIREBASE_SERVICE_ACCOUNT_JSON`, or
+  `FIREBASE_PROJECT_ID`/`FIREBASE_CLIENT_EMAIL`/`FIREBASE_PRIVATE_KEY`.
 
 For Bonum:
 
@@ -126,6 +156,8 @@ For Byl:
 - QPay: https://qr.qpay.mn/
 - QPay API docs: https://developer.qpay.mn/
 - QPay subscription: https://qpay.mn/products/subscription
+- Bank of Mongolia Google Pay launch: https://www.mongolbank.mn/en/r/11003
+- Google Wallet supported payment methods in Mongolia: https://support.google.com/wallet/answer/12059326?co=GENIE.CountryCode%3DMN&hl=en
 - Bonum Gateway: https://www.bonum.mn/gateway
 - Bonum API docs: https://psp.bonum.mn/bonum-gateway-apis.html
 - Byl: https://byl.mn/
