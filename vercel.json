@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -9,5 +10,13 @@
       "source": "/(.*)",
       "destination": "/$1"
     }
-  ]
+  ],
+  "experimentalServices": {
+    "vivid-lingua": {
+      "type": "web",
+      "routePrefix": "/",
+      "framework": "vite",
+      "buildCommand": "npm install --include=dev && npm run build"
+    }
+  }
 }
