@@ -20,6 +20,8 @@ export interface ReadingItem {
   question: string;     // Ойлгосон эсэхийг шалгах асуулт (монгол)
   choices: string[];    // Сонголтууд
   correctIndex: number;
+  hint?: string;        // Нэмэлт сэжүүр (заавал биш)
+  explanation?: string; // Зөв хариултын дэлгэрэнгүй тайлбар (заавал биш)
 }
 
 // --- Listening (Сонсох) ------------------------------------------------------
@@ -34,6 +36,8 @@ export interface ListeningItem {
   question: string;
   choices: string[];
   correctIndex: number;
+  hint?: string;        // Нэмэлт сэжүүр (заавал биш)
+  explanation?: string; // Зөв хариултын дэлгэрэнгүй тайлбар (заавал биш)
 }
 
 // --- Writing (Бичих) ---------------------------------------------------------
