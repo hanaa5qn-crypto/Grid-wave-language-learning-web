@@ -122,13 +122,8 @@ test('App UI interaction with Speech Recognition Mock integration', async () => 
     await userEvent.click(speakTabButtons[0]);
   });
 
-  // Click the "Дэлгэрэнгүй хичээл" button to switch speakMode to 'lesson'
-  const detailedLessonBtn = getAllByText('Дэлгэрэнгүй хичээл')[0];
-  await act(async () => {
-    await userEvent.click(detailedLessonBtn);
-  });
-
-  // Verify we are on the speak tab by checking for the record instruction text
+  // The speaking library shows the AI judge directly (wired to the item's model
+  // answer), so the record instruction text is present without any mode toggle.
   expect(getByText('Бичихийн тулд дарна уу')).toBeInTheDocument();
 
   // Find the record button

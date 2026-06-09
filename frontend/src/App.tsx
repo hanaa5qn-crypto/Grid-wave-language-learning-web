@@ -1,17 +1,15 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Volume2, Play, Pause, CheckCircle, X, XCircle, AlertCircle,
   BookOpen, Headphones, Mic, Edit3, Languages, Settings, LogOut,
   Check, RotateCcw, Lightbulb, Flame, Award, ArrowRight, ArrowLeft,
   ChevronRight, Sparkles, HelpCircle, GraduationCap, ExternalLink, Search, Library,
   Square, AudioLines, Gauge, SpellCheck, MessageSquareText, ThumbsUp, Target,
-  Mail, Lock, Loader2, QrCode, CreditCard
+  Mail, Lock, Loader2, QrCode, CreditCard, Shield, Calendar, Clock, Zap,
+  ListChecks, BarChart3
 } from 'lucide-react';
 import { TabType, VocabularyWord, WordClass, CEFRLevel } from './types';
-import {
-  DICTIONARY, READING_LESSON, LISTENING_LESSON,
-  SPEAKING_LESSON, WRITING_LESSON
-} from './data';
+import { DICTIONARY } from './data';
 import {
   READING_LIBRARY, LISTENING_LIBRARY, WRITING_LIBRARY, SPEAKING_LIBRARY,
   Level, ReadingItem, ListeningItem, WritingItem, SpeakingItem
@@ -26,6 +24,16 @@ import {
 } from './auth';
 import { isFirebaseConfigured, getStorageInstance, getAuthInstance } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import {
+  SrsMap, reviewSrs, srsWordKey, orderTrainerWords, countDueWords, isDue,
+  calculateStreakWithGrace, StreakResult,
+  buildUnitsForLevel, unitProgress, isUnitPassed, isUnitUnlocked, lockedItemIds, Unit, UnitActivity, UNIT_PASS_RATIO,
+  addMistake, clearMistake, resolveMistakes, MistakeRef,
+  buildTodaySession, TodaySession,
+  localDateKey as learningLocalDateKey,
+} from './learning';
+import OnboardingWizard from './OnboardingWizard';
+import GrammarTipCard from './GrammarTipCard';
 
 // Union of all exam item types — they all share `topic`, `title`, `titleMn`.
 type ExamItem = ReadingItem | ListeningItem | WritingItem | SpeakingItem;
@@ -45,6 +53,8 @@ const TRACKABLE_ACTIVITY_TOTAL =
     (sum, exam) => sum + exam.reading.length + exam.listening.length + exam.speaking.length + exam.writing.length,
     0,
   );
+
+const TRAINER_WORDS = DICTIONARY.filter((w) => w.mongolian.trim().length > 0);
 
 function localDateKey(date = new Date()): string {
   const year = date.getFullYear();
@@ -78,22 +88,7 @@ function buildLearningCurve(studySecondsByDate: Record<string, number> = {}): Us
 }
 
 function calculateStreak(studyDays: string[] = [], today = new Date()): number {
-  const daySet = new Set(studyDays);
-  let cursor = localDateKey(today);
-
-  if (!daySet.has(cursor)) {
-    const yesterday = localDateKey(addDays(today, -1));
-    if (!daySet.has(yesterday)) return 0;
-    cursor = yesterday;
-  }
-
-  let count = 0;
-  let date = dateFromLocalKey(cursor);
-  while (daySet.has(localDateKey(date))) {
-    count += 1;
-    date = addDays(date, -1);
-  }
-  return count;
+  return calculateStreakWithGrace(studyDays, today).streak;
 }
 
 function calculateProgress(completedActivityIds: string[] = []): number {
@@ -110,7 +105,11 @@ function normalizeProfileMetrics(profile: UserProfile): UserProfile {
   const completedActivityIds = Array.from(new Set(profile.completedActivityIds ?? []));
   const studyDays = Array.from(new Set(profile.studyDays ?? [])).sort();
   const studySecondsByDate = profile.studySecondsByDate ?? {};
-  const streak = calculateStreak(studyDays);
+  
+  // Calculate streak with grace using learning.ts engine
+  const streakRes = calculateStreakWithGrace(studyDays);
+  const streak = streakRes.streak;
+  
   const progress = calculateProgress(completedActivityIds);
   return {
     ...profile,
@@ -121,6 +120,12 @@ function normalizeProfileMetrics(profile: UserProfile): UserProfile {
     progress,
     completedLessons: completedActivityIds.length,
     learningCurve: buildLearningCurve(studySecondsByDate),
+    // Ensure all custom profile fields are present
+    srsByWord: profile.srsByWord ?? {},
+    mistakeIds: profile.mistakeIds ?? [],
+    onboardingDone: profile.onboardingDone ?? false,
+    dailyGoalMinutes: profile.dailyGoalMinutes ?? 15,
+    streakFreezeCount: profile.streakFreezeCount ?? 1,
   };
 }
 
@@ -286,6 +291,14 @@ const WORD_CLASS_LABELS: { value: WordClass | 'all'; label: string }[] = [
   { value: 'article', label: 'Артикль' },
   { value: 'phrase', label: 'Хэллэг' },
 ];
+
+// Short Mongolian part-of-speech labels shown inside the library vocabulary
+// tooltips (the dictionary-backed hover popups on each German passage).
+const WORD_CLASS_MN: Record<string, string> = {
+  noun: 'Нэр үг', verb: 'Үйл үг', adjective: 'Тэмдэг нэр', adverb: 'Дайвар үг',
+  preposition: 'Угтвар үг', pronoun: 'Төлөөний үг', numeral: 'Тооны нэр',
+  conjunction: 'Холбоос үг', interjection: 'Аялга үг', article: 'Артикль', phrase: 'Хэллэг',
+};
 const LEVEL_OPTIONS: (CEFRLevel | 'all')[] = ['all', 'A1', 'A2', 'B1', 'B2'];
 
 interface MCQBlockProps {
@@ -471,28 +484,37 @@ function LearnerApp() {
   const [readingQuizFeedback, setReadingQuizFeedback] = useState<string | null>(null);
 
   // Resource Library (50+ items per skill) — browse/select state for each tab.
-  const [readMode, setReadMode] = useState<'library' | 'lesson'>('library');
   const [libReadId, setLibReadId] = useState<number>(READING_LIBRARY[0].id);
   const [libReadAnswer, setLibReadAnswer] = useState<number | null>(null);
-  const [libReadTrans, setLibReadTrans] = useState<boolean>(true);
+  // Translation starts hidden so the learner reads/attempts first and only
+  // reveals the Mongolian once stuck. Follows the "auto-show" setting if the
+  // user opts into always-on translations.
+  const [libReadTrans, setLibReadTrans] = useState<boolean>(readTranslateEnabled);
   const [libReadLevel, setLibReadLevel] = useState<Level | 'all'>('all');
 
-  const [listenMode, setListenMode] = useState<'library' | 'lesson'>('library');
   const [libListenId, setLibListenId] = useState<number>(LISTENING_LIBRARY[0].id);
   const [libListenAnswer, setLibListenAnswer] = useState<number | null>(null);
   const [libListenTrans, setLibListenTrans] = useState<boolean>(false);
   const [libListenLevel, setLibListenLevel] = useState<Level | 'all'>('all');
 
-  const [speakMode, setSpeakMode] = useState<'library' | 'lesson'>('library');
   const [libSpeakId, setLibSpeakId] = useState<number>(SPEAKING_LIBRARY[0].id);
   const [libSpeakReveal, setLibSpeakReveal] = useState<boolean>(false);
   const [libSpeakLevel, setLibSpeakLevel] = useState<Level | 'all'>('all');
 
-  const [writeMode, setWriteMode] = useState<'library' | 'lesson'>('library');
   const [libWriteId, setLibWriteId] = useState<number>(WRITING_LIBRARY[0].id);
   const [libWriteText, setLibWriteText] = useState<string>('');
   const [libWriteReveal, setLibWriteReveal] = useState<boolean>(false);
   const [libWriteLevel, setLibWriteLevel] = useState<Level | 'all'>('all');
+
+  const lockedActivityIds = useMemo(() => {
+    if (!currentUser) return { read: new Set<number>(), listen: new Set<number>(), speak: new Set<number>(), write: new Set<number>() };
+    const levelUnits = buildUnitsForLevel(currentUser.targetLevel as Level);
+    return lockedItemIds(levelUnits, new Set(completedActivityIds));
+  }, [currentUser?.targetLevel, completedActivityIds]);
+
+  const dueCount = useMemo(() => {
+    return countDueWords(TRAINER_WORDS, currentUser?.srsByWord ?? {});
+  }, [currentUser?.srsByWord, TRAINER_WORDS]);
 
   // Audio player variables for Listening (Screen 2)
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -502,7 +524,7 @@ function LearnerApp() {
   const listeningAudioInterval = useRef<any>(null);
 
   // Draggable-type Word Chips for Listening (Screen 2)
-  const [listeningPool, setListeningPool] = useState<string[]>([...LISTENING_LESSON.wordChips]);
+  const [listeningPool, setListeningPool] = useState<string[]>([]);
   const [listeningDropZone, setListeningDropZone] = useState<string[]>([]);
   const [listeningFeedback, setListeningFeedback] = useState<{ isCorrect: boolean; show: boolean } | null>(null);
 
@@ -516,7 +538,7 @@ function LearnerApp() {
   // The German sentence the AI judge currently grades against. Library items and
   // the detailed lesson share one judge, so this ref carries whichever target is
   // active into the async record/evaluate callbacks (which can't see render scope).
-  const speakTargetRef = useRef<string>(SPEAKING_LESSON.sentence);
+  const speakTargetRef = useRef<string>(SPEAKING_LIBRARY[0]?.modelAnswer ?? '');
 
   // Real-audio recording (the "voice AI" path): capture the actual mic audio,
   // re-encode to WAV in the browser, and send the bytes to Gemini to listen to.
@@ -547,7 +569,6 @@ function LearnerApp() {
   // Flashcards state for Vocabulary Trainer (Screen 5) — draws from the dictionary
   // entries that already have a Mongolian translation, so the trainer stays polished.
   // (The Browse dictionary below shows the full set incl. words still awaiting Mongolian.)
-  const TRAINER_WORDS = useMemo(() => DICTIONARY.filter((w) => w.mongolian.trim().length > 0), []);
   const [currentVocabIndex, setCurrentVocabIndex] = useState(0);
   const [vocabList, setVocabList] = useState<VocabularyWord[]>([...TRAINER_WORDS]);
   const [vocabFlipped, setVocabFlipped] = useState(false);
@@ -765,7 +786,7 @@ function LearnerApp() {
       setTranslationResult(data);
     } catch (err: any) {
       console.error(err);
-      setTranslationError('Орчуулга амжилтгүй боллоо. Та сүлжээ эсвэл Тохиргоо хэсэгт API түлхүүрээ шалгана уу.');
+      setTranslationError('Орчуулга түр амжилтгүй боллоо. Сүлжээгээ шалгаад хэсэг хугацааны дараа дахин оролдоно уу.');
     } finally {
       setTranslationLoading(false);
     }
@@ -833,6 +854,58 @@ function LearnerApp() {
     }
   };
 
+  // Fast lookup built once: lowercased German headword -> dictionary entry.
+  // Powers the library vocabulary tooltips so every passage gets the same kind
+  // of detailed word help the old "Дэлгэрэнгүй хичээл" lesson had — automatically.
+  const dictLookup = useMemo(() => {
+    const m = new Map<string, VocabularyWord>();
+    for (const w of DICTIONARY) {
+      const key = w.german.trim().toLowerCase();
+      if (key && !m.has(key)) m.set(key, w);
+    }
+    return m;
+  }, []);
+
+  // Render a German passage with dictionary-backed vocabulary tooltips, matching
+  // the detailed-lesson look: content words get a dashed underline, hover reveals
+  // the Mongolian meaning + part of speech, and clicking hears the word spoken.
+  const GLOSS_CLASSES = new Set(['noun', 'verb', 'adjective', 'adverb', 'phrase']);
+  const renderRichGerman = (text: string) =>
+    text.split(/(\s+)/).map((token, i) => {
+      if (token === '' || /^\s+$/.test(token)) return <React.Fragment key={i}>{token}</React.Fragment>;
+      const m = token.match(/^([„"«(\[]*)(.*?)([.,!?;:…”"»)\]]*)$/);
+      const lead = m ? m[1] : '';
+      const core = m ? m[2] : token;
+      const trail = m ? m[3] : '';
+      const entry = core ? dictLookup.get(core.toLowerCase()) : undefined;
+      const glossable = !!entry && core.length > 1 &&
+        (entry.wordClass ? GLOSS_CLASSES.has(entry.wordClass) : core.length >= 4);
+      if (!glossable || !entry) return <React.Fragment key={i}>{token}</React.Fragment>;
+      const cls = entry.wordClass ? (WORD_CLASS_MN[entry.wordClass] ?? '') : '';
+      const spoken = entry.article ? `${entry.article} ${core}` : core;
+      return (
+        <React.Fragment key={i}>
+          {lead}
+          <span
+            className="word-highlight font-extrabold text-secondary tracking-tight cursor-pointer relative"
+            onClick={() => speakGerman(spoken)}
+          >
+            {core}
+            <span className="tooltip-container">
+              <span className="block bg-[#0a0a16] text-white border-2 border-on-background font-space font-bold text-xs rounded-xl p-3 shadow-2xl flex flex-col gap-1">
+                <span className="flex items-center gap-2 text-secondary-fixed">
+                  <Volume2 className="w-3 h-3 fill-current text-secondary" />
+                  <span className="text-[13px] text-white">{entry.article ? `${entry.article} ` : ''}{core} — {entry.mongolian}</span>
+                </span>
+                {cls && <span className="text-[11px] text-slate-400">{cls}</span>}
+              </span>
+            </span>
+          </span>
+          {trail}
+        </React.Fragment>
+      );
+    });
+
   // Pulse Waveform bar elements during Listening playback simulation
   useEffect(() => {
     if (audioPlaying) {
@@ -854,15 +927,6 @@ function LearnerApp() {
     return () => clearInterval(listeningAudioInterval.current);
   }, [audioPlaying]);
 
-  // Handle Playback triggers
-  const toggleListeningAudio = () => {
-    if (!audioPlaying) {
-      speakGerman(LISTENING_LESSON.sentence, audioSpeed === '0.8' ? 0.75 : 1.0);
-      setAudioPlaying(true);
-    } else {
-      setAudioPlaying(false);
-    }
-  };
 
   // Evaluation trigger: Speaking (TEXT path) — used by the type-to-test box and
   // as a fallback when real audio recording isn't available.
@@ -1023,35 +1087,6 @@ function LearnerApp() {
     if (recordedAudioUrl) { URL.revokeObjectURL(recordedAudioUrl); setRecordedAudioUrl(null); }
   };
 
-  // Evaluation trigger: Writing
-  const checkWritingTranslation = async () => {
-    if (!writingInput.trim()) return;
-    setWritingLoading(true);
-    try {
-      const response = await fetch('/api/evaluate-writing', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          promptText: WRITING_LESSON.prompt,
-          targetSentence: WRITING_LESSON.targetSentence,
-          userTranslation: writingInput
-        })
-      });
-      const data = await response.json();
-      setWritingEvaluation(data);
-      if (data.isCorrect) recordStudyActivity('lesson:writing-translation');
-    } catch (e) {
-      console.error(e);
-      setWritingEvaluation({
-        isCorrect: false,
-        corrected: writingInput,
-        explanation: 'Үнэлгээ хийх явцад алдаа гарлаа. Сүлжээ эсвэл Тохиргоо хэсэгт API түлхүүрээ шалгаад дахин оролдоно уу.',
-        feedbackMessage: 'Алдаа гарлаа'
-      });
-    } finally {
-      setWritingLoading(false);
-    }
-  };
 
   // Clear the shared AI writing report. Called when switching writing library
   // items/modes, exam items/sections, or main tabs so a report never lingers
@@ -1101,59 +1136,41 @@ function LearnerApp() {
     }
   };
 
-  // Insert Umlauts / Eszett special characters at textarea insertion cursor
-  const insertSpecialChar = (char: string) => {
-    setWritingInput(prev => prev + char);
-  };
-
-  // Quick Listening Word Chips actions
-  const handleChipClick = (word: string, source: 'pool' | 'zone') => {
-    setListeningFeedback(null);
-    if (source === 'pool') {
-      setListeningPool(prev => prev.filter(w => w !== word));
-      setListeningDropZone(prev => [...prev, word]);
-    } else {
-      setListeningDropZone(prev => prev.filter(w => w !== word));
-      setListeningPool(prev => [...prev, word]);
-    }
-  };
-
-  // Check arranged order listening sentence
-  const checkListeningOrder = () => {
-    const isCorrect = JSON.stringify(listeningDropZone) === JSON.stringify(LISTENING_LESSON.correctOrder);
-    setListeningFeedback({ isCorrect, show: true });
-    
-    if (isCorrect) {
-      recordStudyActivity('lesson:listening-order');
-    }
-  };
-
-  // Reset listening chips helper
-  const resetListeningChips = () => {
-    setListeningPool([...LISTENING_LESSON.wordChips]);
-    setListeningDropZone([]);
-    setListeningFeedback(null);
-  };
-
-  // Check Reading multiple choice quiz question
-  const checkReadingQuiz = (choiceIndex: number) => {
-    setReadingQuizAnswer(choiceIndex);
-    if (choiceIndex === READING_LESSON.correctChoiceIndex) {
-      setReadingQuizFeedback('correct');
-      recordStudyActivity('lesson:reading-quiz');
-    } else {
-      setReadingQuizFeedback('incorrect');
-    }
-  };
 
   // Vocabulary list card selections
   const handleVocabAction = (knows: boolean) => {
     setVocabFlipped(false);
+    if (vocabList.length === 0) return;
+    const word = vocabList[currentVocabIndex];
+    const key = srsWordKey(word);
+    
+    const profile = currentUserRef.current;
+    if (profile) {
+      const currentSrsByWord = profile.srsByWord ?? {};
+      const prevEntry = currentSrsByWord[key];
+      const nextEntry = reviewSrs(prevEntry, knows);
+      
+      const nextSrs = {
+        ...currentSrsByWord,
+        [key]: nextEntry
+      };
+      
+      const actId = activityKey('vocab', word.rank ?? `${word.german}-${word.mongolian}`);
+      const nextCompleted = knows 
+        ? Array.from(new Set([...(profile.completedActivityIds ?? []), actId]))
+        : (profile.completedActivityIds ?? []);
+        
+      applyMetricProfile({
+        ...profile,
+        srsByWord: nextSrs,
+        completedActivityIds: nextCompleted,
+      });
+    }
+
     if (knows) {
       setVocabMemorizedCount(prev => Math.min(prev + 1, vocabTotalCount));
-      const word = vocabList[currentVocabIndex];
-      recordStudyActivity(activityKey('vocab', word.rank ?? `${word.german}-${word.mongolian}`));
     }
+    
     // Advance carousel index
     setTimeout(() => {
       setCurrentVocabIndex(prev => (prev + 1) % vocabList.length);
@@ -1172,6 +1189,46 @@ function LearnerApp() {
     }
   };
 
+  // Central function to launch activities from suggested sections or unit curriculum path
+  const startActivity = (tab: 'read' | 'listen' | 'speak' | 'write', itemId: number) => {
+    if (tab === 'read') {
+      const item = READING_LIBRARY.find((r) => r.id === itemId);
+      if (item) {
+        setLibReadId(item.id);
+        setLibReadAnswer(null);
+        setLibReadTrans(false);
+        setLibReadLevel(item.level);
+        setActiveTab('read');
+      }
+    } else if (tab === 'listen') {
+      const item = LISTENING_LIBRARY.find((l) => l.id === itemId);
+      if (item) {
+        setLibListenId(item.id);
+        setLibListenAnswer(null);
+        setLibListenTrans(false);
+        setLibListenLevel(item.level);
+        setActiveTab('listen');
+      }
+    } else if (tab === 'speak') {
+      const item = SPEAKING_LIBRARY.find((s) => s.id === itemId);
+      if (item) {
+        setLibSpeakId(item.id);
+        setLibSpeakReveal(false);
+        resetSpeakingJudge();
+        setLibSpeakLevel(item.level);
+        setActiveTab('speak');
+      }
+    } else if (tab === 'write') {
+      const item = WRITING_LIBRARY.find((w) => w.id === itemId);
+      if (item) {
+        setLibWriteId(item.id);
+        resetWritingFeedback();
+        setLibWriteLevel(item.level);
+        setActiveTab('write');
+      }
+    }
+  };
+
   // Side bar navigation helper with auto menu closing on mobile. Clears the
   // shared AI reports so a speaking/writing result never bleeds across tabs.
   const selectTab = (tab: TabType) => {
@@ -1179,6 +1236,12 @@ function LearnerApp() {
     setMobileMenuOpen(false);
     resetSpeakingJudge();
     resetWritingFeedback();
+    
+    if (tab === 'vocab') {
+      const ordered = orderTrainerWords(TRAINER_WORDS, currentUserRef.current?.srsByWord ?? {});
+      setVocabList(ordered);
+      setCurrentVocabIndex(0);
+    }
   };
 
   const logoutUser = () => {
@@ -1780,6 +1843,15 @@ function LearnerApp() {
   const renderProfileTab = () => {
     if (!currentUser) return null;
 
+    const todaySession = buildTodaySession(
+      currentUser.targetLevel,
+      new Set(completedActivityIds),
+      currentUser.srsByWord ?? {},
+      TRAINER_WORDS
+    );
+    const unresolvedMistakes = resolveMistakes(currentUser.mistakeIds ?? []);
+    const currentUnits = buildUnitsForLevel(currentUser.targetLevel as Level);
+
     const completedCount = completedActivityIds.length;
     const lastStudyDay = studyDays[studyDays.length - 1];
     // We draw an SVG line chart representing study hours (learningCurve)
@@ -1830,6 +1902,182 @@ function LearnerApp() {
               >
                 <LogOut className="w-4 h-4" /> Гарах
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Today's Session & Mistake Log Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Today's Session Card */}
+          <div className="lg:col-span-8 bg-white/5 border border-purple-500/20 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow space-y-4">
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-purple-400 animate-bounce" />
+              <h2 className="text-xl font-extrabold text-purple-300 font-space">Өнөөдрийн Даалгавар</h2>
+            </div>
+            <p className="text-slate-400 text-xs font-semibold">
+              Суралцах хэвшлийг хадгалахад туслах өнөөдрийн санал болгож буй дасгалууд:
+            </p>
+            
+            {todaySession && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                {/* Reading suggestion */}
+                {todaySession.reading ? (
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                    <div className="flex items-center gap-3 overflow-hidden mr-2">
+                      <span className="p-2.5 bg-blue-500/10 text-blue-400 rounded-lg shrink-0">
+                        <BookOpen className="w-5 h-5" />
+                      </span>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] text-blue-400 font-bold uppercase font-space">УНШИХ</p>
+                        <p className="text-sm font-bold text-white truncate">{todaySession.reading.titleMn}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => startActivity('read', todaySession.reading!.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                    >
+                      Эхлэх
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center p-4 bg-white/5 border border-white/5 opacity-55 rounded-xl">
+                    <span className="p-2.5 bg-slate-800 text-slate-500 rounded-lg shrink-0 mr-3">
+                      <BookOpen className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase font-space">УНШИХ</p>
+                      <p className="text-xs text-slate-400 font-medium">Бүгд дууссан</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Listening suggestion */}
+                {todaySession.listening ? (
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                    <div className="flex items-center gap-3 overflow-hidden mr-2">
+                      <span className="p-2.5 bg-purple-500/10 text-purple-400 rounded-lg shrink-0">
+                        <Headphones className="w-5 h-5" />
+                      </span>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] text-purple-400 font-bold uppercase font-space">СОНСОХ</p>
+                        <p className="text-sm font-bold text-white truncate">{todaySession.listening.titleMn}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => startActivity('listen', todaySession.listening!.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                    >
+                      Эхлэх
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center p-4 bg-white/5 border border-white/5 opacity-55 rounded-xl">
+                    <span className="p-2.5 bg-slate-800 text-slate-500 rounded-lg shrink-0 mr-3">
+                      <Headphones className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase font-space">СОНСОХ</p>
+                      <p className="text-xs text-slate-400 font-medium">Бүгд дууссан</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Speaking suggestion */}
+                {todaySession.speaking ? (
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                    <div className="flex items-center gap-3 overflow-hidden mr-2">
+                      <span className="p-2.5 bg-green-500/10 text-green-400 rounded-lg shrink-0">
+                        <Mic className="w-5 h-5" />
+                      </span>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] text-green-400 font-bold uppercase font-space">ЯРИХ</p>
+                        <p className="text-sm font-bold text-white truncate">{todaySession.speaking.titleMn}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => startActivity('speak', todaySession.speaking!.id)}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                    >
+                      Эхлэх
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center p-4 bg-white/5 border border-white/5 opacity-55 rounded-xl">
+                    <span className="p-2.5 bg-slate-800 text-slate-500 rounded-lg shrink-0 mr-3">
+                      <Mic className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p className="text-[10px] text-slate-550 font-bold uppercase font-space">ЯРИХ</p>
+                      <p className="text-xs text-slate-400 font-medium">Бүгд дууссан</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Vocab review suggestion */}
+                {todaySession.dueWordCount > 0 ? (
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                    <div className="flex items-center gap-3 overflow-hidden mr-2">
+                      <span className="p-2.5 bg-amber-500/10 text-amber-400 rounded-lg shrink-0">
+                        <RotateCcw className="w-5 h-5" />
+                      </span>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] text-amber-400 font-bold uppercase font-space">ҮГСИЙН САН</p>
+                        <p className="text-sm font-bold text-white truncate">{todaySession.dueWordCount} үг давтах</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => selectTab('vocab')}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                    >
+                      Давтах
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center p-4 bg-white/5 border border-white/5 opacity-55 rounded-xl">
+                    <span className="p-2.5 bg-slate-800 text-slate-500 rounded-lg shrink-0 mr-3">
+                      <RotateCcw className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase font-space">ҮГСИЙН САН</p>
+                      <p className="text-xs text-slate-400 font-medium font-space">Сэргээх үг байхгүй</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Mistakes Card */}
+          <div className="lg:col-span-4 bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow space-y-4">
+            <div className="flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-red-400 animate-pulse" />
+              <h2 className="text-xl font-extrabold text-red-300 font-space">Миний Алдаанууд</h2>
+            </div>
+            <p className="text-slate-400 text-xs font-semibold">
+              Дахин давтах алдаатай дасгалууд:
+            </p>
+            
+            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+              {unresolvedMistakes.length > 0 ? (
+                unresolvedMistakes.map((m, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-red-950/20 border border-red-500/20 rounded-xl hover:border-red-500/40 transition-colors">
+                    <div className="overflow-hidden mr-2">
+                      <span className="text-[9px] font-space bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30 uppercase font-black">{m.tab === 'read' ? 'Унших' : 'Сонсох'}</span>
+                      <p className="text-xs font-bold text-white truncate mt-1">{m.titleMn}</p>
+                    </div>
+                    <button
+                      onClick={() => startActivity(m.tab, m.itemId)}
+                      className="px-3 py-1.5 bg-red-500 hover:bg-red-650 text-white font-bold rounded-lg text-[10px] cursor-pointer transition-colors shrink-0"
+                    >
+                      Засах
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-slate-500 text-xs font-bold font-sans">
+                  ✨ Тэмдэглэгдсэн алдаа байхгүй. Хичээлээ алдаагүй үргэлжлүүлнэ үү!
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1993,6 +2241,132 @@ function LearnerApp() {
                 </svg>
               </div>
             </div>
+
+            {/* Lesson Path: Curriculum structure */}
+            <div className="space-y-4 pt-6 border-t border-white/10">
+              <h3 className="text-xl font-extrabold flex items-center gap-2 text-purple-300">
+                <Shield className="w-5 h-5 text-purple-400" /> Сургалтын зам ({currentUser.targetLevel})
+              </h3>
+              <p className="text-slate-400 text-xs font-semibold font-sans">
+                Түвшин бүрт тохирсон сэдвүүд. Хэсэг бүрийг {Math.round(UNIT_PASS_RATIO * 100)}%-иас дээш амжилттай дуусгаснаар дараагийн хэсэг нээгдэнэ.
+              </p>
+              
+              <div className="space-y-4 mt-3">
+                {currentUnits.map((unit, idx) => {
+                  const unlocked = isUnitUnlocked(currentUnits, idx, new Set(completedActivityIds));
+                  const progress = unitProgress(unit, new Set(completedActivityIds));
+                  const passed = isUnitPassed(unit, new Set(completedActivityIds));
+                  const percent = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+                  
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`relative overflow-hidden rounded-2xl border transition-all p-5 block-shadow ${
+                        unlocked 
+                          ? passed 
+                            ? 'bg-purple-950/20 border-purple-500/40' 
+                            : 'bg-white/5 border border-white/10 hover:border-purple-500/30' 
+                          : 'bg-slate-950/40 border border-white/5 opacity-60'
+                      }`}
+                    >
+                      {/* Top Bar of unit card */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-black font-space text-sm shrink-0 border ${
+                            unlocked 
+                              ? passed 
+                                ? 'bg-purple-500/10 border-purple-500 text-purple-400' 
+                                : 'bg-blue-500/10 border-blue-500 text-blue-400' 
+                              : 'bg-white/5 border border-white/10 text-slate-500'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <h4 className="font-extrabold text-white text-base font-space">
+                              {unit.title} {passed && ' (Дууссан)'}
+                            </h4>
+                            <p className="text-xs text-slate-400 font-sans">
+                              {progress.done} / {progress.total} дасгал хийсэн ({percent}%)
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          {unlocked ? (
+                            passed ? (
+                              <span className="text-[11px] font-space bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full border border-purple-500/30 font-bold">Дууссан</span>
+                            ) : (
+                              <span className="text-[11px] font-space bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30 font-bold animate-pulse">Идэвхтэй</span>
+                            )
+                          ) : (
+                            <span className="text-[11px] font-space bg-white/5 text-slate-500 px-3 py-1 rounded-full border border-white/10 font-bold">Түгжигдсэн</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Progress bar inside unit card */}
+                      {unlocked && (
+                        <div className="w-full h-2 bg-white/5 border border-white/10 rounded-full overflow-hidden mb-4">
+                          <div 
+                            className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Activities detail nested inside the unit */}
+                      {unlocked && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                          {unit.activities.map((act, aIdx) => {
+                            const isDone = completedActivityIds.includes(act.activityId);
+                            const skillNames = {
+                              read: 'Унших',
+                              listen: 'Сонсох',
+                              speak: 'Ярих',
+                              write: 'Бичих',
+                            };
+                            const skillIcons = {
+                              read: <BookOpen className="w-3.5 h-3.5" />,
+                              listen: <Headphones className="w-3.5 h-3.5" />,
+                              speak: <Mic className="w-3.5 h-3.5" />,
+                              write: <Edit3 className="w-3.5 h-3.5" />,
+                            };
+                            return (
+                              <button
+                                key={aIdx}
+                                onClick={() => startActivity(act.tab, act.itemId)}
+                                className={`flex items-center justify-between text-left p-3 rounded-xl border text-xs font-bold cursor-pointer transition-colors ${
+                                  isDone 
+                                    ? 'bg-purple-950/10 border-purple-500/20 text-slate-300 hover:bg-purple-950/20' 
+                                    : 'bg-white/5 border border-white/10 text-white hover:border-purple-500/40 hover:bg-white/10'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 overflow-hidden mr-2">
+                                  <span className={`p-1.5 rounded-lg shrink-0 ${
+                                    isDone ? 'bg-purple-500/10 text-purple-400' : 'bg-white/5 text-slate-300'
+                                  }`}>
+                                    {skillIcons[act.tab]}
+                                  </span>
+                                  <div className="overflow-hidden text-left">
+                                    <p className="text-[10px] text-slate-400 uppercase font-space">{skillNames[act.tab]}</p>
+                                    <p className="font-bold truncate max-w-[180px] text-white">{act.titleMn}</p>
+                                  </div>
+                                </div>
+                                {isDone ? (
+                                  <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                                ) : (
+                                  <ArrowRight className="w-4 h-4 text-slate-500 shrink-0" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Right Column: Tailored Suggestions */}
@@ -2070,6 +2444,23 @@ function LearnerApp() {
 
   if (!currentUser) {
     return <LoginScreen />;
+  }
+
+  if (currentUser && !currentUser.onboardingDone) {
+    return (
+      <OnboardingWizard
+        userName={currentUser.name}
+        onComplete={(data) => {
+          applyMetricProfile({
+            ...currentUser,
+            onboardingDone: true,
+            learningGoal: data.goal,
+            targetLevel: data.level,
+            dailyGoalMinutes: data.dailyGoalMinutes,
+          });
+        }}
+      />
+    );
   }
 
   return (
@@ -2386,7 +2777,14 @@ function LearnerApp() {
               }`}
             >
               <Languages className={`w-5 h-5 ${activeTab === 'vocab' ? 'text-secondary-fixed' : ''}`} />
-              <span className="text-[14px] font-bold">Үгсийн сан</span>
+              <span className="text-[14px] font-bold flex-grow flex justify-between items-center pr-4">
+                <span>Үгсийн сан</span>
+                {dueCount > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-black font-space px-2 py-0.5 rounded-full">
+                    {dueCount}
+                  </span>
+                )}
+              </span>
             </button>
           </li>
           <li>
@@ -2553,7 +2951,14 @@ function LearnerApp() {
                   className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'vocab' ? 'bg-white/15' : 'text-on-primary-container'}`}
                 >
                   <Languages className="w-5 h-5" />
-                  <span>Үгсийн сан</span>
+                  <span className="flex-grow flex justify-between items-center pr-4">
+                    <span>Үгсийн сан</span>
+                    {dueCount > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-black font-space px-2 py-0.5 rounded-full">
+                        {dueCount}
+                      </span>
+                    )}
+                  </span>
                 </button>
               </li>
               <li>
@@ -2635,24 +3040,9 @@ function LearnerApp() {
           {activeTab === 'read' && (
             <div className="w-full pb-24">
 
-              {/* Library vs detailed-lesson mode toggle */}
-              <div className="flex items-center gap-2 mb-6 max-w-md">
-                <button
-                  onClick={() => setReadMode('library')}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${readMode === 'library' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}
-                >
-                  <Library className="w-4 h-4" /> Номын сан ({READING_LIBRARY.length})
-                </button>
-                <button
-                  onClick={() => setReadMode('lesson')}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${readMode === 'lesson' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}
-                >
-                  <BookOpen className="w-4 h-4" /> Дэлгэрэнгүй хичээл
-                </button>
-              </div>
 
               {/* LIBRARY browser — 50+ readings */}
-              {readMode === 'library' && (() => {
+              {(() => {
                 const filtered = libReadLevel === 'all' ? READING_LIBRARY : READING_LIBRARY.filter(r => r.level === libReadLevel);
                 const item = READING_LIBRARY.find(r => r.id === libReadId) || READING_LIBRARY[0];
                 const answered = libReadAnswer !== null;
@@ -2669,233 +3059,122 @@ function LearnerApp() {
                         ))}
                       </div>
                       <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
-                        {filtered.map(r => (
-                          <button key={r.id} onClick={() => { setLibReadId(r.id); setLibReadAnswer(null); }}
-                            className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libReadId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                              <span className="text-xs font-bold text-on-surface truncate">{r.titleMn}</span>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
-                          </button>
-                        ))}
+                        {filtered.map(r => {
+                          const isLocked = lockedActivityIds.read.has(r.id) && r.level === currentUser?.targetLevel;
+                          return (
+                            <button key={r.id} onClick={() => { setLibReadId(r.id); setLibReadAnswer(null); setLibReadTrans(readTranslateEnabled); }}
+                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libReadId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                  {isLocked && <span>🔒</span>}
+                                  {r.titleMn}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </aside>
 
                     {/* Reader */}
-                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                        <div className="flex gap-2">
-                          <button onClick={() => speakGerman(item.text, audioSpeed === '0.8' ? 0.8 : 1.0)} title="Сонсох"
-                            className="p-2 border-2 border-on-background rounded-full bg-surface-container hover:scale-105 transition-transform text-on-surface block-shadow cursor-pointer">
-                            <Volume2 className="w-5 h-5" />
-                          </button>
-                          <button onClick={() => setLibReadTrans(v => !v)}
-                            className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libReadTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
-                            <Languages className="w-4 h-4" /> {libReadTrans ? 'Нуух' : 'Орчуулга'}
+                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-slate-800">
+                      {lockedActivityIds.read.has(item.id) && item.level === currentUser?.targetLevel ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <Shield className="w-8 h-8" />
+                          </div>
+                          <h2 className="text-xl font-bold text-slate-800">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-slate-500 max-w-sm font-sans font-medium">
+                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
+                          </p>
+                          <button 
+                            onClick={() => selectTab('profile')}
+                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                          >
+                            Сургалтын зам руу очих
                           </button>
                         </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                            <div className="flex gap-2">
+                              <button onClick={() => speakGerman(item.text, audioSpeed === '0.8' ? 0.8 : 1.0)} title="Сонсох"
+                                className="p-2 border-2 border-on-background rounded-full bg-surface-container hover:scale-105 transition-transform text-on-surface block-shadow cursor-pointer">
+                                <Volume2 className="w-5 h-5" />
+                              </button>
+                              <button onClick={() => setLibReadTrans(v => !v)}
+                                className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libReadTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
+                                <Languages className="w-4 h-4" /> {libReadTrans ? 'Нуух' : 'Орчуулга'}
+                              </button>
+                            </div>
+                          </div>
 
-                      <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface mb-1 tracking-tight">{item.title}</h2>
-                      <p className="text-sm text-on-surface-variant mb-5">{item.titleMn}</p>
+                          <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface mb-1 tracking-tight">{item.title}</h2>
+                          <p className="text-sm text-on-surface-variant mb-5">{item.titleMn}</p>
 
-                      <p className="text-lg leading-relaxed text-on-surface whitespace-pre-line font-medium">{item.text}</p>
-                      {libReadTrans && (
-                        <p className="text-sm leading-relaxed text-on-surface-variant whitespace-pre-line mt-4 pt-4 border-t border-outline-variant/50 italic">{item.translation}</p>
+                          <p className="text-lg leading-relaxed text-on-surface whitespace-pre-line font-medium">{renderRichGerman(item.text)}</p>
+                          {libReadTrans && (
+                            <p className="text-sm leading-relaxed text-on-surface-variant whitespace-pre-line mt-4 pt-4 border-t border-outline-variant/50 italic">{item.translation}</p>
+                          )}
+
+                          {/* Comprehension question */}
+                          <div className="mt-6 pt-5 border-t border-outline-variant">
+                            <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах:</p>
+                            <p className="text-base font-bold text-on-surface mb-3">{item.question}</p>
+                            <div className="mb-4 flex flex-wrap gap-2">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border-2 border-on-background text-xs font-semibold rounded-full font-space block-shadow text-on-surface">
+                                <Lightbulb className="w-4 h-4 text-orange-500 fill-orange-500" />
+                                {item.hint ?? 'Санамж: тодруулсан үг дээр дарж утга, дуудлагыг нь үзээрэй.'}
+                              </span>
+                            </div>
+                            <MCQBlock
+                              choices={item.choices}
+                              correctIndex={item.correctIndex}
+                              selectedAnswer={libReadAnswer}
+                              feedbackText={item.explanation}
+                              onSelect={(index) => {
+                                setLibReadAnswer(index);
+                                const actId = activityKey('library:read', item.id);
+                                if (index === item.correctIndex) {
+                                  recordStudyActivity(actId);
+                                  
+                                  const profile = currentUserRef.current;
+                                  if (profile && profile.mistakeIds?.includes(actId)) {
+                                    applyMetricProfile({
+                                      ...profile,
+                                      mistakeIds: clearMistake(profile.mistakeIds, actId),
+                                    });
+                                  }
+                                } else {
+                                  const profile = currentUserRef.current;
+                                  if (profile) {
+                                    applyMetricProfile({
+                                      ...profile,
+                                      mistakeIds: addMistake(profile.mistakeIds, actId),
+                                    });
+                                  }
+                                }
+                              }}
+                            />
+                            {libReadAnswer !== null && libReadAnswer !== item.correctIndex && (
+                              <GrammarTipCard
+                                correctAnswer={item.choices[item.correctIndex]}
+                                explanation={item.explanation}
+                                germanContext={item.text}
+                                level={item.level}
+                              />
+                            )}
+                          </div>
+                        </>
                       )}
-
-                      {/* Comprehension question */}
-                      <div className="mt-6 pt-5 border-t border-outline-variant">
-                        <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах:</p>
-                        <p className="text-base font-bold text-on-surface mb-3">{item.question}</p>
-                        <MCQBlock
-                          choices={item.choices}
-                          correctIndex={item.correctIndex}
-                          selectedAnswer={libReadAnswer}
-                          onSelect={(index) => {
-                            setLibReadAnswer(index);
-                            if (index === item.correctIndex) recordStudyActivity(activityKey('library:read', item.id));
-                          }}
-                        />
-                      </div>
                     </section>
                   </div>
                 );
               })()}
 
-              {/* DETAILED LESSON (original rich lesson) */}
-              {readMode === 'lesson' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left Column: German Text Context */}
-              <section className="lg:col-span-7 flex flex-col gap-6">
-                <div className="bg-white rounded-xl p-6 md:p-8 border-2 border-on-background block-shadow relative overflow-hidden group">
-                  
-                  {/* Design background dotted grid */}
-                  <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #1E293B 1px, transparent 0)', backgroundImageScale: '20px', backgroundSize: '16px 16px' }}></div>
-                  
-                  {/* Category level and toolbar widgets */}
-                  <div className="flex items-center justify-between mb-6 relative z-10">
-                    <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">
-                      {READING_LESSON.level}
-                    </span>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => speakGerman(READING_LESSON.germanText)}
-                        className="p-2 border-2 border-on-background rounded-full bg-surface-container hover:bg-surface-container-high hover:scale-105 transition-all text-on-surface-variant block-shadow cursor-pointer flex items-center justify-center"
-                        title="Зохиолыг бүгдийг нь уншуулах"
-                      >
-                        <Volume2 className="w-5 h-5 text-on-background" />
-                      </button>
-                      <button 
-                        onClick={() => setReadTranslateEnabled(prev => !prev)}
-                        className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-all flex items-center gap-1 ${
-                          readTranslateEnabled ? 'bg-secondary text-white border-on-background' : 'bg-surface-container text-on-background'
-                        }`}
-                      >
-                        <Languages className="w-4 h-4" />
-                        {readTranslateEnabled ? 'Германоор харах' : 'Орчуулгатай харах'}
-                      </button>
-                    </div>
-                  </div>
-
-                  <h2 className="text-3xl font-extrabold text-on-background mb-6 relative z-10 tracking-tight font-sans">
-                    {READING_LESSON.title}
-                  </h2>
-
-                  {/* HTML Paragraph rendering with parsed Hover Tooltips */}
-                  <div className="text-lg leading-relaxed text-on-surface space-y-6 relative z-10 font-sans">
-                    {READING_LESSON.paragraphs.map((para, paraIdx) => {
-                      // Parse marked tokens in brackets like {Zähne} and replace with customized Interactive highlighted tooltips
-                      const tokens = para.split(/(\{.*?\})/g);
-                      return (
-                        <p key={paraIdx}>
-                          {tokens.map((token, tokenIdx) => {
-                            if (token.startsWith('{') && token.endsWith('}')) {
-                              const wordKey = token.substring(1, token.length - 1);
-                              const detail = READING_LESSON.vocabHighlights[wordKey];
-                              if (detail) {
-                                return (
-                                  <span 
-                                    key={tokenIdx} 
-                                    className="word-highlight font-extrabold text-secondary tracking-tight select-all cursor-pointer relative"
-                                    onClick={() => speakGerman(detail.word)}
-                                  >
-                                    {detail.word}
-                                    <span className="tooltip-container">
-                                      <span className="block bg-[#0a0a16] text-white border-2 border-on-background font-space font-bold text-xs rounded-xl p-3 shadow-2xl flex flex-col gap-1">
-                                        <span className="flex items-center gap-2 text-secondary-fixed">
-                                          <Volume2 className="w-3 h-3 fill-current text-secondary" />
-                                          <span className="text-[13px] text-white">Орчуулга: {detail.translation}</span>
-                                        </span>
-                                        <span className="text-[11px] text-slate-400">Категори: {detail.grammar}</span>
-                                      </span>
-                                    </span>
-                                  </span>
-                                );
-                              }
-                            }
-                            return <span key={tokenIdx}>{token}</span>;
-                          })}
-                        </p>
-                      );
-                    })}
-                  </div>
-
-                  {readTranslateEnabled && (
-                    <div className="mt-8 pt-6 border-t-2 border-dashed border-outline-variant bg-surface-container-low p-4 rounded-xl animate-fade-in">
-                      <p className="text-xs font-semibold text-outline uppercase mb-2 font-space">Монгол Орчуулга:</p>
-                      <p className="text-sm leading-relaxed text-on-surface-variant space-y-4 font-mono italic">
-                        Сайн уу! Намайг Анна гэдэг. Би хорин хоёр настай. Би Монголоос ирсэн ч одоо Берлинд амьдарч байна. Би энд суралцахыг хүсдэг учраас герман хэл сурч байна. Герман хэл бол сайхан хэл юм.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </section>
-
-              {/* Right Column: Quiz Question */}
-              <section className="lg:col-span-5 flex flex-col gap-6">
-                <div className="bg-white rounded-xl p-6 md:p-8 border-2 border-on-background block-shadow h-full flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-6">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-on-background">
-                        <GraduationCap className="w-4 h-4 fill-current" />
-                      </div>
-                      <h3 className="text-xl font-bold font-sans text-primary">Зөв хариултыг сонгоно уу</h3>
-                    </div>
-
-                    <p className="text-lg font-bold text-on-surface mb-6 font-sans">
-                      {READING_LESSON.quizQuestion}
-                    </p>
-
-                    {/* Choices Radio List */}
-                    <div className="flex flex-col gap-4">
-                      {READING_LESSON.quizChoices.map((choice, idx) => (
-                        <label 
-                          key={idx}
-                          className={`relative flex items-center p-4 border-2 border-on-background rounded-xl cursor-pointer hover:bg-surface-container transition-all group block-shadow select-none ${
-                            readingQuizAnswer === idx ? 'bg-secondary-container text-on-secondary-fixed' : 'bg-white'
-                          }`}
-                        >
-                          <input 
-                            type="radio" 
-                            name="quiz" 
-                            value={idx}
-                            checked={readingQuizAnswer === idx}
-                            onChange={() => checkReadingQuiz(idx)}
-                            className="peer sr-only"
-                          />
-                          <div className={`w-6 h-6 rounded-full border-2 border-on-background mr-4 flex items-center justify-center transition-all ${
-                            readingQuizAnswer === idx ? 'bg-secondary text-white' : 'bg-white'
-                          }`}>
-                            {readingQuizAnswer === idx && <Check className="w-4 h-4 stroke-[3px]" />}
-                          </div>
-                          <span className="text-body-md font-bold text-on-surface group-hover:text-primary">{choice}</span>
-                          
-                          {/* Checked border effects */}
-                          {readingQuizAnswer === idx && (
-                            <div className="absolute inset-0 border-2 border-secondary rounded-xl pointer-events-none"></div>
-                          )}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {readingQuizFeedback && (
-                    <div className={`mt-6 p-4 rounded-xl border-2 border-on-background animate-fade-in ${
-                      readingQuizFeedback === 'correct' ? 'bg-secondary-container text-on-secondary-fixed border-on-secondary-container' : 'bg-error-container text-on-error-container border-on-error-container'
-                    }`}>
-                      <div className="flex items-start gap-3">
-                        <span className="material-symbols-outlined text-2xl font-bold fill mt-0.5">
-                          {readingQuizFeedback === 'correct' ? 'check_circle' : 'cancel'}
-                        </span>
-                        <div>
-                          <h4 className="font-extrabold text-[15px]">
-                            {readingQuizFeedback === 'correct' ? 'Сүрхий зөв хариуллаа!' : 'Өө, буруу хувилбар! Эх бичвэрийг дахин уншиж үзээрэй.'}
-                          </h4>
-                          <p className="text-xs mt-1 leading-normal font-mono">
-                            {readingQuizFeedback === 'correct'
-                              ? 'Зөв! Зохиолд "...aber ich wohne jetzt in Berlin" гэж бичсэн тул Анна одоо Берлинд амьдардаг.'
-                              : 'Анна Монголоос гаралтай ч одоо Берлинд амьдардаг гэж эх бичвэрт тэмдэглэсэн байна ("...ich wohne jetzt in Berlin").'
-                            }
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Vocabulary Guide Chip */}
-                  <div className="mt-8 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border-2 border-on-background text-xs font-semibold rounded-full font-space block-shadow">
-                      <Lightbulb className="w-4 h-4 text-orange-500 fill-orange-500" />
-                      {READING_LESSON.hint}
-                    </span>
-                  </div>
-                </div>
-              </section>
-            </div>
-              )}
             </div>
           )}
 
@@ -2903,20 +3182,9 @@ function LearnerApp() {
           {activeTab === 'listen' && (
             <div className="w-full pb-24">
 
-              {/* Library vs detailed-lesson mode toggle */}
-              <div className="flex items-center gap-2 mb-6 max-w-md">
-                <button onClick={() => setListenMode('library')}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${listenMode === 'library' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
-                  <Library className="w-4 h-4" /> Номын сан ({LISTENING_LIBRARY.length})
-                </button>
-                <button onClick={() => setListenMode('lesson')}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${listenMode === 'lesson' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
-                  <Headphones className="w-4 h-4" /> Дэлгэрэнгүй хичээл
-                </button>
-              </div>
 
               {/* LIBRARY browser — 50+ listening clips */}
-              {listenMode === 'library' && (() => {
+              {(() => {
                 const filtered = libListenLevel === 'all' ? LISTENING_LIBRARY : LISTENING_LIBRARY.filter(r => r.level === libListenLevel);
                 const item = LISTENING_LIBRARY.find(r => r.id === libListenId) || LISTENING_LIBRARY[0];
                 const answered = libListenAnswer !== null;
@@ -2932,228 +3200,136 @@ function LearnerApp() {
                         ))}
                       </div>
                       <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
-                        {filtered.map(r => (
-                          <button key={r.id} onClick={() => { setLibListenId(r.id); setLibListenAnswer(null); }}
-                            className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libListenId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                              <span className="text-xs font-bold text-on-surface truncate">{r.titleMn}</span>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
-                          </button>
-                        ))}
+                        {filtered.map(r => {
+                          const isLocked = lockedActivityIds.listen.has(r.id) && r.level === currentUser?.targetLevel;
+                          return (
+                            <button key={r.id} onClick={() => { setLibListenId(r.id); setLibListenAnswer(null); setLibListenTrans(readTranslateEnabled); }}
+                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libListenId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                  {isLocked && <span>🔒</span>}
+                                  {r.titleMn}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </aside>
 
-                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow">
-                      <div className="flex items-center justify-between mb-5">
-                        <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                        <button onClick={() => setLibListenTrans(v => !v)}
-                          className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libListenTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
-                          <Languages className="w-4 h-4" /> {libListenTrans ? 'Нуух' : 'Текст'}
-                        </button>
-                      </div>
-
-                      <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mb-1">{item.titleMn}</h2>
-                      <p className="text-xs text-on-surface-variant mb-5">{item.title}</p>
-
-                      {/* Play controls */}
-                      <div className="flex flex-col items-center gap-3 py-6 bg-surface-container-low border-2 border-on-background rounded-xl mb-5">
-                        <button onClick={() => speakGerman(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0)}
-                          className="w-16 h-16 rounded-full bg-secondary text-white border-2 border-on-background flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
-                          <Volume2 className="w-7 h-7" />
-                        </button>
-                        <p className="text-xs text-on-surface-variant">Бичлэгийг сонсохын тулд дарна уу (2 удаа)</p>
-                      </div>
-
-                      {libListenTrans && (
-                        <div className="bg-surface-container-low border-l-4 border-secondary rounded-lg p-3 mb-5">
-                          <p className="text-sm text-on-surface font-medium">{item.audioText}</p>
-                          <p className="text-xs text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/50 italic">{item.transcriptMn}</p>
+                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-slate-800">
+                      {lockedActivityIds.listen.has(item.id) && item.level === currentUser?.targetLevel ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <Shield className="w-8 h-8" />
+                          </div>
+                          <h2 className="text-xl font-bold text-slate-800">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-slate-500 max-w-sm font-sans font-medium">
+                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
+                          </p>
+                          <button 
+                            onClick={() => selectTab('profile')}
+                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                          >
+                            Сургалтын зам руу очих
+                          </button>
                         </div>
-                      )}
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between mb-5">
+                            <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                            <button onClick={() => setLibListenTrans(v => !v)}
+                              className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libListenTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
+                              <Languages className="w-4 h-4" /> {libListenTrans ? 'Нуух' : 'Текст'}
+                            </button>
+                          </div>
 
-                      {/* Comprehension */}
-                      <div className="pt-5 border-t border-outline-variant">
-                        <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах:</p>
-                        <p className="text-base font-bold text-on-surface mb-3">{item.question}</p>
-                        <MCQBlock
-                          choices={item.choices}
-                          correctIndex={item.correctIndex}
-                          selectedAnswer={libListenAnswer}
-                          onSelect={(index) => {
-                            setLibListenAnswer(index);
-                            if (index === item.correctIndex) recordStudyActivity(activityKey('library:listen', item.id));
-                          }}
-                        />
-                      </div>
+                          <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mb-1">{item.titleMn}</h2>
+                          <p className="text-xs text-on-surface-variant mb-5">{item.title}</p>
+
+                          {/* Play controls */}
+                          <div className="flex flex-col items-center gap-3 py-6 bg-surface-container-low border-2 border-on-background rounded-xl mb-5">
+                            <button onClick={() => speakGerman(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0)}
+                              className="w-16 h-16 rounded-full bg-secondary text-white border-2 border-on-background flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
+                              <Volume2 className="w-7 h-7" />
+                            </button>
+                            <p className="text-xs text-on-surface-variant font-sans">Бичлэгийг сонсохын тулд дарна уу (2 удаа)</p>
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => setAudioSpeed('0.8')}
+                                className={`px-3 py-1 rounded-full border-2 border-on-background text-[11px] font-bold font-space cursor-pointer block-shadow ${audioSpeed === '0.8' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                                0.8x (Удаан)
+                              </button>
+                              <button onClick={() => setAudioSpeed('1.0')}
+                                className={`px-3 py-1 rounded-full border-2 border-on-background text-[11px] font-bold font-space cursor-pointer block-shadow ${audioSpeed === '1.0' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                                1.0x (Хэвийн)
+                              </button>
+                            </div>
+                          </div>
+
+                          {libListenTrans && (
+                            <div className="bg-surface-container-low border-l-4 border-secondary rounded-lg p-3 mb-5">
+                              <p className="text-sm text-on-surface font-medium whitespace-pre-line">{renderRichGerman(item.audioText)}</p>
+                              <p className="text-xs text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/50 italic">{item.transcriptMn}</p>
+                            </div>
+                          )}
+
+                          {/* Comprehension */}
+                          <div className="pt-5 border-t border-outline-variant">
+                            <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах:</p>
+                            <p className="text-base font-bold text-on-surface mb-3">{item.question}</p>
+                            <div className="mb-4 flex flex-wrap gap-2">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border-2 border-on-background text-xs font-semibold rounded-full font-space block-shadow text-on-surface">
+                                <Lightbulb className="w-4 h-4 text-orange-500 fill-orange-500" />
+                                {item.hint ?? 'Санамж: "Текст" товчийг дарж, тодруулсан үг дээр дарна уу.'}
+                              </span>
+                            </div>
+                            <MCQBlock
+                              choices={item.choices}
+                              correctIndex={item.correctIndex}
+                              selectedAnswer={libListenAnswer}
+                              feedbackText={item.explanation}
+                              onSelect={(index) => {
+                                setLibListenAnswer(index);
+                                const actId = activityKey('library:listen', item.id);
+                                if (index === item.correctIndex) {
+                                  recordStudyActivity(actId);
+                                  
+                                  const profile = currentUserRef.current;
+                                  if (profile && profile.mistakeIds?.includes(actId)) {
+                                    applyMetricProfile({
+                                      ...profile,
+                                      mistakeIds: clearMistake(profile.mistakeIds, actId),
+                                    });
+                                  }
+                                } else {
+                                  const profile = currentUserRef.current;
+                                  if (profile) {
+                                    applyMetricProfile({
+                                      ...profile,
+                                      mistakeIds: addMistake(profile.mistakeIds, actId),
+                                    });
+                                  }
+                                }
+                              }}
+                            />
+                            {libListenAnswer !== null && libListenAnswer !== item.correctIndex && (
+                              <GrammarTipCard
+                                correctAnswer={item.choices[item.correctIndex]}
+                                explanation={item.explanation}
+                                germanContext={item.audioText}
+                                level={item.level}
+                              />
+                            )}
+                          </div>
+                        </>
+                      )}
                     </section>
                   </div>
                 );
               })()}
 
-              {/* DETAILED LESSON (original) */}
-              {listenMode === 'lesson' && (
-            <div className="max-w-3xl mx-auto w-full flex flex-col gap-8">
-              {/* Simulated Audio Player Section */}
-              <div className="bg-white rounded-xl p-8 border-2 border-on-background flex flex-col items-center gap-6 shadow-[0px_4px_12px_rgba(0,0,0,0.05)] block-shadow">
-                
-                {/* Large toggle circular button with animated waves */}
-                <div className="relative">
-                  <button 
-                    onClick={toggleListeningAudio}
-                    className={`w-20 h-20 rounded-full text-white flex items-center justify-center border-2 border-on-background cursor-pointer hover:scale-105 transition-all text-2xl z-10 relative block-shadow ${
-                      audioPlaying ? 'bg-primary-container animate-ripple' : 'bg-secondary'
-                    }`}
-                  >
-                    {audioPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current ml-1" />}
-                  </button>
-                </div>
-
-                {/* Animated Waveform bar matrix */}
-                <div className="w-full flex items-center justify-center h-16 gap-1 overflow-hidden select-none">
-                  {waveformWave.map((h, idx) => (
-                    <div 
-                      key={idx}
-                      className="w-1.5 bg-slate-800 rounded-full transition-transform"
-                      style={{ 
-                        height: audioPlaying ? `${Math.floor(Math.random() * 80) + 20}%` : `${h / 2}%`,
-                        animationDelay: `-${(idx * 0.05).toFixed(2)}s`
-                      }}
-                    ></div>
-                  ))}
-                </div>
-
-                {/* Playback Progression Tracker */}
-                <div className="w-full flex items-center gap-4">
-                  <span className="text-xs font-mono font-bold text-on-surface-variant">0:00</span>
-                  <div 
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const x = e.clientX - rect.left;
-                      const percent = Math.floor((x / rect.width) * 100);
-                      setAudioDurationPercent(percent);
-                    }}
-                    className="flex-grow h-3 bg-surface-container border border-on-background rounded-full relative overflow-hidden cursor-pointer"
-                  >
-                    <div 
-                      className="absolute top-0 left-0 h-full bg-secondary transition-all rounded-full"
-                      style={{ width: `${audioDurationPercent}%` }}
-                    ></div>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-on-surface-variant">0:15</span>
-                </div>
-
-                {/* Playback Rate Speed selection widget */}
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={() => setAudioSpeed('0.8')}
-                    className={`px-4 py-1.5 rounded-full border-2 border-on-background text-xs font-bold font-space transition-all cursor-pointer block-shadow ${
-                      audioSpeed === '0.8' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'
-                    }`}
-                  >
-                    0.8x (Удаан)
-                  </button>
-                  <button 
-                    onClick={() => setAudioSpeed('1.0')}
-                    className={`px-4 py-1.5 rounded-full border-2 border-on-background text-xs font-bold font-space transition-all cursor-pointer block-shadow ${
-                      audioSpeed === '1.0' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'
-                    }`}
-                  >
-                    1.0x (Хэвийн)
-                  </button>
-                </div>
-              </div>
-
-              {/* Arranging Exercising area */}
-              <div className="flex flex-col items-center gap-8">
-                <h2 className="text-2xl font-black text-on-background text-center font-sans">
-                  {LISTENING_LESSON.transcription}
-                </h2>
-
-                {/* Drop Target zone area */}
-                <div className="w-full min-h-[100px] bg-white border-2 border-dashed border-on-background rounded-xl flex items-center justify-center p-4 gap-3 flex-wrap transition-all hover:border-secondary shadow-inner">
-                  {listeningDropZone.length === 0 ? (
-                    <p className="text-sm font-semibold text-slate-500 italic">Таарсан үгсийг сонгож энд өрнө үү...</p>
-                  ) : (
-                    listeningDropZone.map((word, idx) => (
-                      <button 
-                        key={idx}
-                        onClick={() => handleChipClick(word, 'zone')}
-                        className="px-6 py-3 bg-primary text-white border-2 border-on-background rounded-full text-md font-bold cursor-pointer hover:bg-red-500 transition-colors shadow-md"
-                      >
-                        {word}
-                      </button>
-                    ))
-                  )}
-                </div>
-
-                {/* Available Pool of options row */}
-                <div className="flex flex-wrap justify-center gap-3">
-                  {listeningPool.map((word, idx) => (
-                    <button 
-                      key={idx}
-                      onClick={() => handleChipClick(word, 'pool')}
-                      className="px-6 py-3 bg-white border-2 border-on-background rounded-full text-md font-bold text-on-background block-shadow cursor-pointer hover:border-primary select-none"
-                    >
-                      {word}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Inline listening correct/incorrect states toast banner */}
-                {listeningFeedback && (
-                  <div className={`w-full p-4 rounded-xl border-2 border-on-background animate-fade-in ${
-                    listeningFeedback.isCorrect ? 'bg-secondary-container text-on-secondary-fixed' : 'bg-error-container text-on-error-container'
-                  }`}>
-                    <div className="flex items-center gap-3 justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-2xl font-bold fill">
-                          {listeningFeedback.isCorrect ? 'check_circle' : 'cancel'}
-                        </span>
-                        <div>
-                          <h4 className="font-extrabold">
-                            {listeningFeedback.isCorrect ? 'Маш сайн! Зөв байна!' : 'Дахин оролдоод үзнэ үү!'}
-                          </h4>
-                          <p className="text-xs">
-                            {listeningFeedback.isCorrect ? 'Германаар "Ich komme aus der Mongolei" нь "Би Монголоос ирсэн" гэсэн утгатай.' : 'Дарааллаа дахин шалгаарай. Өгүүлбэр "Ich" гэдэг үгээр эхэлдэг.'}
-                          </p>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={resetListeningChips}
-                        className="p-1 border border-on-background rounded hover:bg-black/5"
-                        title="Дахин эхлүүлэх"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Bottom Trigger button right-aligned */}
-                <div className="w-full flex justify-between gap-4 mt-4">
-                  <button 
-                    onClick={resetListeningChips}
-                    className="px-6 py-3 border-2 border-on-background rounded-xl font-bold bg-white text-on-background hover:bg-surface-container transition-all block-shadow cursor-pointer"
-                  >
-                    Цэвэрлэх
-                  </button>
-                  <button 
-                    onClick={checkListeningOrder}
-                    disabled={listeningDropZone.length === 0}
-                    className={`px-8 py-3 rounded-lg text-md font-bold block-shadow transition-all cursor-pointer ${
-                      listeningDropZone.length === 0 
-                        ? 'bg-slate-300 text-slate-500 border border-slate-400 opacity-50 cursor-not-allowed' 
-                        : 'bg-secondary text-on-secondary border-2 border-on-background hover:bg-on-secondary-fixed-variant'
-                    }`}
-                  >
-                    Шалгах
-                  </button>
-                </div>
-              </div>
-            </div>
-              )}
             </div>
           )}
 
@@ -3161,20 +3337,9 @@ function LearnerApp() {
           {activeTab === 'speak' && (
             <div className="w-full pb-24">
 
-              {/* Library vs detailed-lesson mode toggle */}
-              <div className="flex items-center gap-2 mb-6 max-w-md">
-                <button onClick={() => { setSpeakMode('library'); resetSpeakingJudge(); }}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${speakMode === 'library' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
-                  <Library className="w-4 h-4" /> Номын сан ({SPEAKING_LIBRARY.length})
-                </button>
-                <button onClick={() => { setSpeakMode('lesson'); resetSpeakingJudge(); }}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${speakMode === 'lesson' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
-                  <Mic className="w-4 h-4" /> Дэлгэрэнгүй хичээл
-                </button>
-              </div>
 
               {/* LIBRARY browser — 50+ speaking prompts */}
-              {speakMode === 'library' && (() => {
+              {(() => {
                 const filtered = libSpeakLevel === 'all' ? SPEAKING_LIBRARY : SPEAKING_LIBRARY.filter(r => r.level === libSpeakLevel);
                 const item = SPEAKING_LIBRARY.find(r => r.id === libSpeakId) || SPEAKING_LIBRARY[0];
                 return (
@@ -3189,23 +3354,47 @@ function LearnerApp() {
                         ))}
                       </div>
                       <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
-                        {filtered.map(r => (
-                          <button key={r.id} onClick={() => { setLibSpeakId(r.id); setLibSpeakReveal(false); resetSpeakingJudge(); }}
-                            className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libSpeakId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                              <span className="text-xs font-bold text-on-surface truncate">{r.titleMn}</span>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
-                          </button>
-                        ))}
+                        {filtered.map(r => {
+                          const isLocked = lockedActivityIds.speak.has(r.id) && r.level === currentUser?.targetLevel;
+                          return (
+                            <button key={r.id} onClick={() => { setLibSpeakId(r.id); setLibSpeakReveal(false); resetSpeakingJudge(); }}
+                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libSpeakId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                  {isLocked && <span>🔒</span>}
+                                  {r.titleMn}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </aside>
 
-                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow">
-                      <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                      <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mt-4 mb-1">{item.titleMn}</h2>
-                      <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
+                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-slate-800">
+                      {lockedActivityIds.speak.has(item.id) && item.level === currentUser?.targetLevel ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <Shield className="w-8 h-8" />
+                          </div>
+                          <h2 className="text-xl font-bold text-slate-800">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-slate-500 max-w-sm font-sans font-medium">
+                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
+                          </p>
+                          <button 
+                            onClick={() => selectTab('profile')}
+                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                          >
+                            Сургалтын зам руу очих
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                          <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mt-4 mb-1">{item.titleMn}</h2>
+                          <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
 
                       {/* Task prompt */}
                       <div className="bg-surface-container-low border-l-4 border-secondary rounded-lg p-4 mb-5">
@@ -3239,7 +3428,7 @@ function LearnerApp() {
                       {libSpeakReveal && (
                         <div className="bg-secondary-container/40 border-2 border-secondary rounded-lg p-4 mt-4">
                           <p className="text-[10px] font-bold uppercase text-secondary mb-1">Загвар хариулт:</p>
-                          <p className="text-base text-on-surface font-medium leading-relaxed">{item.modelAnswer}</p>
+                          <p className="text-base text-on-surface font-medium leading-relaxed">{renderRichGerman(item.modelAnswer)}</p>
                           <p className="text-xs text-on-surface-variant mt-2 italic leading-relaxed">{item.modelMn}</p>
                         </div>
                       )}
@@ -3249,55 +3438,13 @@ function LearnerApp() {
                           speaking resource gets it automatically because it is data-driven. */}
                       {renderSpeakingJudge(item.modelAnswer)}
                       {renderSpeakingReport(item.modelAnswer)}
-                    </section>
-                  </div>
+                    </>
+                  )}
+                </section>
+              </div>
                 );
               })()}
 
-              {/* DETAILED LESSON (original) */}
-              {speakMode === 'lesson' && (
-            <div className="max-w-3xl mx-auto w-full flex flex-col items-center gap-8">
-              
-              {/* Speaking Header display */}
-              <div className="text-center pt-4">
-                <span className="inline-block px-4 py-1 bg-surface-container-high border-2 border-on-background text-xs font-bold font-space rounded-full mb-4 uppercase tracking-wider block-shadow">
-                  Дуудлага шалгах
-                </span>
-                <h2 className="text-3xl font-extrabold text-on-background mb-2 font-sans">Чанга уншина уу</h2>
-                <p className="text-body-lg text-on-surface-variant font-sans">Микрофон дээр дарж дуу хоолойгоо бичнэ үү.</p>
-              </div>
-
-              {/* Central Target Prompt Card frame */}
-              <div className="w-full bg-white border-2 border-on-background rounded-xl p-8 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden group hover:border-secondary transition-colors block-shadow">
-                <div className="absolute top-0 left-0 w-full h-[6px] bg-gradient-to-r from-secondary-container to-secondary"></div>
-                
-                <h3 className="text-4xl leading-tight font-black text-primary mb-3 font-sans flex items-center justify-center gap-3">
-                  {SPEAKING_LESSON.sentence}
-                  <button 
-                    onClick={() => speakGerman(SPEAKING_LESSON.sentence)}
-                    className="p-1.5 rounded-full hover:bg-slate-100 border border-slate-200 cursor-pointer text-slate-500 hover:text-slate-900"
-                    title="Дуудлага сонсох"
-                  >
-                    <Volume2 className="w-4 h-4" />
-                  </button>
-                </h3>
-                
-                <p className="text-lg font-bold text-outline mb-6 font-mono bg-surface-container-low border border-on-background px-4 py-1 rounded-lg">
-                  {SPEAKING_LESSON.phonetics}
-                </p>
-                <div className="w-12 h-[2px] bg-outline-variant mb-6"></div>
-                
-                <p className="text-lg text-on-surface font-extrabold flex items-center gap-2">
-                  <span className="material-symbols-outlined text-outline text-md">translate</span>
-                  {SPEAKING_LESSON.translation}
-                </p>
-              </div>
-
-              {renderSpeakingJudge(SPEAKING_LESSON.sentence)}
-
-              {renderSpeakingReport(SPEAKING_LESSON.sentence)}
-            </div>
-              )}
             </div>
           )}
 
@@ -3305,20 +3452,9 @@ function LearnerApp() {
           {activeTab === 'write' && (
             <div className="w-full pb-24">
 
-              {/* Library vs detailed-lesson mode toggle */}
-              <div className="flex items-center gap-2 mb-6 max-w-md">
-                <button onClick={() => { setWriteMode('library'); resetWritingFeedback(); }}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${writeMode === 'library' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
-                  <Library className="w-4 h-4" /> Номын сан ({WRITING_LIBRARY.length})
-                </button>
-                <button onClick={() => { setWriteMode('lesson'); resetWritingFeedback(); }}
-                  className={`flex-1 px-4 py-2.5 rounded-xl border-2 border-on-background font-bold text-sm cursor-pointer block-shadow transition-colors flex items-center justify-center gap-2 ${writeMode === 'lesson' ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
-                  <Edit3 className="w-4 h-4" /> Дэлгэрэнгүй хичээл
-                </button>
-              </div>
 
               {/* LIBRARY browser — 50+ writing tasks */}
-              {writeMode === 'library' && (() => {
+              {(() => {
                 const filtered = libWriteLevel === 'all' ? WRITING_LIBRARY : WRITING_LIBRARY.filter(r => r.level === libWriteLevel);
                 const item = WRITING_LIBRARY.find(r => r.id === libWriteId) || WRITING_LIBRARY[0];
                 const words = libWriteText.trim() ? libWriteText.trim().split(/\s+/).length : 0;
@@ -3334,23 +3470,47 @@ function LearnerApp() {
                         ))}
                       </div>
                       <div className="flex flex-col gap-2 max-h-[55vh] overflow-y-auto pr-1">
-                        {filtered.map(r => (
-                          <button key={r.id} onClick={() => { setLibWriteId(r.id); setLibWriteText(''); setLibWriteReveal(false); resetWritingFeedback(); }}
-                            className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libWriteId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                              <span className="text-xs font-bold text-on-surface truncate">{r.titleMn}</span>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
-                          </button>
-                        ))}
+                        {filtered.map(r => {
+                          const isLocked = lockedActivityIds.write.has(r.id) && r.level === currentUser?.targetLevel;
+                          return (
+                            <button key={r.id} onClick={() => { setLibWriteId(r.id); setLibWriteText(''); setLibWriteReveal(false); resetWritingFeedback(); }}
+                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libWriteId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                  {isLocked && <span>🔒</span>}
+                                  {r.titleMn}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                            </button>
+                          );
+                        })}
                       </div>
                     </aside>
 
-                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow">
-                      <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                      <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mt-4 mb-1">{item.titleMn}</h2>
-                      <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
+                    <section className="lg:col-span-8 bg-white border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-slate-800">
+                      {lockedActivityIds.write.has(item.id) && item.level === currentUser?.targetLevel ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
+                          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                            <Shield className="w-8 h-8" />
+                          </div>
+                          <h2 className="text-xl font-bold text-slate-800">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-slate-500 max-w-sm font-sans font-medium">
+                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
+                          </p>
+                          <button 
+                            onClick={() => selectTab('profile')}
+                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                          >
+                            Сургалтын зам руу очих
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                          <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mt-4 mb-1">{item.titleMn}</h2>
+                          <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
 
                       <div className="bg-surface-container-low rounded-lg p-4 mb-4">
                         <p className="text-xs font-space font-bold uppercase text-primary mb-1">Даалгавар:</p>
@@ -3375,7 +3535,7 @@ function LearnerApp() {
                       {libWriteReveal && (
                         <div className="bg-secondary-container/40 border-2 border-secondary rounded-lg p-4 mt-4">
                           <p className="text-[10px] font-bold uppercase text-secondary mb-1">Загвар хариулт:</p>
-                          <p className="text-sm text-on-surface whitespace-pre-line leading-relaxed font-medium">{item.modelAnswer}</p>
+                          <p className="text-sm text-on-surface whitespace-pre-line leading-relaxed font-medium">{renderRichGerman(item.modelAnswer)}</p>
                           <p className="text-xs text-on-surface-variant whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-secondary/30 italic">{item.modelMn}</p>
                         </div>
                       )}
@@ -3383,181 +3543,13 @@ function LearnerApp() {
                       {/* AI writing check — flags wrong grammar / words and recommends
                           better wording. Data-driven, so new imports get it automatically. */}
                       {renderWritingChecker(libWriteText, { prompt: item.prompt, points: item.points, modelAnswer: item.modelAnswer, level: item.level })}
-                    </section>
-                  </div>
-                );
+                    </>
+                  )}
+                </section>
+              </div>
+            );
               })()}
 
-              {/* DETAILED LESSON (original) */}
-              {writeMode === 'lesson' && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              
-              {/* Left sidebar: Grammar Rule & Advice */}
-              <aside className="lg:col-span-4 flex flex-col gap-4">
-                <div className="bg-white border-2 border-on-background rounded-xl p-6 block-shadow">
-                  <div className="flex items-center gap-2 mb-4 text-secondary">
-                    <Lightbulb className="w-5 h-5 text-secondary fill-secondary-container" />
-                    <h3 className="text-lg font-black text-on-surface font-sans">
-                      {WRITING_LESSON.grammarTipTitle}
-                    </h3>
-                  </div>
-                  <p className="text-sm text-on-surface-variant leading-normal mb-4 font-sans font-medium">
-                    {WRITING_LESSON.grammarTipContent}
-                  </p>
-
-                  <div className="bg-surface-container-low p-4 rounded-xl border-2 border-on-background mb-4">
-                    <h4 className="text-xs font-black font-space text-on-surface uppercase mb-2">Бүтэц:</h4>
-                    <code className="block text-xs font-mono font-bold text-secondary bg-white p-2 rounded border border-on-background block-shadow text-center">
-                      {WRITING_LESSON.sentenceStructure}
-                    </code>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {WRITING_LESSON.exampleChips.map((chip, idx) => (
-                      <button 
-                        key={idx}
-                        onClick={() => setWritingInput(prev => prev + ' ' + chip)}
-                        className="bg-primary-fixed hover:-translate-y-0.5 active:translate-y-0 hover:bg-primary-fixed-dim transition-all text-on-primary-fixed px-3 py-1.5 rounded-full text-xs font-bold border-2 border-on-background cursor-pointer block-shadow"
-                      >
-                        {chip}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </aside>
-
-              {/* Right panel: Editor Area & Intelligent Feedback widget */}
-              <section className="lg:col-span-8 flex flex-col gap-6">
-                <div className="bg-white border-2 border-on-background rounded-xl p-6 lg:p-8 flex flex-col gap-6 block-shadow">
-                  <div>
-                    <span className="text-xs font-space font-bold text-on-surface-variant uppercase tracking-wider mb-2 block p-1 border border-on-background rounded-md bg-surface-container w-fit block-shadow">
-                      Даалгавар 4/10
-                    </span>
-                    <h1 className="text-xl font-extrabold text-on-surface mb-4 font-sans">Дараах өгүүлбэрийг Герман хэл рүү орчуулж бичнэ үү</h1>
-                    <p className="text-lg font-black text-primary p-4 bg-surface-container-low rounded-xl border-2 border-on-background block-shadow">
-                      {WRITING_LESSON.prompt}
-                    </p>
-                  </div>
-
-                  {/* Input translation Textarea */}
-                  <div className="relative w-full">
-                    <textarea 
-                      value={writingInput}
-                      onChange={(e) => {
-                        if (e.target.value.length <= 150) {
-                          setWritingInput(e.target.value);
-                        }
-                      }}
-                      className="w-full bg-white border-2 border-on-background font-bold rounded-xl p-4 text-md text-slate-900 focus:border-secondary outline-none transition-all placeholder:text-outline resize-none shadow-inner"
-                      placeholder="Энд бичнэ үү..."
-                      rows={4}
-                    ></textarea>
-
-                    {/* Character German special buttons */}
-                    <div className="absolute bottom-3 left-3 flex gap-2">
-                      {['ß', 'ä', 'ö', 'ü'].map((char) => (
-                        <button 
-                          key={char}
-                          onClick={() => insertSpecialChar(char)}
-                          className="w-10 h-10 flex items-center justify-center bg-surface-container border-2 border-on-background rounded-md hover:bg-white text-on-surface font-sans font-extrabold transition-all cursor-pointer block-shadow text-sm"
-                        >
-                          {char}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Display characters count */}
-                    <div className="absolute bottom-3 right-4 text-xs font-bold font-space text-on-surface-variant">
-                      <span>{writingInput.length}</span> / 150
-                    </div>
-                  </div>
-
-                  {/* Operational actions buttons */}
-                  <div className="flex justify-between items-center bg-surface-container p-4 rounded-xl border border-on-background">
-                    <button 
-                      onClick={() => setWritingInput(WRITING_LESSON.targetSentence)}
-                      className="px-6 py-3 border-2 border-on-background text-xs font-bold bg-white text-on-background rounded-xl hover:bg-slate-100 transition-colors cursor-pointer block-shadow"
-                    >
-                      Алгасах / Харуул
-                    </button>
-                    <button 
-                      onClick={checkWritingTranslation}
-                      disabled={!writingInput.trim() || writingLoading}
-                      className={`px-8 py-3 rounded-xl text-xs font-extrabold flex items-center gap-2 block-shadow transition-colors cursor-pointer ${
-                        !writingInput.trim() || writingLoading
-                          ? 'bg-slate-300 text-slate-500 border border-slate-400 opacity-50 cursor-not-allowed'
-                          : 'bg-secondary text-on-secondary border-2 border-on-background hover:bg-on-secondary-fixed-variant'
-                      }`}
-                    >
-                      {writingLoading ? 'Орчуулгыг шалгаж байна...' : 'Шалгах'}
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Intelligent response overlay feedback card from Express Express node backend */}
-                {writingEvaluation && (
-                  <div className={`border-2 border-on-background rounded-xl p-6 shadow-sm relative overflow-hidden block-shadow transition-all animate-scale-up ${
-                    writingEvaluation.isCorrect ? 'bg-secondary-container/20 border-secondary' : 'bg-error-container/20 border-error'
-                  }`}>
-                    <div className={`absolute top-0 left-0 w-2 h-full ${writingEvaluation.isCorrect ? 'bg-secondary' : 'bg-error'}`}></div>
-                    
-                    <div className="flex items-start gap-4 ml-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 border-on-background shadow-[2px_2px_0_0_#1E293B] ${
-                        writingEvaluation.isCorrect ? 'bg-secondary text-white' : 'bg-error text-white'
-                      }`}>
-                        {writingEvaluation.isCorrect ? <CheckCircle className="w-5 h-5 fill-current" /> : <XCircle className="w-5 h-5 fill-current" />}
-                      </div>
-                      
-                      <div className="flex-grow">
-                        <h3 className={`text-lg font-black mb-3 font-sans ${writingEvaluation.isCorrect ? 'text-secondary-fixed-variant text-secondary' : 'text-error'}`}>
-                          {writingEvaluation.feedbackMessage}
-                        </h3>
-
-                        <div className="space-y-4">
-                          <div>
-                            <p className="text-xs font-space font-bold uppercase text-outline mb-1">Монгол Өгүүлбэр:</p>
-                            <p className="text-sm font-semibold italic text-slate-650">{WRITING_LESSON.prompt}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-space font-bold uppercase text-outline mb-1">Таны өгсөн хариулт:</p>
-                            <p className="text-sm font-bold text-on-surface font-mono bg-white inline-block px-3 py-1 border border-on-background rounded-lg">{writingInput}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-space font-bold uppercase text-outline mb-1">Германоор зөв хувилбар:</p>
-                            <p className="text-sm font-bold text-secondary font-mono bg-white inline-block px-3 py-1 border border-on-background rounded-lg">{writingEvaluation.corrected}</p>
-                          </div>
-
-                          <div className="bg-white p-4 rounded-xl border-2 border-on-background block-shadow">
-                            <p className="text-sm font-bold font-sans text-on-surface mb-2 flex items-center gap-2">
-                              <span className="material-symbols-outlined text-md font-bold text-primary">school</span>
-                              Анализ & Тайлбарлах
-                            </p>
-                            <p className="text-sm text-on-surface-variant leading-relaxed font-sans font-medium">
-                              {writingEvaluation.explanation}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-end">
-                          <button 
-                            onClick={() => {
-                              setWritingEvaluation(null);
-                              setWritingInput('');
-                            }}
-                            className="px-6 py-2.5 bg-secondary text-on-secondary font-bold text-sm border-2 border-on-background rounded-xl hover:bg-on-secondary-fixed-variant transition-colors block-shadow cursor-pointer flex items-center gap-1"
-                          >
-                            Дараагийнх
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </section>
-            </div>
-              )}
             </div>
           )}
 
@@ -4545,10 +4537,10 @@ function LearnerApp() {
                   <div className="flex justify-between items-center p-3 border-2 border-on-background rounded-xl bg-white select-none block-shadow">
                     <div>
                       <h5 className="text-sm font-bold">Орчуулга автоматаар харуулах</h5>
-                      <p className="text-[11px] text-outline">Унших зохиолд Монгол орчуулгыг үргэлж хамт харуулна.</p>
+                      <p className="text-[11px] text-outline">Унших, сонсох зохиолд орчуулгыг шууд харуулна. Унтраалттай үед эхлээд өөрөө уншиж, гацсан үедээ "Орчуулга" товчоор нээнэ.</p>
                     </div>
-                    <button 
-                      onClick={() => setReadTranslateEnabled(prev => !prev)}
+                    <button
+                      onClick={() => setReadTranslateEnabled(prev => { const next = !prev; setLibReadTrans(next); setLibListenTrans(next); return next; })}
                       className={`w-12 h-6 rounded-full transition-colors relative border border-on-background block-shadow cursor-pointer ${
                         readTranslateEnabled ? 'bg-secondary' : 'bg-slate-300'
                       }`}
