@@ -34,7 +34,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(frontendDir, 'dist');
+    const distPath = path.join(projectRoot, 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
@@ -46,4 +46,11 @@ async function startServer() {
   });
 }
 
-if (process.env.NODE_ENV !== 'test') startServer();
+if (process.env.NODE_ENV !== 'test') {
+  const isServerless = process.env.VERCEL && !process.env.PORT;
+  if (!isServerless) {
+    startServer();
+  }
+}
+
+export default app;

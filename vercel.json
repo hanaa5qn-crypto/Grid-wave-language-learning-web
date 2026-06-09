@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "experimentalServices": {
+    "vivid-lingua": {
+      "type": "web",
+      "routePrefix": "/",
+      "entrypoint": "dist/server.cjs",
+      "buildCommand": "npm install --include=dev && npm run build"
+    }
+  }
+}

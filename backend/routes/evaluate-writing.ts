@@ -2,6 +2,7 @@ import { Type } from '@google/genai';
 import type { Express } from 'express';
 import { cleanText } from '../lib/cleanText';
 import { aiClientWithinBudget, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
+import { generateContentWithRetry } from '../lib/ai';
 
 export function registerEvaluateWritingRoute(app: Express) {
   app.post('/api/evaluate-writing', async (req, res) => {
@@ -23,8 +24,8 @@ export function registerEvaluateWritingRoute(app: Express) {
     if (ai) {
       consumeBudget();
       try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.5-flash',
+        const response = await generateContentWithRetry(ai, {
+          model: 'gemini-2.5-flash',
           contents: `Evaluate this translation for a German language learning course where the target audience is Mongolian.
 Query task: Translate Mongolian sentence "${promptText}" into German.
 Course expected German target sentence: "${targetSentence}"

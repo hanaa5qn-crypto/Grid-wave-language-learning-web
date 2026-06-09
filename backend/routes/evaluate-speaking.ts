@@ -2,6 +2,7 @@ import { Type } from '@google/genai';
 import type { Express } from 'express';
 import { cleanText } from '../lib/cleanText';
 import { aiClientWithinBudget, audioTooLarge, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
+import { generateContentWithRetry } from '../lib/ai';
 
 // Rich JSON shape returned to the frontend. Every text field is written in
 // Mongolian (the app's UI language); `transcript` stays in German.
@@ -68,18 +69,34 @@ export function registerEvaluateSpeakingRoute(app: Express) {
       return res.status(429).json({ error: 'Хэт олон хүсэлт. Хэсэг хүлээгээд дахин оролдоно уу.' });
     }
 
-    const { audio, mimeType } = req.body as {
+    const { audio, mimeType, audioUrl } = req.body as {
       audio?: string;       // base64-encoded audio (no data: prefix)
       mimeType?: string;    // e.g. audio/wav
+      audioUrl?: string;    // Firebase Storage public URL
     };
     const sentence = clampText(req.body?.sentence);
     const spokenText = clampText(req.body?.spokenText);
 
-    if (audioTooLarge(audio)) {
+    let audioData = audio;
+    if (audioUrl) {
+      try {
+        const fetchResponse = await fetch(audioUrl);
+        if (!fetchResponse.ok) {
+          throw new Error(`Failed to fetch audio from URL: ${fetchResponse.statusText}`);
+        }
+        const arrayBuffer = await fetchResponse.arrayBuffer();
+        audioData = Buffer.from(arrayBuffer).toString('base64');
+      } catch (fetchErr) {
+        console.error('Failed to download audio from Firebase Storage URL:', fetchErr);
+        return res.status(400).json({ error: 'Failed to retrieve audio from storage URL.' });
+      }
+    }
+
+    if (audioTooLarge(audioData)) {
       return res.status(413).json({ error: 'Дуу бичлэг хэт том байна. Богино бичлэг (хэдхэн өгүүлбэр) оруулна уу.' });
     }
 
-    const hasAudio = typeof audio === 'string' && audio.length > 0;
+    const hasAudio = typeof audioData === 'string' && audioData.length > 0;
 
     if (!hasAudio && !spokenText) {
       return res.status(400).json({ error: 'Provide either an audio recording or spoken text.' });
@@ -92,11 +109,11 @@ export function registerEvaluateSpeakingRoute(app: Express) {
       try {
         const parts: any[] = [{ text: buildPrompt(sentence, spokenText, hasAudio) }];
         if (hasAudio) {
-          parts.push({ inlineData: { mimeType: mimeType || 'audio/wav', data: audio } });
+          parts.push({ inlineData: { mimeType: mimeType || 'audio/wav', data: audioData } });
         }
 
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.5-flash',
+        const response = await generateContentWithRetry(ai, {
+          model: 'gemini-2.5-flash',
           contents: [{ role: 'user', parts }],
           config: {
             responseMimeType: 'application/json',

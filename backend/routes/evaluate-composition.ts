@@ -1,6 +1,7 @@
 import { Type } from '@google/genai';
 import type { Express } from 'express';
 import { aiClientWithinBudget, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
+import { generateContentWithRetry } from '../lib/ai';
 
 // Rich free-writing feedback. Unlike /api/evaluate-writing (a constrained
 // translation check), this grades an open composition: it hunts for wrong
@@ -124,8 +125,8 @@ export function registerEvaluateCompositionRoute(app: Express) {
     if (ai) {
       consumeBudget();
       try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.5-flash',
+        const response = await generateContentWithRetry(ai, {
+          model: 'gemini-2.5-flash',
           contents: buildPrompt(prompt, points, modelAnswer, level, text),
           config: {
             responseMimeType: 'application/json',
