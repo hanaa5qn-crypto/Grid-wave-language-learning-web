@@ -1,4 +1,4 @@
-import type { Express, Request } from 'express';
+import type { Express, Request, Response } from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
 import {
   firebaseAdminMissingMessage,
@@ -476,12 +476,18 @@ export function registerPaymentsRoute(app: Express) {
     }
   });
 
-  app.post('/api/payments/qpay/webhook', async (req, res) => {
+  // QPay calls the callback URL itself once the learner pays in their bank app.
+  // Their gateway uses GET with ?qpay_payment_id=…, but we accept POST too so
+  // manual retries/tests work the same way.
+  const qpayWebhookHandler = async (req: Request, res: Response) => {
     const admin = getFirebaseAdmin();
     if (!admin) return res.status(503).json({ error: firebaseAdminMissingMessage() });
 
     const senderInvoiceNo = String(req.query.sender_invoice_no || req.body?.sender_invoice_no || '');
-    const paymentId = String(req.query.payment_id || req.body?.payment_id || '');
+    const paymentId = String(
+      req.query.qpay_payment_id || req.query.payment_id ||
+      req.body?.qpay_payment_id || req.body?.payment_id || '',
+    );
     let invoiceRef = senderInvoiceNo ? admin.db.collection('paymentInvoices').doc(senderInvoiceNo) : null;
     let invoiceSnap = invoiceRef ? await invoiceRef.get() : null;
 
@@ -513,5 +519,8 @@ export function registerPaymentsRoute(app: Express) {
       console.error('QPay webhook failed:', err);
       return res.status(502).json({ error: 'QPay webhook processing failed.' });
     }
-  });
+  };
+
+  app.get('/api/payments/qpay/webhook', qpayWebhookHandler);
+  app.post('/api/payments/qpay/webhook', qpayWebhookHandler);
 }

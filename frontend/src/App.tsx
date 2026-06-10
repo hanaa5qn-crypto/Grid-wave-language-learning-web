@@ -225,12 +225,15 @@ interface QPayCheckoutResponse {
   senderInvoiceNo: string;
   providerInvoiceId: string;
   plan: string;
+  interval?: BillingInterval;
   amountMnt: number;
   currency: 'MNT';
   qrText?: string;
   qrImage?: string;
   shortUrl?: string;
-  urls?: Array<{ name?: string; description?: string; link?: string }>;
+  // One entry per bank/wallet app (Khan, TDB, Golomt, Xac, SocialPay, Monpay …):
+  // QPay is the hub, the learner pays through their own bank's app.
+  urls?: Array<{ name?: string; description?: string; logo?: string; link?: string }>;
 }
 
 function formatMnt(amountMnt: number | null | undefined): string {
@@ -1517,40 +1520,62 @@ function LearnerApp() {
     return startDummyCheckout(planId);
   };
 
-  const checkQPayPaymentStatus = async () => {
-    if (!qpayCheckout) return;
-    setPaymentStatusLoading(true);
-    setPaymentMessage(null);
+  // Polls one QPay invoice; returns true once QPay reports it paid. Used by the
+  // manual "Төлбөр шалгах" button (silent=false) and the auto-poll loop below
+  // (silent=true — no "not yet paid" noise every few seconds).
+  const qpayCheckoutRef = useRef<QPayCheckoutResponse | null>(null);
+  qpayCheckoutRef.current = qpayCheckout;
+  const qpayPollBusyRef = useRef(false);
+  const pollQPayInvoice = async (silent: boolean): Promise<boolean> => {
+    const checkout = qpayCheckoutRef.current;
+    if (!checkout || qpayPollBusyRef.current) return false;
+    qpayPollBusyRef.current = true;
+    if (!silent) {
+      setPaymentStatusLoading(true);
+      setPaymentMessage(null);
+    }
     try {
       const token = await getCurrentIdToken();
-      const response = await fetch(`/api/payments/qpay/invoices/${encodeURIComponent(qpayCheckout.senderInvoiceNo)}`, {
+      const response = await fetch(`/api/payments/qpay/invoices/${encodeURIComponent(checkout.senderInvoiceNo)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'QPay төлөв шалгахад алдаа гарлаа.');
 
       if (data.paid || data.status === 'paid') {
-        if (data.billing && currentUserRef.current) {
-          const nextProfile = normalizeProfileMetrics({
-            ...currentUserRef.current,
-            billing: {
-              ...currentUserRef.current.billing,
-              ...data.billing,
-            },
-          });
-          currentUserRef.current = nextProfile;
-          setCurrentUser(nextProfile);
-        }
-        setPaymentMessage({ type: 'success', text: 'Төлбөр баталгаажлаа. Эрх идэвхтэй боллоо.' });
-      } else {
-        setPaymentMessage({ type: 'info', text: 'QPay дээр төлбөр хараахан баталгаажаагүй байна.' });
+        if (data.billing) applyBillingUpdate(data.billing);
+        setQpayCheckout(null);
+        setPaymentMessage({ type: 'success', text: 'Төлбөр баталгаажлаа. Эрх идэвхтэй боллоо! 🎉' });
+        return true;
       }
+      if (!silent) {
+        setPaymentMessage({ type: 'info', text: 'QPay дээр төлбөр хараахан баталгаажаагүй байна. Банкны аппаараа төлсний дараа хэдхэн секундэд автоматаар баталгаажна.' });
+      }
+      return false;
     } catch (err: any) {
-      setPaymentMessage({ type: 'error', text: err?.message || 'QPay төлөв шалгахад алдаа гарлаа.' });
+      if (!silent) setPaymentMessage({ type: 'error', text: err?.message || 'QPay төлөв шалгахад алдаа гарлаа.' });
+      return false;
     } finally {
-      setPaymentStatusLoading(false);
+      qpayPollBusyRef.current = false;
+      if (!silent) setPaymentStatusLoading(false);
     }
   };
+  const checkQPayPaymentStatus = () => pollQPayInvoice(false);
+
+  // While a QPay invoice is open, auto-confirm: the learner pays in their own
+  // bank app, QPay clears it, and the plan activates here without any clicking.
+  // Polls every 4s for up to 15 minutes (then the manual button still works).
+  useEffect(() => {
+    if (!qpayCheckout) return;
+    const startedAt = Date.now();
+    const timer = setInterval(async () => {
+      if (Date.now() - startedAt > 15 * 60 * 1000) { clearInterval(timer); return; }
+      const paid = await pollQPayInvoice(true);
+      if (paid) clearInterval(timer);
+    }, 4000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qpayCheckout?.senderInvoiceNo]);
 
   // ---------------------------------------------------------------------------
   // Locked-feature card. Shown wherever the current plan doesn't cover a
@@ -2133,6 +2158,16 @@ function LearnerApp() {
 
           {qpayCheckout && (
             <div className="space-y-4">
+              {/* Invoice summary */}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <p className="text-[10px] text-slate-500 font-black uppercase font-space mb-1">QPay нэхэмжлэл</p>
+                <p className="text-sm font-extrabold text-white">
+                  {PLANS[qpayCheckout.plan as 'pro' | 'max']?.name ?? qpayCheckout.plan} багц ({qpayCheckout.interval === 'year' ? 'жилээр' : 'сараар'}) — {formatMnt(qpayCheckout.amountMnt)}
+                </p>
+                <p className="text-[10px] text-slate-500 font-mono mt-1">{qpayCheckout.senderInvoiceNo}</p>
+              </div>
+
+              {/* QR for desktop / second device */}
               {qrSrc ? (
                 <img src={qrSrc} alt="QPay QR" className="w-full max-w-[320px] mx-auto aspect-square object-contain bg-white rounded-xl p-3" />
               ) : (
@@ -2140,6 +2175,9 @@ function LearnerApp() {
                   QPay QR image хараахан ирээгүй байна.
                 </div>
               )}
+              <p className="text-[11px] text-slate-400 text-center font-semibold">
+                QR-ыг дурын банкны аппаар уншуулна уу — эсвэл доороос өөрийн банкаа сонгоход апп шууд нээгдэнэ.
+              </p>
 
               {qpayCheckout.shortUrl && (
                 <a
@@ -2152,31 +2190,53 @@ function LearnerApp() {
                 </a>
               )}
 
+              {/* Every bank/wallet QPay connects — the learner pays from their own app */}
               {(qpayCheckout.urls?.length ?? 0) > 0 && (
-                <div className="grid grid-cols-1 gap-2 max-h-44 overflow-y-auto pr-1">
-                  {qpayCheckout.urls!.slice(0, 8).map((url, index) => (
-                    <a
-                      key={`${url.name ?? 'bank'}-${index}`}
-                      href={url.link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center justify-between gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[11px] font-bold text-slate-200"
-                    >
-                      <span>{url.name || url.description || 'Bank app'}</span>
-                      <ExternalLink className="w-3 h-3 text-slate-500" />
-                    </a>
-                  ))}
+                <div>
+                  <p className="text-[10px] text-slate-500 font-black uppercase font-space mb-2">Өөрийн банкаар төлөх ({qpayCheckout.urls!.length} апп)</p>
+                  <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+                    {qpayCheckout.urls!.map((url, index) => (
+                      <a
+                        key={`${url.name ?? 'bank'}-${index}`}
+                        href={url.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-2.5 px-3 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[11px] font-bold text-slate-200 transition-colors"
+                      >
+                        {url.logo ? (
+                          <img src={url.logo} alt="" className="w-7 h-7 rounded-md object-contain bg-white/90 p-0.5 shrink-0" loading="lazy" />
+                        ) : (
+                          <span className="w-7 h-7 rounded-md bg-white/10 flex items-center justify-center shrink-0"><CreditCard className="w-3.5 h-3.5 text-slate-400" /></span>
+                        )}
+                        <span className="truncate">{url.name || url.description || 'Bank app'}</span>
+                      </a>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              <button
-                onClick={checkQPayPaymentStatus}
-                disabled={paymentStatusLoading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-400/30 rounded-xl text-xs font-black text-blue-200 disabled:opacity-60"
-              >
-                {paymentStatusLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Төлбөр шалгах
-              </button>
+              {/* Auto-confirmation status */}
+              <div className="flex items-center justify-center gap-2 text-[11px] text-emerald-300/90 font-bold">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Төлбөрийг автоматаар шалгаж байна — төлсний дараа эрх шууд идэвхжинэ.
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={checkQPayPaymentStatus}
+                  disabled={paymentStatusLoading}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-400/30 rounded-xl text-xs font-black text-blue-200 disabled:opacity-60 cursor-pointer"
+                >
+                  {paymentStatusLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Одоо шалгах
+                </button>
+                <button
+                  onClick={() => { setQpayCheckout(null); setPaymentMessage(null); }}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-black text-slate-300 cursor-pointer"
+                >
+                  Болих
+                </button>
+              </div>
             </div>
           )}
 

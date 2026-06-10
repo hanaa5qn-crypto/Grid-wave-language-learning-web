@@ -1,7 +1,8 @@
 export interface QPayUrl {
   name?: string;
   description?: string;
-  link?: string;
+  logo?: string; // bank/wallet app icon URL provided by QPay
+  link?: string; // deeplink that opens the user's own banking app
 }
 
 export interface QPayInvoiceResponse {
