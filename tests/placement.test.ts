@@ -1,88 +1,132 @@
 import { describe, it, expect } from 'vitest';
 import {
-  PLACEMENT_BLOCKS, PLACEMENT_TOTAL_QUESTIONS,
-  levelFromPassedBlocks, scorePlacement, isFounderEmail,
+  PLACEMENT_POOL, PLACEMENT_QUESTION_INDEX, PLACEMENT_TOTAL_QUESTIONS,
+  SKILL_SEQUENCE, STREAK_TO_LEVEL_UP,
+  advanceDifficulty, pickQuestion, estimateLevel, scorePlacement, isFounderEmail,
   PlacementAnswer, PlacementSkill,
 } from '../frontend/src/placement';
-import { EXAM_LEVEL_ORDER } from '../frontend/src/exams';
+import { EXAM_LEVEL_ORDER, ExamLevel } from '../frontend/src/exams';
 import { FOUNDER_EMAILS } from '../frontend/src/plans';
 
 const SKILLS: PlacementSkill[] = ['read', 'listen', 'write', 'speak'];
 
-// Блок бүрд өгсөн зөв хариултын тоогоор хариултын жагсаалт үүсгэнэ.
-function answersForBlocks(correctPerBlock: number[]): PlacementAnswer[] {
-  return correctPerBlock.flatMap((correctCount, blockIdx) =>
-    SKILLS.map((skill, i) => ({
-      questionId: `pl_${EXAM_LEVEL_ORDER[blockIdx]}_${skill}`,
-      skill,
-      correct: i < correctCount,
-    })),
-  );
-}
-
-describe('placement question bank', () => {
-  it('has one block per CEFR level with all four skills', () => {
-    expect(PLACEMENT_BLOCKS).toHaveLength(EXAM_LEVEL_ORDER.length);
-    for (const block of PLACEMENT_BLOCKS) {
-      expect(block.map((q) => q.skill)).toEqual(SKILLS);
-    }
-    expect(PLACEMENT_TOTAL_QUESTIONS).toBe(EXAM_LEVEL_ORDER.length * 4);
-  });
-
-  it('every question has a valid correct choice', () => {
-    for (const block of PLACEMENT_BLOCKS) {
-      for (const q of block) {
-        expect(q.choices.length).toBeGreaterThanOrEqual(2);
-        expect(q.correctIndex).toBeGreaterThanOrEqual(0);
-        expect(q.correctIndex).toBeLessThan(q.choices.length);
+describe('placement question pool', () => {
+  it('covers every CEFR level and every skill', () => {
+    for (const level of EXAM_LEVEL_ORDER) {
+      for (const skill of SKILLS) {
+        expect(PLACEMENT_POOL[level][skill].length, `${level}/${skill}`).toBeGreaterThanOrEqual(3);
       }
     }
   });
 
-  it('listening questions carry audio text and reading questions a passage', () => {
-    for (const block of PLACEMENT_BLOCKS) {
-      expect(block.find((q) => q.skill === 'listen')?.audioText).toBeTruthy();
-      expect(block.find((q) => q.skill === 'read')?.passage).toBeTruthy();
+  it('is large enough to fill a full 60-question run', () => {
+    // Ур чадвар бүрийн нийт асуулт нь дарааллын эзлэх хувиас их байх ёстой.
+    for (const skill of SKILLS) {
+      const total = EXAM_LEVEL_ORDER.reduce((n, lv) => n + PLACEMENT_POOL[lv][skill].length, 0);
+      const needed = (PLACEMENT_TOTAL_QUESTIONS / SKILL_SEQUENCE.length)
+        * SKILL_SEQUENCE.filter((s) => s === skill).length;
+      expect(total, skill).toBeGreaterThanOrEqual(needed);
+    }
+  });
+
+  it('every question has a valid correct choice and required media', () => {
+    for (const q of PLACEMENT_QUESTION_INDEX.values()) {
+      expect(q.choices.length).toBeGreaterThanOrEqual(2);
+      expect(q.correctIndex).toBeGreaterThanOrEqual(0);
+      expect(q.correctIndex).toBeLessThan(q.choices.length);
+      if (q.skill === 'read') expect(q.passage, q.id).toBeTruthy();
+      if (q.skill === 'listen') expect(q.audioText, q.id).toBeTruthy();
     }
   });
 });
 
-describe('levelFromPassedBlocks', () => {
-  it('places at A1 when no block is passed', () => {
-    expect(levelFromPassedBlocks(0)).toBe('A1');
+describe('advanceDifficulty (adaptive staircase)', () => {
+  it('steps up one level after consecutive correct answers', () => {
+    let state = { levelIndex: 0, streak: 0 };
+    for (let i = 0; i < STREAK_TO_LEVEL_UP; i++) {
+      state = advanceDifficulty(state.levelIndex, state.streak, true);
+    }
+    expect(state.levelIndex).toBe(1);
+    expect(state.streak).toBe(0);
   });
 
-  it('maps passed block counts onto CEFR levels up to C2', () => {
-    expect(levelFromPassedBlocks(1)).toBe('A1');
-    expect(levelFromPassedBlocks(3)).toBe('B1');
-    expect(levelFromPassedBlocks(6)).toBe('C2');
-    expect(levelFromPassedBlocks(99)).toBe('C2');
+  it('steps down one level after a wrong answer', () => {
+    expect(advanceDifficulty(3, 1, false)).toEqual({ levelIndex: 2, streak: 0 });
+  });
+
+  it('stays within A1..C2 bounds', () => {
+    expect(advanceDifficulty(0, 0, false).levelIndex).toBe(0);
+    let top = { levelIndex: EXAM_LEVEL_ORDER.length - 1, streak: 0 };
+    for (let i = 0; i < STREAK_TO_LEVEL_UP; i++) top = advanceDifficulty(top.levelIndex, top.streak, true);
+    expect(top.levelIndex).toBe(EXAM_LEVEL_ORDER.length - 1);
   });
 });
 
-describe('scorePlacement', () => {
-  it('stops counting passed blocks at the first failed block', () => {
-    // A1 4/4, A2 3/4 (давсан), B1 2/4 (унасан), B2 4/4 — B2 тооцогдохгүй.
-    const record = scorePlacement(answersForBlocks([4, 3, 2, 4]));
-    expect(record.level).toBe('A2');
+describe('pickQuestion', () => {
+  it('prefers the requested level and never repeats a question', () => {
+    const used = new Set<string>();
+    const first = pickQuestion('read', 2, used);
+    expect(first?.level).toBe('B1');
+    used.add(first!.id);
+    const second = pickQuestion('read', 2, used);
+    expect(second?.id).not.toBe(first!.id);
   });
 
-  it('totals correct answers and per-skill scores', () => {
-    const record = scorePlacement(answersForBlocks([4, 2]));
-    expect(record.totalQuestions).toBe(8);
-    expect(record.totalCorrect).toBe(6);
-    expect(record.skillScores.read).toEqual({ correct: 2, total: 2 });
-    expect(record.skillScores.speak).toEqual({ correct: 1, total: 2 });
+  it('falls back to neighbouring levels when a pool is exhausted', () => {
+    const used = new Set(PLACEMENT_POOL.C2.write.map((q) => q.id));
+    const q = pickQuestion('write', EXAM_LEVEL_ORDER.length - 1, used);
+    expect(q).not.toBeNull();
+    expect(q!.level).toBe('C1');
+  });
+});
+
+describe('estimateLevel & scorePlacement', () => {
+  const answers = (entries: Array<[ExamLevel, boolean]>): PlacementAnswer[] =>
+    entries.map(([level, correct], i) => ({
+      questionId: `q${i}`,
+      skill: SKILLS[i % SKILLS.length],
+      level,
+      correct,
+    }));
+
+  it('returns the highest level held at ≥60% accuracy', () => {
+    const record = scorePlacement(answers([
+      ['A1', true], ['A1', true], ['A1', true],
+      ['A2', true], ['A2', true], ['A2', false],
+      ['B1', true], ['B1', false], ['B1', false],
+    ]));
+    expect(record.level).toBe('A2'); // B1 33% — хүрэлцэхгүй
   });
 
-  it('starts locked — the learner must pay (or be a founder) to see it', () => {
-    const record = scorePlacement(answersForBlocks([4]));
+  it('ignores levels with too few questions asked', () => {
+    const record = scorePlacement(answers([
+      ['A1', true], ['A1', true], ['A1', true],
+      ['C2', true], ['C2', true], // ердөө 2 асуулт — нотолгоо хүрэлцэхгүй
+    ]));
+    expect(record.level).toBe('A1');
+  });
+
+  it('places an all-wrong run at A1 and keeps the result locked', () => {
+    const record = scorePlacement(answers([
+      ['A1', false], ['A1', false], ['A1', false], ['A1', false],
+    ]));
+    expect(record.level).toBe('A1');
     expect(record.unlocked).toBe(false);
     expect(record.unlockedBy).toBeUndefined();
   });
 
-  it('places a perfect run at C2', () => {
-    expect(scorePlacement(answersForBlocks([4, 4, 4, 4, 4, 4])).level).toBe('C2');
+  it('tallies per-skill and per-level statistics', () => {
+    const record = scorePlacement(answers([
+      ['A1', true], ['A1', false], ['A1', true], ['A1', true],
+    ]));
+    expect(record.totalQuestions).toBe(4);
+    expect(record.totalCorrect).toBe(3);
+    expect(record.levelStats.A1).toEqual({ asked: 4, correct: 3 });
+    expect(record.skillScores.read.total).toBe(1);
+  });
+
+  it('estimateLevel defaults to A1 with no data', () => {
+    expect(estimateLevel({})).toBe('A1');
   });
 });
 

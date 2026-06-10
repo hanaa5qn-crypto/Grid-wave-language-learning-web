@@ -1,12 +1,12 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen, Headphones, Edit3, Mic, Sparkles, ArrowRight, Volume2,
-  Lock, Crown, Loader2, QrCode, CheckCircle2, X,
+  Lock, Crown, Loader2, QrCode, CheckCircle2, X, Clock, TrendingUp,
 } from 'lucide-react';
 import {
-  PLACEMENT_BLOCKS, PLACEMENT_TOTAL_QUESTIONS, BLOCK_STOP_SCORE,
-  PLACEMENT_RESULT_PRICE_MNT, PlacementAnswer, PlacementQuestion,
-  PlacementRecord, PlacementSkill, scorePlacement,
+  PLACEMENT_TOTAL_QUESTIONS, PLACEMENT_RESULT_PRICE_MNT, SKILL_SEQUENCE,
+  PlacementAnswer, PlacementQuestion, PlacementRecord, PlacementSkill,
+  advanceDifficulty, pickQuestion, scorePlacement,
 } from './placement';
 import { getAuthInstance } from './firebase';
 
@@ -51,22 +51,48 @@ function qrImageSrc(qrImage?: string): string | null {
 
 export default function PlacementTest({ isFounder, onFinish, onSkip }: PlacementTestProps) {
   const [phase, setPhase] = useState<Phase>('intro');
-  const [blockIndex, setBlockIndex] = useState(0);
-  const [questionIndex, setQuestionIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
-  const answersRef = useRef<PlacementAnswer[]>([]);
-  const blockCorrectRef = useRef(0);
   const [record, setRecord] = useState<PlacementRecord | null>(null);
+
+  // Дасан зохицох төлөв: одоогийн түвшин (0=A1 … 5=C2), дараалсан зөвийн тоо,
+  // ашигласан асуултууд, өгсөн хариултууд. Тест A1-ээс эхэлж, зөв хариулах
+  // тусам шатаар хүндэрнэ.
+  const levelIndexRef = useRef(0);
+  const streakRef = useRef(0);
+  const usedIdsRef = useRef<Set<string>>(new Set());
+  const answersRef = useRef<PlacementAnswer[]>([]);
+  const [question, setQuestion] = useState<PlacementQuestion | null>(null);
+  const [answeredCount, setAnsweredCount] = useState(0);
+
+  // Тестийн үргэлжилсэн хугацааны заалт (мм:сс).
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  useEffect(() => {
+    if (phase !== 'quiz' || startedAt === null) return;
+    const timer = setInterval(() => setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [phase, startedAt]);
+  const elapsedLabel = `${String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:${String(elapsedSeconds % 60).padStart(2, '0')}`;
 
   // Төлбөрийн төлөв (paywall шат)
   const [invoice, setInvoice] = useState<QPayInvoice | null>(null);
   const [payLoading, setPayLoading] = useState(false);
   const [payMessage, setPayMessage] = useState<{ type: 'info' | 'error'; text: string } | null>(null);
 
-  const question: PlacementQuestion | null = PLACEMENT_BLOCKS[blockIndex]?.[questionIndex] ?? null;
-  const answeredCount = answersRef.current.length;
-
   const skillTotals = useMemo(() => record?.skillScores ?? null, [record]);
+
+  const serveQuestion = (answered: number): PlacementQuestion | null => {
+    const skill = SKILL_SEQUENCE[answered % SKILL_SEQUENCE.length];
+    const next = pickQuestion(skill, levelIndexRef.current, usedIdsRef.current);
+    if (next) usedIdsRef.current.add(next.id);
+    return next;
+  };
+
+  const startQuiz = () => {
+    setStartedAt(Date.now());
+    setQuestion(serveQuestion(0));
+    setPhase('quiz');
+  };
 
   const finishQuiz = () => {
     const scored = scorePlacement(answersRef.current);
@@ -83,26 +109,34 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
   const submitAnswer = () => {
     if (!question || selected === null) return;
     const correct = selected === question.correctIndex;
-    answersRef.current.push({ questionId: question.id, skill: question.skill, correct });
-    if (correct) blockCorrectRef.current += 1;
+    answersRef.current.push({
+      questionId: question.id,
+      skill: question.skill,
+      level: question.level,
+      correct,
+    });
     setSelected(null);
 
-    const isLastInBlock = questionIndex === PLACEMENT_BLOCKS[blockIndex].length - 1;
-    if (!isLastInBlock) {
-      setQuestionIndex(questionIndex + 1);
+    // Дасан зохицох шилжилт: зөв бол түвшин аажмаар ахина, буруу бол буурна.
+    const next = advanceDifficulty(levelIndexRef.current, streakRef.current, correct);
+    levelIndexRef.current = next.levelIndex;
+    streakRef.current = next.streak;
+
+    const answered = answersRef.current.length;
+    setAnsweredCount(answered);
+
+    if (answered >= PLACEMENT_TOTAL_QUESTIONS) {
+      finishQuiz();
       return;
     }
 
-    // Блок дууслаа: оноо хэт бага бол тестийг эртхэн дуусгана.
-    const blockCorrect = blockCorrectRef.current;
-    blockCorrectRef.current = 0;
-    const isLastBlock = blockIndex === PLACEMENT_BLOCKS.length - 1;
-    if (isLastBlock || blockCorrect <= BLOCK_STOP_SCORE) {
+    const nextQuestion = serveQuestion(answered);
+    if (!nextQuestion) {
+      // Асуултын сан дууссан (онолын хувьд ховор) — байгаагаараа дүгнэнэ.
       finishQuiz();
-    } else {
-      setBlockIndex(blockIndex + 1);
-      setQuestionIndex(0);
+      return;
     }
+    setQuestion(nextQuestion);
   };
 
   const startQPay = async () => {
@@ -161,7 +195,10 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
             <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua
           </h1>
           {phase === 'quiz' && (
-            <span className="text-sm font-space text-slate-400 font-bold">{answeredCount + 1} / {PLACEMENT_TOTAL_QUESTIONS}</span>
+            <span className="flex items-center gap-3 text-sm font-space text-slate-400 font-bold">
+              <span className="inline-flex items-center gap-1.5"><Clock className="w-4 h-4" /> {elapsedLabel}</span>
+              {Math.min(answeredCount + 1, PLACEMENT_TOTAL_QUESTIONS)} / {PLACEMENT_TOTAL_QUESTIONS}
+            </span>
           )}
         </div>
         <div className="w-full h-2.5 bg-white/5 border border-white/10 rounded-full overflow-hidden relative">
@@ -190,9 +227,12 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
           </div>
           <h2 className="text-2xl md:text-3xl font-black font-space">Түвшин тогтоох үнэлгээний тест</h2>
           <p className="text-slate-400 text-sm leading-relaxed">
-            Дөрвөн ур чадварыг бүгдийг шалгана: <b className="text-white">Унших · Сонсох · Бичих · Ярих</b>.
-            Асуултууд A1-ээс C2 хүртэл аажмаар хүндэрнэ — мэдэхгүй зүйл таарвал санаа зовох хэрэггүй,
-            тест таны түвшинд автоматаар тохирно. Ойролцоогоор 10–15 минут зарцуулна.
+            Дөрвөн ур чадварыг бүгдийг шалгана: <b className="text-white">Унших · Сонсох · Бичих · Ярих</b> —
+            нийт <b className="text-white">{PLACEMENT_TOTAL_QUESTIONS} асуулт</b>, ойролцоогоор{' '}
+            <b className="text-white">40–50 минут</b>. Тест дасан зохицдог: зөв хариулах тусам асуулт
+            аажмаар хүндэрч (A1 → C2), буруу хариулбал хөнгөрнө. Тиймээс яарах хэрэггүй — асуулт бүр
+            дээр сайтар бодоорой. Мэдэхгүй зүйл таарвал санаа зовох хэрэггүй: тест таны бодит түвшнийг
+            л хайж байгаа юм.
           </p>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -203,6 +243,13 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
             </div>
           ))}
         </div>
+        <div className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-xl p-4">
+          <TrendingUp className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Тасалдуулахгүй, нэг дор өгөхөд хамгийн оновчтой. Сонсох асуултын бичлэгийг хэдэн ч удаа
+            дахин тоглуулж болно.
+          </p>
+        </div>
       </div>,
       <>
         <button
@@ -212,7 +259,7 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
           Дараа өгөх
         </button>
         <button
-          onClick={() => setPhase('quiz')}
+          onClick={startQuiz}
           className="flex-[2] bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl py-3.5 px-6 hover:opacity-95 shadow-[0_4px_20px_rgba(168,85,247,0.3)] transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           Тест эхлүүлэх <ArrowRight className="w-5 h-5" />
@@ -224,7 +271,7 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
   // --- Асуултууд ---------------------------------------------------------------
   if (phase === 'quiz' && question) {
     return shell(
-      <div className="space-y-5">
+      <div className="space-y-5" data-question-id={question.id}>
         <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
           <span className="inline-flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full px-3 py-1">
             {SKILL_META[question.skill].icon} {SKILL_META[question.skill].label}
