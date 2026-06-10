@@ -44,6 +44,10 @@ import OnboardingWizard from './OnboardingWizard';
 import PlacementTest from './PlacementTest';
 import { isFounderEmail } from './placement';
 import GrammarTipCard from './GrammarTipCard';
+import DuelScreen from './DuelScreen';
+import SocialSection from './SocialSection';
+import { fetchDuel, redeemReferralCode, DuelView } from './social';
+import type { InviteContext } from './LoginScreen';
 
 // Union of all exam item types — they all share `topic`, `title`, `titleMn`.
 type ExamItem = ReadingItem | ListeningItem | WritingItem | SpeakingItem;
@@ -862,6 +866,82 @@ function LearnerApp() {
   // Түвшин тогтоох тест: шинэ хэрэглэгчид onboarding-ийн дараа автоматаар,
   // бусад нь Шалгалт табын картаар нээнэ.
   const [placementOpen, setPlacementOpen] = useState(false);
+
+  // --- Нийгмийн боломжууд: тулаан, урилга --------------------------------------
+  // Одоо тоглож/харж буй тулаан (бүтэн дэлгэцийн overlay).
+  const [activeDuel, setActiveDuel] = useState<DuelView | null>(null);
+  // Тулаан дуусахад профайлын нийгмийн хэсгийг дахин ачаалуулах тоолуур.
+  const [socialRefreshKey, setSocialRefreshKey] = useState(0);
+  // Login дэлгэцэд харуулах урилгын контекст (?duel= / ?ref= линкээр ирсэн зочин).
+  const [inviteContext, setInviteContext] = useState<InviteContext | null>(null);
+
+  // ?duel=/?ref= параметрүүдийг localStorage-д хадгалаад URL-ийг цэвэрлэнэ:
+  // нэвтрэлт/бүртгэлийн дараа ашиглагдана (refresh даваад үлдэнэ).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const duelCode = params.get('duel');
+    const refCode = params.get('ref');
+    if (!duelCode && !refCode) return;
+    try {
+      if (duelCode) localStorage.setItem('pendingDuelCode', duelCode);
+      if (refCode) localStorage.setItem('pendingRefCode', refCode);
+    } catch { /* private mode — урилгагүйгээр үргэлжилнэ */ }
+    params.delete('duel');
+    params.delete('ref');
+    const qs = params.toString();
+    window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
+  }, []);
+
+  // Нэвтрээгүй зочинд урилгын баннер харуулахын тулд нийтийн duel preview-г татна.
+  useEffect(() => {
+    if (isTest) return;
+    let duelCode: string | null = null;
+    let refCode: string | null = null;
+    try {
+      duelCode = localStorage.getItem('pendingDuelCode');
+      refCode = localStorage.getItem('pendingRefCode');
+    } catch { return; }
+    if (duelCode) {
+      fetchDuel(duelCode)
+        .then((duel) => setInviteContext({ kind: 'duel', challengerName: duel.challenger?.name }))
+        .catch(() => setInviteContext(null));
+    } else if (refCode) {
+      setInviteContext({ kind: 'ref' });
+    }
+  }, []);
+
+  // Нэвтэрсний дараа хүлээгдэж буй урилгыг бүртгэж (шинэ данс бол хоёр тал
+  // шагнал авна), тулааны линкээр ирсэн бол тулааныг шууд нээнэ.
+  const socialBootstrapDoneRef = useRef(false);
+  useEffect(() => {
+    if (!currentUser || isTest || socialBootstrapDoneRef.current) return;
+    socialBootstrapDoneRef.current = true;
+    void (async () => {
+      let duelCode: string | null = null;
+      let refCode: string | null = null;
+      try {
+        duelCode = localStorage.getItem('pendingDuelCode');
+        refCode = localStorage.getItem('pendingRefCode');
+        localStorage.removeItem('pendingDuelCode');
+        localStorage.removeItem('pendingRefCode');
+      } catch { return; }
+
+      // Урилгын кредит: энгийн ref код, эсвэл тулааны challenger урьсанд тооцно.
+      // Хуучин данс серверээс зөөлөн татгалзана (400) — алдааг үл тоомсорлоно.
+      if (refCode) {
+        try { await redeemReferralCode({ code: refCode }); } catch { /* үл тоомсорлоно */ }
+      } else if (duelCode) {
+        try { await redeemReferralCode({ duelCode }); } catch { /* үл тоомсорлоно */ }
+      }
+      if (duelCode) {
+        try {
+          const duel = await fetchDuel(duelCode);
+          setActiveDuel(duel);
+        } catch { /* тулаан устсан/олдоогүй — юу ч нээхгүй */ }
+      }
+      setInviteContext(null);
+    })();
+  }, [currentUser]);
   const [examSec, setExamSec] = useState<'reading' | 'listening' | 'writing' | 'speaking'>('reading');
   const [examItemIdx, setExamItemIdx] = useState(0);
   const [examItemAns, setExamItemAns] = useState<number | null>(null);
@@ -2843,6 +2923,13 @@ function LearnerApp() {
             </div>
           </div>
         </div>
+
+        {/* Тэмцээн ба урилга — тулаан, найз урих, долоо хоногийн самбар, badges */}
+        <SocialSection
+          targetLevel={currentUser.targetLevel}
+          onPlayDuel={(duel) => setActiveDuel(duel)}
+          refreshKey={socialRefreshKey}
+        />
       </div>
     );
   };
@@ -2861,7 +2948,7 @@ function LearnerApp() {
   }
 
   if (!currentUser) {
-    return <LoginScreen />;
+    return <LoginScreen inviteContext={inviteContext ?? undefined} />;
   }
 
   if (currentUser && !currentUser.onboardingDone) {
@@ -2912,6 +2999,17 @@ function LearnerApp() {
 
       {/* TestDaF бүрэн загвар шалгалт — бүрэн дэлгэц overlay (sidebar-аас дээгүүр) */}
       {testdafOpen && <TestDafExam onExit={() => setTestdafOpen(false)} />}
+
+      {/* Тулаан (quiz duel) — бүрэн дэлгэц overlay */}
+      {activeDuel && (
+        <DuelScreen
+          duel={activeDuel}
+          onExit={(changed) => {
+            setActiveDuel(null);
+            if (changed) setSocialRefreshKey((k) => k + 1);
+          }}
+        />
+      )}
 
       {/* Standalone Duolingo Core Quiz Overlay (Matches Screen 1 format explicitly) */}
       {coreLessonActive && (

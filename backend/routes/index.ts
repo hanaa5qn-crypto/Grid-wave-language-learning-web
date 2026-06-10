@@ -5,9 +5,11 @@ import { registerEvaluateCompositionRoute } from './evaluate-composition';
 import { registerPaymentsRoute } from './payments';
 import { registerTranslateRoute } from './translate';
 import { registerAiQuotaRoute } from './ai-quota';
+import { registerSocialRoute } from './social';
 
 export function registerApiRoutes(app: Express) {
   registerPaymentsRoute(app);
+  registerSocialRoute(app);
   registerAiQuotaRoute(app);
   registerEvaluateWritingRoute(app);
   registerEvaluateCompositionRoute(app);

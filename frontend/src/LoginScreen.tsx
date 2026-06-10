@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Mail, Lock, User as UserIcon, ArrowRight, Target, Sparkles,
-  GraduationCap, Headphones, Loader2, AlertCircle, CheckCircle,
+  GraduationCap, Headphones, Loader2, AlertCircle, CheckCircle, Swords,
 } from 'lucide-react';
 import { signUpWithProfile, logInWithEmail, sendResetEmail } from './auth';
 import { isFirebaseConfigured } from './firebase';
@@ -47,13 +47,24 @@ function friendlyAuthError(err: unknown): string {
   }
 }
 
+// Урилгын линкээр (тулаан эсвэл referral) ирсэн зочинд харуулах контекст.
+export interface InviteContext {
+  kind: 'duel' | 'ref';
+  challengerName?: string;
+}
+
+interface LoginScreenProps {
+  inviteContext?: InviteContext;
+}
+
 /**
  * Full-screen sign up / log in screen backed by Firebase Authentication.
  * On success, App's auth listener picks up the new session and swaps this
  * screen out — so there's no success callback to wire up here.
  */
-export default function LoginScreen() {
-  const [mode, setMode] = useState<Mode>('login');
+export default function LoginScreen({ inviteContext }: LoginScreenProps = {}) {
+  // Урилгаар ирсэн зочин ихэвчлэн шинэ хэрэглэгч тул бүртгүүлэх горимоор эхэлнэ.
+  const [mode, setMode] = useState<Mode>(inviteContext ? 'signup' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -154,6 +165,17 @@ export default function LoginScreen() {
             Герман хэл сурах ухаалаг платформ. Бүртгүүлж нэвтэрснээр таны явц хадгалагдаж, аль ч төхөөрөмжөөс үргэлжлүүлэн суралцах боломжтой.
           </p>
         </div>
+
+        {inviteContext && (
+          <div className="max-w-2xl mx-auto mb-6 text-purple-200 text-sm font-bold bg-purple-950/40 p-4 rounded-xl border border-purple-500/40 flex items-start gap-3 animate-fade-in">
+            <Swords className="w-5 h-5 flex-shrink-0 mt-0.5 text-purple-300" />
+            <span>
+              {inviteContext.kind === 'duel'
+                ? `🎮 ${inviteContext.challengerName || 'Найз тань'} таныг герман хэлний тулаанд урьж байна — бүртгүүлээд яг ижил 10 асуултад хариулж өрсөлдөөрэй!`
+                : '🎁 Найз тань таныг урьсан байна — бүртгүүлмэгц та хоёулаа Streak Freeze шагнал авна!'}
+            </span>
+          </div>
+        )}
 
         {!isFirebaseConfigured && (
           <div className="max-w-2xl mx-auto mb-6 text-amber-300 text-xs font-bold bg-amber-950/40 p-4 rounded-xl border border-amber-500/30 flex items-start gap-3">

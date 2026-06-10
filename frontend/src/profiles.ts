@@ -39,6 +39,17 @@ export interface UserProfile {
     unlocked: boolean;
     unlockedBy?: string;
   };
+  // --- Нийгмийн өсөлтийн боломжууд (урилга, тулаан, найзууд) ---
+  // Миний хуваалцах урилгын код (сервер үүсгэнэ).
+  referralCode?: string;
+  // Намайг урьсан хэрэглэгчийн uid (нэг л удаа тавигдана).
+  referredBy?: string;
+  // Амжилттай урьсан хүний тоо.
+  invitesCount?: number;
+  // Тулаан/урилгаар холбогдсон найзуудын uid жагсаалт.
+  friendUids?: string[];
+  // Тулааны статистик.
+  duelStats?: { wins: number; losses: number; draws: number };
   billing?: {
     plan?: string;
     status?: string;
