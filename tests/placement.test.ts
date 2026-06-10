@@ -5,6 +5,7 @@ import {
   PlacementAnswer, PlacementSkill,
 } from '../frontend/src/placement';
 import { EXAM_LEVEL_ORDER } from '../frontend/src/exams';
+import { FOUNDER_EMAILS } from '../frontend/src/plans';
 
 const SKILLS: PlacementSkill[] = ['read', 'listen', 'write', 'speak'];
 
@@ -86,9 +87,12 @@ describe('scorePlacement', () => {
 });
 
 describe('isFounderEmail', () => {
-  it('accepts the founder account regardless of case/whitespace', () => {
-    expect(isFounderEmail('ceo@homunculuslogic.io')).toBe(true);
-    expect(isFounderEmail('  CEO@homunculuslogic.io ')).toBe(true);
+  it('accepts every account on the canonical founder list, case-insensitively', () => {
+    expect(FOUNDER_EMAILS.length).toBeGreaterThan(0);
+    for (const email of FOUNDER_EMAILS) {
+      expect(isFounderEmail(email)).toBe(true);
+      expect(isFounderEmail(`  ${email.toUpperCase()} `)).toBe(true);
+    }
   });
 
   it('rejects regular learners and empty emails', () => {

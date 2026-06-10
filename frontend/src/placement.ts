@@ -12,6 +12,7 @@
 // =============================================================================
 
 import { EXAMS, EXAM_LEVEL_ORDER, ExamLevel } from './exams';
+import { FOUNDER_EMAILS } from './plans';
 
 export type PlacementSkill = 'read' | 'listen' | 'write' | 'speak';
 
@@ -41,14 +42,13 @@ export interface PlacementRecord {
   totalQuestions: number;
   skillScores: Record<PlacementSkill, PlacementSkillScore>;
   unlocked: boolean;
-  unlockedBy?: 'founder' | 'qpay';
+  unlockedBy?: 'founder' | 'qpay' | 'dummy';
 }
 
 export const PLACEMENT_RESULT_PRICE_MNT = 5000;
 
-// Компанийн (founder) данснууд — үр дүнг төлбөргүй нээнэ.
-export const FOUNDER_EMAILS = ['ceo@homunculuslogic.io'];
-
+// Founder данснууд (plans.ts-ийн нэгдсэн FOUNDER_EMAILS жагсаалт) үр дүнг
+// төлбөргүй нээнэ.
 export function isFounderEmail(email: string | undefined | null): boolean {
   return FOUNDER_EMAILS.includes((email ?? '').trim().toLowerCase());
 }
