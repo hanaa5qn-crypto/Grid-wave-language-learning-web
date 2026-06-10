@@ -305,7 +305,7 @@ export function registerPaymentsRoute(app: Express) {
     const user = await verifyFirebaseBearer(req);
     if (!user) return res.status(401).json({ error: 'Sign in again before checking payment.' });
 
-    const invoiceRef = admin.db.collection('paymentInvoices').doc(req.params.senderInvoiceNo);
+    const invoiceRef = admin.db.collection('paymentInvoices').doc(sanitizeDocId(req.params.senderInvoiceNo));
     const snap = await invoiceRef.get();
     if (!snap.exists) return res.status(404).json({ error: 'Payment invoice was not found.' });
 
@@ -383,7 +383,7 @@ export function registerPaymentsRoute(app: Express) {
     const user = await verifyFirebaseBearer(req);
     if (!user) return res.status(401).json({ error: 'Sign in again before paying.' });
 
-    const invoiceRef = admin.db.collection('paymentInvoices').doc(req.params.senderInvoiceNo);
+    const invoiceRef = admin.db.collection('paymentInvoices').doc(sanitizeDocId(req.params.senderInvoiceNo));
     const snap = await invoiceRef.get();
     if (!snap.exists) return res.status(404).json({ error: 'Payment invoice was not found.' });
 
@@ -421,7 +421,7 @@ export function registerPaymentsRoute(app: Express) {
 
     const senderInvoiceNo = String(req.query.sender_invoice_no || req.body?.sender_invoice_no || '');
     const paymentId = String(req.query.payment_id || req.body?.payment_id || '');
-    let invoiceRef = senderInvoiceNo ? admin.db.collection('paymentInvoices').doc(senderInvoiceNo) : null;
+    let invoiceRef = senderInvoiceNo ? admin.db.collection('paymentInvoices').doc(sanitizeDocId(senderInvoiceNo)) : null;
     let invoiceSnap = invoiceRef ? await invoiceRef.get() : null;
 
     try {
