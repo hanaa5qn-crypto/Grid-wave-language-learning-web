@@ -4,7 +4,7 @@ import {
   Lock, Crown, Loader2, QrCode, CheckCircle2, X, Clock, TrendingUp,
 } from 'lucide-react';
 import {
-  PLACEMENT_TOTAL_QUESTIONS, PLACEMENT_RESULT_PRICE_MNT, SKILL_SEQUENCE,
+  PLACEMENT_QUESTION_INDEX, PLACEMENT_TOTAL_QUESTIONS, PLACEMENT_RESULT_PRICE_MNT, SKILL_SEQUENCE,
   PlacementAnswer, PlacementQuestion, PlacementRecord, PlacementSkill,
   advanceDifficulty, pickQuestion, scorePlacement,
 } from './placement';
@@ -49,10 +49,65 @@ function qrImageSrc(qrImage?: string): string | null {
   return qrImage.startsWith('data:') ? qrImage : `data:image/png;base64,${qrImage}`;
 }
 
+// Хөтөч санамсаргүй refresh хийгдсэн ч тестийн явц алдагдахгүйн тулд
+// асуулт бүрийн дараа localStorage-д хадгална. Тест бүрэн дуусч profile-д
+// бичигдмэгц устгана.
+const STORAGE_KEY = 'vivid-placement-progress-v1';
+
+interface SavedPlacementProgress {
+  phase: 'quiz' | 'paywall' | 'result';
+  levelIndex: number;
+  streak: number;
+  usedIds: string[];
+  answers: PlacementAnswer[];
+  questionId: string | null;
+  elapsedSeconds: number;
+  record: PlacementRecord | null;
+}
+
+function loadSavedProgress(): SavedPlacementProgress | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as SavedPlacementProgress;
+    if (!Array.isArray(data.answers)) return null;
+    if (data.phase === 'quiz') {
+      // Асуултын сан шинэчлэгдэж id олдохгүй бол хуучин явцыг сэргээхгүй.
+      if (!data.questionId || !PLACEMENT_QUESTION_INDEX.has(data.questionId)) return null;
+    } else if (!data.record) {
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function saveProgress(snapshot: SavedPlacementProgress) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // Хадгалж чадаагүй ч (quota, private mode) тест хэвийн үргэлжилнэ.
+  }
+}
+
+function clearSavedProgress() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // үл тоомсорлоно
+  }
+}
+
 export default function PlacementTest({ isFounder, onFinish, onSkip }: PlacementTestProps) {
-  const [phase, setPhase] = useState<Phase>('intro');
+  // Refresh-ийн дараа сэргээх хадгалсан явц. Тест дууссан (paywall/result)
+  // төлвийг шууд сэргээнэ; дундаа байсан quiz-ийг танилцуулга дээрх
+  // "Үргэлжлүүлэх" товчоор сэргээнэ.
+  const [saved] = useState<SavedPlacementProgress | null>(loadSavedProgress);
+  const [phase, setPhase] = useState<Phase>(saved && saved.phase !== 'quiz' ? saved.phase : 'intro');
   const [selected, setSelected] = useState<number | null>(null);
-  const [record, setRecord] = useState<PlacementRecord | null>(null);
+  const [record, setRecord] = useState<PlacementRecord | null>(saved && saved.phase !== 'quiz' ? saved.record : null);
+  const [quitConfirmOpen, setQuitConfirmOpen] = useState(false);
 
   // Дасан зохицох төлөв: одоогийн түвшин (0=A1 … 5=C2), дараалсан зөвийн тоо,
   // ашигласан асуултууд, өгсөн хариултууд. Тест A1-ээс эхэлж, зөв хариулах
@@ -88,9 +143,63 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
     return next;
   };
 
+  const currentElapsed = () => (startedAt === null ? 0 : Math.floor((Date.now() - startedAt) / 1000));
+
+  const persistQuiz = (q: PlacementQuestion | null, elapsed: number) => {
+    saveProgress({
+      phase: 'quiz',
+      levelIndex: levelIndexRef.current,
+      streak: streakRef.current,
+      usedIds: [...usedIdsRef.current],
+      answers: [...answersRef.current],
+      questionId: q?.id ?? null,
+      elapsedSeconds: elapsed,
+      record: null,
+    });
+  };
+
+  const persistRecord = (donePhase: 'paywall' | 'result', rec: PlacementRecord) => {
+    saveProgress({
+      phase: donePhase,
+      levelIndex: levelIndexRef.current,
+      streak: streakRef.current,
+      usedIds: [...usedIdsRef.current],
+      answers: [...answersRef.current],
+      questionId: null,
+      elapsedSeconds: currentElapsed(),
+      record: rec,
+    });
+  };
+
   const startQuiz = () => {
+    // Шинээр эхлэхэд дасан зохицох төлвийг тэглэж, хуучин хадгалсан явцыг дарж бичнэ.
+    levelIndexRef.current = 0;
+    streakRef.current = 0;
+    usedIdsRef.current = new Set();
+    answersRef.current = [];
+    const first = serveQuestion(0);
+    setAnsweredCount(0);
     setStartedAt(Date.now());
-    setQuestion(serveQuestion(0));
+    setElapsedSeconds(0);
+    setQuestion(first);
+    setPhase('quiz');
+    persistQuiz(first, 0);
+  };
+
+  // Хадгалсан явцаас үргэлжлүүлнэ (refresh эсвэл гарсны дараа). Цаг хэмжилт
+  // завсарласан хугацааг оруулахгүйгээр өмнөх заалтаас үргэлжилнэ.
+  const resumeQuiz = () => {
+    if (!saved || saved.phase !== 'quiz' || !saved.questionId) return;
+    const savedQuestion = PLACEMENT_QUESTION_INDEX.get(saved.questionId);
+    if (!savedQuestion) return;
+    levelIndexRef.current = saved.levelIndex;
+    streakRef.current = saved.streak;
+    usedIdsRef.current = new Set(saved.usedIds);
+    answersRef.current = [...saved.answers];
+    setAnsweredCount(saved.answers.length);
+    setStartedAt(Date.now() - saved.elapsedSeconds * 1000);
+    setElapsedSeconds(saved.elapsedSeconds);
+    setQuestion(savedQuestion);
     setPhase('quiz');
   };
 
@@ -100,10 +209,29 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
       const unlockedRecord: PlacementRecord = { ...scored, unlocked: true, unlockedBy: 'founder' };
       setRecord(unlockedRecord);
       setPhase('result');
+      persistRecord('result', unlockedRecord);
     } else {
       setRecord(scored);
       setPhase('paywall');
+      persistRecord('paywall', scored);
     }
+  };
+
+  // Тест дуусч бичлэг profile-д хадгалагдах тул түр явцыг устгана.
+  const completeAndExit = (rec: PlacementRecord) => {
+    clearSavedProgress();
+    onFinish(rec);
+  };
+
+  // Гарахын өмнө баталгаажуулсан: явц localStorage-д үлдсэн тул дараа үргэлжлүүлж болно.
+  const quitTest = () => {
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      // TTS байхгүй орчин
+    }
+    setQuitConfirmOpen(false);
+    onSkip();
   };
 
   const submitAnswer = () => {
@@ -137,6 +265,7 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
       return;
     }
     setQuestion(nextQuestion);
+    persistQuiz(nextQuestion, currentElapsed());
   };
 
   const startQPay = async () => {
@@ -172,8 +301,11 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Төлбөр шалгахад алдаа гарлаа.');
       if (data.paid || data.status === 'paid') {
-        setRecord({ ...record, unlocked: true, unlockedBy: 'qpay' });
+        const unlockedRecord: PlacementRecord = { ...record, unlocked: true, unlockedBy: 'qpay' };
+        setRecord(unlockedRecord);
         setPhase('result');
+        // Төлбөр баталгаажсаны дараа refresh хийгдсэн ч нээлт алдагдахгүй.
+        persistRecord('result', unlockedRecord);
       } else {
         setPayMessage({ type: 'info', text: 'Төлбөр хараахан баталгаажаагүй байна. Төлснөөс хойш хэдэн секунд хүлээгээд дахин шалгана уу.' });
       }
@@ -198,6 +330,13 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
             <span className="flex items-center gap-3 text-sm font-space text-slate-400 font-bold">
               <span className="inline-flex items-center gap-1.5"><Clock className="w-4 h-4" /> {elapsedLabel}</span>
               {Math.min(answeredCount + 1, PLACEMENT_TOTAL_QUESTIONS)} / {PLACEMENT_TOTAL_QUESTIONS}
+              <button
+                onClick={() => setQuitConfirmOpen(true)}
+                aria-label="Тестээс гарах"
+                className="p-1.5 border border-white/10 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </span>
           )}
         </div>
@@ -214,6 +353,32 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
       </main>
 
       {footer && <footer className="w-full max-w-[640px] flex gap-4 mt-4 relative z-10">{footer}</footer>}
+
+      {quitConfirmOpen && (
+        <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4">
+          <div className="bg-[#0d0d16] border border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up">
+            <h3 className="text-xl font-black font-space">Тестээс гарах уу?</h3>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Таны хариулсан {answeredCount} асуултын явц хадгалагдсан тул дараа
+              яг энэ асуултаас үргэлжлүүлж болно.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setQuitConfirmOpen(false)}
+                className="flex-[2] bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl py-3 px-4 hover:opacity-95 transition-all cursor-pointer"
+              >
+                Үргэлжлүүлэх
+              </button>
+              <button
+                onClick={quitTest}
+                className="flex-1 py-3 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-300 cursor-pointer"
+              >
+                Гарах
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -250,6 +415,20 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
             дахин тоглуулж болно.
           </p>
         </div>
+        {saved?.phase === 'quiz' && (
+          <button
+            onClick={resumeQuiz}
+            className="w-full flex items-center justify-between gap-3 bg-purple-950/40 border-2 border-purple-500/60 hover:bg-purple-950/60 rounded-xl p-4 transition-all cursor-pointer text-left"
+          >
+            <span className="text-sm font-bold text-white">
+              Дуусгаагүй тест байна — {saved.answers.length}/{PLACEMENT_TOTAL_QUESTIONS} хариулсан. Үргэлжлүүлэх
+              <span className="block text-xs text-slate-400 font-normal mt-0.5">
+                «Тест эхлүүлэх» дарвал шинээр эхэлж, өмнөх явц устана.
+              </span>
+            </span>
+            <ArrowRight className="w-5 h-5 text-purple-300 shrink-0" />
+          </button>
+        )}
       </div>,
       <>
         <button
@@ -391,7 +570,7 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
         )}
       </div>,
       <button
-        onClick={() => onFinish(record)}
+        onClick={() => completeAndExit(record)}
         className="flex-1 py-3.5 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-400 cursor-pointer flex items-center justify-center gap-2"
       >
         <X className="w-4 h-4" /> Үр дүнг нээлгүй үргэлжлүүлэх
@@ -437,7 +616,7 @@ export default function PlacementTest({ isFounder, onFinish, onSkip }: Placement
         </div>
       </div>,
       <button
-        onClick={() => onFinish(record)}
+        onClick={() => completeAndExit(record)}
         className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl py-3.5 px-6 hover:opacity-95 shadow-[0_4px_20px_rgba(168,85,247,0.3)] transition-all cursor-pointer flex items-center justify-center gap-2"
       >
         {record.level} түвшнээс суралцаж эхлэх <Sparkles className="w-5 h-5 text-yellow-300" />

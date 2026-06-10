@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import PlacementTest from '../frontend/src/PlacementTest';
@@ -28,6 +28,9 @@ function answerAll(correctly: boolean) {
 }
 
 describe('PlacementTest adaptive flow', () => {
+  // Тест бүр цэвэр localStorage-тэй эхэлнэ (явц хадгалах боломж нэмэгдсэн).
+  beforeEach(() => localStorage.clear());
+
   it('hides the price until the test is finished, then asks 5000₮ to reveal', () => {
     const onFinish = vi.fn();
     render(<PlacementTest isFounder={false} onFinish={onFinish} onSkip={() => {}} />);
@@ -101,6 +104,63 @@ describe('PlacementTest adaptive flow', () => {
     const record = onFinish.mock.calls[0][0] as PlacementRecord;
     expect(record.level).toBe('A1');
     expect(record.totalQuestions).toBe(PLACEMENT_TOTAL_QUESTIONS);
+    cleanup();
+  });
+
+  it('restores an in-progress quiz after a remount (browser refresh)', () => {
+    render(<PlacementTest isFounder={true} onFinish={() => {}} onSkip={() => {}} />);
+    fireEvent.click(screen.getByText('Тест эхлүүлэх'));
+    answerCurrent(true);
+    answerCurrent(true);
+    answerCurrent(true);
+    const questionBeforeRefresh = currentQuestion();
+    cleanup(); // refresh-ийг дуурайна
+
+    render(<PlacementTest isFounder={true} onFinish={() => {}} onSkip={() => {}} />);
+    // Танилцуулга дээр үргэлжлүүлэх санал гарна.
+    fireEvent.click(screen.getByText(/Дуусгаагүй тест байна — 3\/60/));
+    // Яг өмнөх асуултаас, тоолуур 4/60-аас үргэлжилнэ.
+    expect(currentQuestion().id).toBe(questionBeforeRefresh.id);
+    expect(screen.getByText(`4 / ${PLACEMENT_TOTAL_QUESTIONS}`)).toBeTruthy();
+    cleanup();
+  });
+
+  it('restores the finished paywall after a refresh so answers are not lost', () => {
+    render(<PlacementTest isFounder={false} onFinish={() => {}} onSkip={() => {}} />);
+    fireEvent.click(screen.getByText('Тест эхлүүлэх'));
+    answerAll(true);
+    expect(screen.getByText('Тест дууслаа! 🎉')).toBeTruthy();
+    cleanup(); // refresh-ийг дуурайна
+
+    const onFinish = vi.fn();
+    render(<PlacementTest isFounder={false} onFinish={onFinish} onSkip={() => {}} />);
+    expect(screen.getByText('Тест дууслаа! 🎉')).toBeTruthy();
+    fireEvent.click(screen.getByText(/Үр дүнг нээлгүй үргэлжлүүлэх/));
+    const record = onFinish.mock.calls[0][0] as PlacementRecord;
+    expect(record.level).toBe('C2');
+    // Дууссаны дараа хадгалсан явц устсан байна.
+    expect(localStorage.getItem('vivid-placement-progress-v1')).toBeNull();
+    cleanup();
+  });
+
+  it('asks for confirmation before quitting and keeps progress for later', () => {
+    const onSkip = vi.fn();
+    render(<PlacementTest isFounder={true} onFinish={() => {}} onSkip={onSkip} />);
+    fireEvent.click(screen.getByText('Тест эхлүүлэх'));
+    answerCurrent(true);
+
+    // Гарах товч баталгаажуулалт шаардана; "Үргэлжлүүлэх" дарвал тест үргэлжилнэ.
+    fireEvent.click(screen.getByLabelText('Тестээс гарах'));
+    expect(screen.getByText('Тестээс гарах уу?')).toBeTruthy();
+    fireEvent.click(screen.getByText('Үргэлжлүүлэх'));
+    expect(screen.queryByText('Тестээс гарах уу?')).toBeNull();
+    expect(onSkip).not.toHaveBeenCalled();
+
+    // Дахин дараад "Гарах" дарвал гарна; явц хадгалагдсан хэвээр.
+    fireEvent.click(screen.getByLabelText('Тестээс гарах'));
+    fireEvent.click(screen.getByText('Гарах'));
+    expect(onSkip).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem('vivid-placement-progress-v1')).not.toBeNull();
     cleanup();
   });
 });
