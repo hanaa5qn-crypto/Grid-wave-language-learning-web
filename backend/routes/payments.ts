@@ -17,6 +17,22 @@ import {
 } from '../lib/payments/qpay';
 import { getPaidPlans, parsePaidPlanId, parseBillingInterval, type BillingInterval } from '../lib/plans';
 
+// Per-user checkout rate limit: max 5 invoice creations per hour.
+const checkoutHits = new Map<string, { count: number; resetTime: number }>();
+const CHECKOUT_MAX = 5;
+const CHECKOUT_WINDOW_MS = 60 * 60 * 1000;
+
+function checkoutRateLimited(uid: string): boolean {
+  const now = Date.now();
+  const record = checkoutHits.get(uid);
+  if (!record || now > record.resetTime) {
+    checkoutHits.set(uid, { count: 1, resetTime: now + CHECKOUT_WINDOW_MS });
+    return false;
+  }
+  record.count++;
+  return record.count > CHECKOUT_MAX;
+}
+
 interface PendingInvoice {
   provider: 'qpay' | 'dummy';
   providerInvoiceId: string;
@@ -66,6 +82,8 @@ function callbackUrlFor(req: Request, senderInvoiceNo: string): string {
   const configured = process.env.QPAY_CALLBACK_URL;
   const url = new URL(configured || `${appBaseUrl(req)}/api/payments/qpay/webhook`);
   url.searchParams.set('sender_invoice_no', senderInvoiceNo);
+  const secret = process.env.QPAY_WEBHOOK_SECRET;
+  if (secret) url.searchParams.set('wt', secret);
   return url.toString();
 }
 
@@ -261,6 +279,11 @@ export function registerPaymentsRoute(app: Express) {
       return res.status(401).json({ error: 'Sign in again before starting payment.' });
     }
 
+    if (checkoutRateLimited(user.uid)) {
+      res.setHeader('Retry-After', '3600');
+      return res.status(429).json({ error: 'Хэт олон нэхэмжлэл үүсгэлээ. Нэг цагийн дараа дахин оролдоно уу.' });
+    }
+
     const product: 'subscription' | 'placement' =
       req.body?.product === 'placement' ? 'placement' : 'subscription';
 
@@ -384,6 +407,11 @@ export function registerPaymentsRoute(app: Express) {
       return res.status(401).json({ error: 'Sign in again before starting payment.' });
     }
 
+    if (checkoutRateLimited(user.uid)) {
+      res.setHeader('Retry-After', '3600');
+      return res.status(429).json({ error: 'Хэт олон нэхэмжлэл үүсгэлээ. Нэг цагийн дараа дахин оролдоно уу.' });
+    }
+
     const product: 'subscription' | 'placement' =
       req.body?.product === 'placement' ? 'placement' : 'subscription';
 
@@ -480,6 +508,14 @@ export function registerPaymentsRoute(app: Express) {
   // Their gateway uses GET with ?qpay_payment_id=…, but we accept POST too so
   // manual retries/tests work the same way.
   const qpayWebhookHandler = async (req: Request, res: Response) => {
+    const webhookSecret = process.env.QPAY_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const token = String(req.query.wt || req.body?.wt || '');
+      if (token !== webhookSecret) {
+        return res.status(401).json({ error: 'Invalid webhook token.' });
+      }
+    }
+
     const admin = getFirebaseAdmin();
     if (!admin) return res.status(503).json({ error: firebaseAdminMissingMessage() });
 

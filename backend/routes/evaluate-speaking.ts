@@ -75,9 +75,12 @@ export function registerEvaluateSpeakingRoute(app: Express) {
       return res.status(access.status).json({ error: access.error, code: access.code, quota: access.quota });
     }
 
-    const { audio, mimeType, audioUrl } = req.body as {
+    const ALLOWED_MIME_TYPES = ['audio/wav', 'audio/mpeg', 'audio/mp4', 'audio/ogg', 'audio/webm', 'audio/aac', 'audio/x-m4a'];
+    const rawMimeType = typeof req.body?.mimeType === 'string' ? req.body.mimeType : 'audio/wav';
+    const mimeType = ALLOWED_MIME_TYPES.includes(rawMimeType) ? rawMimeType : 'audio/wav';
+
+    const { audio, audioUrl } = req.body as {
       audio?: string;       // base64-encoded audio (no data: prefix)
-      mimeType?: string;    // e.g. audio/wav
       audioUrl?: string;    // Firebase Storage public URL
     };
     const sentence = clampText(req.body?.sentence);
@@ -90,7 +93,14 @@ export function registerEvaluateSpeakingRoute(app: Express) {
         if (parsedUrl.hostname !== 'firebasestorage.googleapis.com') {
           return res.status(400).json({ error: 'Invalid audio URL domain.' });
         }
-        const fetchResponse = await fetch(parsedUrl.toString());
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10_000);
+        let fetchResponse: Response;
+        try {
+          fetchResponse = await fetch(parsedUrl.toString(), { signal: controller.signal });
+        } finally {
+          clearTimeout(timeout);
+        }
         if (!fetchResponse.ok) {
           throw new Error(`Failed to fetch audio from URL: ${fetchResponse.statusText}`);
         }

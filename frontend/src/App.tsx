@@ -8,7 +8,11 @@ import {
   Mail, Lock, Loader2, QrCode, CreditCard, Shield, Calendar, Clock, Zap,
   ListChecks, BarChart3, Crown, Swords
 } from 'lucide-react';
-import { TabType, VocabularyWord, WordClass, CEFRLevel } from './types';
+import {
+  TabType, VocabularyWord, WordClass, CEFRLevel,
+  SpeakingEvaluation, WritingFeedback, WritingCorrection,
+  PaymentMethodsResponse, DummyCheckoutResponse, QPayCheckoutResponse,
+} from './types';
 import { DICTIONARY } from './data';
 import {
   READING_LIBRARY, LISTENING_LIBRARY, WRITING_LIBRARY, SPEAKING_LIBRARY,
@@ -49,6 +53,11 @@ import DuelScreen from './DuelScreen';
 import SocialSection from './SocialSection';
 import { fetchDuel, redeemReferralCode, DuelView } from './social';
 import type { InviteContext } from './LoginScreen';
+import MCQBlock from './components/MCQBlock';
+import ExternalResourcesPanel from './components/ExternalResourcesPanel';
+import QuizNav from './components/QuizNav';
+import { audioBlobToWavBase64, audioBlobToWavBlob } from './utils/audioUtils';
+import { formatMnt, qpayQrImageSrc } from './utils/paymentUtils';
 
 // Union of all exam item types — they all share `topic`, `title`, `titleMn`.
 type ExamItem = ReadingItem | ListeningItem | WritingItem | SpeakingItem;
@@ -149,168 +158,7 @@ function normalizeProfileMetrics(profile: UserProfile): UserProfile {
   };
 }
 
-// Rich AI feedback returned by /api/evaluate-speaking. All text fields are
-// Mongolian except `transcript` (German). Optional fields keep the older
-// text-only response shape working.
-interface SpeakingEvaluation {
-  isCorrect: boolean;
-  feedbackMessage: string;
-  analysis: string;
-  transcript?: string;
-  overallScore?: number;
-  pronunciationScore?: number;
-  fluencyScore?: number;
-  accentNote?: string;
-  pronunciationFeedback?: string;
-  grammarFeedback?: string;
-  vocabularyFeedback?: string;
-  strengths?: string[];
-  improvements?: string[];
-}
 
-// Rich free-writing feedback from /api/evaluate-composition. Mongolian text
-// fields, except `corrected` and each correction's German fragments. Used by the
-// writing library and every exam writing task to flag wrong grammar / wrong
-// words and recommend better wording.
-interface WritingCorrection {
-  original: string;     // the wrong German fragment the learner wrote
-  suggestion: string;   // the corrected / better German fragment
-  type: string;         // grammar | vocabulary | spelling | style
-  explanation: string;  // short Mongolian reason
-}
-interface WritingFeedback {
-  isCorrect: boolean;
-  feedbackMessage: string;
-  analysis: string;
-  corrected: string;
-  corrections?: WritingCorrection[];
-  overallScore?: number;
-  grammarScore?: number;
-  vocabularyScore?: number;
-  grammarFeedback?: string;
-  vocabularyFeedback?: string;
-  strengths?: string[];
-  improvements?: string[];
-}
-
-interface PaymentMethodsResponse {
-  primary: 'qpay' | 'dummy';
-  plans: Record<'pro' | 'max', {
-    id: 'pro' | 'max';
-    name: string;
-    amountMnt: number;
-    yearAmountMnt: number;
-    currency: string;
-    aiAccess: boolean;
-  }>;
-  qpay: {
-    status: 'ready' | 'needs_config';
-    missing: string[];
-    supports: string[];
-  };
-  dummy: {
-    status: 'ready' | 'needs_config';
-    missing: string[];
-  };
-  alternatives: Array<{
-    id: string;
-    name: string;
-    status: string;
-    supports: string[];
-    note: string;
-  }>;
-}
-
-interface DummyCheckoutResponse {
-  provider: 'dummy';
-  senderInvoiceNo: string;
-  plan: 'pro' | 'max';
-  interval?: BillingInterval;
-  amountMnt: number;
-  currency: 'MNT';
-}
-
-interface QPayCheckoutResponse {
-  provider: 'qpay';
-  senderInvoiceNo: string;
-  providerInvoiceId: string;
-  plan: string;
-  interval?: BillingInterval;
-  amountMnt: number;
-  currency: 'MNT';
-  qrText?: string;
-  qrImage?: string;
-  shortUrl?: string;
-  // One entry per bank/wallet app (Khan, TDB, Golomt, Xac, SocialPay, Monpay …):
-  // QPay is the hub, the learner pays through their own bank's app.
-  urls?: Array<{ name?: string; description?: string; logo?: string; link?: string }>;
-}
-
-function formatMnt(amountMnt: number | null | undefined): string {
-  if (!amountMnt) return 'Үнэ тохируулаагүй';
-  return new Intl.NumberFormat('mn-MN', {
-    style: 'currency',
-    currency: 'MNT',
-    maximumFractionDigits: 0,
-  }).format(amountMnt);
-}
-
-function qpayQrImageSrc(qrImage?: string): string | null {
-  if (!qrImage) return null;
-  if (qrImage.startsWith('data:') || qrImage.startsWith('http')) return qrImage;
-  return `data:image/png;base64,${qrImage}`;
-}
-
-async function audioBlobToWavBlob(blob: Blob): Promise<Blob> {
-  const arrayBuffer = await blob.arrayBuffer();
-  const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
-  const ctx: AudioContext = new AudioCtx();
-  const decoded = await ctx.decodeAudioData(arrayBuffer.slice(0));
-  ctx.close();
-
-  const targetRate = 16000;
-  const srcRate = decoded.sampleRate;
-  const srcData = decoded.getChannelData(0); // mono: first channel is enough
-  const ratio = srcRate / targetRate;
-  const outLen = Math.floor(srcData.length / ratio);
-  const samples = new Int16Array(outLen);
-  for (let i = 0; i < outLen; i++) {
-    const s = srcData[Math.floor(i * ratio)] || 0;
-    samples[i] = Math.max(-1, Math.min(1, s)) * 0x7fff;
-  }
-
-  const bytesPerSample = 2;
-  const buffer = new ArrayBuffer(44 + samples.length * bytesPerSample);
-  const view = new DataView(buffer);
-  const writeStr = (off: number, str: string) => {
-    for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i));
-  };
-  const dataLen = samples.length * bytesPerSample;
-  writeStr(0, 'RIFF'); view.setUint32(4, 36 + dataLen, true); writeStr(8, 'WAVE');
-  writeStr(12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true); view.setUint32(24, targetRate, true);
-  view.setUint32(28, targetRate * bytesPerSample, true); view.setUint16(32, bytesPerSample, true);
-  view.setUint16(34, 16, true); writeStr(36, 'data'); view.setUint32(40, dataLen, true);
-  for (let i = 0; i < samples.length; i++) view.setInt16(44 + i * 2, samples[i], true);
-
-  return new Blob([buffer], { type: 'audio/wav' });
-}
-
-// Decode a recorded audio Blob (webm/opus, mp4/aac, …) and re-encode it as a
-// 16 kHz mono 16-bit WAV, returned base64-encoded. WAV is the format Gemini
-// reliably accepts, so this sidesteps browser codec/container differences.
-async function audioBlobToWavBase64(blob: Blob): Promise<string> {
-  const wavBlob = await audioBlobToWavBlob(blob);
-  const arrayBuffer = await wavBlob.arrayBuffer();
-  // Base64-encode the WAV bytes in chunks (avoids call-stack limits on big files).
-  const bytes = new Uint8Array(arrayBuffer);
-  let binary = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
-  }
-  return btoa(binary);
-}
 
 // Level filter chips shared by every skill-library browser.
 const LIB_LEVELS: (Level | 'all')[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -339,159 +187,6 @@ const WORD_CLASS_MN: Record<string, string> = {
   conjunction: 'Холбоос үг', interjection: 'Аялга үг', article: 'Артикль', phrase: 'Хэллэг',
 };
 const LEVEL_OPTIONS: (CEFRLevel | 'all')[] = ['all', 'A1', 'A2', 'B1', 'B2'];
-
-interface MCQBlockProps {
-  choices: string[];
-  correctIndex: number;
-  selectedAnswer: number | null;
-  onSelect: (index: number) => void;
-  feedbackText?: string;
-}
-
-function MCQBlock({
-  choices,
-  correctIndex,
-  selectedAnswer,
-  onSelect,
-  feedbackText
-}: MCQBlockProps) {
-  const answered = selectedAnswer !== null;
-  const isCorrect = selectedAnswer === correctIndex;
-  
-  const displayFeedback = feedbackText !== undefined
-    ? feedbackText
-    : (isCorrect ? 'Та зөв сонголтыг хийлээ.' : `Зөв хариулт нь: "${choices[correctIndex]}"`);
-
-  return (
-    <>
-      <div className="flex flex-col gap-4">
-        {choices.map((c, i) => {
-          const isSel = selectedAnswer === i;
-          const isOptionCorrect = i === correctIndex;
-          
-          let containerClass = "";
-          let circleClass = "bg-white";
-          let borderEffect = null;
-          
-          if (answered) {
-            if (isOptionCorrect) {
-              containerClass = "bg-secondary-container text-on-secondary-fixed border-secondary";
-              circleClass = "bg-secondary text-white";
-              borderEffect = <div className="absolute inset-0 border-2 border-secondary rounded-xl pointer-events-none"></div>;
-            } else if (isSel) {
-              containerClass = "bg-error-container text-on-error-container border-error";
-              circleClass = "bg-error text-white";
-              borderEffect = <div className="absolute inset-0 border-2 border-error rounded-xl pointer-events-none"></div>;
-            } else {
-              containerClass = "opacity-60 border-on-background/40";
-            }
-          }
-          
-          return (
-            <button
-              key={i}
-              disabled={answered}
-              onClick={() => { if (!answered) onSelect(i); }}
-              className={`relative flex items-center p-4 border-2 border-on-background rounded-xl text-left transition-all group block-shadow select-none text-body-md font-bold text-on-surface ${
-                !answered ? 'cursor-pointer hover:bg-surface-container hover:text-primary' : 'cursor-default'
-              } ${containerClass}`}
-            >
-              <div className={`w-6 h-6 rounded-full border-2 border-on-background mr-4 flex items-center justify-center shrink-0 transition-all ${circleClass}`}>
-                {answered && isOptionCorrect && <Check className="w-4 h-4 stroke-[3px]" />}
-                {answered && isSel && !isOptionCorrect && <X className="w-4 h-4 stroke-[3px]" />}
-              </div>
-              <span className="flex-grow">{c}</span>
-              {borderEffect}
-            </button>
-          );
-        })}
-      </div>
-      
-      {answered && (
-        <div className={`mt-6 p-4 rounded-xl border-2 border-on-background animate-fade-in ${
-          isCorrect ? 'bg-secondary-container text-on-secondary-fixed border-on-secondary-container' : 'bg-error-container text-on-error-container border-on-error-container'
-        }`}>
-          <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-2xl font-bold fill mt-0.5">
-              {isCorrect ? 'check_circle' : 'cancel'}
-            </span>
-            <div>
-              <h4 className="font-extrabold text-[15px]">
-                {isCorrect ? 'Сүрхий зөв хариуллаа!' : 'Өө, буруу хувилбар! Дахин оролдоод үзээрэй.'}
-              </h4>
-              <p className="text-xs mt-1 leading-normal font-mono whitespace-pre-line">
-                {displayFeedback}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-// Гадны шилдэг эх сурвалжууд — таб + түвшинд тохируулан шүүгдсэн, эвхэгддэг самбар.
-function ExternalResourcesPanel({ skill, level }: { skill: SkillTab; level: Level | 'all' }) {
-  const [open, setOpen] = useState(false);
-  const items = resourcesFor(skill, level);
-  if (items.length === 0) return null;
-  return (
-    <div className="mt-6 border-2 border-on-background rounded-xl block-shadow overflow-hidden">
-      <button onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-5 py-3.5 bg-surface-container cursor-pointer hover:bg-surface-container-high transition-colors">
-        <span className="flex items-center gap-2 text-sm font-bold font-space text-on-surface">
-          <ExternalLink className="w-4 h-4 text-secondary" />
-          Гадны шилдэг эх сурвалжууд {level !== 'all' && <span className="text-xs font-black px-1.5 py-0.5 rounded bg-secondary text-white">{level}</span>}
-          <span className="text-xs text-on-surface-variant font-medium">({items.length})</span>
-        </span>
-        <ChevronRight className={`w-4 h-4 text-on-surface-variant transition-transform ${open ? 'rotate-90' : ''}`} />
-      </button>
-      {open && (
-        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3 bg-surface-container-low">
-          {items.map((r) => (
-            <a key={r.url} href={r.url} target="_blank" rel="noopener noreferrer"
-              className="block p-3 rounded-lg border-2 border-on-background bg-surface-container hover:bg-surface-container-high transition-colors group">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-bold text-on-surface group-hover:text-primary">{r.name}</span>
-                <ExternalLink className="w-3 h-3 text-on-surface-variant shrink-0" />
-                <span className="ml-auto flex gap-1">
-                  {r.levels.slice(0, 6).map(lv => (
-                    <span key={lv} className="text-[9px] font-black px-1 py-0.5 rounded bg-secondary-container text-on-secondary-fixed">{lv}</span>
-                  ))}
-                </span>
-              </div>
-              <p className="text-xs text-on-surface-variant leading-relaxed">{r.descMn}</p>
-            </a>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Асуултын доорх Өмнөх/Дараах навигаци + асуултын тоолуур.
-function QuizNav({ qIdx, total, answered, onPrev, onNext, nextLessonLabel }: {
-  qIdx: number; total: number; answered: boolean;
-  onPrev: () => void; onNext: () => void; nextLessonLabel: boolean;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-2 mt-5">
-      <button onClick={onPrev} disabled={qIdx === 0}
-        className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-on-background font-bold text-sm font-space transition-all ${
-          qIdx === 0 ? 'opacity-40 cursor-default bg-surface-container text-on-surface-variant' : 'cursor-pointer bg-surface-container text-on-surface hover:scale-[1.02] block-shadow'}`}>
-        <ArrowLeft className="w-4 h-4" /> Өмнөх асуулт
-      </button>
-      <span className="text-xs font-space font-bold text-on-surface-variant whitespace-nowrap">
-        Асуулт {qIdx + 1} / {total}
-      </span>
-      <button onClick={onNext} disabled={!answered}
-        className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg border-2 border-on-background font-bold text-sm font-space transition-all ${
-          !answered ? 'opacity-40 cursor-default bg-surface-container text-on-surface-variant' : 'cursor-pointer bg-secondary text-white hover:scale-[1.02] block-shadow'}`}>
-        {nextLessonLabel ? 'Дараах хичээл' : 'Дараах асуулт'} <ArrowRight className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
 
 export default function App() {
   if (window.location.pathname.startsWith('/admin')) {
@@ -4951,7 +4646,7 @@ function LearnerApp() {
                       {translationResult.pronunciation && (
                         <div className="mb-1 p-3 bg-surface-container-low border border-outline-variant rounded-lg">
                           <p className="text-[10px] uppercase font-bold text-outline font-space tracking-wide mb-0.5">Унших удирдамж:</p>
-                          <code className="text-xs font-mono font-bold text-purple-300">
+                          <code className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                             {translationResult.pronunciation}
                           </code>
                         </div>

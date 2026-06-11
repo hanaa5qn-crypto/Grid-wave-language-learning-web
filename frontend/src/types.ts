@@ -1,5 +1,94 @@
 export type TabType = 'read' | 'listen' | 'speak' | 'write' | 'vocab' | 'settings' | 'translate' | 'exam' | 'profile' | 'friends';
 
+export interface SpeakingEvaluation {
+  isCorrect: boolean;
+  feedbackMessage: string;
+  analysis: string;
+  transcript?: string;
+  overallScore?: number;
+  pronunciationScore?: number;
+  fluencyScore?: number;
+  accentNote?: string;
+  pronunciationFeedback?: string;
+  grammarFeedback?: string;
+  vocabularyFeedback?: string;
+  strengths?: string[];
+  improvements?: string[];
+}
+
+export interface WritingCorrection {
+  original: string;
+  suggestion: string;
+  type: string;
+  explanation: string;
+}
+
+export interface WritingFeedback {
+  isCorrect: boolean;
+  feedbackMessage: string;
+  analysis: string;
+  corrected: string;
+  corrections?: WritingCorrection[];
+  overallScore?: number;
+  grammarScore?: number;
+  vocabularyScore?: number;
+  grammarFeedback?: string;
+  vocabularyFeedback?: string;
+  strengths?: string[];
+  improvements?: string[];
+}
+
+export interface PaymentMethodsResponse {
+  primary: 'qpay' | 'dummy';
+  plans: Record<'pro' | 'max', {
+    id: 'pro' | 'max';
+    name: string;
+    amountMnt: number;
+    yearAmountMnt: number;
+    currency: string;
+    aiAccess: boolean;
+  }>;
+  qpay: {
+    status: 'ready' | 'needs_config';
+    missing: string[];
+    supports: string[];
+  };
+  dummy: {
+    status: 'ready' | 'needs_config';
+    missing: string[];
+  };
+  alternatives: Array<{
+    id: string;
+    name: string;
+    status: string;
+    supports: string[];
+    note: string;
+  }>;
+}
+
+export interface DummyCheckoutResponse {
+  provider: 'dummy';
+  senderInvoiceNo: string;
+  plan: 'pro' | 'max';
+  interval?: import('./plans').BillingInterval;
+  amountMnt: number;
+  currency: 'MNT';
+}
+
+export interface QPayCheckoutResponse {
+  provider: 'qpay';
+  senderInvoiceNo: string;
+  providerInvoiceId: string;
+  plan: string;
+  interval?: import('./plans').BillingInterval;
+  amountMnt: number;
+  currency: 'MNT';
+  qrText?: string;
+  qrImage?: string;
+  shortUrl?: string;
+  urls?: Array<{ name?: string; description?: string; logo?: string; link?: string }>;
+}
+
 // Structured grammatical metadata used by the in-app dictionary (Browse) filters.
 // The extra classes (pronoun…article) and the B2 level are needed for the full
 // vocabeo dictionary import — vocabeo tags frequency-ranked words beyond the

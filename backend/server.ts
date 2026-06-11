@@ -16,6 +16,19 @@ app.set('trust proxy', 1);
 // Larger limit so base64-encoded audio recordings from the speaking section fit.
 app.use(express.json({ limit: '25mb' }));
 
+// Security headers — applied to every response.
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'microphone=(self), camera=(), geolocation=()');
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://firebasestorage.googleapis.com https://*.googleapis.com https://*.firebase.com https://*.firebaseio.com; media-src 'self' blob:; font-src 'self' data:;",
+  );
+  next();
+});
+
 // Hosts (Render, Cloud Run, Azure, etc.) tell the app which port to listen on
 // via the PORT env var. Fall back to 3000 for local development.
 const PORT = Number(process.env.PORT) || 3000;
