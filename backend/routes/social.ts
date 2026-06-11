@@ -24,6 +24,10 @@ import { decideDuelWinner, normalizeCode, randomCode, weekMinutes } from '../lib
 const DUEL_QUESTION_COUNT = 10;
 const VALID_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const REFERRAL_REDEEM_WINDOW_DAYS = 7;
+// Урилгаар бүртгүүлсэн шинэ хэрэглэгчид олгох үнэгүй Pro туршилтын хоног.
+const REFERRAL_TRIAL_DAYS = 3;
+// backend/lib/plans.ts-тэй ижил: эдгээр статустай billing-ийг идэвхтэй гэж үзнэ.
+const ACTIVE_BILLING_STATUSES = ['active', 'paid', 'trialing'];
 
 interface DuelSlot {
   uid: string;
@@ -354,22 +358,40 @@ export function registerSocialRoute(app: Express) {
           return { redeemed: false as const, tooOld: true };
         }
 
+        // Урилгын гол шагнал: шинэ хэрэглэгчид 3 өдрийн Pro туршилт. Аль
+        // хэдийн төлбөртэй/туршилттай данстай бол давхар олгохгүй.
+        const billing = (me.billing ?? {}) as { status?: string };
+        const hasActiveBilling = ACTIVE_BILLING_STATUSES.includes((billing.status ?? '').toLowerCase());
+        const trialEnd = new Date(Date.now() + REFERRAL_TRIAL_DAYS * 24 * 3600 * 1000).toISOString();
+
         tx.set(meRef, {
           referredBy: inviterUid,
           streakFreezeCount: FieldValue.increment(1),
+          ...(hasActiveBilling ? {} : {
+            billing: {
+              plan: 'pro',
+              status: 'trialing',
+              interval: 'month',
+              provider: 'referral',
+              currentPeriodEnd: trialEnd,
+            },
+          }),
         }, { merge: true });
         tx.set(inviterRef, {
           invitesCount: FieldValue.increment(1),
           streakFreezeCount: FieldValue.increment(1),
         }, { merge: true });
         crossAddFriends(tx, admin.db, uid, inviterUid);
-        return { redeemed: true as const };
+        return { redeemed: true as const, proTrialDays: hasActiveBilling ? 0 : REFERRAL_TRIAL_DAYS };
       });
 
       if (!outcome.redeemed && outcome.tooOld) {
         return res.status(400).json({ error: 'Урилга зөвхөн шинэ бүртгэлд (7 хоногийн дотор) хүчинтэй.' });
       }
-      return res.json({ redeemed: outcome.redeemed });
+      return res.json({
+        redeemed: outcome.redeemed,
+        ...(outcome.redeemed && outcome.proTrialDays ? { proTrialDays: outcome.proTrialDays } : {}),
+      });
     } catch (err) {
       console.error('Referral redeem failed:', err);
       return res.status(502).json({ error: 'Урилгыг бүртгэж чадсангүй.' });

@@ -1,4 +1,4 @@
-export type TabType = 'read' | 'listen' | 'speak' | 'write' | 'vocab' | 'settings' | 'translate' | 'exam' | 'profile';
+export type TabType = 'read' | 'listen' | 'speak' | 'write' | 'vocab' | 'settings' | 'translate' | 'exam' | 'profile' | 'friends';
 
 // Structured grammatical metadata used by the in-app dictionary (Browse) filters.
 // The extra classes (pronoun…article) and the B2 level are needed for the full

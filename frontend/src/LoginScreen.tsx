@@ -172,7 +172,7 @@ export default function LoginScreen({ inviteContext }: LoginScreenProps = {}) {
             <span>
               {inviteContext.kind === 'duel'
                 ? `🎮 ${inviteContext.challengerName || 'Найз тань'} таныг герман хэлний тулаанд урьж байна — бүртгүүлээд яг ижил 10 асуултад хариулж өрсөлдөөрэй!`
-                : '🎁 Найз тань таныг урьсан байна — бүртгүүлмэгц та хоёулаа Streak Freeze шагнал авна!'}
+                : '🎁 Найз тань таныг урьсан байна — бүртгүүлмэгц танд 3 өдрийн үнэгүй Pro эрх, та хоёуланд Streak Freeze шагнал очно!'}
             </span>
           </div>
         )}

@@ -120,7 +120,8 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
             <Users className="w-4 h-4 text-purple-400" /> Найзаа урих
           </h3>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Линкээр тань бүртгүүлсэн хүн бүрд та хоёулаа <b className="text-cyan-300">+1 Streak Freeze</b> авна.
+            Линкээр тань бүртгүүлсэн шинэ найз <b className="text-purple-300">3 өдрийн Pro эрх</b>,
+            та хоёулаа <b className="text-cyan-300">+1 Streak Freeze</b> авна.
           </p>
           {referral && (
             <p className="text-xs font-mono text-slate-300 bg-black/30 border border-white/10 rounded-lg px-3 py-2 break-all">
@@ -148,7 +149,7 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
           </h3>
           <p className="text-xs text-slate-400 leading-relaxed">
             10 ижил асуултад найзтайгаа өрсөлдөнө — ялагч <b className="text-cyan-300">+1 Streak Freeze</b> авна.
-            Линк нь бүртгэлгүй найзад урилга болно.
+            Линк нь бүртгэлгүй найзад урилга болно (шинээр бүртгүүлбэл <b className="text-purple-300">3 өдрийн Pro</b> авна).
           </p>
           <div className="flex items-center gap-2">
             {LEVELS.map((lv) => (

@@ -109,7 +109,14 @@ export function effectivePlan(profile: UserProfile | null): EffectivePlan {
   if (isFounder(profile)) return 'founder';
 
   const billing = profile.billing ?? {};
-  if (!ACTIVE_BILLING_STATUSES.includes((billing.status ?? '').toLowerCase())) return 'free';
+  const status = (billing.status ?? '').toLowerCase();
+  if (!ACTIVE_BILLING_STATUSES.includes(status)) return 'free';
+  // Trials (e.g. the 3-day referral Pro trial) have no renewal flow, so they
+  // expire strictly by currentPeriodEnd; paid plans keep trusting their status.
+  if (status === 'trialing') {
+    const end = Date.parse(billing.currentPeriodEnd ?? '');
+    if (!Number.isFinite(end) || end < Date.now()) return 'free';
+  }
 
   const plan = (billing.plan ?? '').toLowerCase();
   if (plan === 'pro') return 'pro';

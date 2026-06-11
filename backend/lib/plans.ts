@@ -82,9 +82,17 @@ const ACTIVE_BILLING_STATUSES = ['active', 'paid', 'trialing'];
 
 type EffectivePlan = 'free' | 'pro' | 'max' | 'founder';
 
-function planFromBilling(billing: { plan?: string; status?: string }): EffectivePlan {
-  const active = ACTIVE_BILLING_STATUSES.includes((billing.status ?? '').toLowerCase());
+function planFromBilling(billing: { plan?: string; status?: string; currentPeriodEnd?: string }): EffectivePlan {
+  const status = (billing.status ?? '').toLowerCase();
+  const active = ACTIVE_BILLING_STATUSES.includes(status);
   if (!active) return 'free';
+  // Trials (e.g. the 3-day referral Pro trial) carry no renewal flow, so they
+  // expire strictly by currentPeriodEnd. Paid plans keep the legacy behavior
+  // of trusting their status until a payment flow updates it.
+  if (status === 'trialing') {
+    const end = Date.parse(billing.currentPeriodEnd ?? '');
+    if (!Number.isFinite(end) || end < Date.now()) return 'free';
+  }
   const plan = (billing.plan ?? '').toLowerCase();
   if (plan === 'pro') return 'pro';
   if (plan === 'max' || plan === 'founder') return 'max';
@@ -140,7 +148,7 @@ async function loadQuotaState(req: Request): Promise<{ uid: string; state: AiQuo
 
   const snap = await admin.db.collection('users').doc(user.uid).get();
   const data = snap.data() ?? {};
-  const plan = planFromBilling((data.billing ?? {}) as { plan?: string; status?: string });
+  const plan = planFromBilling((data.billing ?? {}) as { plan?: string; status?: string; currentPeriodEnd?: string });
   const limit = aiQuotaFor(plan);
   const usage = (data.aiUsage ?? {}) as { month?: string; count?: number };
   const used = usage.month === month ? Number(usage.count) || 0 : 0;

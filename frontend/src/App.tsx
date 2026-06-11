@@ -6,7 +6,7 @@ import {
   ChevronRight, Sparkles, HelpCircle, GraduationCap, ExternalLink, Search, Library,
   Square, AudioLines, Gauge, SpellCheck, MessageSquareText, ThumbsUp, Target,
   Mail, Lock, Loader2, QrCode, CreditCard, Shield, Calendar, Clock, Zap,
-  ListChecks, BarChart3, Crown
+  ListChecks, BarChart3, Crown, Swords
 } from 'lucide-react';
 import { TabType, VocabularyWord, WordClass, CEFRLevel } from './types';
 import { DICTIONARY } from './data';
@@ -2979,12 +2979,22 @@ function LearnerApp() {
           </div>
         </div>
 
-        {/* Тэмцээн ба урилга — тулаан, найз урих, долоо хоногийн самбар, badges */}
-        <SocialSection
-          targetLevel={currentUser.targetLevel}
-          onPlayDuel={(duel) => setActiveDuel(duel)}
-          refreshKey={socialRefreshKey}
-        />
+        {/* Тэмцээн ба урилга өөрийн "Найзууд" таб руу нүүсэн — эндээс шууд очно. */}
+        <button
+          onClick={() => selectTab('friends')}
+          className="w-full flex items-center justify-between gap-3 bg-white/5 border border-purple-500/20 hover:border-purple-500/50 rounded-2xl px-6 py-5 transition-all cursor-pointer text-left block-shadow backdrop-blur-md"
+        >
+          <span className="flex items-center gap-3">
+            <Swords className="w-5 h-5 text-purple-400" />
+            <span>
+              <span className="block text-sm font-extrabold text-purple-300">Тэмцээн ба урилга</span>
+              <span className="block text-xs text-slate-400 mt-0.5">
+                Найзтайгаа тулалдаж, найзаа уриад долоо хоногийн самбарт өрсөлдөөрэй.
+              </span>
+            </span>
+          </span>
+          <ChevronRight className="w-5 h-5 text-slate-500" />
+        </button>
       </div>
     );
   };
@@ -3410,6 +3420,19 @@ function LearnerApp() {
               <span className="text-[14px] font-bold">Шалгалт</span>
             </button>
           </li>
+          <li>
+            <button
+              onClick={() => selectTab('friends')}
+              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
+                activeTab === 'friends'
+                  ? 'text-on-primary border-l-4 border-secondary bg-white/15'
+                  : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
+              }`}
+            >
+              <Swords className={`w-5 h-5 ${activeTab === 'friends' ? 'text-secondary-fixed' : ''} text-purple-400`} />
+              <span className="text-[14px] font-bold">Найзууд</span>
+            </button>
+          </li>
         </ul>
 
         {/* Sidebar Settings Footer */}
@@ -3576,6 +3599,15 @@ function LearnerApp() {
                   <span>Шалгалт</span>
                 </button>
               </li>
+              <li>
+                <button
+                  onClick={() => selectTab('friends')}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'friends' ? 'bg-white/15' : 'text-on-primary-container'}`}
+                >
+                  <Swords className="w-5 h-5 text-purple-400" />
+                  <span>Найзууд</span>
+                </button>
+              </li>
             </ul>
 
             <div className="border-t border-white/10 pt-4 px-2 flex flex-col gap-1 shrink-0">
@@ -3612,7 +3644,7 @@ function LearnerApp() {
         <div className="w-full max-w-[1200px] mx-auto flex flex-col h-full relative z-10">
 
           {/* Unified Lesson Progress Bar - Screen 2/3 style */}
-          {activeTab !== 'settings' && activeTab !== 'profile' && (
+          {activeTab !== 'settings' && activeTab !== 'profile' && activeTab !== 'friends' && (
             <div className="w-full mb-8 flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 block-shadow">
               <div className="h-4 flex-grow bg-white/5 border border-white/10 rounded-full overflow-hidden relative shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                 <div 
@@ -3632,6 +3664,17 @@ function LearnerApp() {
 
           {/* Tab 0: Профайл / Хяналтын самбар */}
           {activeTab === 'profile' && renderProfileTab()}
+
+          {/* Tab: Найзууд — тулаан, найз урих, долоо хоногийн самбар, badges */}
+          {activeTab === 'friends' && currentUser && (
+            <div className="w-full pb-24 animate-fade-in">
+              <SocialSection
+                targetLevel={currentUser.targetLevel}
+                onPlayDuel={(duel) => setActiveDuel(duel)}
+                refreshKey={socialRefreshKey}
+              />
+            </div>
+          )}
 
           {/* Tab 1: Унших (Reading) - Screen 3 layout */}
           {activeTab === 'read' && (
@@ -5482,6 +5525,17 @@ function LearnerApp() {
                 {activeTab === 'exam' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full text-secondary-fixed"></div>}
                 <GraduationCap className="w-5 h-5 text-yellow-400" />
                 <span className="text-[10px] font-bold font-space">Сорил</span>
+              </button>
+
+              <button
+                onClick={() => selectTab('friends')}
+                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
+                  activeTab === 'friends' ? 'text-secondary-fixed' : 'text-on-primary-container'
+                }`}
+              >
+                {activeTab === 'friends' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full"></div>}
+                <Swords className="w-5 h-5 text-purple-400" />
+                <span className="text-[10px] font-bold font-space">Найз</span>
               </button>
             </div>
           </nav>
