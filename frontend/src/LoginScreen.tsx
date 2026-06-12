@@ -158,8 +158,9 @@ export default function LoginScreen({ inviteContext }: LoginScreenProps = {}) {
       <div className="w-full max-w-5xl relative z-10 my-8">
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-black font-space tracking-tight mb-2">
-            <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua
+          <h1 className="text-4xl md:text-5xl font-black font-space tracking-tight mb-2 flex items-center justify-center gap-3">
+            <img src="/favicon.svg" alt="" className="w-10 h-10 md:w-12 md:h-12" />
+            <span><span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua</span>
           </h1>
           <p className="text-slate-400 text-sm md:text-base max-w-md mx-auto font-medium">
             Герман хэл сурах ухаалаг платформ. Бүртгүүлж нэвтэрснээр таны явц хадгалагдаж, аль ч төхөөрөмжөөс үргэлжлүүлэн суралцах боломжтой.

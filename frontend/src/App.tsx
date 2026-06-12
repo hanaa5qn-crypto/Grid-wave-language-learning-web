@@ -188,6 +188,21 @@ const WORD_CLASS_MN: Record<string, string> = {
 };
 const LEVEL_OPTIONS: (CEFRLevel | 'all')[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
+function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
+      <defs>
+        <linearGradient id="brand-logo-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8B5CF6" />
+          <stop offset="1" stopColor="#6D28D9" />
+        </linearGradient>
+      </defs>
+      <circle cx="13" cy="19" r="9" fill="url(#brand-logo-grad)" />
+      <line x1="43" y1="16" x2="30" y2="48" stroke="url(#brand-logo-grad)" strokeWidth="18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function App() {
   if (window.location.pathname.startsWith('/admin')) {
     return <AdminDashboard />;
@@ -2699,8 +2714,9 @@ function LearnerApp() {
   if (authLoading) {
     return (
       <div className="bg-background text-white font-sans min-h-screen flex flex-col justify-center items-center gap-4">
-        <h1 className="text-3xl font-black font-space tracking-tight">
-          <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua
+        <h1 className="text-3xl font-black font-space tracking-tight flex items-center gap-3">
+          <BrandLogo className="w-9 h-9" />
+          <span><span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua</span>
         </h1>
         <Loader2 className="w-7 h-7 text-purple-400 animate-spin" />
       </div>
@@ -2955,7 +2971,8 @@ function LearnerApp() {
       <nav aria-label="Desktop menu" className="hidden md:flex flex-col h-screen py-8 px-4 gap-y-6 bg-[#04040a] w-[280px] fixed left-0 top-0 text-white border-r border-white/10 select-none z-30 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
         <div>
           <h1 className="text-2xl font-black tracking-tight font-space flex items-center gap-2">
-            <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua
+            <BrandLogo className="w-8 h-8" />
+            <span><span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua</span>
           </h1>
         </div>
 
@@ -3161,7 +3178,10 @@ function LearnerApp() {
         >
           <span className="material-symbols-outlined text-xl font-bold">menu</span>
         </button>
-        <h1 className="text-xl font-black text-primary tracking-tight">Vivid Lingua</h1>
+        <h1 className="text-xl font-black text-primary tracking-tight flex items-center gap-2">
+          <BrandLogo className="w-6 h-6" />
+          Vivid Lingua
+        </h1>
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center p-2 text-secondary select-none">
             <Flame className="w-5 h-5 text-orange-500 fill-orange-500 animate-pulse" />
@@ -3181,7 +3201,10 @@ function LearnerApp() {
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center px-2">
-              <h1 className="text-2xl font-black font-space">Vivid Lingua</h1>
+              <h1 className="text-2xl font-black font-space flex items-center gap-2">
+                <BrandLogo className="w-7 h-7" />
+                Vivid Lingua
+              </h1>
               <button 
                 onClick={() => setMobileMenuOpen(false)}
                 className="p-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 cursor-pointer"
