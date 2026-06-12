@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   compareWordsByLevel, suggestedWordLevel, orderTrainerWords,
   reviewSrs, srsWordKey, SrsMap, localDateKey,
+  calculateStreakWithGrace, addDays,
 } from '../frontend/src/learning';
 import { VocabularyWord, CEFRLevel } from '../frontend/src/types';
 
@@ -65,5 +66,36 @@ describe('orderTrainerWords', () => {
     expect(lapsed.due).toBe(localDateKey());
     const ordered = orderTrainerWords([word('anders', 'A1', 1), w], { [srsWordKey(w)]: lapsed });
     expect(ordered[0].german).toBe('schwierig');        // due words outrank new ones
+  });
+});
+
+describe('calculateStreakWithGrace', () => {
+  const today = new Date(2026, 5, 12); // fixed local date, away from month edges
+  const days = (offsets: number[]) => offsets.map((o) => localDateKey(addDays(today, o))).sort();
+
+  it('counts consecutive days past 3 (regression: streak stuck after day 3)', () => {
+    expect(calculateStreakWithGrace(days([0]), today).streak).toBe(1);
+    expect(calculateStreakWithGrace(days([-2, -1, 0]), today).streak).toBe(3);
+    expect(calculateStreakWithGrace(days([-3, -2, -1, 0]), today).streak).toBe(4);
+    expect(calculateStreakWithGrace(days([-6, -5, -4, -3, -2, -1, 0]), today).streak).toBe(7);
+  });
+
+  it('keeps the streak when today has not been studied yet', () => {
+    expect(calculateStreakWithGrace(days([-4, -3, -2, -1]), today)).toEqual({ streak: 4, graceUsed: false });
+  });
+
+  it('forgives exactly one missed day inside the run', () => {
+    expect(calculateStreakWithGrace(days([-4, -3, -1, 0]), today)).toEqual({ streak: 4, graceUsed: true });
+    // second gap is not forgiven — run stops there
+    expect(calculateStreakWithGrace(days([-5, -3, -1, 0]), today)).toEqual({ streak: 3, graceUsed: true });
+  });
+
+  it('spends the grace on a skipped yesterday', () => {
+    expect(calculateStreakWithGrace(days([-4, -3, -2]), today)).toEqual({ streak: 3, graceUsed: true });
+  });
+
+  it('resets to 0 after two consecutive missed days', () => {
+    expect(calculateStreakWithGrace(days([-5, -4, -3]), today)).toEqual({ streak: 0, graceUsed: false });
+    expect(calculateStreakWithGrace([], today)).toEqual({ streak: 0, graceUsed: false });
   });
 });

@@ -255,6 +255,9 @@ function LearnerApp() {
   const [completedActivityIds, setCompletedActivityIds] = useState<string[]>([]);
   const [studyDays, setStudyDays] = useState<string[]>([]);
   const [studySecondsByDate, setStudySecondsByDate] = useState<Record<string, number>>({});
+  // Set when a saved streak is found broken on login (holds the lost streak
+  // length); shows a dismissible notice on the profile tab.
+  const [brokenStreakNotice, setBrokenStreakNotice] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const currentUserRef = useRef<UserProfile | null>(currentUser);
   const activeTabRef = useRef<TabType>(activeTab);
@@ -283,6 +286,16 @@ function LearnerApp() {
     const unsubscribe = subscribeToAuthedProfile((profile) => {
       if (profile) {
         const normalizedProfile = normalizeProfileMetrics(profile);
+        // The saved streak is a snapshot from the last study session; the
+        // recomputed one reflects the days actually missed since. When it has
+        // collapsed to 0, tell the learner and persist the reset so Firestore
+        // (and the leaderboard) stop showing the stale number.
+        if ((profile.streak ?? 0) > 0 && normalizedProfile.streak === 0) {
+          setBrokenStreakNotice(profile.streak);
+          saveProfileProgress(normalizedProfile).catch((err) => {
+            console.warn('Could not persist streak reset to Firestore:', err);
+          });
+        }
         setCurrentUser(normalizedProfile);
         setStreak(normalizedProfile.streak);
         setLessonProgress(normalizedProfile.progress);
@@ -295,6 +308,7 @@ function LearnerApp() {
         setCompletedActivityIds([]);
         setStudyDays([]);
         setStudySecondsByDate({});
+        setBrokenStreakNotice(null);
       }
       setAuthLoading(false);
     });
@@ -465,6 +479,7 @@ function LearnerApp() {
     studySecondsRef.current = normalizedProfile.studySecondsByDate ?? {};
     setCurrentUser(normalizedProfile);
     setStreak(normalizedProfile.streak);
+    if (normalizedProfile.streak > 0) setBrokenStreakNotice(null);
     setLessonProgress(normalizedProfile.progress);
     setCompletedActivityIds(normalizedProfile.completedActivityIds ?? []);
     setStudyDays(normalizedProfile.studyDays ?? []);
@@ -1118,14 +1133,21 @@ function LearnerApp() {
       };
       
       const actId = activityKey('vocab', word.rank ?? `${word.german}-${word.mongolian}`);
-      const nextCompleted = knows 
+      const nextCompleted = knows
         ? Array.from(new Set([...(profile.completedActivityIds ?? []), actId]))
         : (profile.completedActivityIds ?? []);
-        
+      // A correct vocab review marks today as studied like every other activity;
+      // otherwise vocab-only days never reach studyDays and the streak breaks.
+      const nextStudyDays = knows
+        ? Array.from(new Set([...(profile.studyDays ?? []), localDateKey()])).sort()
+        : (profile.studyDays ?? []);
+
       applyMetricProfile({
         ...profile,
         srsByWord: nextSrs,
         completedActivityIds: nextCompleted,
+        studyDays: nextStudyDays,
+        lastActiveAt: new Date().toISOString(),
       });
     }
 
@@ -2344,6 +2366,24 @@ function LearnerApp() {
             </div>
           </div>
         </div>
+
+        {/* Broken streak notice — shown once after login when the saved streak collapsed */}
+        {brokenStreakNotice !== null && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-orange-500/10 border-2 border-orange-500/40 rounded-2xl p-4 block-shadow">
+            <div className="flex items-center gap-3">
+              <Flame className="w-6 h-6 text-slate-500 shrink-0" />
+              <p className="text-sm font-bold text-orange-200">
+                {brokenStreakNotice} өдрийн streak тасарлаа — 2 ба түүнээс олон өдөр алгассан тул 0 болж шинэчлэгдлээ. Өнөөдөр дасгал хийж шинээр эхлүүлээрэй!
+              </p>
+            </div>
+            <button
+              onClick={() => setBrokenStreakNotice(null)}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-lg text-xs cursor-pointer transition-colors shrink-0 self-end sm:self-auto"
+            >
+              Ойлголоо
+            </button>
+          </div>
+        )}
 
         {/* Info Cards Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
