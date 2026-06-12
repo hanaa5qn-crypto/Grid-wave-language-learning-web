@@ -124,7 +124,7 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
             та хоёулаа <b className="text-cyan-300">+1 Streak Freeze</b> авна.
           </p>
           {referral && (
-            <p className="text-xs font-mono text-slate-300 bg-black/30 border border-white/10 rounded-lg px-3 py-2 break-all">
+            <p className="text-xs font-mono text-emerald-400 bg-emerald-950/20 border border-emerald-500/20 rounded-lg px-3 py-2 break-all">
               {referralLink(referral.code)}
             </p>
           )}

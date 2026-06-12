@@ -362,6 +362,12 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
   animation-delay: 1s;
 }
 
+/* Monospace code styling */
+code, pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  color: #34d399 !important;
+}
+
 /* Respect users who prefer stillness */
 @media (prefers-reduced-motion: reduce) {
   main::before {

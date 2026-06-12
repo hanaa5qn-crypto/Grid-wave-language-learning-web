@@ -181,7 +181,7 @@ export default function LoginScreen({ inviteContext }: LoginScreenProps = {}) {
           <div className="max-w-2xl mx-auto mb-6 text-amber-300 text-xs font-bold bg-amber-950/40 p-4 rounded-xl border border-amber-500/30 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <span>
-              Firebase тохиргоо хараахан хийгдээгүй байна. <code className="text-amber-200">frontend/src/firebaseConfig.ts</code> файлд
+              Firebase тохиргоо хараахан хийгдээгүй байна. <code className="text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">frontend/src/firebaseConfig.ts</code> файлд
               Firebase project-ийнхээ тохиргоог оруулсны дараа бүртгэл, нэвтрэлт идэвхжинэ.
             </span>
           </div>
