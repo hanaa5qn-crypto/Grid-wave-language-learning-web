@@ -129,6 +129,12 @@ async function activatePaidInvoice(
 
   const now = new Date();
   const isPlacement = invoice.product === 'placement';
+  // Dummy activations grant real access for testing but represent no real
+  // money, so they must never feed revenue metrics — even when dev/preview
+  // tests hit the same Firestore the prod admin dashboard reads. Keep their
+  // revenue contribution at 0 and flag the payment doc as non-revenue.
+  const isDummy = invoice.provider === 'dummy';
+  const revenueCents = isDummy ? 0 : invoice.amountCents;
   const currentPeriodEnd = addMonths(now, invoice.interval === 'year' ? 12 : 1).toISOString();
   const paymentId = String(paidPayment.payment_id || invoice.providerInvoiceId);
   const paymentRef = admin.db.collection('payments').doc(sanitizeDocId(`${invoice.provider}_${paymentId}`));
@@ -154,6 +160,7 @@ async function activatePaidInvoice(
       userId: invoice.userId,
       plan: invoice.plan,
       product: invoice.product ?? 'subscription',
+      revenue: !isDummy,
       createdAt: paidPayment.payment_date || now.toISOString(),
       providerPayment: paidPayment,
     }, { merge: true });
@@ -164,7 +171,7 @@ async function activatePaidInvoice(
       tx.set(userRef, {
         placement: { unlocked: true, unlockedBy: invoice.provider },
         billing: {
-          lifetimeValueCents: FieldValue.increment(invoice.amountCents),
+          lifetimeValueCents: FieldValue.increment(revenueCents),
           currency: invoice.currency,
           provider: invoice.provider,
         },
@@ -177,8 +184,8 @@ async function activatePaidInvoice(
           plan: invoice.plan,
           status: 'active',
           interval: invoice.interval ?? 'month',
-          monthlyAmountCents: invoice.amountCents,
-          lifetimeValueCents: FieldValue.increment(invoice.amountCents),
+          monthlyAmountCents: revenueCents,
+          lifetimeValueCents: FieldValue.increment(revenueCents),
           currency: invoice.currency,
           provider: invoice.provider,
           currentPeriodEnd,

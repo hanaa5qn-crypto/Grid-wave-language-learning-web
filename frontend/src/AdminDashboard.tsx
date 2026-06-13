@@ -13,27 +13,19 @@ import {
 import { collection, getDocs } from 'firebase/firestore';
 import { getAuthInstance, getDb, isFirebaseConfigured } from './firebase';
 import { UserProfile } from './profiles';
+import {
+  type PaymentRecord,
+  paymentAmountCents,
+  isPaidPayment,
+  monthlyValueCents,
+  lifetimeValueCents,
+} from './adminMetrics';
 
 const ADMIN_EMAILS = ['hanaa5qn@gmail.com'];
 
 interface CustomerRow {
   id: string;
   profile: UserProfile;
-}
-
-interface PaymentRecord {
-  amount?: number;
-  amountCents?: number;
-  total?: number;
-  totalCents?: number;
-  priceCents?: number;
-  currency?: string;
-  status?: string;
-  createdAt?: unknown;
-  customerEmail?: string;
-  userId?: string;
-  plan?: string;
-  voided?: boolean;
 }
 
 function isAdminEmail(email: string | null | undefined): boolean {
@@ -68,32 +60,6 @@ function formatMoney(cents: number, currency = 'USD'): string {
     currency,
     maximumFractionDigits: 0,
   }).format(cents / 100);
-}
-
-function paymentAmountCents(payment: PaymentRecord): number {
-  if (typeof payment.amountCents === 'number') return payment.amountCents;
-  if (typeof payment.totalCents === 'number') return payment.totalCents;
-  if (typeof payment.priceCents === 'number') return payment.priceCents;
-  if (typeof payment.amount === 'number') return Math.round(payment.amount * 100);
-  if (typeof payment.total === 'number') return Math.round(payment.total * 100);
-  return 0;
-}
-
-function isPaidPayment(payment: PaymentRecord): boolean {
-  if (payment.voided) return false; // test/reset payments never count as revenue
-  const status = (payment.status ?? '').toLowerCase();
-  return ['paid', 'succeeded', 'complete', 'completed'].includes(status);
-}
-
-function monthlyValueCents(profile: UserProfile): number {
-  const billing = profile.billing;
-  const status = (billing?.status ?? '').toLowerCase();
-  if (!['active', 'trialing', 'paid'].includes(status)) return 0;
-  return billing?.monthlyAmountCents ?? 0;
-}
-
-function lifetimeValueCents(profile: UserProfile): number {
-  return profile.billing?.lifetimeValueCents ?? 0;
 }
 
 function totalStudyHours(profile: UserProfile): number {
