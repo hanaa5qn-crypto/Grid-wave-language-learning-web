@@ -59,6 +59,13 @@ interface PendingInvoice {
   status: 'pending' | 'paid' | 'failed';
 }
 
+// The dummy provider activates a real subscription with no real payment, so it
+// must never be reachable in production. Enabled only when ALLOW_DUMMY_PAYMENTS
+// is explicitly set (dev/preview). Unset in prod → endpoints 404.
+function dummyPaymentsEnabled(): boolean {
+  return process.env.ALLOW_DUMMY_PAYMENTS === '1';
+}
+
 // One-off price for revealing the placement test result.
 const PLACEMENT_RESULT_PRICE_MNT = 5000;
 const PLACEMENT_PLAN_NAME = 'Placement result';
@@ -128,6 +135,12 @@ async function activatePaidInvoice(
   const userRef = admin.db.collection('users').doc(invoice.userId);
 
   await admin.db.runTransaction(async (tx) => {
+    // Idempotency: webhook + frontend poll race on the same paid checkout.
+    // Without this read both transactions would re-grant credits / re-inflate
+    // lifetime value. Re-reading inside the tx makes activation run once.
+    const current = await tx.get(invoiceRef);
+    if (current.get('status') === 'paid') return;
+
     tx.set(paymentRef, {
       provider: invoice.provider,
       providerPaymentId: paymentId,
@@ -225,9 +238,10 @@ function paymentMethodsPayload() {
   const bylMissing = [...byl.missing];
   if (!adminReady) bylMissing.push('Firebase Admin credentials');
   const bylReady = bylMissing.length === 0;
+  const dummyOn = dummyPaymentsEnabled();
 
   return {
-    primary: bylReady ? 'byl' : 'dummy',
+    primary: bylReady ? 'byl' : (dummyOn ? 'dummy' : 'byl'),
     plans,
     byl: {
       id: 'byl',
@@ -240,8 +254,8 @@ function paymentMethodsPayload() {
     dummy: {
       id: 'dummy',
       name: 'Туршилтын төлбөр (симуляци)',
-      status: adminReady ? 'ready' : 'needs_config',
-      missing: adminReady ? [] : ['Firebase Admin credentials'],
+      status: dummyOn ? (adminReady ? 'ready' : 'needs_config') : 'disabled',
+      missing: dummyOn && !adminReady ? ['Firebase Admin credentials'] : [],
       supports: ['instant simulated payment for testing'],
     },
     alternatives: [
@@ -476,6 +490,7 @@ export function registerPaymentsRoute(app: Express) {
   // exercised end-to-end without real money.
   // ---------------------------------------------------------------------------
   app.post('/api/payments/dummy/checkout', async (req, res) => {
+    if (!dummyPaymentsEnabled()) return res.status(404).json({ error: 'Not found.' });
     const admin = getFirebaseAdmin();
     if (!admin) {
       return res.status(503).json({ error: firebaseAdminMissingMessage(), methods: paymentMethodsPayload() });
@@ -545,6 +560,7 @@ export function registerPaymentsRoute(app: Express) {
   });
 
   app.post('/api/payments/dummy/invoices/:senderInvoiceNo/pay', async (req, res) => {
+    if (!dummyPaymentsEnabled()) return res.status(404).json({ error: 'Not found.' });
     const admin = getFirebaseAdmin();
     if (!admin) return res.status(503).json({ error: firebaseAdminMissingMessage() });
 
