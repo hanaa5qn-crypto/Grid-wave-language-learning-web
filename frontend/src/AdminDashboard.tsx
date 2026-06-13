@@ -33,6 +33,7 @@ interface PaymentRecord {
   customerEmail?: string;
   userId?: string;
   plan?: string;
+  voided?: boolean;
 }
 
 function isAdminEmail(email: string | null | undefined): boolean {
@@ -79,6 +80,7 @@ function paymentAmountCents(payment: PaymentRecord): number {
 }
 
 function isPaidPayment(payment: PaymentRecord): boolean {
+  if (payment.voided) return false; // test/reset payments never count as revenue
   const status = (payment.status ?? '').toLowerCase();
   return ['paid', 'succeeded', 'complete', 'completed'].includes(status);
 }
