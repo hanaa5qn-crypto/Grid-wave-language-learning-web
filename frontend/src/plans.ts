@@ -40,6 +40,14 @@ export interface PlanInfo {
 
 export const PLAN_ORDER: PlanId[] = ['free', 'pro', 'max'];
 
+// Apply a teacher-promo percentage discount to a price (display only — the
+// server is authoritative on the actual charge). 100% → 0 (Үнэгүй). Clamps the
+// percentage to [0, 100] and never returns a negative amount.
+export function applyPromoDiscount(amountMnt: number, discountPercent: number): number {
+  const pct = Math.max(0, Math.min(100, discountPercent));
+  return Math.max(0, Math.round(amountMnt * (1 - pct / 100)));
+}
+
 export const PLANS: Record<PlanId, PlanInfo> = {
   free: {
     id: 'free',

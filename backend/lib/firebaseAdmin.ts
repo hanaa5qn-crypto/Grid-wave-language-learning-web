@@ -71,3 +71,13 @@ export async function verifyFirebaseBearer(req: Request): Promise<DecodedIdToken
 
   return admin.auth.verifyIdToken(match[1]);
 }
+
+// Verifies the bearer AND that the caller carries the `admin` custom claim.
+// The claim is set only by scripts/setAdminClaims.ts via the Admin SDK, so it
+// cannot be forged by a client — unlike the unverified email the client sends.
+// Returns the decoded token for admins, otherwise null.
+export async function verifyFirebaseAdmin(req: Request): Promise<DecodedIdToken | null> {
+  const decoded = await verifyFirebaseBearer(req);
+  if (!decoded) return null;
+  return decoded.admin === true ? decoded : null;
+}

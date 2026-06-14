@@ -24,6 +24,7 @@ import { EXAMS, EXAM_LEVEL_ORDER, ExamLevel } from './exams';
 import TestDafExam from './TestDafExam';
 import AdminDashboard from './AdminDashboard';
 import { UserProfile, DEFAULT_PROFILES, stripServerOwnedFields, avatarOptions, AVATAR_STYLES, DEFAULT_AVATAR_STYLE } from './profiles';
+import { getMyPromo, redeemPromoCode, ensureSignupTrial, type MyPromo } from './promo';
 import LoginScreen from './LoginScreen';
 import {
   subscribeToAuthedProfile, logOutUser, saveProfileProgress, sendResetEmail,
@@ -43,7 +44,7 @@ import { buildInflectedLookup } from './inflect';
 import {
   PLANS, PLAN_ORDER, PlanId, effectivePlan, isFounder as isFounderProfile,
   canUseAi, canAccessAllContent, isExamQuestionLocked, isLessonLocked,
-  FREE_QUESTION_LIMIT, type BillingInterval,
+  FREE_QUESTION_LIMIT, applyPromoDiscount, type BillingInterval,
 } from './plans';
 import OnboardingWizard from './OnboardingWizard';
 import PlacementTest from './PlacementTest';
@@ -231,6 +232,14 @@ function LearnerApp() {
   const [paymentMessage, setPaymentMessage] = useState<{ type: 'info' | 'success' | 'error'; text: string } | null>(null);
   const [bylCheckout, setBylCheckout] = useState<BylCheckoutResponse | null>(null);
   const [dummyInvoice, setDummyInvoice] = useState<DummyCheckoutResponse | null>(null);
+  // Teacher-promo for the signed-in student (null = none). When present and the
+  // first paid subscription hasn't happened yet, the paywall shows discounted
+  // prices; a 100%-off code unlocks for free on checkout. Display only — the
+  // server stays authoritative on the actual charge.
+  const [myPromo, setMyPromo] = useState<MyPromo | null>(null);
+  const [manualPromoCode, setManualPromoCode] = useState('');
+  const [manualPromoLoading, setManualPromoLoading] = useState(false);
+  const [manualPromoError, setManualPromoError] = useState<string | null>(null);
   // Monthly vs annual pricing toggle on the plan cards.
   const [billingInterval, setBillingInterval] = useState<BillingInterval>('month');
   // Monthly AI teaser quota reported by /api/ai/quota (null until loaded; limit
@@ -747,19 +756,22 @@ function LearnerApp() {
   // Login дэлгэцэд харуулах урилгын контекст (?duel= / ?ref= линкээр ирсэн зочин).
   const [inviteContext, setInviteContext] = useState<InviteContext | null>(null);
 
-  // ?duel=/?ref= параметрүүдийг localStorage-д хадгалаад URL-ийг цэвэрлэнэ:
+  // ?duel=/?ref=/?promo= параметрүүдийг localStorage-д хадгалаад URL-ийг цэвэрлэнэ:
   // нэвтрэлт/бүртгэлийн дараа ашиглагдана (refresh даваад үлдэнэ).
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const duelCode = params.get('duel');
     const refCode = params.get('ref');
-    if (!duelCode && !refCode) return;
+    const promoCode = params.get('promo');
+    if (!duelCode && !refCode && !promoCode) return;
     try {
       if (duelCode) localStorage.setItem('pendingDuelCode', duelCode);
       if (refCode) localStorage.setItem('pendingRefCode', refCode);
+      if (promoCode) localStorage.setItem('pendingPromoCode', promoCode);
     } catch { /* private mode — урилгагүйгээр үргэлжилнэ */ }
     params.delete('duel');
     params.delete('ref');
+    params.delete('promo');
     const qs = params.toString();
     window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
   }, []);
@@ -782,8 +794,8 @@ function LearnerApp() {
     }
   }, []);
 
-  // Нэвтэрсний дараа хүлээгдэж буй урилгыг бүртгэж (шинэ данс бол хоёр тал
-  // шагнал авна), тулааны линкээр ирсэн бол тулааныг шууд нээнэ.
+  // Нэвтэрсний дараа хүлээгдэж буй урилга болон багшийн кодыг холбож,
+  // шинэ хэрэглэгчид 3 өдрийн туршилтын эрх олгоно.
   const socialBootstrapDoneRef = useRef(false);
   useEffect(() => {
     if (!currentUser || isTest || socialBootstrapDoneRef.current) return;
@@ -791,14 +803,34 @@ function LearnerApp() {
     void (async () => {
       let duelCode: string | null = null;
       let refCode: string | null = null;
+      let promoCode: string | null = null;
       try {
         duelCode = localStorage.getItem('pendingDuelCode');
         refCode = localStorage.getItem('pendingRefCode');
+        promoCode = localStorage.getItem('pendingPromoCode');
         localStorage.removeItem('pendingDuelCode');
         localStorage.removeItem('pendingRefCode');
+        localStorage.removeItem('pendingPromoCode');
       } catch { return; }
 
-      // Урилгын кредит: энгийн ref код, эсвэл тулааны challenger урьсанд тооцно.
+      // 1. Шинэ бүртгэлд 3 өдрийн Pro туршилтын эрх олгох (idempotent)
+      try {
+        await ensureSignupTrial();
+      } catch (err) {
+        console.error('ensureSignupTrial error:', err);
+      }
+
+      // 2. Багшийн promo холбох
+      if (promoCode) {
+        try {
+          await redeemPromoCode(promoCode);
+          await loadMyPromo();
+        } catch (err) {
+          console.error('redeemPromoCode error:', err);
+        }
+      }
+
+      // 3. Урилгын кредит: энгийн ref код, эсвэл тулааны challenger урьсанд тооцно.
       // Хуучин данс серверээс зөөлөн татгалзана (400) — алдааг үл тоомсорлоно.
       if (refCode) {
         try { await redeemReferralCode({ code: refCode }); } catch { /* үл тоомсорлоно */ }
@@ -1392,10 +1424,48 @@ function LearnerApp() {
     }
   };
 
+  // Teacher-promo lookup for the paywall (discount display + free-grant CTA).
+  const loadMyPromo = async () => {
+    try {
+      const { promo } = await getMyPromo();
+      setMyPromo(promo);
+    } catch {
+      setMyPromo(null);
+    }
+  };
+
+  const handleRedeemManualPromo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualPromoCode.trim()) return;
+    setManualPromoLoading(true);
+    setManualPromoError(null);
+    setPaymentMessage(null);
+    try {
+      const res = await redeemPromoCode(manualPromoCode.trim());
+      if (res.redeemed) {
+        setPaymentMessage({
+          type: 'success',
+          text: `Багш ${res.teacherName || ''}-ийн код холбогдлоо. (${res.discountPercent}% хямдрал эхний төлбөрт ажиллана.)`
+        });
+        setManualPromoCode('');
+        await loadMyPromo();
+      } else if (res.already) {
+        setManualPromoError('Энэ код аль хэдийн таны дансанд холбогдсон байна.');
+      } else {
+        setManualPromoError('Код холбож чадсангүй.');
+      }
+    } catch (err: any) {
+      setManualPromoError(err.message || 'Код холбоход алдаа гарлаа.');
+    } finally {
+      setManualPromoLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!currentUser || isTest) return;
     loadPaymentMethods();
     refreshAiQuota();
+    loadMyPromo();
   }, [currentUser?.email, currentUser?.billing?.plan, isTest]);
 
   const getCurrentIdToken = async () => {
@@ -1419,6 +1489,21 @@ function LearnerApp() {
     setCurrentUser(nextProfile);
   };
 
+  // 100%-off teacher code: the server granted the subscription for free and
+  // returns billing with no checkout `url`. Reuse the exact billing-refresh path
+  // the paid success flow uses (applyBillingUpdate), close the paywall panels,
+  // and re-read the promo so its firstPaymentDone flips. Returns true if it
+  // handled a free grant (caller should stop).
+  const handleFreeGrant = (data: any): boolean => {
+    if (!data || data.free !== true || data.url) return false;
+    if (data.billing) applyBillingUpdate(data.billing);
+    setBylCheckout(null);
+    setDummyInvoice(null);
+    setPaymentMessage({ type: 'success', text: 'Багшийн кодоор танд үнэгүй эрх нээгдлээ 🎉' });
+    loadMyPromo();
+    return true;
+  };
+
   const startBylCheckout = async (planId: 'pro' | 'max') => {
     setPaymentActionLoading(true);
     setPaymentMessage(null);
@@ -1435,6 +1520,10 @@ function LearnerApp() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Төлбөр эхлүүлэхэд алдаа гарлаа.');
+
+      // 100%-off teacher code: server already granted access (no URL to open) —
+      // refresh billing the same way the paid success path does and close out.
+      if (handleFreeGrant(data)) return;
 
       setBylCheckout(data);
       // Pop the hosted checkout right away; the panel keeps a link in case the
@@ -1467,6 +1556,9 @@ function LearnerApp() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Туршилтын нэхэмжлэл үүсгэхэд алдаа гарлаа.');
+
+      // 100%-off teacher code path also short-circuits the dummy flow.
+      if (handleFreeGrant(data)) return;
 
       setDummyInvoice(data);
       setPaymentMessage({ type: 'info', text: 'Туршилтын нэхэмжлэл үүслээ. "Төлбөр төлөх (туршилт)" товчоор баталгаажуулна уу.' });
@@ -1973,6 +2065,12 @@ function LearnerApp() {
     const monthlyPriceMnt = (id: 'pro' | 'max') => paymentMethods?.plans?.[id]?.amountMnt ?? PLANS[id].defaultAmountMnt;
     const currentPlanLabel = founderAccess ? 'FOUNDER' : PLANS[userPlan as PlanId]?.name?.toUpperCase() ?? userPlan.toUpperCase();
 
+    // Teacher-promo discount applies to the student's FIRST paid subscription
+    // only. Display the cut price here; the server remains authoritative.
+    const promoActive = !!myPromo && !myPromo.firstPaymentDone && myPromo.discountPercent > 0;
+    const promoPct = myPromo?.discountPercent ?? 0;
+    const isFreeCode = promoActive && promoPct >= 100;
+
     return (
       <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 block-shadow space-y-6">
         {/* Header: current plan */}
@@ -2041,16 +2139,38 @@ function LearnerApp() {
                   {isCurrent && <span className="text-[10px] font-black text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">ИДЭВХТЭЙ</span>}
                 </div>
                 <p className="text-[11px] text-slate-400 font-bold mb-3">{info.taglineMn}</p>
-                <p className="text-xl font-black text-white mb-1">
-                  {price === 0 ? '0₮' : formatMnt(price)}
-                  {price !== 0 && <span className="text-[11px] text-slate-400 font-bold"> / {billingInterval === 'year' ? 'жил' : 'сар'}</span>}
-                </p>
-                {price !== 0 && billingInterval === 'year' ? (
-                  <p className="text-[11px] text-emerald-300 font-bold mb-3">
-                    ≈ {formatMnt(Math.round(price / 12))} / сар · {formatMnt(monthlyPriceMnt(id as 'pro' | 'max') * 12 - price)} хэмнэнэ
-                  </p>
+                {/* Teacher-promo discount applies to paid plans on the first subscription. */}
+                {price !== 0 && promoActive ? (
+                  <>
+                    <p className="text-xl font-black text-white mb-1 flex items-baseline gap-2 flex-wrap">
+                      <span className="text-[13px] text-slate-500 font-bold line-through decoration-red-400/70">{formatMnt(price)}</span>
+                      {isFreeCode ? (
+                        <span className="text-emerald-300">Үнэгүй</span>
+                      ) : (
+                        <span>
+                          {formatMnt(applyPromoDiscount(price, promoPct))}
+                          <span className="text-[11px] text-slate-400 font-bold"> / {billingInterval === 'year' ? 'жил' : 'сар'}</span>
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-[11px] text-emerald-300 font-bold mb-3">
+                      Багш{myPromo?.teacherName ? ` (${myPromo.teacherName})` : ''} · {isFreeCode ? 'үнэгүй эрх' : `-${promoPct}% хямдрал`} · эхний төлбөрт
+                    </p>
+                  </>
                 ) : (
-                  <div className="mb-3" />
+                  <>
+                    <p className="text-xl font-black text-white mb-1">
+                      {price === 0 ? '0₮' : formatMnt(price)}
+                      {price !== 0 && <span className="text-[11px] text-slate-400 font-bold"> / {billingInterval === 'year' ? 'жил' : 'сар'}</span>}
+                    </p>
+                    {price !== 0 && billingInterval === 'year' ? (
+                      <p className="text-[11px] text-emerald-300 font-bold mb-3">
+                        ≈ {formatMnt(Math.round(price / 12))} / сар · {formatMnt(monthlyPriceMnt(id as 'pro' | 'max') * 12 - price)} хэмнэнэ
+                      </p>
+                    ) : (
+                      <div className="mb-3" />
+                    )}
+                  </>
                 )}
                 <ul className="space-y-1.5 mb-2">
                   {info.featuresMn.map((f, i) => (
@@ -2084,7 +2204,13 @@ function LearnerApp() {
                       }`}
                     >
                       {paymentActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
-                      {founderAccess ? 'Founder эрхтэй' : isCurrent ? 'Идэвхтэй' : `${info.name} авах`}
+                      {founderAccess
+                        ? 'Founder эрхтэй'
+                        : isCurrent
+                          ? 'Идэвхтэй'
+                          : isFreeCode
+                            ? 'Үнэгүй эхлүүлэх'
+                            : `${info.name} авах`}
                     </button>
                   )}
                 </div>
@@ -2201,6 +2327,53 @@ function LearnerApp() {
               ))}
             </div>
           ) : null}
+
+          {/* Promo code entry */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+            <p className="text-xs text-slate-400 font-black uppercase font-space">Урамшууллын код / Promo Code</p>
+            {myPromo ? (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3.5 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs text-emerald-400 font-bold">Холбогдсон багшийн код: <span className="font-mono font-black tracking-wide text-emerald-300">{myPromo.code}</span></p>
+                  <p className="text-[11px] text-slate-300 mt-1 font-semibold">
+                    Багш {myPromo.teacherName} · {myPromo.discountPercent}% хямдрал эхний захиалгад
+                  </p>
+                </div>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                  myPromo.firstPaymentDone
+                    ? 'bg-slate-500/10 border-slate-500/30 text-slate-400'
+                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 animate-pulse'
+                }`}>
+                  {myPromo.firstPaymentDone ? 'АШИГЛАСАН' : 'ИДЭВХТЭЙ'}
+                </span>
+              </div>
+            ) : (
+              <form onSubmit={handleRedeemManualPromo} className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Багшийн код оруулах"
+                    value={manualPromoCode}
+                    onChange={(e) => setManualPromoCode(e.target.value.toUpperCase())}
+                    disabled={manualPromoLoading}
+                    className="w-full bg-slate-900/60 border border-white/10 focus:border-purple-400 focus:outline-none rounded-xl px-4 py-2 text-xs text-white font-extrabold uppercase placeholder:normal-case font-space placeholder:text-slate-500"
+                  />
+                  {manualPromoError && (
+                    <p className="text-[11px] text-red-300 bg-red-950/20 border border-red-500/20 rounded-lg px-2 py-1 mt-1 font-semibold">
+                      {manualPromoError}
+                    </p>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={manualPromoLoading || !manualPromoCode.trim()}
+                  className="bg-purple-500 hover:bg-purple-400 disabled:bg-white/10 disabled:text-slate-500 text-slate-950 px-5 py-2 rounded-xl text-xs font-black cursor-pointer disabled:cursor-not-allowed transition-colors border border-purple-300/40 disabled:border-transparent shrink-0 h-[38px] flex items-center justify-center"
+                >
+                  {manualPromoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Холбох'}
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     );

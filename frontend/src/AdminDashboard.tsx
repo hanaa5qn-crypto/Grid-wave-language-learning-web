@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertCircle, BarChart3, Clock, CreditCard, DollarSign,
-  Flame, GraduationCap, Loader2, LogOut, RefreshCw, Search, ShieldCheck,
-  TrendingUp, UserCheck, Users
+  Flame, GraduationCap, Loader2, LogOut, Plus, RefreshCw, Search, ShieldCheck,
+  Tag, TrendingUp, UserCheck, Users
 } from 'lucide-react';
 import {
   onAuthStateChanged,
@@ -20,6 +20,12 @@ import {
   monthlyValueCents,
   lifetimeValueCents,
 } from './adminMetrics';
+import {
+  type TeacherCodeView,
+  adminListTeacherCodes,
+  adminCreateTeacherCode,
+  adminToggleTeacherCode,
+} from './promo';
 
 const ADMIN_EMAILS = ['hanaa5qn@gmail.com', 'yubndaayubnda@gmail.com'];
 
@@ -60,6 +66,28 @@ function formatMoney(cents: number, currency = 'USD'): string {
     currency,
     maximumFractionDigits: 0,
   }).format(cents / 100);
+}
+
+// Багшийн комисс/хямдрал бүгд төгрөгөөр: cents → ₮.
+function formatMnt(cents: number): string {
+  return (cents / 100).toLocaleString() + '₮';
+}
+
+interface CommissionRecord {
+  teacherCode: string;
+  teacherName: string;
+  studentId: string;
+  studentEmail: string;
+  plan: string;
+  interval: string;
+  grossAmountCents: number;
+  netPaidCents: number;
+  discountPercent: number;
+  commissionPercent: number;
+  commissionCents: number;
+  status: 'owed' | 'paid';
+  createdAt: unknown;
+  paymentId: string;
 }
 
 function totalStudyHours(profile: UserProfile): number {
@@ -129,6 +157,22 @@ export default function AdminDashboard() {
   const [queryText, setQueryText] = useState('');
   const [lastLoadedAt, setLastLoadedAt] = useState<Date | null>(null);
 
+  // Багш / Promo кодын төлөв
+  const [teacherCodes, setTeacherCodes] = useState<TeacherCodeView[]>([]);
+  const [commissions, setCommissions] = useState<CommissionRecord[]>([]);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState('');
+  const [createForm, setCreateForm] = useState({
+    code: '',
+    teacherName: '',
+    teacherContact: '',
+    discountPercent: '',
+    commissionPercent: '',
+  });
+  const [createError, setCreateError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [togglingCode, setTogglingCode] = useState<string | null>(null);
+
   const isAuthedAdmin = isAdminEmail(authUser?.email);
 
   useEffect(() => {
@@ -166,9 +210,92 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadPromo = async () => {
+    if (!isAuthedAdmin) return;
+    setPromoLoading(true);
+    setPromoError('');
+    try {
+      const db = getDb();
+      const [codesResult, commissionSnap] = await Promise.all([
+        adminListTeacherCodes(),
+        getDocs(collection(db, 'commissions')).catch(() => null),
+      ]);
+      setTeacherCodes(codesResult.codes);
+      setCommissions(commissionSnap ? commissionSnap.docs.map((doc) => doc.data() as CommissionRecord) : []);
+    } catch (err) {
+      console.error('Teacher codes load failed:', err);
+      setPromoError(err instanceof Error ? err.message : 'Багшийн кодуудыг ачаалж чадсангүй.');
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (isAuthedAdmin) loadDashboard();
+    if (isAuthedAdmin) {
+      loadDashboard();
+      loadPromo();
+    }
   }, [isAuthedAdmin]);
+
+  const handleCreateCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setCreateError('');
+
+    const code = createForm.code.trim();
+    const teacherName = createForm.teacherName.trim();
+    const teacherContact = createForm.teacherContact.trim();
+    const discountPercent = Number(createForm.discountPercent);
+    const commissionPercent = Number(createForm.commissionPercent);
+
+    if (!code) {
+      setCreateError('Код хоосон байж болохгүй.');
+      return;
+    }
+    if (!teacherName) {
+      setCreateError('Багшийн нэрийг оруулна уу.');
+      return;
+    }
+    if (!Number.isFinite(discountPercent) || discountPercent < 0 || discountPercent > 100) {
+      setCreateError('Хямдрал 0-100 хооронд байх ёстой.');
+      return;
+    }
+    if (!Number.isFinite(commissionPercent) || commissionPercent < 0 || commissionPercent > 100) {
+      setCreateError('Комисс 0-100 хооронд байх ёстой.');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      await adminCreateTeacherCode({
+        code,
+        teacherName,
+        teacherContact: teacherContact || undefined,
+        discountPercent,
+        commissionPercent,
+      });
+      setCreateForm({ code: '', teacherName: '', teacherContact: '', discountPercent: '', commissionPercent: '' });
+      await loadPromo();
+    } catch (err) {
+      console.error('Create teacher code failed:', err);
+      setCreateError(err instanceof Error ? err.message : 'Код үүсгэж чадсангүй.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleToggleCode = async (code: string, nextActive: boolean) => {
+    setTogglingCode(code);
+    setPromoError('');
+    try {
+      const updated = await adminToggleTeacherCode(code, nextActive);
+      setTeacherCodes((prev) => prev.map((c) => (c.code === code ? updated : c)));
+    } catch (err) {
+      console.error('Toggle teacher code failed:', err);
+      setPromoError(err instanceof Error ? err.message : 'Кодын төлөв шинэчилж чадсангүй.');
+    } finally {
+      setTogglingCode(null);
+    }
+  };
 
   const metrics = useMemo(() => {
     const totalCustomers = customers.length;
@@ -227,6 +354,18 @@ export default function AdminDashboard() {
       .sort((a, b) => (b.profile.progress ?? 0) - (a.profile.progress ?? 0))
       .slice(0, 5);
   }, [customers]);
+
+  // Багш тус бүрийн төлсөн/өр комиссыг commissions docs-оос нэгтгэх.
+  const commissionByCode = useMemo(() => {
+    const map = new Map<string, { owedCents: number; paidCents: number }>();
+    for (const c of commissions) {
+      const entry = map.get(c.teacherCode) ?? { owedCents: 0, paidCents: 0 };
+      if (c.status === 'paid') entry.paidCents += c.commissionCents ?? 0;
+      else entry.owedCents += c.commissionCents ?? 0;
+      map.set(c.teacherCode, entry);
+    }
+    return map;
+  }, [commissions]);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -474,6 +613,170 @@ export default function AdminDashboard() {
                   <tr>
                     <td colSpan={6} className="px-5 py-10 text-center text-sm font-semibold text-slate-500">
                       No customers match the current search.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black flex items-center gap-2">
+                <Tag className="w-5 h-5 text-slate-400" />
+                Teachers / Promo codes
+              </h2>
+              <p className="text-xs text-slate-500 font-semibold">Багш нар, хямдрал, комиссын удирдлага</p>
+            </div>
+            <button
+              onClick={loadPromo}
+              disabled={promoLoading}
+              className="px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-black flex items-center gap-2 hover:bg-slate-50 disabled:opacity-60 self-start md:self-auto"
+            >
+              {promoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Шинэчлэх
+            </button>
+          </div>
+
+          {promoError && (
+            <div className="mx-5 mt-5 bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-xs font-bold flex gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{promoError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleCreateCode} className="p-5 border-b border-slate-200 bg-slate-50/60">
+            <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">Шинэ код үүсгэх</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div className="lg:col-span-1">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">Код</label>
+                <input
+                  value={createForm.code}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, code: e.target.value }))}
+                  placeholder="BAGSH10"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm font-semibold outline-none focus:border-slate-950"
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">Багш</label>
+                <input
+                  value={createForm.teacherName}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, teacherName: e.target.value }))}
+                  placeholder="Багшийн нэр"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm font-semibold outline-none focus:border-slate-950"
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">Холбоо барих</label>
+                <input
+                  value={createForm.teacherContact}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, teacherContact: e.target.value }))}
+                  placeholder="Сонголтоор"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm font-semibold outline-none focus:border-slate-950"
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">Хямдрал %</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={createForm.discountPercent}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, discountPercent: e.target.value }))}
+                  placeholder="0–100"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm font-semibold outline-none focus:border-slate-950"
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">Комисс %</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={createForm.commissionPercent}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, commissionPercent: e.target.value }))}
+                  placeholder="0–100"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm font-semibold outline-none focus:border-slate-950"
+                />
+              </div>
+            </div>
+
+            {createError && (
+              <div className="mt-3 bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 text-xs font-bold flex gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{createError}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={creating}
+              className="mt-4 px-4 py-2.5 bg-slate-950 text-white rounded-lg text-sm font-black flex items-center gap-2 hover:bg-slate-800 transition-colors disabled:opacity-60"
+            >
+              {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              Код үүсгэх
+            </button>
+          </form>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500">
+                <tr>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Code</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Багш</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Хямдрал %</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Комисс %</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Холбосон</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Төлсөн</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Өр (комисс)</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Идэвхтэй</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {teacherCodes.map((tc) => {
+                  const breakdown = commissionByCode.get(tc.code);
+                  return (
+                    <tr key={tc.code} className="hover:bg-slate-50">
+                      <td className="px-5 py-4">
+                        <span className="font-black bg-slate-100 text-slate-800 px-2.5 py-1 rounded-md text-xs">{tc.code}</span>
+                      </td>
+                      <td className="px-5 py-4">
+                        <p className="font-black text-slate-950 truncate">{tc.teacherName}</p>
+                        {tc.teacherContact && (
+                          <p className="text-xs text-slate-500 font-semibold truncate">{tc.teacherContact}</p>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 font-black">{tc.discountPercent}%</td>
+                      <td className="px-5 py-4 font-black">{tc.commissionPercent}%</td>
+                      <td className="px-5 py-4 font-bold text-slate-600">{tc.redeemCount}</td>
+                      <td className="px-5 py-4 font-bold text-slate-600">{tc.paidConversions}</td>
+                      <td className="px-5 py-4 font-black">
+                        {formatMnt(tc.commissionAccruedCents)}
+                        {breakdown && (breakdown.owedCents > 0 || breakdown.paidCents > 0) && (
+                          <p className="text-[11px] font-bold text-slate-500 mt-0.5">
+                            өр {formatMnt(breakdown.owedCents)} · төлсөн {formatMnt(breakdown.paidCents)}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-5 py-4">
+                        <button
+                          onClick={() => handleToggleCode(tc.code, !tc.active)}
+                          disabled={togglingCode === tc.code}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-60 ${tc.active ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                          aria-label={tc.active ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'}
+                        >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${tc.active ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {teacherCodes.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-10 text-center text-sm font-semibold text-slate-500">
+                      {promoLoading ? 'Ачаалж байна…' : 'Одоогоор багшийн код алга байна.'}
                     </td>
                   </tr>
                 )}

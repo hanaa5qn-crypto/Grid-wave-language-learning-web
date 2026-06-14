@@ -53,6 +53,16 @@ export interface UserProfile {
   friendUids?: string[];
   // Тулааны статистик.
   duelStats?: { wins: number; losses: number; draws: number };
+  // Багшийн promo код (server-owned). Сурагч кодоо холбоход backend тавина;
+  // эхний төлбөр дээр хямдрал, багшид комисс. firstPaymentDone=true болсны
+  // дараа дахин хямдрал/комисс олгохгүй.
+  promo?: {
+    code: string;
+    teacherName: string;
+    discountPercent: number;
+    commissionPercent: number;
+    firstPaymentDone: boolean;
+  };
   billing?: {
     plan?: string;
     status?: string;
@@ -68,7 +78,7 @@ export interface UserProfile {
 // entitlements and metered usage. Firestore rules reject client writes to
 // these; the client must also strip them before saving its own profile so a
 // stale value can never fail an otherwise-valid progress write.
-export const SERVER_OWNED_PROFILE_FIELDS = ['billing', 'placementCredits', 'aiUsage'] as const;
+export const SERVER_OWNED_PROFILE_FIELDS = ['billing', 'placementCredits', 'aiUsage', 'promo'] as const;
 
 export function stripServerOwnedFields(profile: UserProfile): UserProfile {
   const copy = { ...(profile as unknown as Record<string, unknown>) };

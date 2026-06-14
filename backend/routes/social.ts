@@ -351,6 +351,11 @@ export function registerSocialRoute(app: Express) {
           return { redeemed: false as const, already: me.referredBy === inviterUid };
         }
 
+        // Давхцахгүй: багшийн promo код холбосон бол урилга давхар хэрэглэхгүй.
+        if (me.promo && typeof me.promo === 'object') {
+          return { redeemed: false as const, hasPromo: true as const };
+        }
+
         // Зөвхөн шинэ данс (бүртгүүлснээс хойш 7 хоногийн дотор) урамшуулна.
         const createdAt = typeof me.createdAt === 'string' ? Date.parse(me.createdAt) : NaN;
         const ageMs = Date.now() - createdAt;
@@ -388,6 +393,9 @@ export function registerSocialRoute(app: Express) {
 
       if (!outcome.redeemed && outcome.tooOld) {
         return res.status(400).json({ error: 'Урилга зөвхөн шинэ бүртгэлд (7 хоногийн дотор) хүчинтэй.' });
+      }
+      if (!outcome.redeemed && outcome.hasPromo) {
+        return res.status(409).json({ error: 'Та аль хэдийн багшийн promo код ашигласан байна. Давхар хэрэглэх боломжгүй.' });
       }
       return res.json({
         redeemed: outcome.redeemed,

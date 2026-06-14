@@ -24,6 +24,7 @@ import {
   hasPlacementCredit,
   type BillingInterval,
 } from '../lib/plans';
+import { commissionCents, discountedAmountMnt, type UserPromo } from '../lib/promo';
 
 // Per-user checkout rate limit: max 5 invoice creations per hour. Backed by
 // Firestore (collection `rateLimits`) so the cap holds across serverless
@@ -57,7 +58,8 @@ async function checkoutRateLimited(db: FirebaseFirestore.Firestore, uid: string)
 }
 
 interface PendingInvoice {
-  provider: 'byl' | 'dummy';
+  // 'promo' = 100%-off teacher code → granted free, no gateway, never revenue.
+  provider: 'byl' | 'dummy' | 'promo';
   providerInvoiceId: string;
   senderInvoiceNo: string;
   userId: string;
@@ -68,10 +70,18 @@ interface PendingInvoice {
   // 'subscription' (default) renews access; 'placement' is a one-off purchase
   // that unlocks the placement-test result for the user.
   product?: 'subscription' | 'placement';
-  amountMnt: number;
+  amountMnt: number;          // discounted amount actually charged
   amountCents: number;
   currency: 'MNT';
   status: 'pending' | 'paid' | 'failed';
+  // Teacher-promo attribution (present only when the buyer carries an unredeemed
+  // promo). amountMnt/amountCents above are already discounted; grossAmountCents
+  // keeps the pre-discount list price for the commission record.
+  promoCode?: string;
+  teacherName?: string;
+  discountPercent?: number;
+  commissionPercent?: number;
+  grossAmountCents?: number;
 }
 
 // The dummy provider activates a real subscription with no real payment, so it
@@ -146,10 +156,16 @@ async function activatePaidInvoice(
   const isPlacement = invoice.product === 'placement';
   // Dummy activations grant real access for testing but represent no real
   // money, so they must never feed revenue metrics — even when dev/preview
-  // tests hit the same Firestore the prod admin dashboard reads. Keep their
+  // tests hit the same Firestore the prod admin dashboard reads. 'promo' free
+  // grants (100%-off teacher codes) likewise carry no revenue. Keep their
   // revenue contribution at 0 and flag the payment doc as non-revenue.
   const isDummy = invoice.provider === 'dummy';
-  const revenueCents = isDummy ? 0 : invoice.amountCents;
+  const isNonRevenue = isDummy || invoice.provider === 'promo';
+  const revenueCents = isNonRevenue ? 0 : invoice.amountCents;
+  // Record teacher commission once, on the student's first subscription. Dummy
+  // (dev/preview) is excluded so test payments never pollute prod commissions;
+  // real Byl charges and 'promo' free grants do record (free → 0 commission).
+  const wantsCommission = Boolean(invoice.promoCode) && !isPlacement && invoice.provider !== 'dummy';
   const currentPeriodEnd = addMonths(now, invoice.interval === 'year' ? 12 : 1).toISOString();
   const paymentId = String(paidPayment.payment_id || invoice.providerInvoiceId);
   const paymentRef = admin.db.collection('payments').doc(sanitizeDocId(`${invoice.provider}_${paymentId}`));
@@ -159,8 +175,10 @@ async function activatePaidInvoice(
     // Idempotency: webhook + frontend poll race on the same paid checkout.
     // Without this read both transactions would re-grant credits / re-inflate
     // lifetime value. Re-reading inside the tx makes activation run once.
+    // All reads MUST precede any write in a Firestore transaction.
     const current = await tx.get(invoiceRef);
     if (current.get('status') === 'paid') return;
+    const userPromoSnap = wantsCommission ? await tx.get(userRef) : null;
 
     tx.set(paymentRef, {
       provider: invoice.provider,
@@ -175,7 +193,7 @@ async function activatePaidInvoice(
       userId: invoice.userId,
       plan: invoice.plan,
       product: invoice.product ?? 'subscription',
-      revenue: !isDummy,
+      revenue: !isNonRevenue,
       createdAt: paidPayment.payment_date || now.toISOString(),
       providerPayment: paidPayment,
     }, { merge: true });
@@ -216,6 +234,40 @@ async function activatePaidInvoice(
       updatedAt: FieldValue.serverTimestamp(),
       providerPayment: paidPayment,
     }, { merge: true });
+
+    // Teacher commission — only on the student's FIRST subscription. The
+    // firstPaymentDone flag on the user's promo gates renewals (no re-discount,
+    // no second commission). Free 'promo' grants record a 0₮ commission but
+    // still count as a conversion so the dashboard shows code usage.
+    if (wantsCommission && userPromoSnap) {
+      const existingPromo = (userPromoSnap.data()?.promo ?? null) as UserPromo | null;
+      if (existingPromo && !existingPromo.firstPaymentDone) {
+        const netCents = invoice.amountCents; // already discounted (0 if free)
+        const commCents = commissionCents(netCents, invoice.commissionPercent ?? 0);
+        const commissionRef = admin.db.collection('commissions').doc(sanitizeDocId(`${invoice.provider}_${paymentId}`));
+        tx.set(commissionRef, {
+          teacherCode: invoice.promoCode,
+          teacherName: invoice.teacherName ?? '',
+          studentId: invoice.userId,
+          studentEmail: invoice.customerEmail,
+          plan: invoice.plan,
+          interval: invoice.interval ?? 'month',
+          grossAmountCents: invoice.grossAmountCents ?? netCents,
+          netPaidCents: netCents,
+          discountPercent: invoice.discountPercent ?? 0,
+          commissionPercent: invoice.commissionPercent ?? 0,
+          commissionCents: commCents,
+          status: 'owed',
+          createdAt: now.toISOString(),
+          paymentId,
+        }, { merge: true });
+        tx.set(userRef, { promo: { ...existingPromo, firstPaymentDone: true } }, { merge: true });
+        tx.set(admin.db.collection('teacherCodes').doc(String(invoice.promoCode)), {
+          paidConversions: FieldValue.increment(1),
+          commissionAccruedCents: FieldValue.increment(commCents),
+        }, { merge: true });
+      }
+    }
   });
 
   if (isPlacement) {
@@ -251,6 +303,78 @@ async function checkAndMaybeActivate(invoiceRef: FirebaseFirestore.DocumentRefer
     ...publicInvoicePayload({ ...invoice, status }, paidPayment),
     billing,
   };
+}
+
+// Loads the buyer's unredeemed teacher promo (null if none or already used on a
+// first payment). Used to discount the checkout and attribute commission.
+async function loadActivePromo(
+  admin: NonNullable<ReturnType<typeof getFirebaseAdmin>>,
+  uid: string,
+): Promise<UserPromo | null> {
+  const snap = await admin.db.collection('users').doc(uid).get();
+  const promo = snap.exists ? (snap.data() as Record<string, unknown>).promo : null;
+  if (!promo || typeof promo !== 'object') return null;
+  const p = promo as UserPromo;
+  return p.firstPaymentDone ? null : p;
+}
+
+// Extra invoice fields that carry promo attribution through to activation.
+function promoInvoiceFields(promo: UserPromo, grossAmountMnt: number) {
+  return {
+    promoCode: promo.code,
+    teacherName: promo.teacherName,
+    discountPercent: promo.discountPercent,
+    commissionPercent: promo.commissionPercent,
+    grossAmountCents: amountMntToCents(grossAmountMnt),
+  };
+}
+
+// 100%-off path: grant the subscription for free with no payment gateway.
+// Writes a 'promo' invoice + activates it through the same transaction that
+// records the (0₮) commission and flips firstPaymentDone.
+async function activateFreePromoSubscription(
+  admin: NonNullable<ReturnType<typeof getFirebaseAdmin>>,
+  user: { uid: string; email?: string; name?: string },
+  planLabel: string,
+  interval: BillingInterval,
+  promo: UserPromo,
+  grossAmountMnt: number,
+) {
+  const senderInvoiceNo = senderInvoiceNoFor(user.uid);
+  const invoice: PendingInvoice = {
+    provider: 'promo',
+    providerInvoiceId: `promo_${senderInvoiceNo}`,
+    senderInvoiceNo,
+    userId: user.uid,
+    customerEmail: user.email ?? '',
+    customerName: user.name ?? '',
+    plan: planLabel,
+    product: 'subscription',
+    interval,
+    amountMnt: 0,
+    amountCents: 0,
+    currency: 'MNT',
+    status: 'pending',
+    ...promoInvoiceFields(promo, grossAmountMnt),
+  };
+  const invoiceRef = admin.db.collection('paymentInvoices').doc(senderInvoiceNo);
+  await invoiceRef.set({
+    ...invoice,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  const payment: PaymentRecord = {
+    payment_id: `promo_${Date.now()}`,
+    payment_status: 'PAID',
+    payment_date: new Date().toISOString(),
+    payment_amount: 0,
+    payment_currency: 'MNT',
+    transaction_type: 'PROMO_FREE',
+    object_id: invoice.providerInvoiceId,
+    object_type: 'INVOICE',
+  };
+  const billing = await activatePaidInvoice(invoiceRef, invoice, payment);
+  return { senderInvoiceNo, billing };
 }
 
 function paymentMethodsPayload() {
@@ -320,6 +444,8 @@ export function registerPaymentsRoute(app: Express) {
     let interval: BillingInterval | null = null;
     let amountMnt: number;
     let description: string;
+    let promo: UserPromo | null = null;
+    let grossAmountMnt = 0;
     if (product === 'placement') {
       planLabel = PLACEMENT_PLAN_NAME;
       amountMnt = PLACEMENT_RESULT_PRICE_MNT;
@@ -334,6 +460,27 @@ export function registerPaymentsRoute(app: Express) {
       amountMnt = interval === 'year' ? plan.yearAmountMnt : plan.amountMnt;
       planLabel = planId;
       description = `${plan.name} ${interval === 'year' ? 'annual' : 'monthly'} access - Vivid Lingua`;
+      // Apply the buyer's teacher-promo discount to their first subscription.
+      grossAmountMnt = amountMnt;
+      promo = await loadActivePromo(admin, user.uid);
+      if (promo) amountMnt = discountedAmountMnt(amountMnt, promo.discountPercent);
+    }
+
+    // 100%-off promo → grant free, skip the gateway (which rejects 0-value
+    // invoices). Activation records the 0₮ commission and flips firstPaymentDone.
+    if (product === 'subscription' && amountMnt === 0 && promo && interval) {
+      try {
+        const { senderInvoiceNo: freeNo, billing } = await activateFreePromoSubscription(
+          admin, user, planLabel, interval, promo, grossAmountMnt,
+        );
+        return res.status(201).json({
+          provider: 'promo', senderInvoiceNo: freeNo, plan: planLabel, product,
+          interval, amountMnt: 0, currency: 'MNT', free: true, billing,
+        });
+      } catch (err) {
+        console.error('Free promo activation failed:', err);
+        return res.status(502).json({ error: 'Үнэгүй эрх олгож чадсангүй. Дахин оролдоно уу.' });
+      }
     }
 
     const senderInvoiceNo = senderInvoiceNoFor(user.uid);
@@ -367,6 +514,7 @@ export function registerPaymentsRoute(app: Express) {
         amountCents,
         currency: 'MNT',
         status: 'pending',
+        ...(promo ? promoInvoiceFields(promo, grossAmountMnt) : {}),
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
         bylCheckout: { id: checkout.id, url: checkout.url, status: checkout.status ?? 'open' },
@@ -534,6 +682,8 @@ export function registerPaymentsRoute(app: Express) {
     let planLabel: string;
     let interval: BillingInterval | null = null;
     let amountMnt: number;
+    let promo: UserPromo | null = null;
+    let grossAmountMnt = 0;
     if (product === 'placement') {
       planLabel = PLACEMENT_PLAN_NAME;
       amountMnt = PLACEMENT_RESULT_PRICE_MNT;
@@ -546,6 +696,25 @@ export function registerPaymentsRoute(app: Express) {
       const plan = getPaidPlans()[planId];
       amountMnt = interval === 'year' ? plan.yearAmountMnt : plan.amountMnt;
       planLabel = planId;
+      grossAmountMnt = amountMnt;
+      promo = await loadActivePromo(admin, user.uid);
+      if (promo) amountMnt = discountedAmountMnt(amountMnt, promo.discountPercent);
+    }
+
+    // 100%-off promo → free grant via the same 'promo' activation as Byl.
+    if (product === 'subscription' && amountMnt === 0 && promo && interval) {
+      try {
+        const { senderInvoiceNo: freeNo, billing } = await activateFreePromoSubscription(
+          admin, user, planLabel, interval, promo, grossAmountMnt,
+        );
+        return res.status(201).json({
+          provider: 'promo', senderInvoiceNo: freeNo, plan: planLabel, product,
+          interval, amountMnt: 0, currency: 'MNT', free: true, billing,
+        });
+      } catch (err) {
+        console.error('Free promo activation (dummy path) failed:', err);
+        return res.status(502).json({ error: 'Үнэгүй эрх олгож чадсангүй. Дахин оролдоно уу.' });
+      }
     }
 
     const senderInvoiceNo = senderInvoiceNoFor(user.uid);
@@ -565,6 +734,7 @@ export function registerPaymentsRoute(app: Express) {
       amountCents,
       currency: 'MNT',
       status: 'pending',
+      ...(promo ? promoInvoiceFields(promo, grossAmountMnt) : {}),
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });

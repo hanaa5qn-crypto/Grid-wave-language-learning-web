@@ -6,10 +6,14 @@ import { registerPaymentsRoute } from './payments';
 import { registerTranslateRoute } from './translate';
 import { registerAiQuotaRoute } from './ai-quota';
 import { registerSocialRoute } from './social';
+import { registerPromoRoute } from './promo';
+import { registerAccountRoute } from './account';
 
 export function registerApiRoutes(app: Express) {
   registerPaymentsRoute(app);
   registerSocialRoute(app);
+  registerPromoRoute(app);
+  registerAccountRoute(app);
   registerAiQuotaRoute(app);
   registerEvaluateWritingRoute(app);
   registerEvaluateCompositionRoute(app);
