@@ -304,8 +304,9 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
             </div>
             <h2 className="text-2xl md:text-3xl font-black font-space">Таны оноо бүртгэгдлээ</h2>
             <p className="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">
-              Найз тань тоглож дуустал үр дүн "хүлээгдэж байна" төлөвт байна.
-              Линкийг хуваалцаад өрсөлдөгчөө урьж дуэлээ дуусгаарай!
+              {them?.name
+                ? <>Өрсөлдөгч <b className="text-purple-300">{them.name}</b> тоглоход үр дүн гарна — тулаан түүний тулаануудын жагсаалтад нэмэгдсэн.</>
+                : <>Найз тань тоглож дуустал үр дүн "хүлээгдэж байна" төлөвт байна. Линкийг хуваалцаад өрсөлдөгчөө урьж дуэлээ дуусгаарай!</>}
             </p>
           </>
         )}

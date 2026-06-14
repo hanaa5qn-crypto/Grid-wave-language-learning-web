@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertCircle, BarChart3, Clock, CreditCard, DollarSign,
-  Flame, GraduationCap, Loader2, LogOut, Plus, RefreshCw, Search, ShieldCheck,
-  Tag, TrendingUp, UserCheck, Users
+  Flame, Gift, GraduationCap, Loader2, LogOut, Plus, RefreshCw, Search, ShieldCheck,
+  Tag, TrendingUp, UserCheck, UserPlus, Users
 } from 'lucide-react';
 import {
   onAuthStateChanged,
@@ -15,10 +15,14 @@ import { getAuthInstance, getDb, isFirebaseConfigured } from './firebase';
 import { UserProfile } from './profiles';
 import {
   type PaymentRecord,
+  type TrialInfo,
+  type PaidPromoInfo,
   paymentAmountCents,
   isPaidPayment,
   monthlyValueCents,
   lifetimeValueCents,
+  trialInfo,
+  paidPromoInfo,
 } from './adminMetrics';
 import {
   type TeacherCodeView,
@@ -355,6 +359,43 @@ export default function AdminDashboard() {
       .slice(0, 5);
   }, [customers]);
 
+  // Everyone on a 3-day free Pro trial, with the reason (new signup vs invited).
+  // Active (still has access) first, then by soonest expiry.
+  const trialUsers = useMemo(() => {
+    const rows = customers
+      .map(({ id, profile }) => ({ id, profile, trial: trialInfo(profile) }))
+      .filter((row): row is { id: string; profile: UserProfile; trial: TrialInfo } => row.trial !== null);
+    rows.sort((a, b) =>
+      Number(b.trial.active) - Number(a.trial.active) || a.trial.daysLeft - b.trial.daysLeft);
+    return rows;
+  }, [customers]);
+
+  const trialSummary = useMemo(() => {
+    const active = trialUsers.filter((r) => r.trial.active);
+    return {
+      active: active.length,
+      signup: active.filter((r) => r.trial.reason === 'signup').length,
+      referral: active.filter((r) => r.trial.reason === 'referral').length,
+      other: active.filter((r) => r.trial.reason === 'other').length,
+    };
+  }, [trialUsers]);
+
+  // Everyone who bought full access or redeemed a promo code. Paying customers
+  // first (highest lifetime value), then promo-only redeemers.
+  const paidPromoUsers = useMemo(() => {
+    const rows = customers
+      .map(({ id, profile }) => ({ id, profile, info: paidPromoInfo(profile) }))
+      .filter((row): row is { id: string; profile: UserProfile; info: PaidPromoInfo } => row.info !== null);
+    rows.sort((a, b) =>
+      Number(b.info.paid) - Number(a.info.paid) || b.info.ltvCents - a.info.ltvCents);
+    return rows;
+  }, [customers]);
+
+  const paidPromoSummary = useMemo(() => ({
+    paid: paidPromoUsers.filter((r) => r.info.paid).length,
+    promo: paidPromoUsers.filter((r) => r.info.usedPromo).length,
+  }), [paidPromoUsers]);
+
   // Багш тус бүрийн төлсөн/өр комиссыг commissions docs-оос нэгтгэх.
   const commissionByCode = useMemo(() => {
     const map = new Map<string, { owedCents: number; paidCents: number }>();
@@ -529,6 +570,188 @@ export default function AdminDashboard() {
               ))}
               {topCustomers.length === 0 && <p className="text-sm font-semibold text-slate-500">No customers yet.</p>}
             </div>
+          </div>
+        </section>
+
+        <section className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black flex items-center gap-2">
+                <Gift className="w-5 h-5 text-emerald-500" />
+                Free trial access (3-day Pro)
+              </h2>
+              <p className="text-xs text-slate-500 font-semibold">
+                Who currently has free Pro access and why — auto-granted on signup or earned by an invite.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md">
+                <Clock className="w-3.5 h-3.5" /> {trialSummary.active} active
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md">
+                <UserPlus className="w-3.5 h-3.5" /> {trialSummary.signup} new signup
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md">
+                <Gift className="w-3.5 h-3.5" /> {trialSummary.referral} invited
+              </span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500">
+                <tr>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Customer</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Reason</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Days left</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Ends</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {trialUsers.map(({ id, profile, trial }) => (
+                  <tr key={id} className="hover:bg-slate-50">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <img src={profile.avatar} alt="" className="w-10 h-10 rounded-full bg-slate-200" />
+                        <div className="min-w-0">
+                          <p className="font-black text-slate-950 truncate">{profile.name}</p>
+                          <p className="text-xs text-slate-500 font-semibold truncate">{profile.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-black ${
+                        trial.reason === 'referral'
+                          ? 'bg-purple-50 text-purple-700'
+                          : trial.reason === 'signup'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        {trial.reason === 'referral' ? <Gift className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
+                        {trial.reasonLabel}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 font-black">
+                      {trial.active ? `${trial.daysLeft} day${trial.daysLeft === 1 ? '' : 's'}` : '—'}
+                    </td>
+                    <td className="px-5 py-4 text-xs font-bold text-slate-600">
+                      {trial.endsAt ? formatDate(trial.endsAt.toISOString()) : 'No end date'}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`text-xs font-black px-2.5 py-1 rounded-md ${
+                        trial.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        {trial.active ? 'Active' : 'Expired'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {trialUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-10 text-center text-sm font-semibold text-slate-500">
+                      No one is on a free trial right now.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-slate-400" />
+                Paid &amp; promo customers
+              </h2>
+              <p className="text-xs text-slate-500 font-semibold">
+                Everyone who bought full access or redeemed a promo code — paying customers first.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md">
+                <DollarSign className="w-3.5 h-3.5" /> {paidPromoSummary.paid} paid
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md">
+                <Tag className="w-3.5 h-3.5" /> {paidPromoSummary.promo} promo code
+              </span>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 text-slate-500">
+                <tr>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Customer</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Type</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Plan</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">Promo code</th>
+                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wider">LTV</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paidPromoUsers.map(({ id, profile, info }) => (
+                  <tr key={id} className="hover:bg-slate-50">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <img src={profile.avatar} alt="" className="w-10 h-10 rounded-full bg-slate-200" />
+                        <div className="min-w-0">
+                          <p className="font-black text-slate-950 truncate">{profile.name}</p>
+                          <p className="text-xs text-slate-500 font-semibold truncate">{profile.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {info.paid && (
+                          <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-xs font-black">
+                            <DollarSign className="w-3.5 h-3.5" /> Paid
+                          </span>
+                        )}
+                        {info.usedPromo && (
+                          <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md text-xs font-black">
+                            <Tag className="w-3.5 h-3.5" /> Promo
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="text-xs font-black bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md">
+                        {info.paid ? `${info.plan || 'Paid'} / ${profile.billing?.status ?? ''}` : 'Free'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      {info.usedPromo ? (
+                        <div className="text-xs font-bold text-slate-600">
+                          <p className="font-black text-slate-950">{info.promoCode}</p>
+                          <p>
+                            {info.teacherName ?? '—'}
+                            {info.discountPercent != null && ` · -${info.discountPercent}%`}
+                          </p>
+                          <p className={info.firstPaymentDone ? 'text-emerald-600' : 'text-slate-400'}>
+                            {info.firstPaymentDone ? 'Discount used' : 'Discount unused'}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-xs font-semibold text-slate-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 font-black">
+                      {formatMoney(info.ltvCents, profile.billing?.currency ?? metrics.currency)}
+                    </td>
+                  </tr>
+                ))}
+                {paidPromoUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-10 text-center text-sm font-semibold text-slate-500">
+                      No paying or promo customers yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </section>
 

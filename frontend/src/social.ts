@@ -75,6 +75,15 @@ export function createDuel(level: string): Promise<DuelView> {
   return socialFetch('/api/social/duels', { method: 'POST', body: JSON.stringify({ level }) });
 }
 
+// Player ID (өрсөлдөгчийн referral код) рүү чиглэсэн тулаан үүсгэнэ — тулаан
+// тухайн хүний тулаануудын жагсаалтад шууд орж, зөвхөн тэр оноогоо илгээнэ.
+export function challengeByPlayerId(level: string, opponentCode: string): Promise<DuelView> {
+  return socialFetch('/api/social/duels/challenge', {
+    method: 'POST',
+    body: JSON.stringify({ level, opponentCode }),
+  });
+}
+
 export function fetchDuel(code: string): Promise<DuelView> {
   return socialFetch(`/api/social/duels/${encodeURIComponent(code)}`);
 }

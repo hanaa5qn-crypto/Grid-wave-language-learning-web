@@ -152,6 +152,49 @@ export function registerSocialRoute(app: Express) {
     return res.status(201).json(publicDuel(duel, uid));
   });
 
+  // --- Тулаанд шууд урих (Player ID-аар) ----------------------------------------
+  // Өрсөлдөгчийн Player ID (referralCode) өгвөл түүн рүү чиглэсэн тулаан үүсгэнэ.
+  // opponent slot-ийг урьдчилан бөглөх тул зөвхөн уригдсан хүн оноогоо илгээж
+  // чадна; тулаан тухайн хүний тулаануудын жагсаалтад шууд харагдана.
+  app.post('/api/social/duels/challenge', async (req, res) => {
+    const ctx = await requireAuth(req, res);
+    if (!ctx) return;
+    const { admin, uid } = ctx;
+
+    const level = VALID_LEVELS.includes(req.body?.level) ? String(req.body.level) : 'A1';
+    const opponentCode = normalizeCode(req.body?.opponentCode);
+    if (!opponentCode) return res.status(400).json({ error: 'Өрсөлдөгчийн Player ID хоосон байна.' });
+
+    const codeSnap = await admin.db.collection('referralCodes').doc(opponentCode).get();
+    const opponentUid = codeSnap.exists ? String((codeSnap.data() as Record<string, unknown>).uid ?? '') : '';
+    if (!opponentUid) return res.status(404).json({ error: 'Энэ Player ID-тай тоглогч олдсонгүй.' });
+    if (opponentUid === uid) return res.status(400).json({ error: 'Өөрийгөө сорих боломжгүй — найзынхаа Player ID-г оруулна уу.' });
+
+    const [me, opp] = await Promise.all([
+      callerIdentity(admin.db, uid),
+      callerIdentity(admin.db, opponentUid),
+    ]);
+
+    const duel: DuelDoc = {
+      code: randomCode(8),
+      seed: Math.floor(Math.random() * 0x7fffffff),
+      level,
+      status: 'open',
+      createdAt: new Date().toISOString(),
+      challenger: { uid, name: me.name, avatar: me.avatar },
+      opponent: { uid: opponentUid, name: opp.name, avatar: opp.avatar },
+    };
+
+    try {
+      await admin.db.collection('duels').doc(duel.code).create(duel);
+    } catch {
+      duel.code = randomCode(8);
+      await admin.db.collection('duels').doc(duel.code).create(duel);
+    }
+
+    return res.status(201).json(publicDuel(duel, uid));
+  });
+
   // --- Тулааны жагсаалт (минийх) ------------------------------------------------
   // Нэг талбар дээрх хоёр query-г нэгтгэж composite index шаардлагагүй болгоно.
   app.get('/api/social/duels', async (req, res) => {

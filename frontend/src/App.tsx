@@ -44,7 +44,7 @@ import { buildInflectedLookup } from './inflect';
 import {
   PLANS, PLAN_ORDER, PlanId, effectivePlan, isFounder as isFounderProfile,
   canUseAi, canAccessAllContent, isExamQuestionLocked, isLessonLocked,
-  FREE_QUESTION_LIMIT, applyPromoDiscount, type BillingInterval,
+  FREE_QUESTIONS_PER_SECTION, applyPromoDiscount, type BillingInterval,
 } from './plans';
 import OnboardingWizard from './OnboardingWizard';
 import PlacementTest from './PlacementTest';
@@ -247,8 +247,8 @@ function LearnerApp() {
   const [aiQuota, setAiQuota] = useState<{ plan: string; limit: number | null; used: number; remaining: number | null } | null>(null);
 
   // Subscription entitlements — what the signed-in account may open right now.
-  // Free: A1 lessons + first FREE_QUESTION_LIMIT exam-bank questions. Pro: all
-  // content. Max/founder: everything + unlimited AI.
+  // Free: A1 lessons + first FREE_QUESTIONS_PER_SECTION questions of each A1
+  // exam section. Pro: all content. Max/founder: everything + unlimited AI.
   const userPlan = effectivePlan(currentUser);
   const founderAccess = isFounderProfile(currentUser);
   const aiAllowed = canUseAi(currentUser);
@@ -2065,6 +2065,15 @@ function LearnerApp() {
     const monthlyPriceMnt = (id: 'pro' | 'max') => paymentMethods?.plans?.[id]?.amountMnt ?? PLANS[id].defaultAmountMnt;
     const currentPlanLabel = founderAccess ? 'FOUNDER' : PLANS[userPlan as PlanId]?.name?.toUpperCase() ?? userPlan.toUpperCase();
 
+    // Signup grants a 3-day Pro trial (billing.status = 'trialing'). Surface the
+    // countdown so users know the access is temporary and how long is left.
+    const billing = currentUser.billing ?? {};
+    const isTrial = !founderAccess && (billing.status ?? '').toLowerCase() === 'trialing';
+    const trialEndMs = Date.parse(billing.currentPeriodEnd ?? '');
+    const trialDaysLeft = isTrial && Number.isFinite(trialEndMs)
+      ? Math.max(0, Math.ceil((trialEndMs - Date.now()) / 86_400_000))
+      : null;
+
     // Teacher-promo discount applies to the student's FIRST paid subscription
     // only. Display the cut price here; the server remains authoritative.
     const promoActive = !!myPromo && !myPromo.firstPaymentDone && myPromo.discountPercent > 0;
@@ -2081,7 +2090,13 @@ function LearnerApp() {
           <div>
             <p className="text-xs text-slate-400 font-black uppercase font-space">Багц / Subscription</p>
             <h2 className="text-xl font-extrabold text-white">
-              {founderAccess ? 'Founder — бүх эрх нээлттэй' : userPlan === 'free' ? 'Багцаа сонгоод эрхээ нээгээрэй' : `${PLANS[userPlan as PlanId].name} багц идэвхтэй`}
+              {founderAccess
+                ? 'Founder — бүх эрх нээлттэй'
+                : userPlan === 'free'
+                  ? 'Багцаа сонгоод эрхээ нээгээрэй'
+                  : isTrial
+                    ? `${PLANS[userPlan as PlanId].name} туршилт`
+                    : `${PLANS[userPlan as PlanId].name} багц идэвхтэй`}
             </h2>
           </div>
           <span className={`lg:ml-auto flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black border ${
@@ -2100,6 +2115,18 @@ function LearnerApp() {
           <p className="text-[12px] text-amber-200/90 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 font-semibold leading-relaxed">
             Та үүсгэн байгуулагчийн эрхтэй тул бүх контент болон AI боломжууд төлбөргүйгээр үргэлж нээлттэй.
           </p>
+        )}
+
+        {/* Signup trial countdown — Pro access is temporary; show days left. */}
+        {trialDaysLeft !== null && (
+          <div className="flex items-start gap-3 text-[12px] text-sky-100 bg-sky-500/10 border border-sky-400/30 rounded-xl p-3 font-semibold leading-relaxed">
+            <Clock className="w-4 h-4 shrink-0 mt-0.5 text-sky-300" />
+            <span>
+              {trialDaysLeft > 0
+                ? <>Үнэгүй <b>{PLANS[userPlan as PlanId].name}</b> туршилт: бүх контент <b>{trialDaysLeft}</b> хоног нээлттэй. Туршилт дуусахад эрх үнэгүй багц руу шилжинэ — үргэлжлүүлэхийн тулд багцаа аваарай.</>
+                : <>Туршилтын хугацаа өнөөдөр дуусч байна. Эрхээ хадгалахын тулд Pro эсвэл Max багц аваарай.</>}
+            </span>
+          </div>
         )}
 
         {/* Monthly / annual toggle — annual ≈ 2 months free */}
@@ -5106,7 +5133,7 @@ function LearnerApp() {
                     <div className="flex items-start gap-3 mb-5 p-4 bg-primary-container/60 border-2 border-on-background rounded-xl block-shadow max-w-2xl">
                       <Lock className="w-5 h-5 text-on-surface shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-sm font-extrabold text-on-surface">Үнэгүй эрхээр шалгалтын сангийн эхний {FREE_QUESTION_LIMIT} асуулт нээлттэй.</p>
+                        <p className="text-sm font-extrabold text-on-surface">Үнэгүй эрхээр A1 шалгалт бүрийн (унших/сонсох/бичих/ярих) эхний {FREE_QUESTIONS_PER_SECTION} асуулт нээлттэй.</p>
                         <p className="text-xs text-on-surface-variant mt-1">
                           Бүх түвшний {EXAM_LEVEL_ORDER.reduce((n, lv) => n + EXAMS[lv].reading.length + EXAMS[lv].listening.length + EXAMS[lv].writing.length + EXAMS[lv].speaking.length, 0)} тестийг бүрэн нээхийн тулд{' '}
                           <button onClick={() => setActiveTab('profile')} className="font-bold text-secondary underline cursor-pointer">Pro эсвэл Max багц</button> аваарай.
@@ -5143,8 +5170,8 @@ function LearnerApp() {
                 const items = exam[examSec];
                 const item = items[Math.min(examItemIdx, items.length - 1)];
                 const answered = examItemAns !== null;
-                // Free plan: only the first FREE_QUESTION_LIMIT questions of the
-                // whole bank (A1→C2 order) may be opened.
+                // Free plan: only the first FREE_QUESTIONS_PER_SECTION questions
+                // of each A1 section (reading/listening/writing/speaking).
                 const itemLocked = isExamQuestionLocked(currentUser, examLevelSel, examSec, Math.min(examItemIdx, items.length - 1));
                 const sections = [
                   { key: 'reading' as const, icon: BookOpen, mn: 'Унших' },
@@ -5194,7 +5221,7 @@ function LearnerApp() {
                     <div className="border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow">
                       {itemLocked ? renderPlanLockCard(
                         `Тест ${examItemIdx + 1} түгжээтэй`,
-                        `Үнэгүй эрхээр шалгалтын сангийн эхний ${FREE_QUESTION_LIMIT} асуулт нээлттэй. Энэ тестийг нээхийн тулд Pro эсвэл Max багц аваарай.`,
+                        `Үнэгүй эрхээр A1 шалгалт бүрийн эхний ${FREE_QUESTIONS_PER_SECTION} асуулт нээлттэй. Энэ тестийг нээхийн тулд Pro эсвэл Max багц аваарай.`,
                         'pro',
                       ) : (<>
                       <div className="flex items-center justify-between mb-4">

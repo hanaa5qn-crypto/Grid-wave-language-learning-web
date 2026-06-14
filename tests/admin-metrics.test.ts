@@ -4,6 +4,9 @@ import {
   isPaidPayment,
   monthlyValueCents,
   lifetimeValueCents,
+  trialInfo,
+  hasPaidAccess,
+  paidPromoInfo,
   type PaymentRecord,
 } from '../frontend/src/adminMetrics';
 import type { UserProfile } from '../frontend/src/profiles';
@@ -75,6 +78,88 @@ describe('lifetimeValueCents', () => {
 
   it('returns 0 for dummy provider regardless of stored value', () => {
     expect(lifetimeValueCents(profileWith({ provider: 'dummy', lifetimeValueCents: 5980000 }))).toBe(0);
+  });
+});
+
+describe('trialInfo — who has 3-day free Pro access and why', () => {
+  const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString();
+
+  it('labels a new-signup trial as such with days left', () => {
+    const info = trialInfo(profileWith({ plan: 'pro', status: 'trialing', provider: 'signup', currentPeriodEnd: inDays(2) }));
+    expect(info).not.toBeNull();
+    expect(info!.reason).toBe('signup');
+    expect(info!.reasonLabel).toBe('New signup');
+    expect(info!.active).toBe(true);
+    expect(info!.daysLeft).toBe(2);
+  });
+
+  it('labels a referral trial as invited', () => {
+    const info = trialInfo(profileWith({ plan: 'pro', status: 'trialing', provider: 'referral', currentPeriodEnd: inDays(3) }));
+    expect(info!.reason).toBe('referral');
+    expect(info!.reasonLabel).toBe('Invited (referral)');
+  });
+
+  it('marks an expired trial inactive with 0 days left', () => {
+    const info = trialInfo(profileWith({ plan: 'pro', status: 'trialing', provider: 'signup', currentPeriodEnd: inDays(-1) }));
+    expect(info!.active).toBe(false);
+    expect(info!.daysLeft).toBe(0);
+  });
+
+  it('falls back to "other" for an unknown provider', () => {
+    const info = trialInfo(profileWith({ plan: 'pro', status: 'trialing', currentPeriodEnd: inDays(1) }));
+    expect(info!.reason).toBe('other');
+  });
+
+  it('ignores non-trial and dummy accounts', () => {
+    expect(trialInfo(profileWith({ plan: 'pro', status: 'active', provider: 'byl' }))).toBeNull();
+    expect(trialInfo(profileWith({ status: 'trialing', provider: 'dummy', currentPeriodEnd: inDays(2) }))).toBeNull();
+    expect(trialInfo(profileWith(undefined))).toBeNull();
+  });
+});
+
+describe('hasPaidAccess / paidPromoInfo — bought full access or used a promo code', () => {
+  const promo = { code: 'TEACHER10', teacherName: 'Bat', discountPercent: 10, commissionPercent: 5, firstPaymentDone: true };
+  const withPromo = (billing: UserProfile['billing']) =>
+    ({ ...profileWith(billing), promo } as UserProfile);
+
+  it('counts a real active/paid subscriber as paid access', () => {
+    expect(hasPaidAccess(profileWith({ provider: 'byl', status: 'active', plan: 'max' }))).toBe(true);
+    expect(hasPaidAccess(profileWith({ provider: 'byl', status: 'paid', plan: 'pro' }))).toBe(true);
+  });
+
+  it('does not count trials or dummy/free access as paid', () => {
+    expect(hasPaidAccess(profileWith({ provider: 'signup', status: 'trialing', plan: 'pro' }))).toBe(false);
+    expect(hasPaidAccess(profileWith({ provider: 'dummy', status: 'active', plan: 'max' }))).toBe(false);
+    expect(hasPaidAccess(profileWith(undefined))).toBe(false);
+  });
+
+  it('returns paid info for a paying customer', () => {
+    const info = paidPromoInfo(profileWith({ provider: 'byl', status: 'active', plan: 'max', lifetimeValueCents: 3990000 }));
+    expect(info).not.toBeNull();
+    expect(info!.paid).toBe(true);
+    expect(info!.usedPromo).toBe(false);
+    expect(info!.ltvCents).toBe(3990000);
+  });
+
+  it('returns promo info for a code redeemer who has not paid', () => {
+    const info = paidPromoInfo(withPromo(undefined));
+    expect(info).not.toBeNull();
+    expect(info!.paid).toBe(false);
+    expect(info!.usedPromo).toBe(true);
+    expect(info!.promoCode).toBe('TEACHER10');
+    expect(info!.teacherName).toBe('Bat');
+    expect(info!.discountPercent).toBe(10);
+  });
+
+  it('flags a customer who both paid and used a promo code', () => {
+    const info = paidPromoInfo(withPromo({ provider: 'byl', status: 'active', plan: 'pro' }));
+    expect(info!.paid).toBe(true);
+    expect(info!.usedPromo).toBe(true);
+  });
+
+  it('returns null for a plain free user with no promo', () => {
+    expect(paidPromoInfo(profileWith(undefined))).toBeNull();
+    expect(paidPromoInfo(profileWith({ provider: 'signup', status: 'trialing', plan: 'pro' }))).toBeNull();
   });
 });
 

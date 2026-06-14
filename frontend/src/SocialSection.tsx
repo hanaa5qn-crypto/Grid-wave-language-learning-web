@@ -3,7 +3,7 @@ import {
   Check, Copy, Crown, Loader2, Medal, Share2, Snowflake, Swords, Trophy, Users,
 } from 'lucide-react';
 import {
-  createDuel, ensureReferralCode, fetchLeaderboard, fetchMyDuels,
+  createDuel, challengeByPlayerId, ensureReferralCode, fetchLeaderboard, fetchMyDuels,
   referralLink, shareLink, DuelView, LeaderboardRow,
 } from './social';
 
@@ -47,6 +47,9 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
   const [duelLevel, setDuelLevel] = useState(LEVELS.includes(targetLevel) ? targetLevel : 'A1');
   const [startLoading, setStartLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [idCopied, setIdCopied] = useState(false);
+  const [opponentId, setOpponentId] = useState('');
+  const [challengeLoading, setChallengeLoading] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -89,6 +92,35 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
     }
   };
 
+  // Player ID-аар шууд сорих: өрсөлдөгчийн тулаануудын жагсаалтад орж, та
+  // эхний раундаа тоглоно.
+  const challengeOpponent = async () => {
+    const code = opponentId.trim();
+    if (!code) return;
+    setChallengeLoading(true);
+    setMessage('');
+    try {
+      const duel = await challengeByPlayerId(duelLevel, code);
+      setOpponentId('');
+      onPlayDuel(duel);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Тулаан үүсгэж чадсангүй.');
+    } finally {
+      setChallengeLoading(false);
+    }
+  };
+
+  const copyPlayerId = async () => {
+    if (!referral) return;
+    try {
+      await navigator.clipboard.writeText(referral.code);
+      setIdCopied(true);
+      setTimeout(() => setIdCopied(false), 2500);
+    } catch {
+      /* clipboard байхгүй — үл тоомсорлоно */
+    }
+  };
+
   const shareInvite = async () => {
     if (!referral) return;
     const toClipboard = await shareLink(
@@ -128,6 +160,24 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
               {referralLink(referral.code)}
             </p>
           )}
+          {referral && (
+            <div className="flex items-center justify-between gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+              <span className="text-xs text-slate-400 font-bold">
+                Таны Player ID:{' '}
+                <span className="text-base font-space font-black text-white tracking-widest select-all">{referral.code}</span>
+              </span>
+              <button
+                onClick={copyPlayerId}
+                aria-label="Player ID хуулах"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-300 hover:text-white border border-white/10 hover:bg-white/10 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer whitespace-nowrap"
+              >
+                {idCopied ? <><Check className="w-3.5 h-3.5" /> Хуулагдлаа</> : <><Copy className="w-3.5 h-3.5" /> Хуулах</>}
+              </button>
+            </div>
+          )}
+          <p className="text-[11px] text-slate-500 leading-relaxed">
+            Найздаа энэ ID-г өгөөрэй — тэр таныг тулаанд шууд сорьж чадна.
+          </p>
           <div className="flex items-center gap-3">
             <button
               onClick={shareInvite}
@@ -149,7 +199,8 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
           </h3>
           <p className="text-xs text-slate-400 leading-relaxed">
             10 ижил асуултад найзтайгаа өрсөлдөнө — ялагч <b className="text-cyan-300">+1 Streak Freeze</b> авна.
-            Линк нь бүртгэлгүй найзад урилга болно (шинээр бүртгүүлбэл <b className="text-purple-300">3 өдрийн Pro</b> авна).
+            Найзынхаа <b className="text-purple-300">Player ID</b>-аар шууд сорь, эсвэл линк үүсгээд илгээ
+            (шинээр бүртгүүлсэн найз <b className="text-purple-300">3 өдрийн Pro</b> авна).
           </p>
           <div className="flex items-center gap-2">
             {LEVELS.map((lv) => (
@@ -166,13 +217,42 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
               </button>
             ))}
           </div>
+          {/* Player ID-аар шууд сорих */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-300">Найзынхаа Player ID-аар сорих</label>
+            <div className="flex items-center gap-2">
+              <input
+                value={opponentId}
+                onChange={(e) => setOpponentId(e.target.value.toUpperCase())}
+                onKeyDown={(e) => { if (e.key === 'Enter') void challengeOpponent(); }}
+                placeholder="ж: 7Q2K9X"
+                maxLength={16}
+                className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500 rounded-lg px-3 py-2.5 text-sm font-space font-bold text-white tracking-widest outline-none transition-all placeholder:text-slate-600 placeholder:tracking-normal placeholder:font-sans"
+              />
+              <button
+                onClick={() => void challengeOpponent()}
+                disabled={challengeLoading || !opponentId.trim()}
+                className="bg-purple-500/20 border border-purple-500 text-purple-100 text-sm font-bold rounded-lg py-2.5 px-4 hover:bg-purple-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                {challengeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Swords className="w-4 h-4" />}
+                Сорих
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="h-px flex-1 bg-white/10" />
+            <span className="text-[11px] text-slate-500 font-bold">эсвэл</span>
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+
           <button
             onClick={() => void startDuel()}
             disabled={startLoading}
             className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold rounded-lg py-2.5 px-4 hover:opacity-95 disabled:opacity-50 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
-            {startLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Swords className="w-4 h-4" />}
-            Тулаан эхлүүлэх
+            {startLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+            Линкээр нээлттэй тулаан үүсгэх
           </button>
           {message && <p className="text-xs font-bold text-red-400">{message}</p>}
         </div>

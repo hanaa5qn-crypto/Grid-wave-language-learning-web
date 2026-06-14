@@ -11,7 +11,7 @@
 // =============================================================================
 
 import type { UserProfile } from './profiles';
-import { EXAMS, EXAM_LEVEL_ORDER, type ExamLevel } from './exams';
+import { type ExamLevel } from './exams';
 
 export type PlanId = 'free' | 'pro' | 'max';
 export type EffectivePlan = PlanId | 'founder';
@@ -21,8 +21,14 @@ export type BillingInterval = 'month' | 'year';
 // Founder accounts: always full access, no payment needed.
 export const FOUNDER_EMAILS = ['hanaa5qn@gmail.com'];
 
-// Free tier: only the first N questions of the exam question bank.
-export const FREE_QUESTION_LIMIT = 10;
+// Free tier exam access: the first N questions of EACH A1 section
+// (reading / listening / writing / speaking), so the free sample is split
+// evenly across all four skills instead of being front-loaded onto reading.
+export const FREE_QUESTIONS_PER_SECTION = 2;
+
+// Total free exam questions surfaced (4 sections × per-section limit). Display
+// only — the authoritative gate is isExamQuestionLocked below.
+export const FREE_QUESTION_LIMIT = FREE_QUESTIONS_PER_SECTION * 4;
 
 // Monthly AI teaser quota (server-enforced; these are the display defaults).
 export const AI_TEASER: Record<PlanId, number | null> = { free: 2, pro: 5, max: null };
@@ -59,7 +65,7 @@ export const PLANS: Record<PlanId, PlanInfo> = {
     featuresMn: [
       'Үгийн сан, толь бичиг — бүрэн, хязгааргүй',
       'A1 түвшний бүх хичээл (унших/сонсох/ярих/бичих)',
-      `Шалгалтын сангийн эхний ${FREE_QUESTION_LIMIT} асуулт`,
+      `Шалгалт бүрийн (унших/сонсох/бичих/ярих) эхний ${FREE_QUESTIONS_PER_SECTION} асуулт`,
       'Сард 2 AI туршилт',
     ],
     missingMn: [
@@ -155,21 +161,11 @@ export function isLessonLocked(profile: UserProfile | null, level: string): bool
   return level !== 'A1';
 }
 
-// How a question is positioned in the global exam bank order: levels A1→C2,
-// inside each level reading→listening→writing→speaking, items in file order.
-// Free accounts may only open questions whose global index is below the limit.
-export function examQuestionGlobalIndex(level: ExamLevel, section: ExamSection, itemIdx: number): number {
-  const sections: ExamSection[] = ['reading', 'listening', 'writing', 'speaking'];
-  let count = 0;
-  for (const lv of EXAM_LEVEL_ORDER) {
-    for (const sec of sections) {
-      if (lv === level && sec === section) return count + itemIdx;
-      count += EXAMS[lv][sec].length;
-    }
-  }
-  return count + itemIdx;
-}
-
+// Free accounts get an even sample of the exam bank: the first
+// FREE_QUESTIONS_PER_SECTION questions of each A1 section (reading, listening,
+// writing AND speaking). A2–C2 stay locked, matching the A1-only lesson tier.
+// Previously a single global cutoff front-loaded reading and starved
+// writing/speaking; this distributes the free taste across all four skills.
 export function isExamQuestionLocked(
   profile: UserProfile | null,
   level: ExamLevel,
@@ -177,5 +173,6 @@ export function isExamQuestionLocked(
   itemIdx: number,
 ): boolean {
   if (canAccessAllContent(profile)) return false;
-  return examQuestionGlobalIndex(level, section, itemIdx) >= FREE_QUESTION_LIMIT;
+  if (level !== 'A1') return true;
+  return itemIdx >= FREE_QUESTIONS_PER_SECTION;
 }
