@@ -1499,7 +1499,7 @@ function LearnerApp() {
     if (data.billing) applyBillingUpdate(data.billing);
     setBylCheckout(null);
     setDummyInvoice(null);
-    setPaymentMessage({ type: 'success', text: 'Багшийн кодоор танд үнэгүй эрх нээгдлээ 🎉' });
+    setPaymentMessage({ type: 'success', text: 'Урамшууллын кодоор танд үнэгүй эрх нээгдлээ 🎉' });
     loadMyPromo();
     return true;
   };
@@ -2154,7 +2154,7 @@ function LearnerApp() {
                       )}
                     </p>
                     <p className="text-[11px] text-emerald-300 font-bold mb-3">
-                      Багш{myPromo?.teacherName ? ` (${myPromo.teacherName})` : ''} · {isFreeCode ? 'үнэгүй эрх' : `-${promoPct}% хямдрал`} · эхний төлбөрт
+                      {myPromo?.teacherName ? `${myPromo.teacherName}` : 'Урамшууллын код'} · {isFreeCode ? 'үнэгүй эрх' : `-${promoPct}% хямдрал`} · эхний төлбөрт
                     </p>
                   </>
                 ) : (
@@ -2334,9 +2334,9 @@ function LearnerApp() {
             {myPromo ? (
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3.5 flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs text-emerald-400 font-bold">Холбогдсон багшийн код: <span className="font-mono font-black tracking-wide text-emerald-300">{myPromo.code}</span></p>
+                  <p className="text-xs text-emerald-400 font-bold">Холбогдсон код: <span className="font-mono font-black tracking-wide text-emerald-300">{myPromo.code}</span></p>
                   <p className="text-[11px] text-slate-300 mt-1 font-semibold">
-                    Багш {myPromo.teacherName} · {myPromo.discountPercent}% хямдрал эхний захиалгад
+                    {myPromo.teacherName} · {myPromo.discountPercent}% хямдрал эхний захиалгад
                   </p>
                 </div>
                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
@@ -2352,7 +2352,7 @@ function LearnerApp() {
                 <div className="relative flex-1">
                   <input
                     type="text"
-                    placeholder="Багшийн код оруулах"
+                    placeholder="Код оруулах"
                     value={manualPromoCode}
                     onChange={(e) => setManualPromoCode(e.target.value.toUpperCase())}
                     disabled={manualPromoLoading}
