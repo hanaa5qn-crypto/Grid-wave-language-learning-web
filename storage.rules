@@ -14,5 +14,16 @@ service firebase.storage {
       allow delete: if isOwner(userId);
       allow list: if false;
     }
+
+    // Profile pictures. Publicly readable because avatars are shown to friends
+    // and duel opponents; only the owner may upload, images only, ≤5MB.
+    match /avatars/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isOwner(userId)
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|webp|gif)');
+      allow delete: if isOwner(userId);
+      allow list: if false;
+    }
   }
 }

@@ -78,6 +78,49 @@ export function stripServerOwnedFields(profile: UserProfile): UserProfile {
   return copy as unknown as UserProfile;
 }
 
+// --- Avatars: user-chosen or uploaded, NEVER auto-assigned ----------------
+// Product decision: we do NOT assign a cute character avatar automatically.
+// New users get a neutral monogram placeholder (their initials) and pick a
+// cute avatar from the Settings grid or upload their own photo. The grid
+// offers DiceBear `fun-emoji` faces to CHOOSE from; nothing is assigned for
+// them. We store the full resolved SVG/photo URL on `profile.avatar`
+// (matches the existing storage shape; safe in an <img src>).
+// Cute DiceBear styles the user can pick from. `adventurer` is the app's
+// original beloved style; kept as the default the grid opens on.
+export const AVATAR_STYLES = [
+  { id: 'adventurer', label: 'Дүрс' },
+  { id: 'fun-emoji', label: 'Эможи' },
+  { id: 'big-smile', label: 'Инээд' },
+  { id: 'lorelei', label: 'Лорелей' },
+  { id: 'bottts', label: 'Робот' },
+] as const;
+export type AvatarStyleId = (typeof AVATAR_STYLES)[number]['id'];
+export const DEFAULT_AVATAR_STYLE: AvatarStyleId = 'adventurer';
+
+export function avatarUrlFromSeed(seed: string, style: string = DEFAULT_AVATAR_STYLE): string {
+  return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
+}
+
+// Neutral initials/monogram placeholder for users who haven't chosen a
+// picture yet. Deliberately NOT a cute character — it reads as an empty
+// "set your photo" state, not an avatar assigned on the user's behalf.
+export function placeholderAvatarFor(name: string): string {
+  const seed = name.trim() || 'Vivid Lingua';
+  return `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(seed)}`;
+}
+
+// One page of cute avatar CHOICES for the Settings picker grid, in the given
+// style. The user selects one; none is pre-applied. "Re-roll" advances `page`.
+export const AVATAR_GRID_SIZE = 12;
+export function avatarOptions(key: string, page = 0, style: string = DEFAULT_AVATAR_STYLE): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < AVATAR_GRID_SIZE; i++) {
+    const n = page * AVATAR_GRID_SIZE + i;
+    out.push(avatarUrlFromSeed(`${key}-${n}`, style));
+  }
+  return out;
+}
+
 export const DEFAULT_PROFILES: UserProfile[] = [
   {
     email: 'bat@gmail.com',
@@ -237,7 +280,8 @@ export function createCustomProfile(
   return {
     email,
     name,
-    avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(name)}`,
+    // Neutral monogram placeholder — the user chooses or uploads their own.
+    avatar: placeholderAvatarFor(name),
     role: goalClean.includes('сургууль') ? 'Оюутан' : goalClean.includes('ажил') ? 'Мэргэжилтэн' : 'Суралцагч',
     targetLevel,
     streak,
