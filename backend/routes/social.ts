@@ -5,7 +5,7 @@ import {
   getFirebaseAdmin,
   verifyFirebaseBearer,
 } from '../lib/firebaseAdmin';
-import { decideDuelWinner, normalizeCode, randomCode, weekMinutes } from '../lib/socialLogic';
+import { decideDuelWinner, normalizeCode, randomCode, stackedTrialEndMs, weekMinutes } from '../lib/socialLogic';
 
 // =============================================================================
 // Нийгмийн өсөлтийн API — урилга (referral), тулаан (duel), найзуудын
@@ -25,8 +25,6 @@ const DUEL_QUESTION_COUNT = 10;
 const VALID_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const REFERRAL_REDEEM_WINDOW_DAYS = 7;
 const REFERRAL_TRIAL_DAYS = 3;
-// backend/lib/plans.ts-тэй ижил: эдгээр статустай billing-ийг идэвхтэй гэж үзнэ.
-const ACTIVE_BILLING_STATUSES = ['active', 'paid', 'trialing'];
 
 interface DuelSlot {
   uid: string;
@@ -406,32 +404,33 @@ export function registerSocialRoute(app: Express) {
           return { redeemed: false as const, tooOld: true };
         }
 
-        // Урилгын гол шагнал: шинэ хэрэглэгчид 3 өдрийн Pro туршилт. Хоёр
-        // тал хоёулаа streak freeze авна. Аль хэдийн төлбөртэй данстай бол
-        // давхар олгохгүй.
-        const meBilling = (me.billing ?? {}) as { status?: string };
-        const hasActiveBilling = ACTIVE_BILLING_STATUSES.includes((meBilling.status ?? '').toLowerCase());
-        const trialEnd = new Date(Date.now() + REFERRAL_TRIAL_DAYS * 24 * 3600 * 1000).toISOString();
+        // Урилгын гол шагнал нь УРЬСАН хүнд олгогдоно: шинэ хэрэглэгч бүртгүүлэхэд
+        // аль хэдийн 3 өдрийн Pro авдаг тул урьсан хүнд 3 өдрийн Pro өгч урамшуулна.
+        // Олон хүн урьвал хоног нэмэгдэж стек болно (одоогийн дуусах хугацаанаас
+        // сунгана). Бодит төлбөртэй захиалгыг бууруулахгүй — зөвхөн хугацааг нь
+        // сунгана. Хоёр тал streak freeze авна.
+        const inviterBilling = (inviter.billing ?? {}) as { status?: string; currentPeriodEnd?: string };
+        const inviterStatus = (inviterBilling.status ?? '').toLowerCase();
+        const inviterPaid = inviterStatus === 'active' || inviterStatus === 'paid';
+        const inviterRewardEnd = new Date(
+          stackedTrialEndMs(inviterBilling.currentPeriodEnd, REFERRAL_TRIAL_DAYS),
+        ).toISOString();
 
         tx.set(meRef, {
           referredBy: inviterUid,
           streakFreezeCount: FieldValue.increment(1),
-          ...(hasActiveBilling ? {} : {
-            billing: {
-              plan: 'pro',
-              status: 'trialing',
-              interval: 'month',
-              provider: 'referral',
-              currentPeriodEnd: trialEnd,
-            },
-          }),
         }, { merge: true });
         tx.set(inviterRef, {
           invitesCount: FieldValue.increment(1),
           streakFreezeCount: FieldValue.increment(1),
+          // Төлбөртэй захиалгатай бол зөвхөн хугацааг сунгана; үгүй бол Pro
+          // туршилт олгож/сунгана.
+          billing: inviterPaid
+            ? { currentPeriodEnd: inviterRewardEnd }
+            : { plan: 'pro', status: 'trialing', interval: 'month', provider: 'referral', currentPeriodEnd: inviterRewardEnd },
         }, { merge: true });
         crossAddFriends(tx, admin.db, uid, inviterUid);
-        return { redeemed: true as const, proTrialDays: hasActiveBilling ? 0 : REFERRAL_TRIAL_DAYS };
+        return { redeemed: true as const, inviterProTrialDays: REFERRAL_TRIAL_DAYS };
       });
 
       if (!outcome.redeemed && outcome.tooOld) {
@@ -442,7 +441,7 @@ export function registerSocialRoute(app: Express) {
       }
       return res.json({
         redeemed: outcome.redeemed,
-        ...(outcome.redeemed && outcome.proTrialDays ? { proTrialDays: outcome.proTrialDays } : {}),
+        ...(outcome.redeemed && outcome.inviterProTrialDays ? { inviterProTrialDays: outcome.inviterProTrialDays } : {}),
       });
     } catch (err) {
       console.error('Referral redeem failed:', err);

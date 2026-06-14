@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { decideDuelWinner, localDateKey, normalizeCode, weekMinutes } from '../backend/lib/socialLogic';
+import { decideDuelWinner, localDateKey, normalizeCode, stackedTrialEndMs, weekMinutes } from '../backend/lib/socialLogic';
 
 describe('decideDuelWinner', () => {
   it('higher score wins regardless of time', () => {
@@ -52,6 +52,26 @@ describe('weekMinutes', () => {
   it('returns 0 for missing data', () => {
     expect(weekMinutes(undefined, wednesday)).toBe(0);
     expect(weekMinutes({}, wednesday)).toBe(0);
+  });
+});
+
+describe('stackedTrialEndMs — inviter Pro reward stacks', () => {
+  const now = Date.parse('2026-06-14T00:00:00.000Z');
+  const day = 24 * 3600 * 1000;
+
+  it('grants days from now when the inviter has no active access', () => {
+    expect(stackedTrialEndMs(undefined, 3, now)).toBe(now + 3 * day);
+    expect(stackedTrialEndMs('', 3, now)).toBe(now + 3 * day);
+  });
+
+  it('starts from now when the existing period already expired', () => {
+    const expired = new Date(now - 5 * day).toISOString();
+    expect(stackedTrialEndMs(expired, 3, now)).toBe(now + 3 * day);
+  });
+
+  it('stacks on top of an unexpired period so multiple invites add up', () => {
+    const future = new Date(now + 2 * day).toISOString();
+    expect(stackedTrialEndMs(future, 3, now)).toBe(now + 2 * day + 3 * day);
   });
 });
 

@@ -107,11 +107,11 @@ export function ensureReferralCode(): Promise<{ code: string; invitesCount: numb
 }
 
 // Урилга бүртгэх: энгийн referral код, эсвэл тулааны код (challenger урьсанд
-// тооцогдоно). Аль нэгийг нь өгнө. Шинэ дансанд proTrialDays (3 өдрийн Pro
-// туршилт) ирнэ.
+// тооцогдоно). Аль нэгийг нь өгнө. Шагнал нь УРЬСАН хүнд очно (3 өдрийн Pro);
+// inviterProTrialDays нь урьсан хүнд олгогдсон хоногийг буцаана.
 export function redeemReferralCode(
   payload: { code?: string; duelCode?: string },
-): Promise<{ redeemed: boolean; proTrialDays?: number }> {
+): Promise<{ redeemed: boolean; inviterProTrialDays?: number }> {
   return socialFetch('/api/social/referral/redeem', {
     method: 'POST',
     body: JSON.stringify(payload),

@@ -52,7 +52,7 @@ import { isFounderEmail, placementProfilePatch } from './placement';
 import GrammarTipCard from './GrammarTipCard';
 import DuelScreen from './DuelScreen';
 import SocialSection from './SocialSection';
-import { fetchDuel, redeemReferralCode, DuelView } from './social';
+import { fetchDuel, fetchMyDuels, redeemReferralCode, DuelView } from './social';
 import type { InviteContext } from './LoginScreen';
 import MCQBlock from './components/MCQBlock';
 import ExternalResourcesPanel from './components/ExternalResourcesPanel';
@@ -751,10 +751,45 @@ function LearnerApp() {
   // --- Нийгмийн боломжууд: тулаан, урилга --------------------------------------
   // Одоо тоглож/харж буй тулаан (бүтэн дэлгэцийн overlay).
   const [activeDuel, setActiveDuel] = useState<DuelView | null>(null);
+  // activeDuel-ийн хамгийн сүүлийн утгыг interval доторх closure-аас уншихад.
+  const activeDuelRef = useRef<DuelView | null>(null);
+  useEffect(() => { activeDuelRef.current = activeDuel; }, [activeDuel]);
+  // Player ID-аар над руу ирсэн, хараахан тоглоогүй тулааны урилга (pop-up).
+  const [incomingDuel, setIncomingDuel] = useState<DuelView | null>(null);
   // Тулаан дуусахад профайлын нийгмийн хэсгийг дахин ачаалуулах тоолуур.
   const [socialRefreshKey, setSocialRefreshKey] = useState(0);
   // Login дэлгэцэд харуулах урилгын контекст (?duel= / ?ref= линкээр ирсэн зочин).
   const [inviteContext, setInviteContext] = useState<InviteContext | null>(null);
+
+  // Аль тулааны урилгыг аль хэдийн үзүүлснийг localStorage-д хадгална (дахин
+  // дахин гарч ирэхгүйн тулд). Тоглосон тулаан submitted болж байгалиар нь
+  // алга болно.
+  const incomingDuelSeenRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    try { incomingDuelSeenRef.current = new Set(JSON.parse(localStorage.getItem('duelChallengeSeen') || '[]')); }
+    catch { incomingDuelSeenRef.current = new Set(); }
+  }, []);
+  const markDuelChallengeSeen = (code: string) => {
+    const set = incomingDuelSeenRef.current;
+    set.add(code);
+    try { localStorage.setItem('duelChallengeSeen', JSON.stringify([...set].slice(-100))); } catch { /* үл тоомсорлоно */ }
+  };
+
+  // Над руу чиглэсэн (opponent = би), хараахан тоглоогүй нээлттэй тулааныг хайж
+  // pop-up болгож үзүүлнэ. Тоглож буй/нээлттэй pop-up байвал давхарлахгүй.
+  const checkIncomingDuels = useCallback(async () => {
+    if (activeDuelRef.current) return;
+    try {
+      const { duels } = await fetchMyDuels();
+      const seen = incomingDuelSeenRef.current;
+      const incoming = duels.find((d) =>
+        d.status !== 'finished' &&
+        d.opponent?.isMe === true && d.opponent.submitted === false &&
+        !!d.challenger && d.challenger.isMe === false &&
+        !seen.has(d.code));
+      if (incoming) setIncomingDuel((prev) => prev ?? incoming);
+    } catch { /* нийгмийн API байхгүй (503) — үл тоомсорлоно */ }
+  }, []);
 
   // ?duel=/?ref=/?promo= параметрүүдийг localStorage-д хадгалаад URL-ийг цэвэрлэнэ:
   // нэвтрэлт/бүртгэлийн дараа ашиглагдана (refresh даваад үлдэнэ).
@@ -844,8 +879,19 @@ function LearnerApp() {
         } catch { /* тулаан устсан/олдоогүй — юу ч нээхгүй */ }
       }
       setInviteContext(null);
+
+      // Линкээр тулаан нээгээгүй бол над руу ирсэн challenge байгаа эсэхийг шалгана.
+      if (!duelCode) void checkIncomingDuels();
     })();
   }, [currentUser]);
+
+  // Над руу чиглэсэн тулааны урилгыг тогтмол шалгаж (60 сек), нөгөө хүн над руу
+  // challenge илгээмэгц "X таныг дуэлд уриалаа" pop-up гарч ирнэ.
+  useEffect(() => {
+    if (!currentUser || isTest) return;
+    const id = setInterval(() => { void checkIncomingDuels(); }, 60000);
+    return () => clearInterval(id);
+  }, [currentUser, checkIncomingDuels]);
   const [examSec, setExamSec] = useState<'reading' | 'listening' | 'writing' | 'speaking'>('reading');
   const [examItemIdx, setExamItemIdx] = useState(0);
   const [examItemAns, setExamItemAns] = useState<number | null>(null);
@@ -2067,8 +2113,11 @@ function LearnerApp() {
 
     // Signup grants a 3-day Pro trial (billing.status = 'trialing'). Surface the
     // countdown so users know the access is temporary and how long is left.
+    // Gate on userPlan !== 'free': an EXPIRED trial keeps status 'trialing' in
+    // the stored doc but effectivePlan already reverts it to free, so the trial
+    // banner/label must not linger once access is gone.
     const billing = currentUser.billing ?? {};
-    const isTrial = !founderAccess && (billing.status ?? '').toLowerCase() === 'trialing';
+    const isTrial = !founderAccess && userPlan !== 'free' && (billing.status ?? '').toLowerCase() === 'trialing';
     const trialEndMs = Date.parse(billing.currentPeriodEnd ?? '');
     const trialDaysLeft = isTrial && Number.isFinite(trialEndMs)
       ? Math.max(0, Math.ceil((trialEndMs - Date.now()) / 86_400_000))
@@ -3099,6 +3148,45 @@ function LearnerApp() {
 
       {/* TestDaF бүрэн загвар шалгалт — бүрэн дэлгэц overlay (sidebar-аас дээгүүр) */}
       {testdafOpen && <TestDafExam onExit={() => setTestdafOpen(false)} />}
+
+      {/* Тулааны урилгын pop-up — над руу challenge ирэхэд */}
+      {incomingDuel && !activeDuel && (
+        <div className="fixed inset-0 z-[130] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 animate-fade-in">
+          <div className="bg-[#0d0d16] border border-purple-500/30 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up text-white shadow-[0_0_40px_rgba(168,85,247,0.2)]">
+            <div className="flex flex-col items-center text-center gap-3">
+              <span className="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300">
+                <Swords className="w-7 h-7" />
+              </span>
+              {incomingDuel.challenger?.avatar && (
+                <img src={incomingDuel.challenger.avatar} alt="" className="w-12 h-12 rounded-full object-cover -mt-1" />
+              )}
+              <h3 className="text-xl font-black font-space">
+                <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                  {incomingDuel.challenger?.name ?? 'Нэгэн суралцагч'}
+                </span>{' '}
+                таныг тулаанд уриалаа!
+              </h3>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                {incomingDuel.level} түвшний 10 асуултад өрсөлдөнө — ялагч <b className="text-cyan-300">+1 Streak Freeze</b> авна.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => { markDuelChallengeSeen(incomingDuel.code); setIncomingDuel(null); }}
+                className="flex-1 py-3 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-300 cursor-pointer"
+              >
+                Дараа
+              </button>
+              <button
+                onClick={() => { markDuelChallengeSeen(incomingDuel.code); setActiveDuel(incomingDuel); setIncomingDuel(null); }}
+                className="flex-[2] bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl py-3 px-4 hover:opacity-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Swords className="w-4 h-4" /> Тоглох
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Тулаан (quiz duel) — бүрэн дэлгэц overlay */}
       {activeDuel && (

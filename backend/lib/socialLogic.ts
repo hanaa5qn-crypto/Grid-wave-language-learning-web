@@ -55,3 +55,16 @@ export function randomCode(length: number): string {
 export function normalizeCode(value: unknown): string {
   return String(value ?? '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
 }
+
+// Урамшууллын хоногийг одоо байгаа дуусах хугацаан дээр СТЕК болгож нэмнэ:
+// идэвхтэй (ирээдүйд дуусах) хугацаа байвал түүн дээр, эс бөгөөс одооноос
+// эхлүүлж тооцно. Олон хүн урихад урьсан хүний Pro хугацаа уртасна.
+export function stackedTrialEndMs(
+  currentPeriodEnd: string | undefined,
+  addDays: number,
+  now = Date.now(),
+): number {
+  const existing = Date.parse(currentPeriodEnd ?? '');
+  const base = Number.isFinite(existing) && existing > now ? existing : now;
+  return base + addDays * 24 * 3600 * 1000;
+}

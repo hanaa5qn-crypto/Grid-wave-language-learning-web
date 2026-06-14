@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { effectivePlan } from '../frontend/src/plans';
+import { effectivePlan, canAccessAllContent, canUseAi, isLessonLocked, isExamQuestionLocked } from '../frontend/src/plans';
 import type { UserProfile } from '../frontend/src/profiles';
 
 // Зөвхөн billing талбар нь чухал — бусад нь хамгийн бага profile.
@@ -43,6 +43,40 @@ describe('effectivePlan — referral Pro trial', () => {
     expect(effectivePlan(profileWith({ plan: 'pro', status: 'trialing' }))).toBe('free');
   });
 
+});
+
+describe('3-day trial reverts to free and re-locks content after it ends', () => {
+  const trial = (offsetDays: number) => profileWith({
+    plan: 'pro',
+    status: 'trialing',
+    provider: 'signup',
+    currentPeriodEnd: new Date(Date.now() + days(offsetDays)).toISOString(),
+  });
+
+  it('during the trial: pro access, content unlocked', () => {
+    const active = trial(3);
+    expect(effectivePlan(active)).toBe('pro');
+    expect(canAccessAllContent(active)).toBe(true);
+    expect(isLessonLocked(active, 'B2')).toBe(false);
+    expect(isExamQuestionLocked(active, 'C1', 'writing', 5)).toBe(false);
+  });
+
+  it('one second past the end: free, content re-locked, AI teaser only', () => {
+    // currentPeriodEnd just barely in the past — the boundary that matters.
+    const justExpired = profileWith({
+      plan: 'pro',
+      status: 'trialing',
+      provider: 'signup',
+      currentPeriodEnd: new Date(Date.now() - 1000).toISOString(),
+    });
+    expect(effectivePlan(justExpired)).toBe('free');
+    expect(canAccessAllContent(justExpired)).toBe(false);
+    expect(canUseAi(justExpired)).toBe(false);
+    expect(isLessonLocked(justExpired, 'A2')).toBe(true);          // A2+ locked again
+    expect(isLessonLocked(justExpired, 'A1')).toBe(false);         // A1 still free
+    expect(isExamQuestionLocked(justExpired, 'A1', 'writing', 5)).toBe(true);  // beyond free sample
+    expect(isExamQuestionLocked(justExpired, 'A1', 'writing', 0)).toBe(false); // free sample stays
+  });
 });
 
 describe('effectivePlan — paid subscription monthly expiry', () => {
