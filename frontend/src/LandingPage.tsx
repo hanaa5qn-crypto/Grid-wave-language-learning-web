@@ -1,6 +1,7 @@
 import {
   BookOpen, Headphones, Mic, Edit3, Languages, Sparkles, GraduationCap, Swords,
   ArrowRight, Check, Target, Globe, Bot, Star, Play,
+  Shield, BookMarked, MessageSquare, FileText, CreditCard,
 } from 'lucide-react';
 import { PLANS, PLAN_ORDER, type PlanId } from './plans';
 
@@ -119,7 +120,7 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
 
       {/* ---------- Skills grid ---------- */}
       <section className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 py-12">
-        <h2 className="text-2xl md:text-3xl font-black font-space text-center mb-3">Нэг апп — таван чадвар</h2>
+        <h2 className="text-2xl md:text-3xl font-black font-space text-center mb-3">Нэг апп — бүх чадвар нэг дор</h2>
         <p className="text-slate-400 text-center text-sm md:text-base mb-10 max-w-xl mx-auto">
           Хэлний бүх талыг хамарсан дасгалууд, ухаалаг хэрэгслүүд.
         </p>
@@ -170,6 +171,58 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
               )}
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ---------- Trust strip ---------- */}
+      <section className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 py-12">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8">
+          <h2 className="text-lg md:text-xl font-black font-space text-center mb-6 text-white">
+            Яагаад Vivid Lingua вэ?
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 mb-3">
+                <Shield className="w-5 h-5" />
+              </div>
+              <p className="text-white font-bold text-sm mb-1">A1–C2 бүрэн хамрах</p>
+              <p className="text-slate-400 text-xs leading-relaxed">Эхлэгчээс дээд түвшин хүртэлх агуулга нэг дор</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-3">
+                <BookMarked className="w-5 h-5" />
+              </div>
+              <p className="text-white font-bold text-sm mb-1">Bolor-toli толь бичиг</p>
+              <p className="text-slate-400 text-xs leading-relaxed">Үгийн орчуулга машинаар биш, Bolor-toli-аас</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <p className="text-white font-bold text-sm mb-1">AI засвар, үнэлгээ</p>
+              <p className="text-slate-400 text-xs leading-relaxed">AI багш ярих, бичих чадварыг үнэлж, засаж өгнө</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center text-yellow-400 mb-3">
+                <FileText className="w-5 h-5" />
+              </div>
+              <p className="text-white font-bold text-sm mb-1">TestDaF загвар шалгалт</p>
+              <p className="text-slate-400 text-xs leading-relaxed">Жинхэнэ шалгалтын форматаар бэлтгэл хий</p>
+            </div>
+            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-white/5 border border-white/10">
+              <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400 mb-3">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <p className="text-white font-bold text-sm mb-1">Карт шаардахгүй</p>
+              <p className="text-slate-400 text-xs leading-relaxed">Бүртгэлгүйгээр шууд туршиж болно</p>
+            </div>
+          </div>
+          <div className="border-t border-white/10 pt-5 text-center">
+            <p className="text-slate-300 text-sm leading-relaxed max-w-2xl mx-auto italic">
+              "Монгол хэлтэй суралцагчдад зориулсан платформ байхгүй байсан — бүх зүйл англиар дамждаг байлаа. Тэр цоорхойг бөглөхийн тулд Vivid Lingua-г бүтээсэн. Дуусаагүй боловч үнэнч."
+            </p>
+            <p className="text-slate-500 text-xs mt-2 font-semibold">— Vivid Lingua-г бүтээгч</p>
+          </div>
         </div>
       </section>
 
@@ -262,9 +315,9 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <Logo />
           <div className="flex items-center gap-5 text-sm text-slate-400">
-            <a href="#" className="hover:text-white transition-colors">Үйлчилгээний нөхцөл</a>
-            <a href="#" className="hover:text-white transition-colors">Нууцлал</a>
-            <a href="#" className="hover:text-white transition-colors">Холбоо барих</a>
+            <a href="/terms" className="hover:text-white transition-colors">Үйлчилгээний нөхцөл</a>
+            <a href="/privacy" className="hover:text-white transition-colors">Нууцлал</a>
+            <a href="/contact" className="hover:text-white transition-colors">Холбоо барих</a>
           </div>
           <p className="text-xs text-slate-500">© {new Date().getFullYear()} Vivid Lingua</p>
         </div>

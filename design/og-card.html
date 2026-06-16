@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1200" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Golos+Text:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 1200px;
+    height: 630px;
+    overflow: hidden;
+    background: #060512;
+  }
+
+  .card {
+    width: 1200px;
+    height: 630px;
+    background: #060512;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 72px 88px;
+    overflow: hidden;
+    font-family: "Golos Text", sans-serif;
+  }
+
+  /* Aurora glow blobs */
+  .aurora-1 {
+    position: absolute;
+    top: -120px;
+    right: -80px;
+    width: 620px;
+    height: 520px;
+    background: radial-gradient(ellipse at 60% 40%, rgba(179, 136, 250, 0.28) 0%, rgba(102, 170, 253, 0.15) 45%, transparent 75%);
+    border-radius: 50%;
+    filter: blur(40px);
+    pointer-events: none;
+  }
+
+  .aurora-2 {
+    position: absolute;
+    bottom: -100px;
+    left: -60px;
+    width: 480px;
+    height: 380px;
+    background: radial-gradient(ellipse at 40% 60%, rgba(102, 170, 253, 0.2) 0%, rgba(179, 136, 250, 0.12) 50%, transparent 75%);
+    border-radius: 50%;
+    filter: blur(50px);
+    pointer-events: none;
+  }
+
+  .aurora-3 {
+    position: absolute;
+    top: 40px;
+    left: 300px;
+    width: 500px;
+    height: 300px;
+    background: radial-gradient(ellipse at 50% 50%, rgba(251, 109, 142, 0.10) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+  }
+
+  /* Subtle grid overlay */
+  .grid-overlay {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(179,136,250,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(179,136,250,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+  }
+
+  /* Top border accent */
+  .top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #b388fa 0%, #66aafd 50%, #fb6d8e 100%);
+  }
+
+  .content {
+    position: relative;
+    z-index: 10;
+    max-width: 780px;
+  }
+
+  /* Logo row */
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .logo-svg {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+
+  .site-label {
+    font-family: "Unbounded", sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(242, 240, 250, 0.55);
+  }
+
+  /* Brand name */
+  .brand-name {
+    font-family: "Unbounded", sans-serif;
+    font-size: 72px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    background: linear-gradient(105deg, #b388fa 0%, #8ab4ff 55%, #66aafd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 20px;
+  }
+
+  /* Mongolian tagline */
+  .tagline {
+    font-family: "Golos Text", sans-serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: rgba(242, 240, 250, 0.80);
+    line-height: 1.45;
+    margin-bottom: 36px;
+    letter-spacing: 0.01em;
+  }
+
+  /* Skill pills */
+  .skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .skill-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: 999px;
+    background: rgba(179, 136, 250, 0.12);
+    border: 1px solid rgba(179, 136, 250, 0.28);
+    font-family: "Golos Text", sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #b388fa;
+    letter-spacing: 0.02em;
+  }
+
+  .skill-pill.blue {
+    background: rgba(102, 170, 253, 0.10);
+    border-color: rgba(102, 170, 253, 0.25);
+    color: #66aafd;
+  }
+
+  .skill-pill.rose {
+    background: rgba(251, 109, 142, 0.10);
+    border-color: rgba(251, 109, 142, 0.25);
+    color: #fb6d8e;
+  }
+
+  /* Right side decoration */
+  .right-deco {
+    position: absolute;
+    right: 80px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .level-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    font-family: "Unbounded", sans-serif;
+    font-weight: 900;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .level-badge .sub {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin-top: 3px;
+    opacity: 0.7;
+  }
+
+  .level-badge.a1 { background: rgba(102, 170, 253, 0.18); border: 1.5px solid rgba(102, 170, 253, 0.35); color: #66aafd; }
+  .level-badge.b2 { background: rgba(179, 136, 250, 0.18); border: 1.5px solid rgba(179, 136, 250, 0.35); color: #b388fa; }
+  .level-badge.c2 { background: rgba(251, 109, 142, 0.18); border: 1.5px solid rgba(251, 109, 142, 0.35); color: #fb6d8e; }
+
+  .level-connector {
+    width: 2px;
+    height: 18px;
+    background: linear-gradient(180deg, rgba(179,136,250,0.3), rgba(102,170,253,0.2));
+    border-radius: 1px;
+  }
+
+  .testdaf-tag {
+    margin-top: 8px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: rgba(179, 136, 250, 0.10);
+    border: 1px solid rgba(179, 136, 250, 0.22);
+    font-family: "Unbounded", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: rgba(179, 136, 250, 0.8);
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <!-- Aurora glow effects -->
+  <div class="aurora-1"></div>
+  <div class="aurora-2"></div>
+  <div class="aurora-3"></div>
+  <div class="grid-overlay"></div>
+  <div class="top-bar"></div>
+
+  <!-- Main content -->
+  <div class="content">
+    <!-- Logo row -->
+    <div class="logo-row">
+      <svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+        <defs>
+          <linearGradient id="vl" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#b388fa"/>
+            <stop offset="1" stop-color="#66aafd"/>
+          </linearGradient>
+        </defs>
+        <circle cx="13" cy="19" r="9" fill="url(#vl)"/>
+        <line x1="43" y1="16" x2="30" y2="48" stroke="url(#vl)" stroke-width="18" stroke-linecap="round"/>
+      </svg>
+      <span class="site-label">Vivid Lingua</span>
+    </div>
+
+    <!-- Brand name with gradient -->
+    <div class="brand-name">Vivid Lingua</div>
+
+    <!-- Mongolian taglines -->
+    <div class="tagline">
+      Герман хэлээ монголоороо ухаалгаар сур<br/>
+      <span style="font-size:18px; opacity:0.65;">Монголчуудад зориулсан герман хэлний платформ</span>
+    </div>
+
+    <!-- Skill keywords -->
+    <div class="skills">
+      <span class="skill-pill">Унших</span>
+      <span class="skill-pill blue">Сонсох</span>
+      <span class="skill-pill">Ярих</span>
+      <span class="skill-pill blue">Бичих</span>
+      <span class="skill-pill rose">Үгийн сан</span>
+      <span class="skill-pill" style="background:rgba(179,136,250,0.08);border-color:rgba(179,136,250,0.2);color:rgba(179,136,250,0.7);">AI багш</span>
+    </div>
+  </div>
+
+  <!-- Right decoration: level stack -->
+  <div class="right-deco">
+    <div class="level-badge a1">A1<span class="sub">ЭХЛЭЛ</span></div>
+    <div class="level-connector"></div>
+    <div class="level-badge b2">B2<span class="sub">ДУНД</span></div>
+    <div class="level-connector"></div>
+    <div class="level-badge c2">C2<span class="sub">АХИСАН</span></div>
+    <div class="testdaf-tag">TestDaF</div>
+  </div>
+</div>
+</body>
+</html>
