@@ -21,7 +21,7 @@ test('renders App and switches tabs successfully', async () => {
   });
 
   // Verify that the "Сонсох" tab has been activated (listening library reader is shown)
-  expect(getByText(/Бичлэгийг сонсохын тулд дарна уу/i)).toBeInTheDocument();
+  expect(getByText(/Сонсохын тулд тоглуулах товчийг дарна уу/i)).toBeInTheDocument();
 
   // Click on "Үгсийн сан" (Vocab) tab
   const vocabTabButtons = getAllByText('Үгсийн сан');

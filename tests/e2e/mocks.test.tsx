@@ -112,7 +112,7 @@ test('MockFetch routes robustness', async () => {
 });
 
 test('App UI interaction with Speech Recognition Mock integration', async () => {
-  const { getByText, getAllByText, queryByText } = render(<App />);
+  const { getByText, getAllByText, queryByText, getByTitle } = render(<App />);
 
   // Go to the "Ярих" (Speak) tab
   const speakTabButtons = getAllByText('Ярих');
@@ -127,16 +127,8 @@ test('App UI interaction with Speech Recognition Mock integration', async () => 
   expect(getByText('Бичихийн тулд дарна уу')).toBeInTheDocument();
 
   // Find the record button
-  const allButtons = document.querySelectorAll('button');
-  let recordButton: HTMLButtonElement | null = null;
-  allButtons.forEach(btn => {
-    if (btn.className.includes('bg-secondary') && !btn.className.includes('bg-secondary-container')) {
-      recordButton = btn as HTMLButtonElement;
-    }
-  });
-  
+  const recordButton = getByTitle('Бичиж эхлэх') as HTMLButtonElement;
   expect(recordButton).not.toBeNull();
-
   // Click the record button
   await act(async () => {
     await userEvent.click(recordButton!);
