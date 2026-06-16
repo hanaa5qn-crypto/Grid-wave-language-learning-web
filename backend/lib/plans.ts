@@ -203,6 +203,15 @@ export async function checkAiAccess(req: Request): Promise<AiAccessResult> {
   }
 
   if (loaded === null) {
+    // Firebase Admin isn't configured. In dev this is expected — let the AI run
+    // so the UI can be exercised without Firebase. In production a missing Admin
+    // SDK means we cannot authenticate or meter the caller, so failing OPEN here
+    // would expose unauthenticated, unmetered Gemini calls to anyone. Fail CLOSED
+    // in production instead — a misconfigured deploy returns 503, not free AI.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('AI access denied: Firebase Admin is not configured in production.');
+      return { allowed: false, status: 503, error: 'AI үйлчилгээ түр боломжгүй байна. Дараа дахин оролдоно уу.' };
+    }
     console.warn('AI access check skipped: Firebase Admin is not configured (dev mode).');
     return { allowed: true, status: 200 };
   }
