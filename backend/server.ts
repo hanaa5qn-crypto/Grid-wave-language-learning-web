@@ -34,7 +34,7 @@ app.use((_req, res, next) => {
   res.setHeader('Permissions-Policy', 'microphone=(self), camera=(), geolocation=()');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://firebasestorage.googleapis.com https://*.googleapis.com https://*.firebase.com https://*.firebaseio.com; media-src 'self' blob:; font-src 'self' data:;",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' https://firebasestorage.googleapis.com https://*.googleapis.com https://*.firebase.com https://*.firebaseio.com; media-src 'self' blob:; font-src 'self' data: https://fonts.gstatic.com;",
   );
   next();
 });

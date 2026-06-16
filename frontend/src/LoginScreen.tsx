@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Mail, Lock, User as UserIcon, ArrowRight, Target, Sparkles,
+  Mail, Lock, User as UserIcon, ArrowRight, ArrowLeft, Target, Sparkles,
   GraduationCap, Headphones, Loader2, AlertCircle, CheckCircle, Swords,
 } from 'lucide-react';
 import { signUpWithProfile, logInWithEmail, sendResetEmail } from './auth';
@@ -55,6 +55,8 @@ export interface InviteContext {
 
 interface LoginScreenProps {
   inviteContext?: InviteContext;
+  /** Optional: return to the marketing landing page. */
+  onBack?: () => void;
 }
 
 /**
@@ -62,7 +64,7 @@ interface LoginScreenProps {
  * On success, App's auth listener picks up the new session and swaps this
  * screen out — so there's no success callback to wire up here.
  */
-export default function LoginScreen({ inviteContext }: LoginScreenProps = {}) {
+export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps = {}) {
   // Урилгаар ирсэн зочин ихэвчлэн шинэ хэрэглэгч тул бүртгүүлэх горимоор эхэлнэ.
   const [mode, setMode] = useState<Mode>(inviteContext ? 'signup' : 'login');
   const [email, setEmail] = useState('');
@@ -156,6 +158,15 @@ export default function LoginScreen({ inviteContext }: LoginScreenProps = {}) {
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-900/10 rounded-full blur-[140px] pointer-events-none"></div>
 
       <div className="w-full max-w-5xl relative z-10 my-8">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" /> Нүүр хуудас
+          </button>
+        )}
         {/* Logo & Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-black font-space tracking-tight mb-2 flex items-center justify-center gap-3">

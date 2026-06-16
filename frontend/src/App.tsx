@@ -23,9 +23,10 @@ import { resourcesFor, SkillTab } from './externalResources';
 import { EXAMS, EXAM_LEVEL_ORDER, ExamLevel } from './exams';
 import TestDafExam from './TestDafExam';
 import AdminDashboard from './AdminDashboard';
-import { UserProfile, DEFAULT_PROFILES, stripServerOwnedFields, avatarOptions, AVATAR_STYLES, DEFAULT_AVATAR_STYLE } from './profiles';
+import { UserProfile, DEFAULT_PROFILES, createGuestProfile, stripServerOwnedFields, avatarOptions, AVATAR_STYLES, DEFAULT_AVATAR_STYLE } from './profiles';
 import { getMyPromo, redeemPromoCode, ensureSignupTrial, type MyPromo } from './promo';
 import LoginScreen from './LoginScreen';
+import LandingPage from './LandingPage';
 import {
   subscribeToAuthedProfile, logOutUser, saveProfileProgress, sendResetEmail,
 } from './auth';
@@ -225,6 +226,9 @@ function LearnerApp() {
   // True until Firebase reports whether a saved session exists, so we can show a
   // loading screen instead of briefly flashing the login page on refresh.
   const [authLoading, setAuthLoading] = useState<boolean>(!isTest);
+  // Logged-out routing: false → marketing landing page; true → login/signup
+  // screen. Visitors can also enter a no-account "guest" session from either.
+  const [showAuth, setShowAuth] = useState<boolean>(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodsResponse | null>(null);
   const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false);
   const [paymentActionLoading, setPaymentActionLoading] = useState(false);
@@ -832,7 +836,9 @@ function LearnerApp() {
   // шинэ хэрэглэгчид 3 өдрийн туршилтын эрх олгоно.
   const socialBootstrapDoneRef = useRef(false);
   useEffect(() => {
-    if (!currentUser || isTest || socialBootstrapDoneRef.current) return;
+    // Guests have no Firebase token, so trial/promo/duel bootstrap calls would
+    // only 401 — skip them entirely for the no-account session.
+    if (!currentUser || currentUser.isGuest || isTest || socialBootstrapDoneRef.current) return;
     socialBootstrapDoneRef.current = true;
     void (async () => {
       let duelCode: string | null = null;
@@ -1474,10 +1480,36 @@ function LearnerApp() {
     }
   };
 
+  // Enter a no-account guest session so visitors can sample the app (free tier)
+  // before signing up. Nothing persists — saveProfileProgress() bails with no
+  // Firebase user. The free-tier gating already limits guests appropriately.
+  const startGuest = () => {
+    setActiveTab('read');
+    const guest = createGuestProfile();
+    currentUserRef.current = guest;
+    setCurrentUser(guest);
+  };
+
+  // Guest hits a "sign up to save" prompt → drop the guest session and show the
+  // signup screen.
+  const exitGuestToSignup = () => {
+    currentUserRef.current = null;
+    setCurrentUser(null);
+    setShowAuth(true);
+  };
+
   const logoutUser = () => {
     // The auth listener clears currentUser once Firebase signs out; we reset the
     // tab immediately so the UI feels responsive.
     setActiveTab('read');
+    // Guests have no Firebase session — the listener won't fire, so clear the
+    // in-memory profile directly and return to the landing page.
+    if (currentUserRef.current?.isGuest) {
+      currentUserRef.current = null;
+      setCurrentUser(null);
+      setShowAuth(false);
+      return;
+    }
     logOutUser().catch((err) => console.warn('Sign out failed:', err));
   };
 
@@ -1537,8 +1569,9 @@ function LearnerApp() {
     if (!currentUser || isTest) return;
     loadPaymentMethods();
     refreshAiQuota();
-    loadMyPromo();
-  }, [currentUser?.email, currentUser?.billing?.plan, isTest]);
+    // Promo lookup needs a Firebase token — guests would only 401.
+    if (!currentUser.isGuest) loadMyPromo();
+  }, [currentUser?.email, currentUser?.billing?.plan, currentUser?.isGuest, isTest]);
 
   const getCurrentIdToken = async () => {
     if (!isFirebaseConfigured) throw new Error('Firebase тохиргоо дутуу байна.');
@@ -3122,7 +3155,24 @@ function LearnerApp() {
   }
 
   if (!currentUser) {
-    return <LoginScreen inviteContext={inviteContext ?? undefined} />;
+    // Invite links (duel / referral) jump straight to signup. Otherwise show
+    // the marketing landing page first, and only swap in the auth screen once
+    // the visitor chooses to log in or sign up.
+    if (showAuth || inviteContext) {
+      return (
+        <LoginScreen
+          inviteContext={inviteContext ?? undefined}
+          onBack={inviteContext ? undefined : () => setShowAuth(false)}
+        />
+      );
+    }
+    return (
+      <LandingPage
+        onGetStarted={() => setShowAuth(true)}
+        onLogin={() => setShowAuth(true)}
+        onTryGuest={startGuest}
+      />
+    );
   }
 
   if (currentUser && !currentUser.onboardingDone) {
@@ -3171,6 +3221,24 @@ function LearnerApp() {
 
   return (
     <div className="bg-background text-white font-sans min-h-screen flex flex-col md:flex-row relative overflow-x-hidden">
+
+      {/* Зочин горим — явцаа хадгалахын тулд бүртгүүлэх уриалга (бусад дэлгэцийг хаахгүй, хөвдөг) */}
+      {currentUser?.isGuest && (
+        <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[120] w-[calc(100%-2rem)] max-w-md animate-fade-in">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#0d0d16]/95 backdrop-blur-md border border-purple-500/40 shadow-[0_8px_30px_rgba(168,85,247,0.25)]">
+            <Sparkles className="w-5 h-5 text-purple-300 flex-shrink-0" />
+            <p className="text-xs md:text-sm font-semibold text-slate-200 flex-grow">
+              Зочин горимоор үзэж байна. Явцаа хадгалж, бүх түвшин нээхийн тулд бүртгүүлээрэй.
+            </p>
+            <button
+              onClick={exitGuestToSignup}
+              className="flex-shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white text-xs md:text-sm font-bold border border-white/10 transition-all cursor-pointer"
+            >
+              Бүртгүүлэх
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* TestDaF бүрэн загвар шалгалт — бүрэн дэлгэц overlay (sidebar-аас дээгүүр) */}
       {testdafOpen && <TestDafExam onExit={() => setTestdafOpen(false)} />}

@@ -21,6 +21,9 @@ export interface UserProfile {
   mistakeIds?: string[];
   // Onboarding wizard completion flag
   onboardingDone?: boolean;
+  // Guest/visitor session: an in-memory, non-persisted profile so visitors can
+  // sample the app (free tier) without an account. Never written to Firestore.
+  isGuest?: boolean;
   // Daily study goal in minutes (set during onboarding)
   dailyGoalMinutes?: number;
   // Streak freeze: how many 1-day grace days the user has available
@@ -240,6 +243,45 @@ export const DEFAULT_PROFILES: UserProfile[] = [
     onboardingDone: true
   }
 ];
+
+// In-memory guest profile so a visitor can try the app before signing up.
+// Free-tier billing, onboarding/placement skipped (no friction), and flagged
+// isGuest so the UI can prompt sign-up and saves can no-op. Nothing here is
+// persisted — saveProfileProgress() bails when there is no Firebase user.
+export function createGuestProfile(): UserProfile {
+  const now = new Date().toISOString();
+  const days = ['Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба', 'Ням'];
+  return {
+    email: '',
+    name: 'Зочин',
+    avatar: placeholderAvatarFor('Зочин'),
+    role: 'Суралцагч',
+    targetLevel: 'A1',
+    streak: 0,
+    progress: 0,
+    completedLessons: 0,
+    learningGoal: 'Герман хэлийг туршиж үзэх',
+    suggestions: [
+      'Унших, сонсох дасгалуудыг туршиж үзээрэй.',
+      'Үгийн сангаас эхний 10 үгийг цээжилж эхэлээрэй.',
+      'Бүртгүүлбэл явц чинь хадгалагдаж, A2–C2 нээгдэнэ.',
+    ],
+    learningCurve: days.map((day) => ({ day, hours: 0 })),
+    completedActivityIds: [],
+    studyDays: [],
+    studySecondsByDate: {},
+    srsByWord: {},
+    mistakeIds: [],
+    onboardingDone: true,
+    placementPending: false,
+    dailyGoalMinutes: 15,
+    streakFreezeCount: 0,
+    isGuest: true,
+    createdAt: now,
+    lastActiveAt: now,
+    billing: { plan: 'Free', status: 'free', monthlyAmountCents: 0, lifetimeValueCents: 0, currency: 'MNT' },
+  };
+}
 
 export function createCustomProfile(
   email: string,
