@@ -488,11 +488,10 @@ function LearnerApp() {
   }, [currentUser?.srsByWord, TRAINER_WORDS]);
 
   // Audio player variables for Listening (Screen 2)
-  const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioSpeed, setAudioSpeed] = useState<'0.8' | '1.0'>('1.0');
-  const [audioDurationPercent, setAudioDurationPercent] = useState(0);
-  const [waveformWave, setWaveformWave] = useState<number[]>([]);
-  const listeningAudioInterval = useRef<any>(null);
+  // Real TTS playback state for the listening player (pause / resume / replay)
+  const [listenState, setListenState] = useState<'idle' | 'playing' | 'paused'>('idle');
+  const listenUtterRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Draggable-type Word Chips for Listening (Screen 2)
   const [listeningPool, setListeningPool] = useState<string[]>([]);
@@ -1001,10 +1000,6 @@ function LearnerApp() {
     } else {
       setVoiceSupportMessage('Таны хөтөч дуу хоолой танихыг дэмждэггүй тул доорх хайрцагт шивж шалгуулна уу.');
     }
-
-    // Initialize decorative Audio Waveform values
-    const bars = Array.from({ length: 42 }, () => Math.floor(Math.random() * 80) + 20);
-    setWaveformWave(bars);
   }, []);
 
   // Clean up any active recording resources when leaving the page.
@@ -1027,6 +1022,48 @@ function LearnerApp() {
     } else {
       alert('Таны төхөөрөмж дээр дуут уншигч (TTS) дэмжигдээгүй байна.');
     }
+  };
+
+  // --- Listening player controls (pause / resume / replay over Web Speech TTS) ---
+  // TTS has no seekable timeline, so "replay" restarts from the top; pause/resume
+  // map to the native speechSynthesis pause()/resume().
+  const playListening = (text: string, rate: number) => {
+    if (!('speechSynthesis' in window)) {
+      alert('Таны төхөөрөмж дээр дуут уншигч (TTS) дэмжигдээгүй байна.');
+      return;
+    }
+    // Detach the previous utterance's handlers BEFORE cancelling — cancel() fires
+    // its onend, which would otherwise clobber the new 'playing' state to 'idle'.
+    if (listenUtterRef.current) {
+      listenUtterRef.current.onend = null;
+      listenUtterRef.current.onerror = null;
+    }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'de-DE';
+    u.rate = rate;
+    u.onend = () => setListenState('idle');
+    u.onerror = () => setListenState('idle');
+    listenUtterRef.current = u;
+    setListenState('playing');
+    window.speechSynthesis.speak(u);
+  };
+  const pauseListening = () => {
+    if ('speechSynthesis' in window) window.speechSynthesis.pause();
+    setListenState('paused');
+  };
+  const resumeListening = () => {
+    if ('speechSynthesis' in window) window.speechSynthesis.resume();
+    setListenState('playing');
+  };
+  const stopListening = () => {
+    if (listenUtterRef.current) {
+      listenUtterRef.current.onend = null;
+      listenUtterRef.current.onerror = null;
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    listenUtterRef.current = null;
+    setListenState('idle');
   };
 
   // Fast lookup built once: lowercased German headword -> dictionary entry.
@@ -1074,26 +1111,15 @@ function LearnerApp() {
       );
     });
 
-  // Pulse Waveform bar elements during Listening playback simulation
+  // Listening player: stop speech when leaving the tab or switching clip,
+  // and cancel any in-flight utterance on unmount so it never keeps talking.
   useEffect(() => {
-    if (audioPlaying) {
-      listeningAudioInterval.current = setInterval(() => {
-        setAudioDurationPercent(prev => {
-          if (prev >= 100) {
-            setAudioPlaying(false);
-            clearInterval(listeningAudioInterval.current);
-            return 0;
-          }
-          return prev + 2;
-        });
-      }, 100);
-    } else {
-      if (listeningAudioInterval.current) {
-        clearInterval(listeningAudioInterval.current);
-      }
-    }
-    return () => clearInterval(listeningAudioInterval.current);
-  }, [audioPlaying]);
+    if (activeTab !== 'listen') stopListening();
+  }, [activeTab]);
+  useEffect(() => {
+    stopListening();
+  }, [libListenId]);
+  useEffect(() => () => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }, []);
 
 
   // Evaluation trigger: Speaking (TEXT path) — used by the type-to-test box and
@@ -4071,17 +4097,33 @@ function LearnerApp() {
 
                           {/* Play controls */}
                           <div className="flex flex-col items-center gap-3 py-6 bg-surface-container-low border-2 border-on-background rounded-xl mb-5">
-                            <button onClick={() => speakGerman(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0)}
-                              className="w-16 h-16 rounded-full bg-secondary text-white border-2 border-on-background flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
-                              <Volume2 className="w-7 h-7" />
-                            </button>
-                            <p className="text-xs text-on-surface-variant font-sans">Бичлэгийг сонсохын тулд дарна уу (2 удаа)</p>
+                            <div className="flex items-center gap-4">
+                              {/* Replay from start */}
+                              <button onClick={() => playListening(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0)}
+                                title="Эхнээс дахин тоглуулах"
+                                className="w-11 h-11 rounded-full bg-surface-container text-on-surface border-2 border-on-background flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
+                                <RotateCcw className="w-5 h-5" />
+                              </button>
+                              {/* Play / Pause / Resume toggle */}
+                              <button onClick={() => {
+                                  if (listenState === 'playing') pauseListening();
+                                  else if (listenState === 'paused') resumeListening();
+                                  else playListening(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0);
+                                }}
+                                title={listenState === 'playing' ? 'Түр зогсоох' : 'Тоглуулах'}
+                                className={`w-16 h-16 rounded-full bg-secondary text-white border-2 border-on-background flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow ${listenState === 'playing' ? 'animate-pulse ring-4 ring-secondary/30' : ''}`}>
+                                {listenState === 'playing' ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-0.5" />}
+                              </button>
+                            </div>
+                            <p className="text-xs text-on-surface-variant font-sans">
+                              {listenState === 'playing' ? 'Тоглож байна… дарж түр зогсоо' : listenState === 'paused' ? 'Түр зогссон… дарж үргэлжлүүл' : 'Сонсохын тулд тоглуулах товчийг дарна уу'}
+                            </p>
                             <div className="flex items-center gap-2">
-                              <button onClick={() => setAudioSpeed('0.8')}
+                              <button onClick={() => { setAudioSpeed('0.8'); if (listenState !== 'idle') playListening(item.audioText, 0.8); }}
                                 className={`px-3 py-1 rounded-full border-2 border-on-background text-[11px] font-bold font-space cursor-pointer block-shadow ${audioSpeed === '0.8' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'}`}>
                                 0.8x (Удаан)
                               </button>
-                              <button onClick={() => setAudioSpeed('1.0')}
+                              <button onClick={() => { setAudioSpeed('1.0'); if (listenState !== 'idle') playListening(item.audioText, 1.0); }}
                                 className={`px-3 py-1 rounded-full border-2 border-on-background text-[11px] font-bold font-space cursor-pointer block-shadow ${audioSpeed === '1.0' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'}`}>
                                 1.0x (Хэвийн)
                               </button>
