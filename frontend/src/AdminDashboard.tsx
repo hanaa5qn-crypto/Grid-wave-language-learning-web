@@ -519,9 +519,9 @@ export default function AdminDashboard() {
         )}
 
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <KpiCard label="Customers" value={String(metrics.totalCustomers)} detail={`${metrics.active7d} active in the last 7 days`} icon={Users} tone="bg-blue-50 text-blue-700" />
-          <KpiCard label="Gross Revenue" value={formatMoney(metrics.grossRevenueCents, metrics.currency)} detail={`${metrics.paidCustomers} paid customers`} icon={DollarSign} tone="bg-emerald-50 text-emerald-700" />
-          <KpiCard label="MRR" value={formatMoney(metrics.mrrCents, metrics.currency)} detail={`${formatMoney(metrics.arpuCents, metrics.currency)} ARPU`} icon={CreditCard} tone="bg-violet-50 text-violet-700" />
+          <KpiCard label="Customers" value={String(metrics.totalCustomers)} detail={`${metrics.active7d} active in the last 7 days`} icon={Users} tone="bg-teal-50 text-teal-700" />
+          <KpiCard label="Gross Revenue" value={formatMoney(metrics.grossRevenueCents, metrics.currency)} detail={`${metrics.paidCustomers} paid customers`} icon={DollarSign} tone="bg-teal-50 text-teal-700" />
+          <KpiCard label="MRR" value={formatMoney(metrics.mrrCents, metrics.currency)} detail={`${formatMoney(metrics.arpuCents, metrics.currency)} ARPU`} icon={CreditCard} tone="bg-amber-50 text-amber-700" />
           <KpiCard label="Engagement" value={`${metrics.avgProgress}%`} detail={`${metrics.active30d} active in the last 30 days`} icon={Activity} tone="bg-amber-50 text-amber-700" />
         </section>
 
@@ -577,7 +577,7 @@ export default function AdminDashboard() {
           <div className="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-black flex items-center gap-2">
-                <Gift className="w-5 h-5 text-emerald-500" />
+                <Gift className="w-5 h-5 text-teal-500" />
                 Free trial access (3-day Pro)
               </h2>
               <p className="text-xs text-slate-500 font-semibold">
@@ -585,13 +585,13 @@ export default function AdminDashboard() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-teal-50 text-teal-700 px-2.5 py-1 rounded-md">
                 <Clock className="w-3.5 h-3.5" /> {trialSummary.active} active
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-teal-50 text-teal-700 px-2.5 py-1 rounded-md">
                 <UserPlus className="w-3.5 h-3.5" /> {trialSummary.signup} new signup
               </span>
-              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md">
                 <Gift className="w-3.5 h-3.5" /> {trialSummary.referral} invited
               </span>
             </div>
@@ -623,9 +623,9 @@ export default function AdminDashboard() {
                     <td className="px-5 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-black ${
                         trial.reason === 'referral'
-                          ? 'bg-purple-50 text-purple-700'
+                          ? 'bg-amber-50 text-amber-700'
                           : trial.reason === 'signup'
-                            ? 'bg-blue-50 text-blue-700'
+                            ? 'bg-teal-50 text-teal-700'
                             : 'bg-slate-100 text-slate-600'
                       }`}>
                         {trial.reason === 'referral' ? <Gift className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
@@ -640,7 +640,7 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-5 py-4">
                       <span className={`text-xs font-black px-2.5 py-1 rounded-md ${
-                        trial.active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                        trial.active ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-500'
                       }`}>
                         {trial.active ? 'Active' : 'Expired'}
                       </span>
@@ -671,7 +671,7 @@ export default function AdminDashboard() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md">
+              <span className="inline-flex items-center gap-1.5 text-xs font-black bg-teal-50 text-teal-700 px-2.5 py-1 rounded-md">
                 <DollarSign className="w-3.5 h-3.5" /> {paidPromoSummary.paid} paid
               </span>
               <span className="inline-flex items-center gap-1.5 text-xs font-black bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md">
@@ -706,7 +706,7 @@ export default function AdminDashboard() {
                     <td className="px-5 py-4">
                       <div className="flex flex-wrap gap-1.5">
                         {info.paid && (
-                          <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md text-xs font-black">
+                          <span className="inline-flex items-center gap-1.5 bg-teal-50 text-teal-700 px-2.5 py-1 rounded-md text-xs font-black">
                             <DollarSign className="w-3.5 h-3.5" /> Paid
                           </span>
                         )}
@@ -730,7 +730,7 @@ export default function AdminDashboard() {
                             {info.teacherName ?? '—'}
                             {info.discountPercent != null && ` · -${info.discountPercent}%`}
                           </p>
-                          <p className={info.firstPaymentDone ? 'text-emerald-600' : 'text-slate-400'}>
+                          <p className={info.firstPaymentDone ? 'text-teal-600' : 'text-slate-400'}>
                             {info.firstPaymentDone ? 'Discount used' : 'Discount unused'}
                           </p>
                         </div>
@@ -799,7 +799,7 @@ export default function AdminDashboard() {
                       </div>
                     </td>
                     <td className="px-5 py-4">
-                      <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-black">
+                      <span className="inline-flex items-center gap-1.5 bg-teal-50 text-teal-700 px-2.5 py-1 rounded-md text-xs font-black">
                         <GraduationCap className="w-3.5 h-3.5" />
                         {profile.targetLevel}
                       </span>
@@ -987,7 +987,7 @@ export default function AdminDashboard() {
                         <button
                           onClick={() => handleToggleCode(tc.code, !tc.active)}
                           disabled={togglingCode === tc.code}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-60 ${tc.active ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-60 ${tc.active ? 'bg-teal-500' : 'bg-slate-300'}`}
                           aria-label={tc.active ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'}
                         >
                           <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${tc.active ? 'translate-x-6' : 'translate-x-1'}`} />

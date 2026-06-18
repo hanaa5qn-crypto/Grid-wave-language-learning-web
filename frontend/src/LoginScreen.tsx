@@ -154,8 +154,8 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
   return (
     <div className="bg-background text-white font-sans min-h-screen flex flex-col justify-center items-center p-4 relative overflow-hidden w-full select-none">
       {/* Glow ambient background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[140px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-900/10 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-amber-900/10 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-teal-900/10 rounded-full blur-[140px] pointer-events-none"></div>
 
       <div className="w-full max-w-5xl relative z-10 my-8">
         {onBack && (
@@ -171,7 +171,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-black font-space tracking-tight mb-2 flex items-center justify-center gap-3">
             <img src="/favicon.svg" alt="" className="w-10 h-10 md:w-12 md:h-12" />
-            <span><span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua</span>
+            <span><span className="text-primary">Vivid</span> Lingua</span>
           </h1>
           <p className="text-slate-400 text-sm md:text-base max-w-md mx-auto font-medium">
             Герман хэл сурах ухаалаг платформ. Бүртгүүлж нэвтэрснээр таны явц хадгалагдаж, аль ч төхөөрөмжөөс үргэлжлүүлэн суралцах боломжтой.
@@ -179,8 +179,8 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
         </div>
 
         {inviteContext && (
-          <div className="max-w-2xl mx-auto mb-6 text-purple-200 text-sm font-bold bg-purple-950/40 p-4 rounded-xl border border-purple-500/40 flex items-start gap-3 animate-fade-in">
-            <Swords className="w-5 h-5 flex-shrink-0 mt-0.5 text-purple-300" />
+          <div className="max-w-2xl mx-auto mb-6 text-amber-200 text-sm font-bold bg-amber-950/40 p-4 rounded-xl border border-amber-500/40 flex items-start gap-3 animate-fade-in">
+            <Swords className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-300" />
             <span>
               {inviteContext.kind === 'duel'
                 ? `🎮 ${inviteContext.challengerName || 'Найз тань'} таныг герман хэлний тулаанд урьж байна — бүртгүүлээд яг ижил 10 асуултад хариулж өрсөлдөөрэй!`
@@ -193,7 +193,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
           <div className="max-w-2xl mx-auto mb-6 text-amber-300 text-xs font-bold bg-amber-950/40 p-4 rounded-xl border border-amber-500/30 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <span>
-              Firebase тохиргоо хараахан хийгдээгүй байна. <code className="text-emerald-400 font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">frontend/src/firebaseConfig.ts</code> файлд
+              Firebase тохиргоо хараахан хийгдээгүй байна. <code className="text-teal-400 font-mono bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20">frontend/src/firebaseConfig.ts</code> файлд
               Firebase project-ийнхээ тохиргоог оруулсны дараа бүртгэл, нэвтрэлт идэвхжинэ.
             </span>
           </div>
@@ -202,13 +202,13 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           {/* Left Column: value props */}
           <div className="lg:col-span-6 bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow flex flex-col justify-center">
-            <h2 className="text-xl font-extrabold mb-6 flex items-center gap-2 text-purple-300">
-              <Sparkles className="w-5 h-5 text-purple-400" /> Яагаад бүртгүүлэх вэ?
+            <h2 className="text-xl font-extrabold mb-6 flex items-center gap-2 text-amber-300">
+              <Sparkles className="w-5 h-5 text-amber-400" /> Яагаад бүртгүүлэх вэ?
             </h2>
             <ul className="space-y-5">
               <li className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
-                  <Target className="w-4.5 h-4.5 text-purple-300" />
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
+                  <Target className="w-4.5 h-4.5 text-amber-300" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm">Таны явц хадгалагдана</h3>
@@ -216,8 +216,8 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
-                  <GraduationCap className="w-4.5 h-4.5 text-blue-300" />
+                <div className="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
+                  <GraduationCap className="w-4.5 h-4.5 text-teal-300" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm">Аль ч төхөөрөмжөөс</h3>
@@ -225,8 +225,8 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-                  <Headphones className="w-4.5 h-4.5 text-emerald-300" />
+                <div className="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
+                  <Headphones className="w-4.5 h-4.5 text-teal-300" />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm">Хувийн зөвлөмж</h3>
@@ -244,7 +244,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                 type="button"
                 onClick={() => switchMode('login')}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                  !isSignup ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white' : 'text-slate-400 hover:text-white'
+                  !isSignup ? 'bg-primary text-on-primary' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Нэвтрэх
@@ -253,7 +253,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                 type="button"
                 onClick={() => switchMode('signup')}
                 className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                  isSignup ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white' : 'text-slate-400 hover:text-white'
+                  isSignup ? 'bg-primary text-on-primary' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Бүртгүүлэх
@@ -271,7 +271,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                     placeholder="нэр@gmail.com"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(''); setInfo(''); }}
-                    className="w-full bg-slate-900 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 transition-colors text-sm font-semibold"
+                    className="w-full bg-slate-900 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-colors text-sm font-semibold"
                   />
                 </div>
               </div>
@@ -286,7 +286,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                     placeholder="Дор хаяж 6 тэмдэгт"
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError(''); setInfo(''); }}
-                    className="w-full bg-slate-900 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 transition-colors text-sm font-semibold"
+                    className="w-full bg-slate-900 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-colors text-sm font-semibold"
                   />
                 </div>
                 {!isSignup && (
@@ -295,7 +295,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                       type="button"
                       onClick={handleForgotPassword}
                       disabled={resetLoading}
-                      className="text-xs font-bold text-purple-300 hover:text-purple-200 disabled:opacity-60 flex items-center gap-1.5"
+                      className="text-xs font-bold text-amber-300 hover:text-amber-200 disabled:opacity-60 flex items-center gap-1.5"
                     >
                       {resetLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                       Нууц үгээ мартсан уу?
@@ -315,7 +315,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                         placeholder="Бат, Номин..."
                         value={name}
                         onChange={(e) => { setName(e.target.value); setError(''); }}
-                        className="w-full bg-slate-900 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-purple-500 transition-colors text-sm font-semibold"
+                        className="w-full bg-slate-900 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-colors text-sm font-semibold"
                       />
                     </div>
                   </div>
@@ -326,7 +326,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                       <select
                         value={level}
                         onChange={(e) => setLevel(e.target.value)}
-                        className="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors text-sm font-semibold cursor-pointer"
+                        className="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm font-semibold cursor-pointer"
                       >
                         <option value="A1">A1 (Анхан)</option>
                         <option value="A2">A2 (Суурь)</option>
@@ -339,7 +339,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                       <select
                         value={goal}
                         onChange={(e) => setGoal(e.target.value)}
-                        className="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors text-sm font-semibold cursor-pointer"
+                        className="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm font-semibold cursor-pointer"
                       >
                         <option value="Унших / Сургууль орон">Их сургууль / Шалгалт</option>
                         <option value="Ажил / Мэргэжил">Ажил / Мэргэжил</option>
@@ -359,7 +359,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
               )}
 
               {info && (
-                <div className="text-emerald-300 text-xs font-bold bg-emerald-950/40 p-3 rounded-lg border border-emerald-500/30 flex items-start gap-2">
+                <div className="text-teal-300 text-xs font-bold bg-teal-950/40 p-3 rounded-lg border border-teal-500/30 flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   {info}
                 </div>
@@ -368,7 +368,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 px-6 rounded-xl border border-white/10 block-shadow transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-99 mt-2"
+                className="w-full bg-primary hover:bg-surface-tint disabled:opacity-60 disabled:cursor-not-allowed text-on-primary font-bold py-3.5 px-6 rounded-xl border border-primary/30 block-shadow transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-99 mt-2"
               >
                 {submitting ? (
                   <>
@@ -388,7 +388,7 @@ export default function LoginScreen({ inviteContext, onBack }: LoginScreenProps 
                 <button
                   type="button"
                   onClick={() => switchMode(isSignup ? 'login' : 'signup')}
-                  className="text-purple-300 font-bold hover:text-purple-200"
+                  className="text-amber-300 font-bold hover:text-amber-200"
                 >
                   {isSignup ? 'Нэвтрэх' : 'Бүртгүүлэх'}
                 </button>

@@ -280,7 +280,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
       <div className="sticky top-0 z-10 bg-primary text-on-primary border-b-2 border-on-background">
         <div className="max-w-4xl mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2 min-w-0">
-            <GraduationCap className="w-6 h-6 text-yellow-300 shrink-0" />
+            <GraduationCap className="w-6 h-6 text-amber-300 shrink-0" />
             <div className="min-w-0">
               <p className="font-black font-space leading-tight truncate">TestDaF · Prüfungssimulation</p>
               <p className="text-[11px] opacity-80 leading-tight truncate">
@@ -321,10 +321,10 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
               </p>
               <div className="grid sm:grid-cols-2 gap-3 mb-6">
                 {[
-                  { icon: BookOpen, de: 'Leseverstehen', mn: 'Унших', meta: '60 мин · 3 текст · 30 даалгавар', c: 'text-emerald-600' },
-                  { icon: Headphones, de: 'Hörverstehen', mn: 'Сонсох', meta: '40 мин · 3 бичлэг · 25 даалгавар', c: 'text-sky-600' },
-                  { icon: Edit3, de: 'Schriftlicher Ausdruck', mn: 'Бичих', meta: '60 мин · 1 график-эссэ', c: 'text-violet-600' },
-                  { icon: Mic, de: 'Mündlicher Ausdruck', mn: 'Ярих', meta: '35 мин · 7 ситуаци', c: 'text-rose-600' },
+                  { icon: BookOpen, de: 'Leseverstehen', mn: 'Унших', meta: '60 мин · 3 текст · 30 даалгавар', c: 'text-teal-600' },
+                  { icon: Headphones, de: 'Hörverstehen', mn: 'Сонсох', meta: '40 мин · 3 бичлэг · 25 даалгавар', c: 'text-teal-600' },
+                  { icon: Edit3, de: 'Schriftlicher Ausdruck', mn: 'Бичих', meta: '60 мин · 1 график-эссэ', c: 'text-amber-600' },
+                  { icon: Mic, de: 'Mündlicher Ausdruck', mn: 'Ярих', meta: '35 мин · 7 ситуаци', c: 'text-orange-600' },
                 ].map((s) => {
                   const Icon = s.icon;
                   return (
@@ -339,8 +339,8 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
                   );
                 })}
               </div>
-              <div className="flex items-start gap-2 text-xs text-yellow-100 bg-yellow-500/10 border border-yellow-500/40 rounded-lg p-3 mb-6">
-                <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 text-xs text-amber-100 bg-amber-500/10 border border-amber-500/40 rounded-lg p-3 mb-6">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <p>Сонсох хэсэгт бичлэгийг хөтчийн дуу хоолойгоор тоглуулна (чихэвчтэйгээ шалга). Ярих хэсэгт микрофоны зөвшөөрөл шаардана. Цаг дуусахад дараагийн хэсэг рүү автоматаар шилжинэ.</p>
               </div>
               <button onClick={goReading}
@@ -417,7 +417,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
                 placeholder="Schreiben Sie hier Ihren Text (mind. 250 Wörter)…"
                 className="w-full px-3 py-2 text-sm border-2 border-on-background rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline outline-none focus:border-secondary resize-y leading-relaxed" />
               <div className="flex flex-wrap items-center justify-between gap-2 mt-3">
-                <span className={`text-xs font-bold ${(writeText.trim() ? writeText.trim().split(/\s+/).length : 0) >= exam.writing.minWords ? 'text-emerald-600' : 'text-on-surface-variant'}`}>
+                <span className={`text-xs font-bold ${(writeText.trim() ? writeText.trim().split(/\s+/).length : 0) >= exam.writing.minWords ? 'text-teal-600' : 'text-on-surface-variant'}`}>
                   {writeText.trim() ? writeText.trim().split(/\s+/).length : 0} / {exam.writing.minWords} үг
                 </span>
                 <button onClick={evalWriting} disabled={writeLoading || !writeText.trim()}
@@ -441,7 +441,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
                 const done = !!recBlobRef.current[t.no];
                 return (
                   <button key={t.no} onClick={() => switchTask(i)}
-                    className={`w-9 h-9 rounded-lg border-2 border-on-background text-xs font-black cursor-pointer transition-colors flex items-center justify-center ${i === spkIdx ? 'bg-secondary text-white' : done ? 'bg-emerald-500/25 text-emerald-300' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
+                    className={`w-9 h-9 rounded-lg border-2 border-on-background text-xs font-black cursor-pointer transition-colors flex items-center justify-center ${i === spkIdx ? 'bg-secondary text-white' : done ? 'bg-teal-500/25 text-teal-300' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
                     {t.no}
                   </button>
                 );
@@ -497,7 +497,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
                 )}
                 {spkMode === 'done' && (
                   <div className="w-full flex flex-col items-center gap-3">
-                    <p className="text-xs font-bold uppercase text-emerald-600 flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> Бичлэг хадгалагдлаа</p>
+                    <p className="text-xs font-bold uppercase text-teal-600 flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> Бичлэг хадгалагдлаа</p>
                     {recUrls[curTask.no] && <audio controls src={recUrls[curTask.no]} className="w-full max-w-sm" />}
                     <div className="flex flex-wrap gap-2 justify-center">
                       <button onClick={() => { setSpkMode('idle'); }} className="flex items-center gap-1.5 px-4 py-2 bg-surface-container text-on-surface border-2 border-on-background rounded-lg font-bold text-xs cursor-pointer block-shadow">
@@ -529,20 +529,20 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
           return (
             <div className="animate-fade-in space-y-5">
               <div className="border-2 border-on-background rounded-2xl p-6 md:p-8 block-shadow text-center">
-                <Trophy className="w-12 h-12 text-yellow-400 mx-auto mb-2" />
+                <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-2" />
                 <h2 className="text-2xl font-black font-space text-on-surface mb-1">Шалгалт дууслаа!</h2>
                 <p className="text-sm text-on-surface-variant">TestDaF загвар шалгалтын тойм үр дүн</p>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-3">
-                <ScoreCard icon={BookOpen} de="Leseverstehen" mn="Унших" detail={`${rc} / ${TD_READING_COUNT} зөв`} tdn={rT.tdn} label={rT.label} c="text-emerald-600" />
-                <ScoreCard icon={Headphones} de="Hörverstehen" mn="Сонсох" detail={`${lc} / ${TD_LISTENING_COUNT} зөв`} tdn={lT.tdn} label={lT.label} c="text-sky-600" />
+                <ScoreCard icon={BookOpen} de="Leseverstehen" mn="Унших" detail={`${rc} / ${TD_READING_COUNT} зөв`} tdn={rT.tdn} label={rT.label} c="text-teal-600" />
+                <ScoreCard icon={Headphones} de="Hörverstehen" mn="Сонсох" detail={`${lc} / ${TD_LISTENING_COUNT} зөв`} tdn={lT.tdn} label={lT.label} c="text-teal-600" />
                 <ScoreCard icon={Edit3} de="Schriftlicher Ausdruck" mn="Бичих"
                   detail={wScore != null ? `AI оноо: ${wScore}/100` : 'AI-аар үнэлүүлээгүй'}
-                  tdn={wScore != null ? tdnFromScore(wScore, 100).tdn : '—'} label={wScore != null ? tdnFromScore(wScore, 100).label : 'Бичих хэсэгт AI шалгалт хийгээгүй'} c="text-violet-600" />
+                  tdn={wScore != null ? tdnFromScore(wScore, 100).tdn : '—'} label={wScore != null ? tdnFromScore(wScore, 100).label : 'Бичих хэсэгт AI шалгалт хийгээгүй'} c="text-amber-600" />
                 <ScoreCard icon={Mic} de="Mündlicher Ausdruck" mn="Ярих"
                   detail={spkAvg != null ? `AI дундаж: ${spkAvg}/100 (${evals.length}/7 үнэлсэн)` : 'AI-аар үнэлүүлээгүй'}
-                  tdn={spkAvg != null ? tdnFromScore(spkAvg, 100).tdn : '—'} label={spkAvg != null ? tdnFromScore(spkAvg, 100).label : 'Ярих хэсэгт AI үнэлгээ хийгээгүй'} c="text-rose-600" />
+                  tdn={spkAvg != null ? tdnFromScore(spkAvg, 100).tdn : '—'} label={spkAvg != null ? tdnFromScore(spkAvg, 100).label : 'Ярих хэсэгт AI үнэлгээ хийгээгүй'} c="text-orange-600" />
               </div>
 
               <div className="bg-surface-container-low border-2 border-on-background rounded-xl p-4 text-xs text-on-surface-variant">
@@ -712,10 +712,10 @@ function AnswerKey({ title, tasks, ans }: { title: string; tasks: { no: number; 
               const ok = sel === q.correctIndex;
               return (
                 <div key={q.id} className="flex items-center gap-1.5 text-[11px]">
-                  {ok ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <XCircle className="w-3.5 h-3.5 text-error shrink-0" />}
+                  {ok ? <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" /> : <XCircle className="w-3.5 h-3.5 text-error shrink-0" />}
                   <span className="text-on-surface-variant">
-                    {i + 1}. {sel != null ? <b className={ok ? 'text-emerald-300' : 'text-error'}>{q.choices[sel]}</b> : <i className="text-on-surface-variant">хариулаагүй</i>}
-                    {!ok && <> → <b className="text-emerald-300">{q.choices[q.correctIndex]}</b></>}
+                    {i + 1}. {sel != null ? <b className={ok ? 'text-teal-300' : 'text-error'}>{q.choices[sel]}</b> : <i className="text-on-surface-variant">хариулаагүй</i>}
+                    {!ok && <> → <b className="text-teal-300">{q.choices[q.correctIndex]}</b></>}
                   </span>
                 </div>
               );
@@ -746,7 +746,7 @@ function WritingFeedbackView({ fb }: { fb: WritingFeedback }) {
           <div className="space-y-1.5">
             {fb.corrections.map((c, i) => (
               <div key={i} className="text-xs bg-black/20 border border-white/10 rounded p-2">
-                <span className="line-through text-error">{c.original}</span> → <b className="text-emerald-300">{c.suggestion}</b>
+                <span className="line-through text-error">{c.original}</span> → <b className="text-teal-300">{c.suggestion}</b>
                 <span className="text-[10px] uppercase ml-1 text-on-surface-variant">({c.type})</span>
                 <p className="text-[11px] text-on-surface-variant">{c.explanation}</p>
               </div>
@@ -762,7 +762,7 @@ function WritingFeedbackView({ fb }: { fb: WritingFeedback }) {
       )}
       <div className="grid sm:grid-cols-2 gap-2 mt-2">
         {fb.strengths && fb.strengths.length > 0 && (
-          <div><p className="text-[11px] font-bold text-emerald-300 mb-1">Давуу тал</p><ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5">{fb.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
+          <div><p className="text-[11px] font-bold text-teal-300 mb-1">Давуу тал</p><ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5">{fb.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
         )}
         {fb.improvements && fb.improvements.length > 0 && (
           <div><p className="text-[11px] font-bold text-secondary mb-1">Сайжруулах</p><ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5">{fb.improvements.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
@@ -789,7 +789,7 @@ function SpeakingFeedbackView({ ev }: { ev: SpeakingEvaluation }) {
       {ev.accentNote && <p className="text-[11px] text-on-surface-variant italic mb-2">{ev.accentNote}</p>}
       <div className="grid sm:grid-cols-2 gap-2">
         {ev.strengths && ev.strengths.length > 0 && (
-          <div><p className="text-[11px] font-bold text-emerald-300 mb-1">Давуу тал</p><ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5">{ev.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
+          <div><p className="text-[11px] font-bold text-teal-300 mb-1">Давуу тал</p><ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5">{ev.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
         )}
         {ev.improvements && ev.improvements.length > 0 && (
           <div><p className="text-[11px] font-bold text-secondary mb-1">Сайжруулах</p><ul className="text-[11px] text-on-surface-variant list-disc list-inside space-y-0.5">{ev.improvements.map((s, i) => <li key={i}>{s}</li>)}</ul></div>

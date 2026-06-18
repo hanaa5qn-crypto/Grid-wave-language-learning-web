@@ -78,15 +78,15 @@ export function ProfileTab({
     return (
       <div className="w-full pb-24 space-y-8 animate-fade-in text-white select-none">
         {/* Welcome Header Hero Banner */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-purple-900/30 to-blue-900/30 border-2 border-white/10 rounded-3xl p-6 md:p-8 block-shadow">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="relative overflow-hidden bg-gradient-to-r from-amber-900/30 to-teal-900/30 border-2 border-white/10 rounded-3xl p-6 md:p-8 block-shadow">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-[100px] pointer-events-none"></div>
 
           <div className="flex flex-col lg:flex-row items-center gap-6 relative z-10">
-            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-4 border-purple-500/50 shadow-lg shrink-0">
+            <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-4 border-amber-500/50 shadow-lg shrink-0">
               <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover bg-slate-800" />
             </div>
             <div className="text-center lg:text-left space-y-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-950/60 border border-purple-500/30 text-[10px] font-black font-space rounded-full uppercase tracking-wider text-purple-300">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-950/60 border border-amber-500/30 text-[10px] font-black font-space rounded-full uppercase tracking-wider text-amber-300">
                 <GraduationCap className="w-3.5 h-3.5" /> {currentUser.role}
               </span>
               <h1 className="text-2xl md:text-3xl font-extrabold text-white">Тавтай морил, {currentUser.name}!</h1>
@@ -113,10 +113,10 @@ export function ProfileTab({
         {/* Today's Session & Mistake Log Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Today's Session Card */}
-          <div className="lg:col-span-8 bg-white/5 border border-purple-500/20 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow space-y-4">
+          <div className="lg:col-span-8 bg-white/5 border border-amber-500/20 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow space-y-4">
             <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5 text-purple-400 animate-bounce" />
-              <h2 className="text-xl font-extrabold text-purple-300 font-space">Өнөөдрийн Даалгавар</h2>
+              <Zap className="w-5 h-5 text-amber-400 animate-bounce" />
+              <h2 className="text-xl font-extrabold text-amber-300 font-space">Өнөөдрийн Даалгавар</h2>
             </div>
             <p className="text-slate-400 text-xs font-semibold">
               Суралцах хэвшлийг хадгалахад туслах өнөөдрийн санал болгож буй дасгалууд:
@@ -126,19 +126,19 @@ export function ProfileTab({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                 {/* Reading suggestion */}
                 {todaySession.reading ? (
-                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-amber-500/30 transition-all">
                     <div className="flex items-center gap-3 overflow-hidden mr-2">
-                      <span className="p-2.5 bg-blue-500/10 text-blue-400 rounded-lg shrink-0">
+                      <span className="p-2.5 bg-teal-500/10 text-teal-400 rounded-lg shrink-0">
                         <BookOpen className="w-5 h-5" />
                       </span>
                       <div className="overflow-hidden">
-                        <p className="text-[10px] text-blue-400 font-bold uppercase font-space">УНШИХ</p>
+                        <p className="text-[10px] text-teal-400 font-bold uppercase font-space">УНШИХ</p>
                         <p className="text-sm font-bold text-white truncate">{todaySession.reading.titleMn}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => startActivity('read', todaySession.reading!.id)}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                      className="px-4 py-2 bg-primary text-on-primary font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
                     >
                       Эхлэх
                     </button>
@@ -157,19 +157,19 @@ export function ProfileTab({
 
                 {/* Listening suggestion */}
                 {todaySession.listening ? (
-                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-amber-500/30 transition-all">
                     <div className="flex items-center gap-3 overflow-hidden mr-2">
-                      <span className="p-2.5 bg-purple-500/10 text-purple-400 rounded-lg shrink-0">
+                      <span className="p-2.5 bg-amber-500/10 text-amber-400 rounded-lg shrink-0">
                         <Headphones className="w-5 h-5" />
                       </span>
                       <div className="overflow-hidden">
-                        <p className="text-[10px] text-purple-400 font-bold uppercase font-space">СОНСОХ</p>
+                        <p className="text-[10px] text-amber-400 font-bold uppercase font-space">СОНСОХ</p>
                         <p className="text-sm font-bold text-white truncate">{todaySession.listening.titleMn}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => startActivity('listen', todaySession.listening!.id)}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                      className="px-4 py-2 bg-primary text-on-primary font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
                     >
                       Эхлэх
                     </button>
@@ -188,19 +188,19 @@ export function ProfileTab({
 
                 {/* Speaking suggestion */}
                 {todaySession.speaking ? (
-                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-amber-500/30 transition-all">
                     <div className="flex items-center gap-3 overflow-hidden mr-2">
-                      <span className="p-2.5 bg-green-500/10 text-green-400 rounded-lg shrink-0">
+                      <span className="p-2.5 bg-teal-500/10 text-teal-400 rounded-lg shrink-0">
                         <Mic className="w-5 h-5" />
                       </span>
                       <div className="overflow-hidden">
-                        <p className="text-[10px] text-green-400 font-bold uppercase font-space">ЯРИХ</p>
+                        <p className="text-[10px] text-teal-400 font-bold uppercase font-space">ЯРИХ</p>
                         <p className="text-sm font-bold text-white truncate">{todaySession.speaking.titleMn}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => startActivity('speak', todaySession.speaking!.id)}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                      className="px-4 py-2 bg-primary text-on-primary font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
                     >
                       Эхлэх
                     </button>
@@ -219,7 +219,7 @@ export function ProfileTab({
 
                 {/* Vocab review suggestion */}
                 {todaySession.dueWordCount > 0 ? (
-                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-purple-500/30 transition-all">
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl hover:border-amber-500/30 transition-all">
                     <div className="flex items-center gap-3 overflow-hidden mr-2">
                       <span className="p-2.5 bg-amber-500/10 text-amber-400 rounded-lg shrink-0">
                         <RotateCcw className="w-5 h-5" />
@@ -231,7 +231,7 @@ export function ProfileTab({
                     </div>
                     <button
                       onClick={() => selectTab('vocab')}
-                      className="px-4 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
+                      className="px-4 py-2 bg-primary text-on-primary font-bold rounded-xl text-xs cursor-pointer hover:opacity-90 shrink-0"
                     >
                       Давтах
                     </button>
@@ -320,29 +320,29 @@ export function ProfileTab({
 
           {/* Lesson Progress */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 block-shadow flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+            <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <CheckCircle className="w-6 h-6" />
             </div>
             <div className="flex-grow">
               <p className="text-xs text-slate-400 font-bold uppercase font-space">Прогресс</p>
               <h3 className="text-xl font-black">{lessonProgress}% дууссан</h3>
-              <p className="text-[11px] text-purple-300 font-bold">{completedCount}/{TRACKABLE_ACTIVITY_TOTAL} дасгал</p>
+              <p className="text-[11px] text-amber-300 font-bold">{completedCount}/{TRACKABLE_ACTIVITY_TOTAL} дасгал</p>
               {/* Progress bar inside card */}
               <div className="w-full h-1.5 bg-white/5 rounded-full mt-1.5 overflow-hidden">
-                <div className="h-full bg-purple-500 rounded-full" style={{ width: `${lessonProgress}%` }} />
+                <div className="h-full bg-amber-500 rounded-full" style={{ width: `${lessonProgress}%` }} />
               </div>
             </div>
           </div>
 
           {/* Goals Completed */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6 block-shadow flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+            <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
               <Award className="w-6 h-6" />
             </div>
             <div>
               <p className="text-xs text-slate-400 font-bold uppercase font-space">Судлагдсан сэдэв</p>
               <h3 className="text-xl font-black">{completedCount} дасгал</h3>
-              <p className="text-[11px] text-blue-300 font-bold">
+              <p className="text-[11px] text-teal-300 font-bold">
                 {lastStudyDay ? `Сүүлд: ${lastStudyDay}` : 'Эхний дасгалаа дуусгаарай'}
               </p>
             </div>
@@ -356,18 +356,18 @@ export function ProfileTab({
           {/* Main Goal and Learning Curve Chart */}
           <div className="lg:col-span-8 bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow space-y-6">
             <div>
-              <h2 className="text-xl font-extrabold flex items-center gap-2 text-purple-300 mb-2 font-sans">
+              <h2 className="text-xl font-extrabold flex items-center gap-2 text-amber-300 mb-2 font-sans">
                 <Target className="w-5 h-5" /> Суралцах Гол Зорилго
               </h2>
-              <div className="bg-purple-950/20 border border-purple-500/20 rounded-xl p-4 text-sm font-bold text-purple-200">
+              <div className="bg-amber-950/20 border border-amber-500/20 rounded-xl p-4 text-sm font-bold text-amber-200">
                 "{currentUser.learningGoal}"
               </div>
             </div>
 
             {/* Learning Curve SVG Chart */}
             <div className="space-y-3 pt-2">
-              <h3 className="text-base font-extrabold flex items-center gap-2 text-blue-300">
-                <Gauge className="w-5 h-5 text-blue-400" /> Суралцах хурд / Давтамжийн муруй (Study Hours)
+              <h3 className="text-base font-extrabold flex items-center gap-2 text-teal-300">
+                <Gauge className="w-5 h-5 text-teal-400" /> Суралцах хурд / Давтамжийн муруй (Study Hours)
               </h3>
               <p className="text-slate-400 text-xs font-semibold">
                 Долоо хоногийн хоногоор тооцсон хичээллэсэн цагийн график. Муруйн хэлбэр хүн бүрийн суралцах хэмнэлээс хамааран өөр байна.
@@ -408,7 +408,7 @@ export function ProfileTab({
                   <path
                     d={linePath}
                     fill="none"
-                    className="stroke-purple-400"
+                    className="stroke-amber-400"
                     strokeWidth="3.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -422,7 +422,7 @@ export function ProfileTab({
                         x={p.x}
                         y={p.y - 12}
                         textAnchor="middle"
-                        className="fill-purple-300 text-[11px] font-space font-bold transition-all"
+                        className="fill-amber-300 text-[11px] font-space font-bold transition-all"
                       >
                         {p.hours}ц
                       </text>
@@ -432,13 +432,13 @@ export function ProfileTab({
                         cx={p.x}
                         cy={p.y}
                         r="6"
-                        className="fill-purple-400 stroke-[#020205] stroke-2 shadow-lg"
+                        className="fill-amber-400 stroke-[#020205] stroke-2 shadow-lg"
                       />
                       <circle
                         cx={p.x}
                         cy={p.y}
                         r="12"
-                        className="fill-purple-400/20 stroke-none animate-pulse"
+                        className="fill-amber-400/20 stroke-none animate-pulse"
                       />
 
                       {/* Day Label at bottom */}
@@ -466,8 +466,8 @@ export function ProfileTab({
 
             {/* Lesson Path: Curriculum structure */}
             <div className="space-y-4 pt-6 border-t border-white/10">
-              <h3 className="text-xl font-extrabold flex items-center gap-2 text-purple-300">
-                <Shield className="w-5 h-5 text-purple-400" /> Сургалтын зам ({currentUser.targetLevel})
+              <h3 className="text-xl font-extrabold flex items-center gap-2 text-amber-300">
+                <Shield className="w-5 h-5 text-amber-400" /> Сургалтын зам ({currentUser.targetLevel})
               </h3>
               <p className="text-slate-400 text-xs font-semibold font-sans">
                 Түвшин бүрт тохирсон сэдвүүд. Хэсэг бүрийг {Math.round(UNIT_PASS_RATIO * 100)}%-иас дээш амжилттай дуусгаснаар дараагийн хэсэг нээгдэнэ.
@@ -486,8 +486,8 @@ export function ProfileTab({
                       className={`relative overflow-hidden rounded-2xl border transition-all p-5 block-shadow ${
                         unlocked
                           ? passed
-                            ? 'bg-purple-950/20 border-purple-500/40'
-                            : 'bg-white/5 border border-white/10 hover:border-purple-500/30'
+                            ? 'bg-amber-950/20 border-amber-500/40'
+                            : 'bg-white/5 border border-white/10 hover:border-amber-500/30'
                           : 'bg-slate-950/40 border border-white/5 opacity-60'
                       }`}
                     >
@@ -497,8 +497,8 @@ export function ProfileTab({
                           <span className={`w-8 h-8 rounded-full flex items-center justify-center font-black font-space text-sm shrink-0 border ${
                             unlocked
                               ? passed
-                                ? 'bg-purple-500/10 border-purple-500 text-purple-400'
-                                : 'bg-blue-500/10 border-blue-500 text-blue-400'
+                                ? 'bg-amber-500/10 border-amber-500 text-amber-400'
+                                : 'bg-teal-500/10 border-teal-500 text-teal-400'
                               : 'bg-white/5 border border-white/10 text-slate-500'
                           }`}>
                             {idx + 1}
@@ -516,9 +516,9 @@ export function ProfileTab({
                         <div>
                           {unlocked ? (
                             passed ? (
-                              <span className="text-[11px] font-space bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full border border-purple-500/30 font-bold">Дууссан</span>
+                              <span className="text-[11px] font-space bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full border border-amber-500/30 font-bold">Дууссан</span>
                             ) : (
-                              <span className="text-[11px] font-space bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full border border-blue-500/30 font-bold animate-pulse">Идэвхтэй</span>
+                              <span className="text-[11px] font-space bg-teal-500/20 text-teal-300 px-3 py-1 rounded-full border border-teal-500/30 font-bold animate-pulse">Идэвхтэй</span>
                             )
                           ) : (
                             <span className="text-[11px] font-space bg-white/5 text-slate-500 px-3 py-1 rounded-full border border-white/10 font-bold">Түгжигдсэн</span>
@@ -530,7 +530,7 @@ export function ProfileTab({
                       {unlocked && (
                         <div className="w-full h-2 bg-white/5 border border-white/10 rounded-full overflow-hidden mb-4">
                           <div
-                            className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
+                            className="h-full bg-primary transition-all duration-300"
                             style={{ width: `${percent}%` }}
                           />
                         </div>
@@ -559,13 +559,13 @@ export function ProfileTab({
                                 onClick={() => startActivity(act.tab, act.itemId)}
                                 className={`flex items-center justify-between text-left p-3 rounded-xl border text-xs font-bold cursor-pointer transition-colors ${
                                   isDone
-                                    ? 'bg-purple-950/10 border-purple-500/20 text-slate-300 hover:bg-purple-950/20'
-                                    : 'bg-white/5 border border-white/10 text-white hover:border-purple-500/40 hover:bg-white/10'
+                                    ? 'bg-amber-950/10 border-amber-500/20 text-slate-300 hover:bg-amber-950/20'
+                                    : 'bg-white/5 border border-white/10 text-white hover:border-amber-500/40 hover:bg-white/10'
                                 }`}
                               >
                                 <div className="flex items-center gap-2 overflow-hidden mr-2">
                                   <span className={`p-1.5 rounded-lg shrink-0 ${
-                                    isDone ? 'bg-purple-500/10 text-purple-400' : 'bg-white/5 text-slate-300'
+                                    isDone ? 'bg-amber-500/10 text-amber-400' : 'bg-white/5 text-slate-300'
                                   }`}>
                                     {skillIcons[act.tab]}
                                   </span>
@@ -575,7 +575,7 @@ export function ProfileTab({
                                   </div>
                                 </div>
                                 {isDone ? (
-                                  <Check className="w-4 h-4 text-purple-400 shrink-0" />
+                                  <Check className="w-4 h-4 text-amber-400 shrink-0" />
                                 ) : (
                                   <ArrowRight className="w-4 h-4 text-slate-500 shrink-0" />
                                 )}
@@ -594,8 +594,8 @@ export function ProfileTab({
           {/* Right Column: Tailored Suggestions */}
           <div className="lg:col-span-4 bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow space-y-6 flex flex-col justify-between">
             <div>
-              <h2 className="text-xl font-extrabold flex items-center gap-2 text-blue-300 mb-2 font-sans">
-                <Lightbulb className="w-5 h-5 text-blue-400" /> Хувийн зөвлөмж
+              <h2 className="text-xl font-extrabold flex items-center gap-2 text-teal-300 mb-2 font-sans">
+                <Lightbulb className="w-5 h-5 text-teal-400" /> Хувийн зөвлөмж
               </h2>
               <p className="text-slate-450 text-xs mb-4 font-semibold">
                 Таны сонгосон сэдэв болон түвшинд тохируулж манай системээс дараах зөвлөмжүүдийг өгч байна:
@@ -603,8 +603,8 @@ export function ProfileTab({
 
               <div className="space-y-4">
                 {currentUser.suggestions.map((suggestion, i) => (
-                  <div key={i} className="flex gap-3 items-start bg-white/5 p-4 rounded-xl border border-white/15 block-shadow hover:border-blue-500/30 transition-colors">
-                    <span className="w-6 h-6 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0 text-blue-400 font-bold text-xs mt-0.5 font-space">
+                  <div key={i} className="flex gap-3 items-start bg-white/5 p-4 rounded-xl border border-white/15 block-shadow hover:border-teal-500/30 transition-colors">
+                    <span className="w-6 h-6 rounded-full bg-teal-500/10 border border-teal-500/30 flex items-center justify-center shrink-0 text-teal-400 font-bold text-xs mt-0.5 font-space">
                       {i + 1}
                     </span>
                     <p className="text-sm font-bold text-slate-205 leading-relaxed">
@@ -633,7 +633,7 @@ export function ProfileTab({
                 </button>
                 <button
                   onClick={() => selectTab('speak')}
-                  className="py-2.5 px-3 text-center bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold rounded-lg cursor-pointer transition-colors animate-pulse text-purple-300"
+                  className="py-2.5 px-3 text-center bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold rounded-lg cursor-pointer transition-colors animate-pulse text-amber-300"
                 >
                   Дуут AI Багш
                 </button>
@@ -651,12 +651,12 @@ export function ProfileTab({
         {/* Тэмцээн ба урилга өөрийн "Найзууд" таб руу нүүсэн — эндээс шууд очно. */}
         <button
           onClick={() => selectTab('friends')}
-          className="w-full flex items-center justify-between gap-3 bg-white/5 border border-purple-500/20 hover:border-purple-500/50 rounded-2xl px-6 py-5 transition-all cursor-pointer text-left block-shadow backdrop-blur-md"
+          className="w-full flex items-center justify-between gap-3 bg-white/5 border border-amber-500/20 hover:border-amber-500/50 rounded-2xl px-6 py-5 transition-all cursor-pointer text-left block-shadow backdrop-blur-md"
         >
           <span className="flex items-center gap-3">
-            <Swords className="w-5 h-5 text-purple-400" />
+            <Swords className="w-5 h-5 text-amber-400" />
             <span>
-              <span className="block text-sm font-extrabold text-purple-300">Тэмцээн ба урилга</span>
+              <span className="block text-sm font-extrabold text-amber-300">Тэмцээн ба урилга</span>
               <span className="block text-xs text-slate-400 mt-0.5">
                 Найзтайгаа тулалдаж, найзаа уриад долоо хоногийн самбарт өрсөлдөөрэй.
               </span>

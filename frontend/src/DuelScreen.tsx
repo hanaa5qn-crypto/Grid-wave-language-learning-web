@@ -99,14 +99,14 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
 
   const shell = (content: React.ReactNode, footer?: React.ReactNode) => (
     <div className="fixed inset-0 bg-[#020205] z-[100] flex flex-col items-center justify-between pb-10 pt-6 px-4 md:px-12 animate-fade-in text-white overflow-y-auto">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-900/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-900/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <header className="w-full max-w-[640px] flex flex-col gap-4 py-2 relative z-10">
         <div className="flex justify-between items-center w-full">
           <h1 className="text-2xl font-black font-space tracking-tight flex items-center gap-2">
-            <Swords className="w-6 h-6 text-purple-400" />
-            <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Тулаан</span>
+            <Swords className="w-6 h-6 text-amber-400" />
+            <span className="text-primary">Тулаан</span>
             <span className="text-sm font-bold text-slate-500 mt-1">{duel.level}</span>
           </h1>
           {stage === 'play' && (
@@ -125,7 +125,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
         </div>
         <div className="w-full h-2.5 bg-white/5 border border-white/10 rounded-full overflow-hidden relative">
           <div
-            className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500"
+            className="h-full bg-primary transition-all duration-500"
             style={{ width: `${stage === 'play' ? Math.round((qIdx / questions.length) * 100) : 100}%` }}
           />
         </div>
@@ -139,7 +139,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
 
       {quitConfirmOpen && (
         <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4">
-          <div className="bg-[#0d0d16] border border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up">
+          <div className="bg-surface border border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up">
             <h3 className="text-xl font-black font-space">Тулаанаас гарах уу?</h3>
             <p className="text-sm text-slate-400 leading-relaxed">
               Тулааны оноо хадгалагдахгүй — дараа линкээр дахин орж эхнээс нь тоглож болно.
@@ -147,7 +147,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
             <div className="flex gap-3">
               <button
                 onClick={() => setQuitConfirmOpen(false)}
-                className="flex-[2] bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl py-3 px-4 hover:opacity-95 transition-all cursor-pointer"
+                className="flex-[2] bg-primary text-on-primary font-bold rounded-xl py-3 px-4 hover:opacity-95 transition-all cursor-pointer"
               >
                 Үргэлжлүүлэх
               </button>
@@ -169,8 +169,8 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
     return shell(
       <div className="space-y-5" data-duel-question-index={qIdx}>
         {result.challenger && !result.challenger.isMe && (
-          <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
-            <span className="inline-flex items-center gap-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full px-3 py-1">
+          <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+            <span className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
               <Swords className="w-3.5 h-3.5" /> {result.challenger.name} таныг өрсөлдөхөд урьсан
             </span>
           </div>
@@ -192,8 +192,8 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
               onClick={() => setSelected(i)}
               className={`text-left p-4 rounded-xl transition-all cursor-pointer text-[15px] ${
                 selected === i
-                  ? 'bg-purple-950/40 border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
-                  : 'bg-white/5 border border-white/10 hover:border-purple-500/50 hover:bg-white/10'
+                  ? 'bg-amber-950/40 border-2 border-amber-500 shadow-[0_0_15px_rgba(230,184,92,0.32)]'
+                  : 'bg-white/5 border border-white/10 hover:border-amber-500/50 hover:bg-white/10'
               }`}
             >
               {choice}
@@ -204,7 +204,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
       <button
         onClick={answer}
         disabled={selected === null}
-        className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl py-3.5 px-6 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95 shadow-[0_4px_20px_rgba(168,85,247,0.3)] transition-all cursor-pointer flex items-center justify-center gap-2"
+        className="flex-1 bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95 shadow-[0_4px_20px_rgba(230,184,92,0.32)] transition-all cursor-pointer flex items-center justify-center gap-2"
       >
         Дараах <ArrowRight className="w-5 h-5" />
       </button>,
@@ -215,7 +215,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
   if (stage === 'submitting') {
     return shell(
       <div className="flex flex-col items-center gap-4 text-slate-300">
-        <Loader2 className="w-10 h-10 animate-spin text-purple-400" />
+        <Loader2 className="w-10 h-10 animate-spin text-amber-400" />
         <p className="font-bold">Оноог илгээж байна…</p>
       </div>,
     );
@@ -237,7 +237,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
         </button>
         <button
           onClick={() => void submit(correctCount)}
-          className="flex-[2] bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl py-3.5 px-6 hover:opacity-95 transition-all cursor-pointer"
+          className="flex-[2] bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 hover:opacity-95 transition-all cursor-pointer"
         >
           Дахин илгээх
         </button>
@@ -280,7 +280,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
           <>
             <div className={`inline-flex p-4 rounded-2xl mb-2 border ${
               iWon ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                : draw ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                : draw ? 'bg-teal-500/10 border-teal-500/20 text-teal-400'
                 : 'bg-white/5 border-white/10 text-slate-400'
             }`}>
               <Trophy className="w-8 h-8" />
@@ -289,7 +289,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
               {iWon ? 'Та яллаа! 🏆' : draw ? 'Тэнцлээ! 🤝' : 'Ялагдлаа 😅'}
             </h2>
             {iWon && (
-              <p className="inline-flex items-center gap-1.5 text-sm font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-4 py-1.5">
+              <p className="inline-flex items-center gap-1.5 text-sm font-bold text-teal-300 bg-teal-500/10 border border-teal-500/20 rounded-full px-4 py-1.5">
                 <Snowflake className="w-4 h-4" /> +1 Streak Freeze шагнал авлаа
               </p>
             )}
@@ -299,13 +299,13 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
           </>
         ) : (
           <>
-            <div className="inline-flex p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl text-purple-400 mb-2">
+            <div className="inline-flex p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-400 mb-2">
               <Swords className="w-8 h-8" />
             </div>
             <h2 className="text-2xl md:text-3xl font-black font-space">Таны оноо бүртгэгдлээ</h2>
             <p className="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">
               {them?.name
-                ? <>Өрсөлдөгч <b className="text-purple-300">{them.name}</b> тоглоход үр дүн гарна — тулаан түүний тулаануудын жагсаалтад нэмэгдсэн.</>
+                ? <>Өрсөлдөгч <b className="text-amber-300">{them.name}</b> тоглоход үр дүн гарна — тулаан түүний тулаануудын жагсаалтад нэмэгдсэн.</>
                 : <>Найз тань тоглож дуустал үр дүн "хүлээгдэж байна" төлөвт байна. Линкийг хуваалцаад өрсөлдөгчөө урьж дуэлээ дуусгаарай!</>}
             </p>
           </>
@@ -321,7 +321,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
       {!finished && submitted && (
         <button
           onClick={share}
-          className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl py-3.5 px-6 hover:opacity-95 shadow-[0_4px_20px_rgba(168,85,247,0.3)] transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="w-full bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 hover:opacity-95 shadow-[0_4px_20px_rgba(230,184,92,0.32)] transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           {copied ? <><Check className="w-5 h-5" /> Линк хуулагдлаа</> : <><Share2 className="w-5 h-5" /> Урилгын линк хуваалцах</>}
         </button>

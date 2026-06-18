@@ -2,62 +2,66 @@
 @import "tailwindcss";
 
 /*
-  Vivid Lingua — "Aurora Atelier" design system
-  Deep violet-ink night sky, luminous aurora accents.
-  Golos Text (UI) + Unbounded (display) — both carry full Cyrillic
-  for the Mongolian glosses alongside German Latin-Extended.
-  Every on-* token is contrast-checked against its surface.
+  Vivid Lingua — "Atelier Press" design system
+  A German printing studio at night: warm graphite ink, a single committed
+  antique-gold signal, spruce-teal for glosses, terracotta for streaks.
+  No glassmorphism, no gradient text, no neon glow, no rainbow chips.
+  Hues were rotated off the old "Aurora" violet at MATCHED lightness, so every
+  on-* / surface contrast relationship is preserved — the app behaves exactly
+  as before, it just reads warm and editorial instead of cold and templated.
+  Golos Text (UI) + Unbounded (display) — both carry full Cyrillic for the
+  Mongolian glosses alongside German Latin-Extended. Every on-* is AA-checked.
 */
 
 @theme {
   --font-sans: "Golos Text", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
   --font-space: "Unbounded", "Golos Text", sans-serif;
 
-  /* Night-sky surfaces (violet-ink ramp, darkest → lightest) */
-  --color-background: #060512;
-  --color-surface-dim: #080714;
-  --color-surface-container-lowest: #050410;
-  --color-surface: #0b0a1a;
-  --color-surface-container-low: #110f24;
-  --color-surface-container: #15132b;
-  --color-surface-container-high: #1b1836;
-  --color-surface-variant: #221e40;
-  --color-inverse-surface: #f4f2fc;
+  /* Warm graphite ink surfaces (darkest → lightest) */
+  --color-background: #0c0b09;
+  --color-surface-dim: #0e0d0a;
+  --color-surface-container-lowest: #090806;
+  --color-surface: #14120e;
+  --color-surface-container-low: #1b1813;
+  --color-surface-container: #211d17;
+  --color-surface-container-high: #29241c;
+  --color-surface-variant: #332c22;
+  --color-inverse-surface: #f6f1e8;
 
-  /* Text on dark surfaces */
-  --color-on-background: #f2f0fa;
-  --color-on-surface: #f2f0fa;
-  --color-on-surface-variant: #a8a3c8;
+  /* Warm off-white ink on dark surfaces (body bumped brighter for AA) */
+  --color-on-background: #f5f1e8;
+  --color-on-surface: #f5f1e8;
+  --color-on-surface-variant: #beb5a3;
 
-  /* Aurora violet — primary */
-  --color-primary: #b388fa;
-  --color-on-primary: #20094a;
-  --color-primary-container: #3c1d72;
-  --color-on-primary-container: #e9dcff;
-  --color-surface-tint: #c9a2ff;
-  --color-on-primary-fixed: #f6efff;
+  /* Antique gold — primary (the one locked accent) */
+  --color-primary: #e6b85c;
+  --color-on-primary: #2a1c02;
+  --color-primary-container: #4a3410;
+  --color-on-primary-container: #f4e6c4;
+  --color-surface-tint: #f0cd7e;
+  --color-on-primary-fixed: #fbf3e0;
 
-  /* Ice blue — secondary */
-  --color-secondary: #66aafd;
-  --color-on-secondary: #08234e;
-  --color-secondary-container: #182f66;
-  --color-on-secondary-container: #bcd6fe;
-  --color-secondary-fixed: #82b6fd;
-  --color-on-secondary-fixed: #ebf3ff;
-  --color-on-secondary-fixed-variant: #2a5bd7;
+  /* Spruce teal — secondary (German glosses, active states) */
+  --color-secondary: #5cc2a8;
+  --color-on-secondary: #043026;
+  --color-secondary-container: #123d31;
+  --color-on-secondary-container: #bfe9da;
+  --color-secondary-fixed: #84d4bd;
+  --color-on-secondary-fixed: #e7f7f0;
+  --color-on-secondary-fixed-variant: #1f7a5f;
 
-  /* Polar rose — tertiary */
-  --color-tertiary: #fb6d8e;
+  /* Terracotta — tertiary (streaks, social, accents) */
+  --color-tertiary: #f2855f;
 
   /* Error */
-  --color-error: #ff5f6b;
-  --color-on-error: #40060f;
-  --color-error-container: #6e1420;
-  --color-on-error-container: #ffd5d8;
+  --color-error: #ff6b5a;
+  --color-on-error: #40090a;
+  --color-error-container: #6e1f17;
+  --color-on-error-container: #ffd9d1;
 
-  /* Outlines & placeholders — visible on dark *and* white fields */
-  --color-outline: #837ea8;
-  --color-outline-variant: #383258;
+  /* Outlines & placeholders — visible on dark *and* warm-paper fields */
+  --color-outline: #8c8472;
+  --color-outline-variant: #3a352a;
 
   /* Motion vocabulary (these utilities are referenced across the app) */
   --animate-fade-in: fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -81,7 +85,7 @@
 /* ---------- Base atmosphere ---------- */
 
 html {
-  background-color: #060512;
+  background-color: #0c0b09;
   scroll-behavior: smooth;
 }
 
@@ -122,14 +126,14 @@ input, textarea {
 /* Slim aurora-tinted scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #383258 transparent;
+  scrollbar-color: #3a352a transparent;
 }
 *::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-thumb {
-  background: #383258;
+  background: #3a352a;
   border-radius: 8px;
 }
-*::-webkit-scrollbar-thumb:hover { background: #4d4678; }
+*::-webkit-scrollbar-thumb:hover { background: #5a5240; }
 
 /* Nested scroll panes (lesson pickers on mobile): keep touch scroll inside the
    panel instead of chaining to the page. Fixed height on small screens helps
@@ -153,10 +157,10 @@ main::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(38% 30% at 18% 22%, rgba(179, 136, 250, 0.07), transparent 70%),
-    radial-gradient(34% 28% at 82% 18%, rgba(102, 170, 253, 0.06), transparent 70%),
-    radial-gradient(40% 34% at 70% 85%, rgba(108, 248, 187, 0.04), transparent 70%),
-    radial-gradient(30% 26% at 28% 80%, rgba(251, 109, 142, 0.04), transparent 70%);
+    radial-gradient(38% 30% at 18% 22%, rgba(230, 184, 92, 0.06), transparent 70%),
+    radial-gradient(34% 28% at 82% 18%, rgba(92, 194, 168, 0.05), transparent 70%),
+    radial-gradient(40% 34% at 70% 85%, rgba(242, 133, 95, 0.035), transparent 70%),
+    radial-gradient(30% 26% at 28% 80%, rgba(230, 184, 92, 0.03), transparent 70%);
   animation: aurora-drift 26s ease-in-out infinite alternate;
 }
 
@@ -209,18 +213,18 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
    (e.g. the white reader cards) win; borders/shadows stay unlayered to
    keep the subtle glass outline over the bold border-2 utilities. */
 @layer components {
-  .block-shadow { background-color: rgba(242, 240, 250, 0.03); }
-  .block-shadow:hover { background-color: rgba(242, 240, 250, 0.06); }
-  .block-shadow-orange { background-color: rgba(249, 115, 22, 0.04); }
-  .block-shadow-orange:hover { background-color: rgba(249, 115, 22, 0.1); }
-  .block-shadow-green { background-color: rgba(102, 170, 253, 0.04); }
-  .block-shadow-green:hover { background-color: rgba(102, 170, 253, 0.1); }
+  .block-shadow { background-color: rgba(245, 241, 232, 0.025); }
+  .block-shadow:hover { background-color: rgba(245, 241, 232, 0.05); }
+  .block-shadow-orange { background-color: rgba(242, 133, 95, 0.05); }
+  .block-shadow-orange:hover { background-color: rgba(242, 133, 95, 0.1); }
+  .block-shadow-green { background-color: rgba(92, 194, 168, 0.05); }
+  .block-shadow-green:hover { background-color: rgba(92, 194, 168, 0.1); }
 }
 
 .block-shadow {
-  border: 1px solid rgba(242, 240, 250, 0.08);
+  border: 1px solid rgba(245, 241, 232, 0.09);
   border-radius: 1rem;
-  box-shadow: 0 4px 24px -1px rgba(2, 1, 8, 0.45);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.5);
   transition:
     transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.25s ease,
@@ -229,10 +233,10 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 }
 
 .block-shadow:hover {
-  border-color: rgba(179, 136, 250, 0.35);
+  border-color: rgba(230, 184, 92, 0.4);
   box-shadow:
-    0 0 24px rgba(179, 136, 250, 0.16),
-    0 8px 28px -4px rgba(2, 1, 8, 0.5);
+    0 0 0 1px rgba(230, 184, 92, 0.12),
+    0 10px 28px -6px rgba(0, 0, 0, 0.6);
   transform: translateY(-3px);
 }
 
@@ -242,9 +246,9 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 }
 
 .block-shadow-orange {
-  border: 1px solid rgba(249, 115, 22, 0.2);
+  border: 1px solid rgba(242, 133, 95, 0.24);
   border-radius: 1rem;
-  box-shadow: 0 4px 24px -1px rgba(2, 1, 8, 0.45);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.5);
   transition:
     transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.25s ease,
@@ -253,10 +257,10 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 }
 
 .block-shadow-orange:hover {
-  border-color: rgba(249, 115, 22, 0.45);
+  border-color: rgba(242, 133, 95, 0.5);
   box-shadow:
-    0 0 24px rgba(249, 115, 22, 0.2),
-    0 8px 28px -4px rgba(2, 1, 8, 0.5);
+    0 0 0 1px rgba(242, 133, 95, 0.16),
+    0 10px 28px -6px rgba(0, 0, 0, 0.6);
   transform: translateY(-3px);
 }
 
@@ -266,9 +270,9 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 }
 
 .block-shadow-green {
-  border: 1px solid rgba(102, 170, 253, 0.2);
+  border: 1px solid rgba(92, 194, 168, 0.24);
   border-radius: 1rem;
-  box-shadow: 0 4px 24px -1px rgba(2, 1, 8, 0.45);
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.5);
   transition:
     transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.25s ease,
@@ -277,10 +281,10 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 }
 
 .block-shadow-green:hover {
-  border-color: rgba(102, 170, 253, 0.45);
+  border-color: rgba(92, 194, 168, 0.5);
   box-shadow:
-    0 0 24px rgba(102, 170, 253, 0.2),
-    0 8px 28px -4px rgba(2, 1, 8, 0.5);
+    0 0 0 1px rgba(92, 194, 168, 0.16),
+    0 10px 28px -6px rgba(0, 0, 0, 0.6);
   transform: translateY(-3px);
 }
 
@@ -310,13 +314,13 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 .word-highlight {
   position: relative;
   cursor: pointer;
-  border-bottom: 2px dashed #34d399;
+  border-bottom: 2px dashed #5cc2a8;
   transition: all 0.2s;
 }
 
 .word-highlight:hover {
-  background-color: #6cf8bb;
-  color: #002113;
+  background-color: #84d4bd;
+  color: #043026;
 }
 
 .tooltip-container {
@@ -364,7 +368,7 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  background-color: #6cf8bb;
+  background-color: #84d4bd;
   z-index: -1;
   animation: ripple 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
@@ -376,7 +380,7 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 /* Monospace code styling */
 code, pre {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  color: #34d399 !important;
+  color: #84d4bd !important;
 }
 
 /* Respect users who prefer stillness */

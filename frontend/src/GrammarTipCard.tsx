@@ -44,7 +44,7 @@ export default function GrammarTipCard({
       </div>
 
       {/* Correct answer */}
-      <p className="text-emerald-300 font-bold text-lg mb-2">
+      <p className="text-teal-300 font-bold text-lg mb-2">
         ✅ Зөв хариулт: <span className="underline">{correctAnswer}</span>
       </p>
 

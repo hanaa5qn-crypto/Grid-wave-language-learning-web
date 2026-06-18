@@ -14,15 +14,17 @@ interface LandingPageProps {
   onTryGuest: () => void;
 }
 
+// Color consistency lock: one accent (antique gold) across every skill chip,
+// with the icon glyph carrying the meaning instead of a rainbow of hues.
 const SKILLS = [
-  { icon: BookOpen, title: 'Унших', desc: 'Монгол тайлбартай түвшний бичвэрүүд, ойлголтын асуултууд.', color: 'text-blue-400 bg-blue-500/10 border-blue-500/30' },
-  { icon: Headphones, title: 'Сонсох', desc: 'Жинхэнэ герман дуудлага, удаашруулах, давтах боломжтой.', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
-  { icon: Mic, title: 'Ярих', desc: 'AI дуут багш дуудлагыг чинь үнэлж, шууд зөвлөмж өгнө.', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
-  { icon: Edit3, title: 'Бичих', desc: 'Эссэ, өгүүлбэрээ AI-аар дүрмийн засвар, оноотой шалгуул.', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
-  { icon: Languages, title: 'Үгийн сан', desc: 'A1–C2 хүртэлх флаш карт, давталтын ухаалаг систем (SRS).', color: 'text-pink-400 bg-pink-500/10 border-pink-500/30' },
-  { icon: Bot, title: 'AI орчуулагч', desc: 'Хүссэн өгүүлбэрээ орчуулж, дүрмийн тайлбар авах.', color: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30' },
-  { icon: GraduationCap, title: 'TestDaF шалгалт', desc: 'Жинхэнэ шалгалтын загвараар бэлтгэл хийх симуляци.', color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30' },
-  { icon: Swords, title: 'Тулаан', desc: 'Найзтайгаа герман хэлээр өрсөлдөж, хамт суралц.', color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' },
+  { icon: BookOpen, title: 'Унших', desc: 'Монгол тайлбартай түвшний бичвэрүүд, ойлголтын асуултууд.', color: 'text-primary bg-primary/10 border-primary/25' },
+  { icon: Headphones, title: 'Сонсох', desc: 'Жинхэнэ герман дуудлага, удаашруулах, давтах боломжтой.', color: 'text-primary bg-primary/10 border-primary/25' },
+  { icon: Mic, title: 'Ярих', desc: 'AI дуут багш дуудлагыг чинь үнэлж, шууд зөвлөмж өгнө.', color: 'text-secondary bg-secondary/10 border-secondary/25' },
+  { icon: Edit3, title: 'Бичих', desc: 'Эссэ, өгүүлбэрээ AI-аар дүрмийн засвар, оноотой шалгуул.', color: 'text-primary bg-primary/10 border-primary/25' },
+  { icon: Languages, title: 'Үгийн сан', desc: 'A1–C2 хүртэлх флаш карт, давталтын ухаалаг систем (SRS).', color: 'text-primary bg-primary/10 border-primary/25' },
+  { icon: Bot, title: 'AI орчуулагч', desc: 'Хүссэн өгүүлбэрээ орчуулж, дүрмийн тайлбар авах.', color: 'text-secondary bg-secondary/10 border-secondary/25' },
+  { icon: GraduationCap, title: 'TestDaF шалгалт', desc: 'Жинхэнэ шалгалтын загвараар бэлтгэл хийх симуляци.', color: 'text-primary bg-primary/10 border-primary/25' },
+  { icon: Swords, title: 'Тулаан', desc: 'Найзтайгаа герман хэлээр өрсөлдөж, хамт суралц.', color: 'text-tertiary bg-tertiary/10 border-tertiary/25' },
 ];
 
 const VALUE_PROPS = [
@@ -46,7 +48,7 @@ function Logo() {
     <span className="flex items-center gap-2 font-black font-space tracking-tight text-xl">
       <img src="/favicon.svg" alt="" className="w-7 h-7" />
       <span>
-        <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua
+        <span className="text-primary">Vivid</span> Lingua
       </span>
     </span>
   );
@@ -54,25 +56,25 @@ function Logo() {
 
 export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: LandingPageProps) {
   return (
-    <div className="bg-background text-white font-sans min-h-dvh w-full overflow-x-hidden relative selection:bg-purple-500/30">
-      {/* Ambient glows */}
-      <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-900/15 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute top-[40%] right-1/4 w-[500px] h-[500px] bg-blue-900/15 rounded-full blur-[150px] pointer-events-none" />
+    <div className="bg-background text-on-background font-sans min-h-dvh w-full overflow-x-hidden relative selection:bg-primary/30 selection:text-on-primary">
+      {/* Ambient warmth — gold dawn over a graphite studio, kept whisper-low */}
+      <div className="absolute top-[-10%] left-1/5 w-[620px] h-[620px] bg-primary/[0.07] rounded-full blur-[170px] pointer-events-none" />
+      <div className="absolute top-[38%] right-1/5 w-[520px] h-[520px] bg-secondary/[0.05] rounded-full blur-[160px] pointer-events-none" />
 
       {/* ---------- Nav ---------- */}
-      <nav className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-white/5">
+      <nav className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-outline-variant/60">
         <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <Logo />
           <div className="flex items-center gap-2 md:gap-3">
             <button
               onClick={onLogin}
-              className="px-3 md:px-4 py-2 text-sm font-bold text-slate-300 hover:text-white transition-colors cursor-pointer"
+              className="px-3 md:px-4 py-2 text-sm font-bold text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
             >
               Нэвтрэх
             </button>
             <button
               onClick={onGetStarted}
-              className="px-4 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border border-white/10 transition-all cursor-pointer"
+              className="px-4 py-2 text-sm font-bold rounded-xl bg-primary text-on-primary hover:bg-surface-tint transition-colors cursor-pointer"
             >
               Эхлэх
             </button>
@@ -82,18 +84,18 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
 
       {/* ---------- Hero ---------- */}
       <header className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 pt-16 md:pt-24 pb-16 text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-purple-200">
-          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-surface-container border border-outline-variant text-xs font-bold text-on-primary-container">
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
           Монголчуудад зориулсан герман хэлний платформ
         </div>
 
         <h1 className="text-4xl md:text-6xl font-black font-space tracking-tight leading-[1.1] max-w-4xl mx-auto">
           Герман хэлээ{' '}
-          <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">монголоороо</span>{' '}
+          <span className="text-primary">монголоороо</span>{' '}
           ухаалгаар сур
         </h1>
 
-        <p className="mt-6 text-base md:text-lg text-slate-400 max-w-2xl mx-auto font-medium leading-relaxed">
+        <p className="mt-6 text-base md:text-lg text-on-surface-variant max-w-2xl mx-auto font-medium leading-relaxed">
           Унших, сонсох, ярих, бичих дасгал, AI багш, TestDaF загвар шалгалт, үгийн сан — бүгд нэг
           дор, монгол хэл дээрх тайлбартай. A1-ээс C2 хүртэл.
         </p>
@@ -101,19 +103,19 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={onTryGuest}
-            className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-bold text-base border border-white/10 shadow-[0_8px_30px_rgba(168,85,247,0.35)] transition-all hover:scale-[1.02] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-primary text-on-primary font-bold text-base shadow-[0_10px_30px_-8px_rgba(230,184,92,0.55)] transition-all hover:bg-surface-tint hover:scale-[1.02] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
           >
             <Play className="w-5 h-5" /> Үнэгүй туршаад үзэх
           </button>
           <button
             onClick={onGetStarted}
-            className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold text-base border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-surface-container hover:bg-surface-container-high text-on-surface font-bold text-base border border-outline-variant transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             Бүртгүүлэх <ArrowRight className="w-5 h-5" />
           </button>
         </div>
 
-        <p className="mt-4 text-xs text-slate-500 font-semibold">
+        <p className="mt-4 text-xs text-on-surface-variant font-semibold">
           Картын мэдээлэл шаардахгүй · Бүртгэлгүйгээр шууд эхэл · Бүртгүүлбэл 3 өдрийн Pro бэлэгтэй
         </p>
       </header>
@@ -121,20 +123,20 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
       {/* ---------- Skills grid ---------- */}
       <section className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 py-12">
         <h2 className="text-2xl md:text-3xl font-black font-space text-center mb-3">Нэг апп — бүх чадвар нэг дор</h2>
-        <p className="text-slate-400 text-center text-sm md:text-base mb-10 max-w-xl mx-auto">
+        <p className="text-on-surface-variant text-center text-sm md:text-base mb-10 max-w-xl mx-auto">
           Хэлний бүх талыг хамарсан дасгалууд, ухаалаг хэрэгслүүд.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {SKILLS.map((s) => (
             <div
               key={s.title}
-              className="p-5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-purple-500/40 hover:bg-white/[0.07] transition-all"
+              className="p-5 rounded-2xl bg-surface-container border border-outline-variant hover:border-primary/45 hover:bg-surface-container-high transition-all"
             >
               <div className={`w-11 h-11 rounded-xl border flex items-center justify-center mb-4 ${s.color}`}>
                 <s.icon className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-white text-base mb-1">{s.title}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{s.desc}</p>
+              <h3 className="font-bold text-on-surface text-base mb-1">{s.title}</h3>
+              <p className="text-on-surface-variant text-sm leading-relaxed">{s.desc}</p>
             </div>
           ))}
         </div>
@@ -145,11 +147,11 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {VALUE_PROPS.map((v) => (
             <div key={v.title} className="text-center md:text-left">
-              <div className="inline-flex w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 items-center justify-center text-purple-300 mb-4">
+              <div className="inline-flex w-12 h-12 rounded-2xl bg-primary/10 border border-primary/30 items-center justify-center text-primary mb-4">
                 <v.icon className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-extrabold mb-2">{v.title}</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">{v.desc}</p>
+              <p className="text-on-surface-variant text-sm leading-relaxed">{v.desc}</p>
             </div>
           ))}
         </div>
@@ -160,14 +162,14 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
         <h2 className="text-2xl md:text-3xl font-black font-space text-center mb-10">Хэрхэн ажилладаг вэ?</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {STEPS.map((step, i) => (
-            <div key={step.n} className="relative p-6 rounded-2xl bg-white/5 border border-white/10 text-center">
-              <div className="w-10 h-10 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center font-black font-space">
+            <div key={step.n} className="relative p-6 rounded-2xl bg-surface-container border border-outline-variant text-center">
+              <div className="w-10 h-10 mx-auto mb-4 rounded-full bg-primary text-on-primary flex items-center justify-center font-black font-space">
                 {step.n}
               </div>
               <h3 className="font-bold text-base mb-1">{step.title}</h3>
-              <p className="text-slate-400 text-sm">{step.desc}</p>
+              <p className="text-on-surface-variant text-sm">{step.desc}</p>
               {i < STEPS.length - 1 && (
-                <ArrowRight className="hidden md:block absolute top-1/2 -right-3 w-5 h-5 text-purple-500/50" />
+                <ArrowRight className="hidden md:block absolute top-1/2 -right-3 w-5 h-5 text-primary/50" />
               )}
             </div>
           ))}
@@ -176,52 +178,52 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
 
       {/* ---------- Trust strip ---------- */}
       <section className="relative z-10 max-w-6xl mx-auto px-4 md:px-6 py-12">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8">
-          <h2 className="text-lg md:text-xl font-black font-space text-center mb-6 text-white">
+        <div className="bg-surface-container border border-outline-variant rounded-2xl p-6 md:p-8">
+          <h2 className="text-lg md:text-xl font-black font-space text-center mb-6 text-on-surface">
             Яагаад Vivid Lingua вэ?
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-white/5 border border-white/10">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 mb-3">
+            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-surface-container-high border border-outline-variant">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary mb-3">
                 <Shield className="w-5 h-5" />
               </div>
-              <p className="text-white font-bold text-sm mb-1">A1–C2 бүрэн хамрах</p>
-              <p className="text-slate-400 text-xs leading-relaxed">Эхлэгчээс дээд түвшин хүртэлх агуулга нэг дор</p>
+              <p className="text-on-surface font-bold text-sm mb-1">A1–C2 бүрэн хамрах</p>
+              <p className="text-on-surface-variant text-xs leading-relaxed">Эхлэгчээс дээд түвшин хүртэлх агуулга нэг дор</p>
             </div>
-            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-white/5 border border-white/10">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-3">
+            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-surface-container-high border border-outline-variant">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary mb-3">
                 <BookMarked className="w-5 h-5" />
               </div>
-              <p className="text-white font-bold text-sm mb-1">Bolor-toli толь бичиг</p>
-              <p className="text-slate-400 text-xs leading-relaxed">Үгийн орчуулга машинаар биш, Bolor-toli-аас</p>
+              <p className="text-on-surface font-bold text-sm mb-1">Bolor-toli толь бичиг</p>
+              <p className="text-on-surface-variant text-xs leading-relaxed">Үгийн орчуулга машинаар биш, Bolor-toli-аас</p>
             </div>
-            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-white/5 border border-white/10">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-3">
+            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-surface-container-high border border-outline-variant">
+              <div className="w-10 h-10 rounded-xl bg-secondary/10 border border-secondary/30 flex items-center justify-center text-secondary mb-3">
                 <MessageSquare className="w-5 h-5" />
               </div>
-              <p className="text-white font-bold text-sm mb-1">AI засвар, үнэлгээ</p>
-              <p className="text-slate-400 text-xs leading-relaxed">AI багш ярих, бичих чадварыг үнэлж, засаж өгнө</p>
+              <p className="text-on-surface font-bold text-sm mb-1">AI засвар, үнэлгээ</p>
+              <p className="text-on-surface-variant text-xs leading-relaxed">AI багш ярих, бичих чадварыг үнэлж, засаж өгнө</p>
             </div>
-            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-white/5 border border-white/10">
-              <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center text-yellow-400 mb-3">
+            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-surface-container-high border border-outline-variant">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/30 flex items-center justify-center text-primary mb-3">
                 <FileText className="w-5 h-5" />
               </div>
-              <p className="text-white font-bold text-sm mb-1">TestDaF загвар шалгалт</p>
-              <p className="text-slate-400 text-xs leading-relaxed">Жинхэнэ шалгалтын форматаар бэлтгэл хий</p>
+              <p className="text-on-surface font-bold text-sm mb-1">TestDaF загвар шалгалт</p>
+              <p className="text-on-surface-variant text-xs leading-relaxed">Жинхэнэ шалгалтын форматаар бэлтгэл хий</p>
             </div>
-            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-white/5 border border-white/10">
-              <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/30 flex items-center justify-center text-pink-400 mb-3">
+            <div className="flex flex-col items-center text-center p-4 rounded-xl bg-surface-container-high border border-outline-variant">
+              <div className="w-10 h-10 rounded-xl bg-tertiary/10 border border-tertiary/30 flex items-center justify-center text-tertiary mb-3">
                 <CreditCard className="w-5 h-5" />
               </div>
-              <p className="text-white font-bold text-sm mb-1">Карт шаардахгүй</p>
-              <p className="text-slate-400 text-xs leading-relaxed">Бүртгэлгүйгээр шууд туршиж болно</p>
+              <p className="text-on-surface font-bold text-sm mb-1">Карт шаардахгүй</p>
+              <p className="text-on-surface-variant text-xs leading-relaxed">Бүртгэлгүйгээр шууд туршиж болно</p>
             </div>
           </div>
-          <div className="border-t border-white/10 pt-5 text-center">
-            <p className="text-slate-300 text-sm leading-relaxed max-w-2xl mx-auto italic">
+          <div className="border-t border-outline-variant pt-5 text-center">
+            <p className="text-on-surface text-sm leading-relaxed max-w-2xl mx-auto italic">
               "Монгол хэлтэй суралцагчдад зориулсан платформ байхгүй байсан — бүх зүйл англиар дамждаг байлаа. Тэр цоорхойг бөглөхийн тулд Vivid Lingua-г бүтээсэн. Дуусаагүй боловч үнэнч."
             </p>
-            <p className="text-slate-500 text-xs mt-2 font-semibold">— Vivid Lingua-г бүтээгч</p>
+            <p className="text-on-surface-variant text-xs mt-2 font-semibold">— Vivid Lingua-г бүтээгч</p>
           </div>
         </div>
       </section>
@@ -229,7 +231,7 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
       {/* ---------- Pricing ---------- */}
       <section className="relative z-10 max-w-5xl mx-auto px-4 md:px-6 py-12">
         <h2 className="text-2xl md:text-3xl font-black font-space text-center mb-3">Үнэ — өөртөө тохируул</h2>
-        <p className="text-slate-400 text-center text-sm md:text-base mb-10">
+        <p className="text-on-surface-variant text-center text-sm md:text-base mb-10">
           Үнэгүй эхэл. Жилээр төлбөл 2 сар үнэгүй.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
@@ -241,31 +243,31 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
                 key={id}
                 className={`relative flex flex-col p-6 rounded-2xl border transition-all ${
                   popular
-                    ? 'bg-purple-950/30 border-purple-500/60 shadow-[0_0_30px_rgba(168,85,247,0.2)] md:scale-[1.03]'
-                    : 'bg-white/5 border-white/10'
+                    ? 'bg-primary-container/30 border-primary/60 shadow-[0_0_0_1px_rgba(230,184,92,0.18),0_18px_40px_-18px_rgba(0,0,0,0.7)] md:scale-[1.03]'
+                    : 'bg-surface-container border-outline-variant'
                 }`}
               >
                 {popular && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 text-white text-[11px] font-bold flex items-center gap-1">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-on-primary text-[11px] font-bold flex items-center gap-1">
                     <Star className="w-3 h-3" /> Түгээмэл сонголт
                   </span>
                 )}
                 <h3 className="text-lg font-extrabold font-space">{plan.nameMn}</h3>
-                <p className="text-slate-400 text-xs mb-4 mt-0.5">{plan.taglineMn}</p>
+                <p className="text-on-surface-variant text-xs mb-4 mt-0.5">{plan.taglineMn}</p>
                 <div className="mb-5">
                   {plan.defaultAmountMnt === 0 ? (
                     <span className="text-3xl font-black font-space">Үнэгүй</span>
                   ) : (
                     <>
                       <span className="text-3xl font-black font-space">₮{formatMnt(plan.defaultAmountMnt)}</span>
-                      <span className="text-slate-400 text-sm font-semibold"> /сар</span>
+                      <span className="text-on-surface-variant text-sm font-semibold"> /сар</span>
                     </>
                   )}
                 </div>
                 <ul className="space-y-2.5 mb-6 flex-grow">
                   {plan.featuresMn.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-slate-200">
-                      <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <li key={f} className="flex items-start gap-2 text-sm text-on-surface">
+                      <Check className="w-4 h-4 text-secondary flex-shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </li>
                   ))}
@@ -274,8 +276,8 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
                   onClick={onGetStarted}
                   className={`w-full py-3 rounded-xl font-bold text-sm transition-all cursor-pointer ${
                     popular
-                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border border-white/10'
-                      : 'bg-white/5 hover:bg-white/10 text-white border border-white/15'
+                      ? 'bg-primary text-on-primary hover:bg-surface-tint'
+                      : 'bg-surface-container-high hover:bg-surface-variant text-on-surface border border-outline-variant'
                   }`}
                 >
                   {id === 'free' ? 'Үнэгүй эхлэх' : 'Сонгох'}
@@ -288,21 +290,22 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
 
       {/* ---------- Final CTA ---------- */}
       <section className="relative z-10 max-w-4xl mx-auto px-4 md:px-6 py-16">
-        <div className="rounded-3xl bg-gradient-to-br from-purple-600/20 to-blue-600/20 border border-white/10 p-8 md:p-12 text-center backdrop-blur-sm">
-          <h2 className="text-2xl md:text-4xl font-black font-space mb-3">Германаа өнөөдөр эхэл</h2>
-          <p className="text-slate-300 text-sm md:text-base mb-8 max-w-lg mx-auto">
+        <div className="rounded-3xl bg-surface-container border border-primary/25 p-8 md:p-12 text-center relative overflow-hidden">
+          <div className="absolute -top-1/3 left-1/2 -translate-x-1/2 w-[420px] h-[420px] bg-primary/[0.08] rounded-full blur-[140px] pointer-events-none" />
+          <h2 className="relative text-2xl md:text-4xl font-black font-space mb-3">Германаа өнөөдөр эхэл</h2>
+          <p className="relative text-on-surface-variant text-sm md:text-base mb-8 max-w-lg mx-auto">
             Бүртгэлгүйгээр шууд туршиж үзээд, таалагдвал бүртгүүлээрэй. Эхний 3 өдөр Pro эрх бэлэгтэй.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="relative flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={onTryGuest}
-              className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-bold border border-white/10 shadow-[0_8px_30px_rgba(168,85,247,0.35)] transition-all hover:scale-[1.02] flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-primary text-on-primary font-bold shadow-[0_10px_30px_-8px_rgba(230,184,92,0.55)] transition-all hover:bg-surface-tint hover:scale-[1.02] flex items-center justify-center gap-2 cursor-pointer"
             >
               <Play className="w-5 h-5" /> Үнэгүй туршаад үзэх
             </button>
             <button
               onClick={onGetStarted}
-              className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-surface-container-high hover:bg-surface-variant text-on-surface font-bold border border-outline-variant transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               Бүртгүүлэх <ArrowRight className="w-5 h-5" />
             </button>
@@ -311,15 +314,15 @@ export default function LandingPage({ onGetStarted, onLogin, onTryGuest }: Landi
       </section>
 
       {/* ---------- Footer ---------- */}
-      <footer className="relative z-10 border-t border-white/5 mt-8">
+      <footer className="relative z-10 border-t border-outline-variant/60 mt-8">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <Logo />
-          <div className="flex items-center gap-5 text-sm text-slate-400">
-            <a href="/terms" className="hover:text-white transition-colors">Үйлчилгээний нөхцөл</a>
-            <a href="/privacy" className="hover:text-white transition-colors">Нууцлал</a>
-            <a href="/contact" className="hover:text-white transition-colors">Холбоо барих</a>
+          <div className="flex items-center gap-5 text-sm text-on-surface-variant">
+            <a href="/terms" className="hover:text-primary transition-colors">Үйлчилгээний нөхцөл</a>
+            <a href="/privacy" className="hover:text-primary transition-colors">Нууцлал</a>
+            <a href="/contact" className="hover:text-primary transition-colors">Холбоо барих</a>
           </div>
-          <p className="text-xs text-slate-500">© {new Date().getFullYear()} Vivid Lingua</p>
+          <p className="text-xs text-on-surface-variant/70">© {new Date().getFullYear()} Vivid Lingua</p>
         </div>
       </footer>
     </div>

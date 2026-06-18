@@ -30,8 +30,8 @@ function badgesFor(wins: number, invites: number): { label: string; icon: React.
 
 function duelStatusLabel(duel: DuelView): { text: string; tone: string } {
   if (duel.status !== 'finished') return { text: 'Хүлээгдэж байна', tone: 'text-amber-300 bg-amber-500/10 border-amber-500/20' };
-  if (duel.draw) return { text: 'Тэнцсэн', tone: 'text-blue-300 bg-blue-500/10 border-blue-500/20' };
-  if (duel.iWon) return { text: 'Ялсан', tone: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20' };
+  if (duel.draw) return { text: 'Тэнцсэн', tone: 'text-teal-300 bg-teal-500/10 border-teal-500/20' };
+  if (duel.iWon) return { text: 'Ялсан', tone: 'text-teal-300 bg-teal-500/10 border-teal-500/20' };
   return { text: 'Ялагдсан', tone: 'text-slate-400 bg-white/5 border-white/10' };
 }
 
@@ -137,9 +137,9 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
   const badges = badgesFor(wins, referral?.invitesCount ?? 0);
 
   return (
-    <div className="bg-white/5 border border-purple-500/20 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow space-y-6">
+    <div className="bg-white/5 border border-amber-500/20 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-lg font-extrabold flex items-center gap-2 text-purple-300">
+        <h2 className="text-lg font-extrabold flex items-center gap-2 text-amber-300">
           <Swords className="w-5 h-5" /> Тэмцээн ба урилга
         </h2>
         {loading && <Loader2 className="w-4 h-4 animate-spin text-slate-500" />}
@@ -149,15 +149,15 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
         {/* Урилгын карт */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-3">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Users className="w-4 h-4 text-purple-400" /> Найзаа урих
+            <Users className="w-4 h-4 text-amber-400" /> Найзаа урих
           </h3>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Таны линк/Player ID-аар шинэ найз бүртгүүлбэл <b className="text-purple-300">та 3 өдрийн Pro эрх</b> авна
+            Таны линк/Player ID-аар шинэ найз бүртгүүлбэл <b className="text-amber-300">та 3 өдрийн Pro эрх</b> авна
             (нэг бүрт нэмж). Шинэ найз бүртгэлдээ аль хэдийн 3 өдрийн Pro авдаг — хоёулаа
-            <b className="text-cyan-300"> +1 Streak Freeze</b> авна.
+            <b className="text-teal-300"> +1 Streak Freeze</b> авна.
           </p>
           {referral && (
-            <p className="text-xs font-mono text-emerald-400 bg-emerald-950/20 border border-emerald-500/20 rounded-lg px-3 py-2 break-all">
+            <p className="text-xs font-mono text-teal-400 bg-teal-950/20 border border-teal-500/20 rounded-lg px-3 py-2 break-all">
               {referralLink(referral.code)}
             </p>
           )}
@@ -170,7 +170,7 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
               <button
                 onClick={copyPlayerId}
                 aria-label="Player ID хуулах"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-300 hover:text-white border border-white/10 hover:bg-white/10 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 hover:text-white border border-white/10 hover:bg-white/10 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer whitespace-nowrap"
               >
                 {idCopied ? <><Check className="w-3.5 h-3.5" /> Хуулагдлаа</> : <><Copy className="w-3.5 h-3.5" /> Хуулах</>}
               </button>
@@ -183,7 +183,7 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
             <button
               onClick={shareInvite}
               disabled={!referral}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold rounded-lg py-2.5 px-4 hover:opacity-95 disabled:opacity-50 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="flex-1 bg-primary text-on-primary text-sm font-bold rounded-lg py-2.5 px-4 hover:opacity-95 disabled:opacity-50 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               {copied ? <><Check className="w-4 h-4" /> Хуулагдлаа</> : <><Share2 className="w-4 h-4" /> Линк хуваалцах</>}
             </button>
@@ -196,12 +196,12 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
         {/* Шинэ тулаан */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-3">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
-            <Swords className="w-4 h-4 text-purple-400" /> Шинэ тулаан эхлүүлэх
+            <Swords className="w-4 h-4 text-amber-400" /> Шинэ тулаан эхлүүлэх
           </h3>
           <p className="text-xs text-slate-400 leading-relaxed">
-            10 ижил асуултад найзтайгаа өрсөлдөнө — ялагч <b className="text-cyan-300">+1 Streak Freeze</b> авна.
-            Найзынхаа <b className="text-purple-300">Player ID</b>-аар шууд сорь, эсвэл линк үүсгээд илгээ
-            (тань руу шинэ найз бүртгүүлбэл <b className="text-purple-300">та 3 өдрийн Pro</b> авна).
+            10 ижил асуултад найзтайгаа өрсөлдөнө — ялагч <b className="text-teal-300">+1 Streak Freeze</b> авна.
+            Найзынхаа <b className="text-amber-300">Player ID</b>-аар шууд сорь, эсвэл линк үүсгээд илгээ
+            (тань руу шинэ найз бүртгүүлбэл <b className="text-amber-300">та 3 өдрийн Pro</b> авна).
           </p>
           <div className="flex items-center gap-2">
             {LEVELS.map((lv) => (
@@ -210,8 +210,8 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
                 onClick={() => setDuelLevel(lv)}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold font-space border transition-all cursor-pointer ${
                   duelLevel === lv
-                    ? 'bg-purple-500/20 border-purple-500 text-purple-200'
-                    : 'bg-white/5 border-white/10 text-slate-400 hover:border-purple-500/40'
+                    ? 'bg-amber-500/20 border-amber-500 text-amber-200'
+                    : 'bg-white/5 border-white/10 text-slate-400 hover:border-amber-500/40'
                 }`}
               >
                 {lv}
@@ -228,12 +228,12 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
                 onKeyDown={(e) => { if (e.key === 'Enter') void challengeOpponent(); }}
                 placeholder="ж: 7Q2K9X"
                 maxLength={16}
-                className="flex-1 bg-white/5 border border-white/10 focus:border-purple-500 rounded-lg px-3 py-2.5 text-sm font-space font-bold text-white tracking-widest outline-none transition-all placeholder:text-slate-600 placeholder:tracking-normal placeholder:font-sans"
+                className="flex-1 bg-white/5 border border-white/10 focus:border-amber-500 rounded-lg px-3 py-2.5 text-sm font-space font-bold text-white tracking-widest outline-none transition-all placeholder:text-slate-600 placeholder:tracking-normal placeholder:font-sans"
               />
               <button
                 onClick={() => void challengeOpponent()}
                 disabled={challengeLoading || !opponentId.trim()}
-                className="bg-purple-500/20 border border-purple-500 text-purple-100 text-sm font-bold rounded-lg py-2.5 px-4 hover:bg-purple-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
+                className="bg-amber-500/20 border border-amber-500 text-amber-100 text-sm font-bold rounded-lg py-2.5 px-4 hover:bg-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 {challengeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Swords className="w-4 h-4" />}
                 Сорих
@@ -250,7 +250,7 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
           <button
             onClick={() => void startDuel()}
             disabled={startLoading}
-            className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-bold rounded-lg py-2.5 px-4 hover:opacity-95 disabled:opacity-50 transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-primary text-on-primary text-sm font-bold rounded-lg py-2.5 px-4 hover:opacity-95 disabled:opacity-50 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             {startLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
             Линкээр нээлттэй тулаан үүсгэх
@@ -275,7 +275,7 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
                 <button
                   key={duel.code}
                   onClick={() => onPlayDuel(duel)}
-                  className="w-full flex items-center justify-between gap-3 bg-white/5 border border-white/10 hover:border-purple-500/40 rounded-xl px-4 py-3 transition-all cursor-pointer text-left"
+                  className="w-full flex items-center justify-between gap-3 bg-white/5 border border-white/10 hover:border-amber-500/40 rounded-xl px-4 py-3 transition-all cursor-pointer text-left"
                 >
                   <span className="text-sm font-bold text-slate-200 truncate">
                     {opponentName}
@@ -304,7 +304,7 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
               <div
                 key={`${row.name}-${i}`}
                 className={`flex items-center gap-3 rounded-xl px-4 py-2.5 border ${
-                  row.isMe ? 'bg-purple-950/40 border-purple-500/40' : 'bg-white/5 border-white/10'
+                  row.isMe ? 'bg-amber-950/40 border-amber-500/40' : 'bg-white/5 border-white/10'
                 }`}
               >
                 <span className="w-6 text-center font-black font-space text-sm text-slate-400">{i + 1}</span>
@@ -343,7 +343,7 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
             {badge.icon} {badge.label}
           </span>
         ))}
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-cyan-300/80 ml-auto">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-teal-300/80 ml-auto">
           <Snowflake className="w-3.5 h-3.5" /> Шагнал: Streak Freeze + badge
         </span>
       </div>

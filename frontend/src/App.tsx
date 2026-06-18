@@ -200,8 +200,8 @@ function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
       <defs>
         <linearGradient id="brand-logo-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#8B5CF6" />
-          <stop offset="1" stopColor="#6D28D9" />
+          <stop offset="0" stopColor="#f0cd7e" />
+          <stop offset="1" stopColor="#cf982f" />
         </linearGradient>
       </defs>
       <circle cx="13" cy="19" r="9" fill="url(#brand-logo-grad)" />
@@ -1873,7 +1873,7 @@ function LearnerApp() {
           <button
             onClick={() => evaluateSpeechText(speakingTextEntered, target)}
             disabled={!speakingTextEntered.trim() || speakingLoading}
-            className="px-4 py-2 border-2 border-on-background text-sm font-bold bg-primary text-white rounded-xl block-shadow cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 border-2 border-on-background text-sm font-bold bg-primary text-on-primary rounded-xl block-shadow cursor-pointer disabled:opacity-50"
           >
             {speakingLoading ? 'Үнэлж байна...' : 'Шалгах'}
           </button>
@@ -1909,8 +1909,8 @@ function LearnerApp() {
               { label: 'Чөлөөтэй байдал', value: speakingEvaluation.fluencyScore, icon: Gauge },
             ].filter((s) => typeof s.value === 'number').map((s, i) => {
               const v = s.value as number;
-              const tone = v >= 75 ? 'text-secondary' : v >= 50 ? 'text-yellow-600' : 'text-error';
-              const barTone = v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-yellow-500' : 'bg-error';
+              const tone = v >= 75 ? 'text-secondary' : v >= 50 ? 'text-amber-600' : 'text-error';
+              const barTone = v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-amber-500' : 'bg-error';
               return (
                 <div key={i} className="border-2 border-on-background rounded-xl p-4 block-shadow flex flex-col items-center text-center">
                   <s.icon className={`w-5 h-5 mb-1 ${tone}`} />
@@ -2020,7 +2020,7 @@ function LearnerApp() {
         <button
           onClick={() => checkComposition(text, ctx)}
           disabled={!text.trim() || writeFeedbackLoading}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sparkles className="w-4 h-4" /> {writeFeedbackLoading ? 'AI шалгаж байна...' : 'AI-аар шалгуулах'}
         </button>
@@ -2055,8 +2055,8 @@ function LearnerApp() {
               { label: 'Үгсийн сан', value: writeFeedback.vocabularyScore, icon: BookOpen },
             ].filter((s) => typeof s.value === 'number').map((s, i) => {
               const v = s.value as number;
-              const tone = v >= 75 ? 'text-secondary' : v >= 50 ? 'text-yellow-600' : 'text-error';
-              const barTone = v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-yellow-500' : 'bg-error';
+              const tone = v >= 75 ? 'text-secondary' : v >= 50 ? 'text-amber-600' : 'text-error';
+              const barTone = v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-amber-500' : 'bg-error';
               return (
                 <div key={i} className="border-2 border-on-background rounded-xl p-4 block-shadow flex flex-col items-center text-center">
                   <s.icon className={`w-5 h-5 mb-1 ${tone}`} />
@@ -2169,9 +2169,9 @@ function LearnerApp() {
       <div className="bg-background text-white font-sans min-h-screen flex flex-col justify-center items-center gap-4">
         <h1 className="text-3xl font-black font-space tracking-tight flex items-center gap-3">
           <BrandLogo className="w-9 h-9" />
-          <span><span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua</span>
+          <span><span className="text-primary">Vivid</span> Lingua</span>
         </h1>
-        <Loader2 className="w-7 h-7 text-purple-400 animate-spin" />
+        <Loader2 className="w-7 h-7 text-amber-400 animate-spin" />
       </div>
     );
   }
@@ -2247,14 +2247,14 @@ function LearnerApp() {
       {/* Зочин горим — явцаа хадгалахын тулд бүртгүүлэх уриалга (бусад дэлгэцийг хаахгүй, хөвдөг) */}
       {currentUser?.isGuest && (
         <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[120] w-[calc(100%-2rem)] max-w-md animate-fade-in">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#0d0d16]/95 backdrop-blur-md border border-purple-500/40 shadow-[0_8px_30px_rgba(168,85,247,0.25)]">
-            <Sparkles className="w-5 h-5 text-purple-300 flex-shrink-0" />
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-surface/95 backdrop-blur-md border border-primary/40 shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+            <Sparkles className="w-5 h-5 text-amber-300 flex-shrink-0" />
             <p className="text-xs md:text-sm font-semibold text-slate-200 flex-grow">
               Зочин горимоор үзэж байна. Явцаа хадгалж, бүх түвшин нээхийн тулд бүртгүүлээрэй.
             </p>
             <button
               onClick={exitGuestToSignup}
-              className="flex-shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white text-xs md:text-sm font-bold border border-white/10 transition-all cursor-pointer"
+              className="flex-shrink-0 px-4 py-2 rounded-xl bg-primary hover:bg-surface-tint text-on-primary text-xs md:text-sm font-bold border border-primary/40 transition-all cursor-pointer"
             >
               Бүртгүүлэх
             </button>
@@ -2268,22 +2268,22 @@ function LearnerApp() {
       {/* Тулааны урилгын pop-up — над руу challenge ирэхэд */}
       {incomingDuel && !activeDuel && (
         <div className="fixed inset-0 z-[130] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 animate-fade-in">
-          <div className="bg-[#0d0d16] border border-purple-500/30 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up text-white shadow-[0_0_40px_rgba(168,85,247,0.2)]">
+          <div className="bg-surface border border-primary/30 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up text-on-surface shadow-[0_0_40px_rgba(0,0,0,0.5)]">
             <div className="flex flex-col items-center text-center gap-3">
-              <span className="w-14 h-14 rounded-2xl bg-purple-500/15 border border-purple-500/30 flex items-center justify-center text-purple-300">
+              <span className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
                 <Swords className="w-7 h-7" />
               </span>
               {incomingDuel.challenger?.avatar && (
                 <img src={incomingDuel.challenger.avatar} alt="" className="w-12 h-12 rounded-full object-cover -mt-1" />
               )}
               <h3 className="text-xl font-black font-space">
-                <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                <span className="text-primary">
                   {incomingDuel.challenger?.name ?? 'Нэгэн суралцагч'}
                 </span>{' '}
                 таныг тулаанд уриалаа!
               </h3>
               <p className="text-sm text-slate-400 leading-relaxed">
-                {incomingDuel.level} түвшний 10 асуултад өрсөлдөнө — ялагч <b className="text-cyan-300">+1 Streak Freeze</b> авна.
+                {incomingDuel.level} түвшний 10 асуултад өрсөлдөнө — ялагч <b className="text-teal-300">+1 Streak Freeze</b> авна.
               </p>
             </div>
             <div className="flex gap-3 pt-1">
@@ -2295,7 +2295,7 @@ function LearnerApp() {
               </button>
               <button
                 onClick={() => { markDuelChallengeSeen(incomingDuel.code); setActiveDuel(incomingDuel); setIncomingDuel(null); }}
-                className="flex-[2] bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl py-3 px-4 hover:opacity-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="flex-[2] bg-primary text-on-primary font-bold rounded-xl py-3 px-4 hover:bg-surface-tint transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <Swords className="w-4 h-4" /> Тоглох
               </button>
@@ -2319,8 +2319,8 @@ function LearnerApp() {
       {coreLessonActive && (
         <div id="core-lesson-modal" className="fixed inset-0 bg-background z-100 flex flex-col items-center justify-between pb-8 pt-4 px-4 md:px-12 animate-fade-in text-white">
           {/* Atmospheric background glows in overlay */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-900/10 rounded-full blur-[120px] pointer-events-none"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-900/10 rounded-full blur-[120px] pointer-events-none"></div>
           
           {/* Top Header progress & close buttons */}
           <header className="w-full max-w-[800px] flex items-center gap-4 py-2 relative z-10">
@@ -2337,7 +2337,7 @@ function LearnerApp() {
             </button>
             <div className="flex-grow h-4 bg-white/5 border border-white/10 rounded-full overflow-hidden relative">
               <div 
-                className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-500 relative"
+                className="h-full bg-primary transition-all duration-500 relative"
                 style={{ width: coreLessonStep === 1 ? '60%' : '100%' }}
               >
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-white/40"></div>
@@ -2372,11 +2372,11 @@ function LearnerApp() {
                   disabled={coreLessonFeedback !== null}
                   className={`choice-card relative w-full text-left bg-white/5 border border-white/10 rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
                     coreLessonAnswer === 0 && coreLessonFeedback === 'incorrect' ? 'bg-red-950/40 border-red-500 text-white opacity-100 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
-                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-purple-500/50 hover:bg-white/10'
+                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-amber-500/50 hover:bg-white/10'
                   }`}
                 >
-                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-purple-500/50 group-hover:text-purple-400">1</span>
-                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 0 && coreLessonFeedback === 'incorrect' ? 'text-red-300' : 'text-slate-200 group-hover:text-purple-300'}`}>Өглөөний мэнд</span>
+                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-amber-500/50 group-hover:text-amber-400">1</span>
+                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 0 && coreLessonFeedback === 'incorrect' ? 'text-red-300' : 'text-slate-200 group-hover:text-amber-300'}`}>Өглөөний мэнд</span>
                 </button>
 
                 {/* Option 2 (Correct) */}
@@ -2384,13 +2384,13 @@ function LearnerApp() {
                   onClick={() => !coreLessonFeedback && submitCoreLessonAnswer(1)}
                   disabled={coreLessonFeedback !== null}
                   className={`choice-card relative w-full text-left rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
-                    coreLessonAnswer === 1 && coreLessonFeedback === 'correct' ? 'bg-purple-950/40 border-purple-500 text-purple-200 opacity-100 shadow-[0_0_15px_rgba(168,85,247,0.3)]' :
-                    coreLessonFeedback === 'incorrect' ? 'bg-purple-950/20 border-dashed border-purple-500/40 opacity-100' : 
-                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'bg-white/5 border border-white/10 hover:border-purple-500/50'
+                    coreLessonAnswer === 1 && coreLessonFeedback === 'correct' ? 'bg-amber-950/40 border-amber-500 text-amber-200 opacity-100 shadow-[0_0_15px_rgba(230,184,92,0.32)]' :
+                    coreLessonFeedback === 'incorrect' ? 'bg-amber-950/20 border-dashed border-amber-500/40 opacity-100' : 
+                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'bg-white/5 border border-white/10 hover:border-amber-500/50'
                   }`}
                 >
-                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-purple-500/50 group-hover:text-purple-400">2</span>
-                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 1 && coreLessonFeedback === 'correct' ? 'text-purple-200' : 'text-slate-200 group-hover:text-purple-300'}`}>Өдрийн мэнд</span>
+                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-amber-500/50 group-hover:text-amber-400">2</span>
+                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 1 && coreLessonFeedback === 'correct' ? 'text-amber-200' : 'text-slate-200 group-hover:text-amber-300'}`}>Өдрийн мэнд</span>
                 </button>
 
                 {/* Option 3 */}
@@ -2399,11 +2399,11 @@ function LearnerApp() {
                   disabled={coreLessonFeedback !== null}
                   className={`choice-card relative w-full text-left bg-white/5 border border-white/10 rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
                     coreLessonAnswer === 2 && coreLessonFeedback === 'incorrect' ? 'bg-red-950/40 border-red-500 text-white opacity-100 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
-                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-purple-500/50 hover:bg-white/10'
+                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-amber-500/50 hover:bg-white/10'
                   }`}
                 >
-                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-purple-500/50 group-hover:text-purple-400">3</span>
-                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 2 && coreLessonFeedback === 'incorrect' ? 'text-red-300' : 'text-slate-200 group-hover:text-purple-300'}`}>Баяртай</span>
+                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-amber-500/50 group-hover:text-amber-400">3</span>
+                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 2 && coreLessonFeedback === 'incorrect' ? 'text-red-300' : 'text-slate-200 group-hover:text-amber-300'}`}>Баяртай</span>
                 </button>
 
                 {/* Option 4 */}
@@ -2412,11 +2412,11 @@ function LearnerApp() {
                   disabled={coreLessonFeedback !== null}
                   className={`choice-card relative w-full text-left bg-white/5 border border-white/10 rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
                     coreLessonAnswer === 3 && coreLessonFeedback === 'incorrect' ? 'bg-red-950/40 border-red-500 text-white opacity-100 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
-                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-purple-500/50 hover:bg-white/10'
+                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-amber-500/50 hover:bg-white/10'
                   }`}
                 >
-                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-purple-500/50 group-hover:text-purple-400">4</span>
-                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 3 && coreLessonFeedback === 'incorrect' ? 'text-red-300' : 'text-slate-200 group-hover:text-purple-300'}`}>Сайн байна уу</span>
+                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-amber-500/50 group-hover:text-amber-400">4</span>
+                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 3 && coreLessonFeedback === 'incorrect' ? 'text-red-300' : 'text-slate-200 group-hover:text-amber-300'}`}>Сайн байна уу</span>
                 </button>
               </div>
             </main>
@@ -2496,18 +2496,18 @@ function LearnerApp() {
       )}
 
       {/* Shared Sidebar - Visible on Desktop only */}
-      <nav aria-label="Desktop menu" className="hidden md:flex flex-col h-screen py-8 px-4 gap-y-6 bg-[#04040a] w-[280px] fixed left-0 top-0 text-white border-r border-white/10 select-none z-30 shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
+      <nav aria-label="Desktop menu" className="hidden md:flex flex-col h-screen py-8 px-4 gap-y-6 bg-surface-container-lowest w-[280px] fixed left-0 top-0 text-on-surface border-r border-outline-variant select-none z-30 shadow-[4px_0_24px_rgba(0,0,0,0.6)]">
         <div>
           <h1 className="text-2xl font-black tracking-tight font-space flex items-center gap-2">
             <BrandLogo className="w-8 h-8" />
-            <span><span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Vivid</span> Lingua</span>
+            <span><span className="text-primary">Vivid</span> Lingua</span>
           </h1>
         </div>
 
         {/* User Context Avatar Panel */}
         {currentUser ? (
           <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => selectTab('profile')}>
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-purple-500/50">
+            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-amber-500/50">
               <img 
                 alt="Profile" 
                 className="w-full h-full object-cover bg-slate-800" 
@@ -2515,7 +2515,7 @@ function LearnerApp() {
               />
             </div>
             <div className="overflow-hidden">
-              <p className="text-[10px] font-black uppercase text-purple-400 tracking-wider flex items-center gap-1">
+              <p className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
                 <Target className="w-2.5 h-2.5" /> {currentUser.targetLevel} ТҮВШИН
               </p>
               <h2 className="text-[15px] font-extrabold truncate text-white leading-tight">{currentUser.name}</h2>
@@ -2537,11 +2537,11 @@ function LearnerApp() {
         {/* Dynamic Streak Badge Card */}
         <div>
           <div className="bg-white/5 text-white text-[14px] font-bold rounded-xl px-4 py-3 flex items-center justify-between border border-white/10">
-            <span className="flex items-center gap-2 text-purple-300">
-              <Flame className="w-5 h-5 text-purple-400 fill-purple-400 animate-pulse" />
+            <span className="flex items-center gap-2 text-amber-300">
+              <Flame className="w-5 h-5 text-amber-400 fill-amber-400 animate-pulse" />
               Streak: {streak} өдөр
             </span>
-            <span className="text-[11px] font-space bg-gradient-to-r from-purple-500 to-blue-500 text-white px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wide">AUTO</span>
+            <span className="text-[11px] font-space bg-primary text-on-primary px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wide">AUTO</span>
           </div>
         </div>
 
@@ -2643,7 +2643,7 @@ function LearnerApp() {
                   : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
               }`}
             >
-              <Sparkles className={`w-5 h-5 ${activeTab === 'translate' ? 'text-secondary-fixed text-purple-450' : ''}`} />
+              <Sparkles className={`w-5 h-5 ${activeTab === 'translate' ? 'text-secondary-fixed text-amber-400' : ''}`} />
               <span className="text-[14px] font-bold">Орчуулагч</span>
             </button>
           </li>
@@ -2656,7 +2656,7 @@ function LearnerApp() {
                   : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
               }`}
             >
-              <GraduationCap className={`w-5 h-5 ${activeTab === 'exam' ? 'text-secondary-fixed' : ''} text-yellow-400`} />
+              <GraduationCap className={`w-5 h-5 ${activeTab === 'exam' ? 'text-secondary-fixed' : ''} text-amber-400`} />
               <span className="text-[14px] font-bold">Шалгалт</span>
             </button>
           </li>
@@ -2669,7 +2669,7 @@ function LearnerApp() {
                   : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
               }`}
             >
-              <Swords className={`w-5 h-5 ${activeTab === 'friends' ? 'text-secondary-fixed' : ''} text-purple-400`} />
+              <Swords className={`w-5 h-5 ${activeTab === 'friends' ? 'text-secondary-fixed' : ''} text-amber-400`} />
               <span className="text-[14px] font-bold">Найзууд</span>
             </button>
           </li>
@@ -2702,7 +2702,7 @@ function LearnerApp() {
       <header className="md:hidden flex justify-between items-center w-full px-4 h-16 bg-surface border-b-2 border-on-background fixed top-0 left-0 z-40 shrink-0">
         <button 
           onClick={() => setMobileMenuOpen(prev => !prev)}
-          className="text-primary p-2 border-2 border-on-background rounded-lg bg-surface-container-low hover:bg-surface shadow-[2px_2px_0_0_#1E293B] cursor-pointer"
+          className="text-primary p-2 border-2 border-on-background rounded-lg bg-surface-container-low hover:bg-surface shadow-[2px_2px_0_0_#3a352a] cursor-pointer"
         >
           <span className="material-symbols-outlined text-xl font-bold">menu</span>
         </button>
@@ -2715,7 +2715,7 @@ function LearnerApp() {
             <Flame className="w-5 h-5 text-orange-500 fill-orange-500 animate-pulse" />
             <span className="text-xs font-black text-on-background ml-1">{streak}</span>
           </div>
-          <div className="p-2 text-yellow-500 select-none">
+          <div className="p-2 text-amber-500 select-none">
             <span className="material-symbols-outlined fill text-lg">military_tech</span>
           </div>
         </div>
@@ -2743,12 +2743,12 @@ function LearnerApp() {
 
             {currentUser ? (
               <div className="bg-white/5 p-3 rounded-xl border border-white/10 mx-2 flex gap-3 items-center cursor-pointer hover:bg-white/10" onClick={() => selectTab('profile')}>
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20 border border-purple-500/50 flex-shrink-0">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20 border border-amber-500/50 flex-shrink-0">
                   <img alt="User" className="w-full h-full object-cover" src={currentUser.avatar} />
                 </div>
                 <div className="overflow-hidden">
                   <h3 className="text-sm font-bold truncate text-white leading-tight">{currentUser.name}</h3>
-                  <p className="text-[10px] text-purple-300 font-bold truncate leading-none mt-0.5">{currentUser.role}</p>
+                  <p className="text-[10px] text-amber-300 font-bold truncate leading-none mt-0.5">{currentUser.role}</p>
                 </div>
               </div>
             ) : (
@@ -2832,7 +2832,7 @@ function LearnerApp() {
                   onClick={() => selectTab('translate')}
                   className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'translate' ? 'bg-white/15' : 'text-on-primary-container'}`}
                 >
-                  <Sparkles className="w-5 h-5 text-purple-400" />
+                  <Sparkles className="w-5 h-5 text-amber-400" />
                   <span>Орчуулагч</span>
                 </button>
               </li>
@@ -2841,7 +2841,7 @@ function LearnerApp() {
                   onClick={() => selectTab('exam')}
                   className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'exam' ? 'bg-white/15' : 'text-on-primary-container'}`}
                 >
-                  <GraduationCap className="w-5 h-5 text-yellow-400" />
+                  <GraduationCap className="w-5 h-5 text-amber-400" />
                   <span>Шалгалт</span>
                 </button>
               </li>
@@ -2850,7 +2850,7 @@ function LearnerApp() {
                   onClick={() => selectTab('friends')}
                   className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'friends' ? 'bg-white/15' : 'text-on-primary-container'}`}
                 >
-                  <Swords className="w-5 h-5 text-purple-400" />
+                  <Swords className="w-5 h-5 text-amber-400" />
                   <span>Найзууд</span>
                 </button>
               </li>
@@ -2884,8 +2884,8 @@ function LearnerApp() {
       {/* Main Workspace Frame */}
       <main className="flex-grow md:ml-[280px] px-4 md:px-8 flex flex-col justify-between pt-24 md:pt-8 w-full min-h-screen relative overflow-x-hidden max-lg:overflow-y-auto max-lg:overscroll-y-contain lg:overflow-hidden bg-background">
         {/* Ambient neon flares */}
-        <div className="absolute top-10 left-10 w-96 h-96 bg-purple-900/15 rounded-full blur-[140px] pointer-events-none"></div>
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-900/10 rounded-full blur-[140px] pointer-events-none"></div>
+        <div className="absolute top-10 left-10 w-96 h-96 bg-amber-900/15 rounded-full blur-[140px] pointer-events-none"></div>
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-900/10 rounded-full blur-[140px] pointer-events-none"></div>
 
         <div className="w-full max-w-[1200px] mx-auto flex flex-col h-full relative z-10">
 
@@ -2894,13 +2894,13 @@ function LearnerApp() {
             <div className="w-full mb-8 flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 block-shadow">
               <div className="h-4 flex-grow bg-white/5 border border-white/10 rounded-full overflow-hidden relative shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                 <div 
-                  className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300 rounded-full relative" 
+                  className="h-full bg-primary transition-all duration-300 rounded-full relative" 
                   style={{ width: `${lessonProgress}%` }}
                 >
                   <div className="absolute top-0 left-0 w-full h-[2px] bg-white/35"></div>
                 </div>
               </div>
-              <span className="text-xs font-space font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 py-1.5 rounded-full border border-white/20 shadow-[0_0_15px_rgba(168,85,247,0.25)]">
+              <span className="text-xs font-space font-bold bg-primary text-on-primary px-4 py-1.5 rounded-full border border-white/20 shadow-[0_0_15px_rgba(230,184,92,0.28)]">
                 {lessonProgress}% дууссан
               </span>
             </div>
@@ -3028,7 +3028,7 @@ function LearnerApp() {
                           </p>
                           <button 
                             onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                            className="px-5 py-2.5 bg-primary text-on-primary font-bold rounded-xl text-sm hover:bg-surface-tint transition-all shadow-md cursor-pointer font-space"
                           >
                             Сургалтын зам руу очих
                           </button>
@@ -3210,7 +3210,7 @@ function LearnerApp() {
                           </p>
                           <button 
                             onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                            className="px-5 py-2.5 bg-primary text-on-primary font-bold rounded-xl text-sm hover:bg-surface-tint transition-all shadow-md cursor-pointer font-space"
                           >
                             Сургалтын зам руу очих
                           </button>
@@ -3418,7 +3418,7 @@ function LearnerApp() {
                           </p>
                           <button 
                             onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                            className="px-5 py-2.5 bg-primary text-on-primary font-bold rounded-xl text-sm hover:bg-surface-tint transition-all shadow-md cursor-pointer font-space"
                           >
                             Сургалтын зам руу очих
                           </button>
@@ -3442,7 +3442,7 @@ function LearnerApp() {
                         </button>
                         <button onClick={() => setLibSpeakReveal(v => !v)}
                           className="flex items-center gap-2 px-4 py-2.5 bg-surface-container text-primary border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                          <Lightbulb className="w-4 h-4 text-yellow-400 fill-current" /> {libSpeakReveal ? 'Нуух' : 'Загвар хариулт харах'}
+                          <Lightbulb className="w-4 h-4 text-amber-400 fill-current" /> {libSpeakReveal ? 'Нуух' : 'Загвар хариулт харах'}
                         </button>
                       </div>
 
@@ -3554,7 +3554,7 @@ function LearnerApp() {
                           </p>
                           <button 
                             onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-bold rounded-xl text-sm hover:opacity-95 transition-all shadow-md cursor-pointer font-space"
+                            className="px-5 py-2.5 bg-primary text-on-primary font-bold rounded-xl text-sm hover:bg-surface-tint transition-all shadow-md cursor-pointer font-space"
                           >
                             Сургалтын зам руу очих
                           </button>
@@ -3581,7 +3581,7 @@ function LearnerApp() {
                         <span className="text-[11px] text-on-surface-variant">{words} үг</span>
                         <button onClick={() => setLibWriteReveal(v => !v)}
                           className="px-4 py-2 bg-surface-container text-primary border-2 border-on-background rounded-lg font-bold text-xs cursor-pointer block-shadow hover:scale-[1.02] transition-transform flex items-center gap-1">
-                          <Lightbulb className="w-3.5 h-3.5 text-yellow-400 fill-current" /> {libWriteReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
+                          <Lightbulb className="w-3.5 h-3.5 text-amber-400 fill-current" /> {libWriteReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
                         </button>
                       </div>
 
@@ -3705,8 +3705,8 @@ function LearnerApp() {
                       <div className="flex flex-col items-center gap-4">
                         {vocabList[currentVocabIndex].article && (
                           <span className={`text-base font-black lowercase tracking-widest px-4 py-1 rounded-full border-2 border-on-background block-shadow ${
-                            vocabList[currentVocabIndex].article === 'der' ? 'bg-blue-100 text-blue-700' :
-                            vocabList[currentVocabIndex].article === 'die' ? 'bg-rose-100 text-rose-700' :
+                            vocabList[currentVocabIndex].article === 'der' ? 'bg-teal-100 text-teal-700' :
+                            vocabList[currentVocabIndex].article === 'die' ? 'bg-orange-100 text-orange-700' :
                             'bg-amber-100 text-amber-700'
                           }`}>
                             {vocabList[currentVocabIndex].article}
@@ -3767,7 +3767,7 @@ function LearnerApp() {
                           e.stopPropagation();
                           setVocabFlipped(false);
                         }}
-                        className="mb-2 px-6 py-2.5 bg-primary text-white border-2 border-on-background rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
+                        className="mb-2 px-6 py-2.5 bg-primary text-on-primary border-2 border-on-background rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
                       >
                         Үгийг харах ↺
                       </button>
@@ -4001,8 +4001,8 @@ function LearnerApp() {
                         <div className="flex items-start justify-between gap-2">
                           {w.article ? (
                             <span className={`text-sm font-black lowercase tracking-widest px-3 py-0.5 rounded-full border-2 border-on-background ${
-                              w.article === 'der' ? 'bg-blue-100 text-blue-700' :
-                              w.article === 'die' ? 'bg-rose-100 text-rose-700' :
+                              w.article === 'der' ? 'bg-teal-100 text-teal-700' :
+                              w.article === 'die' ? 'bg-orange-100 text-orange-700' :
                               'bg-amber-100 text-amber-700'
                             }`}>
                               {w.article}
@@ -4109,16 +4109,16 @@ function LearnerApp() {
                 <div className="rounded-xl p-6 md:p-8 border-2 border-on-background block-shadow relative">
                   
                   {/* Neon top accent */}
-                  <div className="absolute top-0 left-0 w-full h-[5px] bg-gradient-to-r from-purple-500 to-blue-500 rounded-t-xl"></div>
+                  <div className="absolute top-0 left-0 w-full h-[5px] bg-primary rounded-t-xl"></div>
                   
                   <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-purple-500 fill-purple-300 animate-pulse" />
+                      <Sparkles className="w-5 h-5 text-amber-500 fill-amber-300 animate-pulse" />
                       <h2 className="text-2xl font-black text-on-background font-space">
                         Орчуулагч
                       </h2>
                     </div>
-                    <span className="text-[11px] font-space font-extrabold bg-surface text-purple-300 px-3 py-1 rounded-full border border-purple-500/20 uppercase tracking-widest">
+                    <span className="text-[11px] font-space font-extrabold bg-surface text-amber-300 px-3 py-1 rounded-full border border-amber-500/20 uppercase tracking-widest">
                       PRO
                     </span>
                   </div>
@@ -4132,7 +4132,7 @@ function LearnerApp() {
                       value={translationInput}
                       onChange={(e) => setTranslationInput(e.target.value)}
                       placeholder="Орчуулах герман эсвэл монгол өгүүлбэрээ энд бичнэ үү..."
-                      className="w-full min-h-[120px] bg-surface-container-low border-2 border-on-background font-bold rounded-xl p-4 text-md text-on-surface focus:border-purple-500 outline-none transition-all placeholder:text-outline resize-none shadow-inner"
+                      className="w-full min-h-[120px] bg-surface-container-low border-2 border-on-background font-bold rounded-xl p-4 text-md text-on-surface focus:border-amber-500 outline-none transition-all placeholder:text-outline resize-none shadow-inner"
                     />
                     {translationInput && (
                       <button 
@@ -4154,20 +4154,20 @@ function LearnerApp() {
                           setTranslationInput('Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche.');
                           translateText('Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche.');
                         }}
-                        className="text-left py-2 px-3 bg-surface-container border border-outline-variant rounded-lg hover:border-purple-400 text-xs font-semibold hover:bg-surface-container-high text-on-surface-variant transition-all flex justify-between items-center group cursor-pointer"
+                        className="text-left py-2 px-3 bg-surface-container border border-outline-variant rounded-lg hover:border-amber-400 text-xs font-semibold hover:bg-surface-container-high text-on-surface-variant transition-all flex justify-between items-center group cursor-pointer"
                       >
                         <span>🇩🇪 "Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche."</span>
-                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-purple-500" />
+                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-amber-500" />
                       </button>
                       <button 
                         onClick={() => {
                           setTranslationInput('Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална.');
                           translateText('Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална.');
                         }}
-                        className="text-left py-2 px-3 bg-surface-container border border-outline-variant rounded-lg hover:border-purple-400 text-xs font-semibold hover:bg-surface-container-high text-on-surface-variant transition-all flex justify-between items-center group cursor-pointer"
+                        className="text-left py-2 px-3 bg-surface-container border border-outline-variant rounded-lg hover:border-amber-400 text-xs font-semibold hover:bg-surface-container-high text-on-surface-variant transition-all flex justify-between items-center group cursor-pointer"
                       >
                         <span>🇲🇳 "Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална."</span>
-                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-purple-500" />
+                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-amber-500" />
                       </button>
                     </div>
                   </div>
@@ -4176,16 +4176,16 @@ function LearnerApp() {
                     <button 
                       onClick={() => translateText()}
                       disabled={translationLoading || !translationInput.trim()}
-                      className="px-6 py-3 border-2 border-on-background text-sm font-bold bg-surface text-purple-300 rounded-xl hover:bg-purple-950/20 transition-all cursor-pointer block-shadow flex items-center gap-2 border-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-3 border-2 border-on-background text-sm font-bold bg-surface text-amber-300 rounded-xl hover:bg-amber-950/20 transition-all cursor-pointer block-shadow flex items-center gap-2 border-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {translationLoading ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-purple-300 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 border-2 border-amber-300 border-t-transparent rounded-full animate-spin"></div>
                           Орчуулж байна...
                         </>
                       ) : (
                         <>
-                          <Sparkles className="w-4 h-4 fill-current text-purple-400" />
+                          <Sparkles className="w-4 h-4 fill-current text-amber-400" />
                           Нэгдсэн Орчуулга Хийх
                         </>
                       )}
@@ -4193,8 +4193,8 @@ function LearnerApp() {
                   </div>
 
                   {translationError && (
-                    <div className="mt-4 p-4 border border-rose-200 bg-rose-50 rounded-xl text-rose-700 text-xs font-bold leading-relaxed flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                    <div className="mt-4 p-4 border border-orange-200 bg-orange-50 rounded-xl text-orange-700 text-xs font-bold leading-relaxed flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-orange-500 shrink-0" />
                       <span>{translationError}</span>
                     </div>
                   )}
@@ -4208,8 +4208,8 @@ function LearnerApp() {
                 {translationLoading ? (
                   <div className="rounded-xl border-2 border-on-background p-8 block-shadow h-[400px] flex flex-col items-center justify-center text-center">
                     <div className="relative mb-6">
-                      <div className="w-16 h-16 border-4 border-purple-100 border-t-purple-500 rounded-full animate-spin"></div>
-                      <Sparkles className="w-6 h-6 text-purple-400 absolute inset-0 m-auto animate-pulse" />
+                      <div className="w-16 h-16 border-4 border-amber-100 border-t-amber-500 rounded-full animate-spin"></div>
+                      <Sparkles className="w-6 h-6 text-amber-400 absolute inset-0 m-auto animate-pulse" />
                     </div>
                     <h3 className="text-lg font-bold text-primary font-space mb-2">Герман Хэлний Үйлчилгээ</h3>
                     <p className="text-xs text-on-surface-variant max-w-xs leading-normal">
@@ -4222,7 +4222,7 @@ function LearnerApp() {
                     {/* Translation Core Card */}
                     <div className="rounded-xl border-2 border-on-background p-6 block-shadow">
                       <div className="flex justify-between items-center pb-3 border-b border-outline-variant mb-4">
-                        <span className="text-xs font-extrabold uppercase tracking-widest text-[#006c49] bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100">
+                        <span className="text-xs font-extrabold uppercase tracking-widest text-[#0c5440] bg-[#e7f7f0] px-2.5 py-1 rounded-md border border-[#bfe9da]">
                           Илэрсэн хэл: {translationResult.detectedLanguage === 'German' ? '🇩🇪 Герман' : '🇲🇳 Монгол'}
                         </span>
                         <div className="flex gap-2">
@@ -4256,7 +4256,7 @@ function LearnerApp() {
                       {translationResult.pronunciation && (
                         <div className="mb-1 p-3 bg-surface-container-low border border-outline-variant rounded-lg">
                           <p className="text-[10px] uppercase font-bold text-outline font-space tracking-wide mb-0.5">Унших удирдамж:</p>
-                          <code className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                          <code className="text-xs font-mono font-bold text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20">
                             {translationResult.pronunciation}
                           </code>
                         </div>
@@ -4265,7 +4265,7 @@ function LearnerApp() {
 
                     {/* Linguistic Grammar Explanation Card */}
                     <div className="rounded-xl border-2 border-on-background p-6 block-shadow">
-                      <h3 className="text-sm font-black text-purple-300 font-space mb-3 flex items-center gap-2">
+                      <h3 className="text-sm font-black text-amber-300 font-space mb-3 flex items-center gap-2">
                         <Lightbulb className="w-4 h-4 text-amber-500 fill-amber-300 animate-pulse" />
                         БҮТЭЦ & ДҮРМИЙН ТАЙЛБАР:
                       </h3>
@@ -4281,15 +4281,15 @@ function LearnerApp() {
                       </h3>
                       <div className="flex flex-col gap-3">
                         {translationResult.words && translationResult.words.map((w, index) => (
-                          <div key={index} className="flex flex-col gap-1 p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-xs hover:border-purple-400 transition-all">
+                          <div key={index} className="flex flex-col gap-1 p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-xs hover:border-amber-400 transition-all">
                             <div className="flex justify-between items-center">
                               <span className="font-extrabold text-on-surface">{w.word}</span>
-                              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-teal-100 text-teal-800">
                                 {w.partOfSpeech}
                               </span>
                             </div>
                             <div className="text-[11px] text-on-surface-variant flex justify-between mt-1">
-                              <span>Толь бичгийн хэлбэр: <strong className="text-purple-300">{w.baseForm}</strong></span>
+                              <span>Толь бичгийн хэлбэр: <strong className="text-amber-300">{w.baseForm}</strong></span>
                               <span>= <strong className="text-on-surface">{w.translation}</strong></span>
                             </div>
                             <p className="text-[10.5px] text-outline leading-normal mt-1 border-t border-dashed border-outline-variant pt-1">
@@ -4309,7 +4309,7 @@ function LearnerApp() {
                         <div className="space-y-3">
                           {translationResult.examples.map((ex, idx) => (
                             <div key={idx} className="p-3 bg-surface-container-low rounded-xl border border-outline-variant">
-                              <p className="text-xs font-bold text-purple-300">🇩🇪 {ex.german}</p>
+                              <p className="text-xs font-bold text-amber-300">🇩🇪 {ex.german}</p>
                               <p className="text-xs text-on-surface-variant mt-1">🇲🇳 {ex.mongolian}</p>
                             </div>
                           ))}
@@ -4320,8 +4320,8 @@ function LearnerApp() {
                   </div>
                 ) : (
                   <div className="rounded-xl border-2 border-on-background p-8 block-shadow h-[320px] flex flex-col items-center justify-center text-center relative overflow-hidden group">
-                    <div className="w-16 h-16 rounded-full bg-primary-container border border-purple-500/30 flex items-center justify-center text-purple-300 mb-4 transition-all group-hover:scale-110">
-                      <Languages className="w-8 h-8 text-purple-400" />
+                    <div className="w-16 h-16 rounded-full bg-primary-container border border-amber-500/30 flex items-center justify-center text-amber-300 mb-4 transition-all group-hover:scale-110">
+                      <Languages className="w-8 h-8 text-amber-400" />
                     </div>
                     <h3 className="text-lg font-bold text-primary font-space mb-2">Үгийн Шинжилгээ Ба Орчуулга</h3>
                     <p className="text-xs text-on-surface-variant max-w-xs leading-normal font-sans">
@@ -4341,7 +4341,7 @@ function LearnerApp() {
 
               {/* Header */}
               <div className="flex items-center gap-3 pb-4 border-b border-outline-variant mb-6 text-primary">
-                <GraduationCap className="w-8 h-8 text-yellow-400" />
+                <GraduationCap className="w-8 h-8 text-amber-400" />
                 <div>
                   <h2 className="text-2xl font-extrabold font-space text-on-surface">Шалгалт</h2>
                   <p className="text-xs text-on-surface-variant font-mono">CEFR түвшин (A1–C2) · Унших · Сонсох · Бичих · Ярих</p>
@@ -4353,15 +4353,15 @@ function LearnerApp() {
                 <>
                   {/* Түвшин тогтоох үнэлгээний тест — 4 ур чадвар, CEFR түвшин */}
                   <button onClick={() => setPlacementOpen(true)}
-                    className="w-full text-left mb-4 bg-gradient-to-br from-purple-600 to-blue-600 border-2 border-on-background rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
+                    className="w-full text-left mb-4 bg-gradient-to-br from-primary-container to-surface-variant border-2 border-on-background rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-xl bg-white/15 border-2 border-on-background flex items-center justify-center shrink-0">
-                        <Sparkles className="w-7 h-7 text-yellow-300" />
+                        <Sparkles className="w-7 h-7 text-amber-300" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-lg md:text-xl font-black font-space text-white">Түвшин тогтоох тест</h3>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-300 text-blue-900">Einstufungstest</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-300 text-teal-900">Einstufungstest</span>
                         </div>
                         <p className="text-xs text-white/85 leading-relaxed mt-1">Дөрвөн ур чадварыг бүгдийг шалгаад <b className="text-white">CEFR түвшнээ</b> (A1–C2) тогтоолгоно. Асуултууд таны түвшинд автоматаар тохирно. 10–15 минут.</p>
                         <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-white bg-white/15 border border-on-background px-3 py-1 rounded-full">Тест эхлүүлэх <ArrowRight className="w-3.5 h-3.5" /></span>
@@ -4371,15 +4371,15 @@ function LearnerApp() {
 
                   {/* TestDaF бүрэн загвар шалгалтын симуляци — Pro ба түүнээс дээш багцад. */}
                   <button onClick={() => fullContent ? setTestdafOpen(true) : setActiveTab('profile')}
-                    className="w-full text-left mb-6 bg-gradient-to-br from-violet-600 to-fuchsia-600 border-2 border-on-background rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
+                    className="w-full text-left mb-6 bg-gradient-to-br from-secondary-container to-surface-variant border-2 border-on-background rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-xl bg-white/15 border-2 border-on-background flex items-center justify-center shrink-0">
-                        <GraduationCap className="w-7 h-7 text-yellow-300" />
+                        <GraduationCap className="w-7 h-7 text-amber-300" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-lg md:text-xl font-black font-space text-white">TestDaF — Бүрэн загвар шалгалт</h3>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-300 text-violet-900">Prüfungssimulation</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-300 text-amber-900">Prüfungssimulation</span>
                         </div>
                         <p className="text-xs text-white/85 leading-relaxed mt-1">Жинхэнэ шалгалтын бүтэц: <b className="text-white">Унших</b> 60′/30, <b className="text-white">Сонсох</b> 40′/25, <b className="text-white">Бичих</b> 60′/график-эссэ, <b className="text-white">Ярих</b> 35′/7 ситуаци. Цаг хэмжсэн, дараалсан, AI үнэлгээтэй.</p>
                         <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-white bg-white/15 border border-on-background px-3 py-1 rounded-full">
@@ -4586,7 +4586,7 @@ function LearnerApp() {
                               <span className="text-[11px] text-on-surface-variant">{words} үг</span>
                               <button onClick={() => setExamItemReveal(v => !v)}
                                 className="px-4 py-2 bg-surface-container text-primary border-2 border-on-background rounded-lg font-bold text-xs cursor-pointer block-shadow hover:scale-[1.02] transition-transform flex items-center gap-1">
-                                <Lightbulb className="w-3.5 h-3.5 text-yellow-400 fill-current" /> {examItemReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
+                                <Lightbulb className="w-3.5 h-3.5 text-amber-400 fill-current" /> {examItemReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
                               </button>
                             </div>
                             {examItemReveal && (
@@ -4619,7 +4619,7 @@ function LearnerApp() {
                               </button>
                               <button onClick={() => setExamItemReveal(v => !v)}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-surface-container text-primary border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                                <Lightbulb className="w-4 h-4 text-yellow-400 fill-current" /> {examItemReveal ? 'Нуух' : 'Загвар хариулт харах'}
+                                <Lightbulb className="w-4 h-4 text-amber-400 fill-current" /> {examItemReveal ? 'Нуух' : 'Загвар хариулт харах'}
                               </button>
                             </div>
                             <div className="mb-2">
@@ -4992,11 +4992,11 @@ function LearnerApp() {
               <button 
                 onClick={() => selectTab('translate')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'translate' ? 'text-purple-400' : 'text-on-primary-container'
+                  activeTab === 'translate' ? 'text-amber-400' : 'text-on-primary-container'
                 }`}
               >
-                {activeTab === 'translate' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-purple-400 rounded-b-full text-purple-400"></div>}
-                <Sparkles className="w-5 h-5 text-purple-400" />
+                {activeTab === 'translate' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-amber-400 rounded-b-full text-amber-400"></div>}
+                <Sparkles className="w-5 h-5 text-amber-400" />
                 <span className="text-[10px] font-bold font-space">Орч</span>
               </button>
 
@@ -5007,7 +5007,7 @@ function LearnerApp() {
                 }`}
               >
                 {activeTab === 'exam' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full text-secondary-fixed"></div>}
-                <GraduationCap className="w-5 h-5 text-yellow-400" />
+                <GraduationCap className="w-5 h-5 text-amber-400" />
                 <span className="text-[10px] font-bold font-space">Сорил</span>
               </button>
 
@@ -5018,7 +5018,7 @@ function LearnerApp() {
                 }`}
               >
                 {activeTab === 'friends' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full"></div>}
-                <Swords className="w-5 h-5 text-purple-400" />
+                <Swords className="w-5 h-5 text-amber-400" />
                 <span className="text-[10px] font-bold font-space">Найз</span>
               </button>
             </div>

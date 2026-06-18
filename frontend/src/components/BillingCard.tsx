@@ -98,7 +98,7 @@ export function BillingCard({
       <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 block-shadow space-y-6">
         {/* Header: current plan */}
         <div className="flex flex-wrap items-center gap-3">
-          <span className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-300">
+          <span className="w-11 h-11 rounded-xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-300">
             <CreditCard className="w-5 h-5" />
           </span>
           <div>
@@ -117,7 +117,7 @@ export function BillingCard({
             founderAccess
               ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
               : userPlan !== 'free'
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                ? 'bg-teal-500/10 border-teal-500/30 text-teal-300'
                 : 'bg-white/5 border-white/10 text-slate-300'
           }`}>
             {founderAccess && <Crown className="w-3.5 h-3.5" />}
@@ -133,8 +133,8 @@ export function BillingCard({
 
         {/* Signup trial countdown — Pro access is temporary; show days left. */}
         {trialDaysLeft !== null && (
-          <div className="flex items-start gap-3 text-[12px] text-sky-100 bg-sky-500/10 border border-sky-400/30 rounded-xl p-3 font-semibold leading-relaxed">
-            <Clock className="w-4 h-4 shrink-0 mt-0.5 text-sky-300" />
+          <div className="flex items-start gap-3 text-[12px] text-teal-100 bg-teal-500/10 border border-teal-400/30 rounded-xl p-3 font-semibold leading-relaxed">
+            <Clock className="w-4 h-4 shrink-0 mt-0.5 text-teal-300" />
             <span>
               {trialDaysLeft > 0
                 ? <>Үнэгүй <b>{PLANS[userPlan as PlanId].name}</b> туршилт: бүх контент <b>{trialDaysLeft}</b> хоног нээлттэй. Туршилт дуусахад эрх үнэгүй багц руу шилжинэ — үргэлжлүүлэхийн тулд багцаа аваарай.</>
@@ -156,7 +156,7 @@ export function BillingCard({
               }`}
             >
               {iv === 'month' ? 'Сараар' : 'Жилээр'}
-              {iv === 'year' && <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px]">2 сар үнэгүй</span>}
+              {iv === 'year' && <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-teal-500/20 text-teal-300 text-[10px]">2 сар үнэгүй</span>}
             </button>
           ))}
         </div>
@@ -170,14 +170,14 @@ export function BillingCard({
             const highlight = id === 'max';
             return (
               <div key={id} className={`relative flex flex-col rounded-2xl p-5 border ${
-                highlight ? 'bg-purple-500/10 border-purple-400/40' : 'bg-slate-950/50 border-white/10'
-              } ${isCurrent ? 'ring-2 ring-emerald-400/60' : ''}`}>
+                highlight ? 'bg-amber-500/10 border-amber-400/40' : 'bg-slate-950/50 border-white/10'
+              } ${isCurrent ? 'ring-2 ring-teal-400/60' : ''}`}>
                 {highlight && (
-                  <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-purple-400 text-slate-950 uppercase">Хамгийн эрэлттэй</span>
+                  <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-slate-950 uppercase">Хамгийн эрэлттэй</span>
                 )}
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-base font-black text-white font-space">{info.name}</p>
-                  {isCurrent && <span className="text-[10px] font-black text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">ИДЭВХТЭЙ</span>}
+                  {isCurrent && <span className="text-[10px] font-black text-teal-300 bg-teal-500/10 border border-teal-500/30 px-2 py-0.5 rounded-full">ИДЭВХТЭЙ</span>}
                 </div>
                 <p className="text-[11px] text-slate-400 font-bold mb-3">{info.taglineMn}</p>
                 {/* Teacher-promo discount applies to paid plans on the first subscription. */}
@@ -186,7 +186,7 @@ export function BillingCard({
                     <p className="text-xl font-black text-white mb-1 flex items-baseline gap-2 flex-wrap">
                       <span className="text-[13px] text-slate-500 font-bold line-through decoration-red-400/70">{formatMnt(price)}</span>
                       {isFreeCode ? (
-                        <span className="text-emerald-300">Үнэгүй</span>
+                        <span className="text-teal-300">Үнэгүй</span>
                       ) : (
                         <span>
                           {formatMnt(applyPromoDiscount(price, promoPct))}
@@ -194,7 +194,7 @@ export function BillingCard({
                         </span>
                       )}
                     </p>
-                    <p className="text-[11px] text-emerald-300 font-bold mb-3">
+                    <p className="text-[11px] text-teal-300 font-bold mb-3">
                       {myPromo?.teacherName ? `${myPromo.teacherName}` : 'Урамшууллын код'} · {isFreeCode ? 'үнэгүй эрх' : `-${promoPct}% хямдрал`} · эхний төлбөрт
                     </p>
                   </>
@@ -205,7 +205,7 @@ export function BillingCard({
                       {price !== 0 && <span className="text-[11px] text-slate-400 font-bold"> / {billingInterval === 'year' ? 'жил' : 'сар'}</span>}
                     </p>
                     {price !== 0 && billingInterval === 'year' ? (
-                      <p className="text-[11px] text-emerald-300 font-bold mb-3">
+                      <p className="text-[11px] text-teal-300 font-bold mb-3">
                         ≈ {formatMnt(Math.round(price / 12))} / сар · {formatMnt(monthlyPriceMnt(id as 'pro' | 'max') * 12 - price)} хэмнэнэ
                       </p>
                     ) : (
@@ -216,7 +216,7 @@ export function BillingCard({
                 <ul className="space-y-1.5 mb-2">
                   {info.featuresMn.map((f, i) => (
                     <li key={i} className="flex items-start gap-2 text-[12px] text-slate-200 font-semibold">
-                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />{f}
+                      <Check className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />{f}
                     </li>
                   ))}
                 </ul>
@@ -240,8 +240,8 @@ export function BillingCard({
                       disabled={paymentActionLoading || isCurrent || founderAccess}
                       className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm cursor-pointer disabled:cursor-not-allowed transition-colors border ${
                         highlight
-                          ? 'bg-purple-400 hover:bg-purple-300 text-slate-950 border-purple-300/40 disabled:bg-white/10 disabled:text-slate-500'
-                          : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 border-emerald-300/40 disabled:bg-white/10 disabled:text-slate-500'
+                          ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-300/40 disabled:bg-white/10 disabled:text-slate-500'
+                          : 'bg-teal-500 hover:bg-teal-400 text-slate-950 border-teal-300/40 disabled:bg-white/10 disabled:text-slate-500'
                       }`}
                     >
                       {paymentActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
@@ -278,10 +278,10 @@ export function BillingCard({
           {paymentMessage && (
             <div className={`border rounded-xl p-3 text-[12px] font-bold leading-relaxed ${
               paymentMessage.type === 'success'
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                ? 'bg-teal-500/10 border-teal-500/30 text-teal-200'
                 : paymentMessage.type === 'error'
                   ? 'bg-red-500/10 border-red-500/30 text-red-200'
-                  : 'bg-blue-500/10 border-blue-500/30 text-blue-200'
+                  : 'bg-teal-500/10 border-teal-500/30 text-teal-200'
             }`}>
               {paymentMessage.text}
             </div>
@@ -300,7 +300,7 @@ export function BillingCard({
               <button
                 onClick={payDummyInvoice}
                 disabled={paymentStatusLoading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:bg-white/10 disabled:text-slate-500 text-slate-950 border border-emerald-300/40 rounded-xl font-black text-sm cursor-pointer disabled:cursor-not-allowed transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-teal-500 hover:bg-teal-400 disabled:bg-white/10 disabled:text-slate-500 text-slate-950 border border-teal-300/40 rounded-xl font-black text-sm cursor-pointer disabled:cursor-not-allowed transition-colors"
               >
                 {paymentStatusLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
                 Төлбөр төлөх (туршилт)
@@ -324,7 +324,7 @@ export function BillingCard({
                 href={bylCheckout.url}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 border border-emerald-300/40 rounded-xl font-black text-sm transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 border border-teal-300/40 rounded-xl font-black text-sm transition-colors"
               >
                 Төлбөрийн хуудас нээх <ExternalLink className="w-4 h-4" />
               </a>
@@ -333,7 +333,7 @@ export function BillingCard({
               </p>
 
               {/* Auto-confirmation status */}
-              <div className="flex items-center justify-center gap-2 text-[11px] text-emerald-300/90 font-bold">
+              <div className="flex items-center justify-center gap-2 text-[11px] text-teal-300/90 font-bold">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 Төлбөрийг автоматаар шалгаж байна — төлсний дараа эрх шууд идэвхжинэ.
               </div>
@@ -342,7 +342,7 @@ export function BillingCard({
                 <button
                   onClick={checkBylPaymentStatus}
                   disabled={paymentStatusLoading}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-400/30 rounded-xl text-xs font-black text-blue-200 disabled:opacity-60 cursor-pointer"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-teal-500/15 hover:bg-teal-500/25 border border-teal-400/30 rounded-xl text-xs font-black text-teal-200 disabled:opacity-60 cursor-pointer"
                 >
                   {paymentStatusLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Одоо шалгах
@@ -373,9 +373,9 @@ export function BillingCard({
           <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
             <p className="text-xs text-slate-400 font-black uppercase font-space">Урамшууллын код / Promo Code</p>
             {myPromo ? (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3.5 flex items-center justify-between gap-4">
+              <div className="bg-teal-500/10 border border-teal-500/20 rounded-xl p-3.5 flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs text-emerald-400 font-bold">Холбогдсон код: <span className="font-mono font-black tracking-wide text-emerald-300">{myPromo.code}</span></p>
+                  <p className="text-xs text-teal-400 font-bold">Холбогдсон код: <span className="font-mono font-black tracking-wide text-teal-300">{myPromo.code}</span></p>
                   <p className="text-[11px] text-slate-300 mt-1 font-semibold">
                     {myPromo.teacherName} · {myPromo.discountPercent}% хямдрал эхний захиалгад
                   </p>
@@ -383,7 +383,7 @@ export function BillingCard({
                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
                   myPromo.firstPaymentDone
                     ? 'bg-slate-500/10 border-slate-500/30 text-slate-400'
-                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 animate-pulse'
+                    : 'bg-teal-500/10 border-teal-500/30 text-teal-300 animate-pulse'
                 }`}>
                   {myPromo.firstPaymentDone ? 'АШИГЛАСАН' : 'ИДЭВХТЭЙ'}
                 </span>
@@ -397,7 +397,7 @@ export function BillingCard({
                     value={manualPromoCode}
                     onChange={(e) => setManualPromoCode(e.target.value.toUpperCase())}
                     disabled={manualPromoLoading}
-                    className="w-full bg-slate-900/60 border border-white/10 focus:border-purple-400 focus:outline-none rounded-xl px-4 py-2 text-xs text-white font-extrabold uppercase placeholder:normal-case font-space placeholder:text-slate-500"
+                    className="w-full bg-slate-900/60 border border-white/10 focus:border-amber-400 focus:outline-none rounded-xl px-4 py-2 text-xs text-white font-extrabold uppercase placeholder:normal-case font-space placeholder:text-slate-500"
                   />
                   {manualPromoError && (
                     <p className="text-[11px] text-red-300 bg-red-950/20 border border-red-500/20 rounded-lg px-2 py-1 mt-1 font-semibold">
@@ -408,7 +408,7 @@ export function BillingCard({
                 <button
                   type="submit"
                   disabled={manualPromoLoading || !manualPromoCode.trim()}
-                  className="bg-purple-500 hover:bg-purple-400 disabled:bg-white/10 disabled:text-slate-500 text-slate-950 px-5 py-2 rounded-xl text-xs font-black cursor-pointer disabled:cursor-not-allowed transition-colors border border-purple-300/40 disabled:border-transparent shrink-0 h-[38px] flex items-center justify-center"
+                  className="bg-amber-500 hover:bg-amber-400 disabled:bg-white/10 disabled:text-slate-500 text-slate-950 px-5 py-2 rounded-xl text-xs font-black cursor-pointer disabled:cursor-not-allowed transition-colors border border-amber-300/40 disabled:border-transparent shrink-0 h-[38px] flex items-center justify-center"
                 >
                   {manualPromoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Холбох'}
                 </button>
