@@ -480,6 +480,42 @@ export default function AdminDashboard() {
     };
   }, [analytics]);
 
+  // Historical signups reconstructed from each user doc's createdAt — this is
+  // real past data (the admin page already loads every user), so it works
+  // retroactively without any prior tracking. Lets us see the signup trend
+  // across the Jun 16 guest-mode launch instead of starting from today.
+  const signupHistory = useMemo(() => {
+    const dayKey = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() - offset);
+      return d.toISOString().slice(0, 10);
+    };
+    const counts = new Map<string, number>();
+    let undated = 0; // users created before createdAt was recorded
+    for (const c of customers) {
+      const created = parseDate(c.profile.createdAt);
+      if (!created) { undated += 1; continue; }
+      const key = created.toISOString().slice(0, 10);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    const series = Array.from({ length: 30 }, (_, i) => {
+      const date = dayKey(29 - i);
+      return { date, label: date.slice(5), signups: counts.get(date) ?? 0 };
+    });
+    const last7 = series.slice(-7).reduce((s, d) => s + d.signups, 0);
+    const prev7 = series.slice(-14, -7).reduce((s, d) => s + d.signups, 0);
+    return {
+      series,
+      maxSignups: Math.max(...series.map((s) => s.signups), 1),
+      last7,
+      prev7,
+      // Net change in weekly signups, the "are signups stuck?" number.
+      weekDeltaPct: prev7 > 0 ? Math.round(((last7 - prev7) / prev7) * 100) : null,
+      datedTotal: customers.length - undated,
+      undated,
+    };
+  }, [customers]);
+
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoginError('');
@@ -663,6 +699,50 @@ export default function AdminDashboard() {
               </div>
             </>
           )}
+        </section>
+
+        {/* Historical signups, rebuilt from user createdAt — real past data, no
+            prior tracking needed. Shows the trend across the guest-mode launch. */}
+        <section className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-black">Signups Over Time</h2>
+              <p className="text-xs text-slate-500 font-semibold">
+                Daily new accounts, last 30 days · reconstructed from existing user records
+              </p>
+            </div>
+            <UserPlus className="w-5 h-5 text-slate-400" />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <KpiCard label="Signups (7d)" value={String(signupHistory.last7)} detail={`${signupHistory.prev7} the previous 7 days`} icon={UserPlus} tone="bg-emerald-50 text-emerald-700" />
+            <KpiCard
+              label="Week-over-week"
+              value={signupHistory.weekDeltaPct === null ? '—' : `${signupHistory.weekDeltaPct > 0 ? '+' : ''}${signupHistory.weekDeltaPct}%`}
+              detail="change in weekly signups"
+              icon={TrendingUp}
+              tone={signupHistory.weekDeltaPct !== null && signupHistory.weekDeltaPct < 0 ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}
+            />
+            <KpiCard label="Total Accounts" value={String(metrics.totalCustomers)} detail={signupHistory.undated > 0 ? `${signupHistory.undated} predate signup-date tracking` : 'all have a signup date'} icon={Users} tone="bg-blue-50 text-blue-700" />
+          </div>
+
+          <div>
+            <p className="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">Daily signups · last 30 days</p>
+            <div className="h-40 flex items-end gap-1 border-b border-slate-200 pb-2">
+              {signupHistory.series.map((day) => (
+                <div key={day.date} className="flex-1 h-full flex flex-col justify-end items-center gap-1" title={`${day.date}: ${day.signups} signups`}>
+                  <div className="text-[9px] font-black text-slate-500">{day.signups || ''}</div>
+                  <div
+                    className="w-full rounded-t-md bg-emerald-600 min-h-[2px]"
+                    style={{ height: `${Math.max(2, (day.signups / signupHistory.maxSignups) * 120)}px` }}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] font-semibold text-slate-400">
+              Older accounts created before signup-date tracking aren&apos;t shown on the daily chart; they&apos;re counted in Total Accounts.
+            </p>
+          </div>
         </section>
 
         <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
