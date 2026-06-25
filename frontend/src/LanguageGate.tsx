@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import App from './App';
 import EnglishApp from '../../english/src/EnglishApp';
-import { saveTrackChoice } from './auth';
+import AccountScreen from './AccountScreen';
+import { saveTrackChoice, subscribeToAuthedProfile, logOutUser } from './auth';
+import { UserProfile } from './profiles';
 
 // localStorage key shared by both tracks. 'de' => German app, 'en' => English app.
 const TRACK_KEY = 'vivid-lingua-track';
+// Marks that the profile-first setup screen has been completed this login, so a
+// reload before picking a track doesn't show it again. Cleared by AuthGate on a
+// fresh interactive login so the next login shows it once.
+const SETUP_KEY = 'vivid-lingua-setup-done';
 type Track = 'de' | 'en';
 
 function isTrack(value: string | null): value is Track {
@@ -82,14 +89,41 @@ function Chooser({ onPick }: { onPick: (track: Track) => void }) {
 // Gate that decides which language track to render and persists the choice.
 export default function LanguageGate() {
   const [track, setTrack] = useState<Track | null>(null);
+  // Profile-first flow: after login, the account/settings screen is shown once
+  // before the language chooser. `setupDone` flips true after the user continues
+  // (or when a track is already persisted / they switch language), so it isn't
+  // shown again on every reload.
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileResolved, setProfileResolved] = useState(false);
+  const [setupDone, setSetupDone] = useState(false);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(TRACK_KEY);
-      if (isTrack(stored)) setTrack(stored);
+      // A persisted track means a returning session → skip the setup screen and
+      // resume straight into the track.
+      if (isTrack(stored)) { setTrack(stored); setSetupDone(true); }
+      // Or the setup screen was already completed this login (persisted so a
+      // reload before choosing a track doesn't re-show it).
+      else if (localStorage.getItem(SETUP_KEY) === '1') setSetupDone(true);
     } catch {
       /* localStorage unavailable — fall back to the chooser */
     }
+  }, []);
+
+  function completeSetup() {
+    try { localStorage.setItem(SETUP_KEY, '1'); } catch { /* ignore */ }
+    setSetupDone(true);
+  }
+
+  // Load the shared account profile for the setup/settings screen. Guests resolve
+  // to null and skip straight to the chooser.
+  useEffect(() => {
+    const unsub = subscribeToAuthedProfile((p) => {
+      setProfile(p);
+      setProfileResolved(true);
+    });
+    return unsub;
   }, []);
 
   function pick(next: Track) {
@@ -110,7 +144,32 @@ export default function LanguageGate() {
     } catch {
       /* ignore */
     }
+    // Switching language returns to the chooser, not the setup screen.
+    setSetupDone(true);
     setTrack(null);
+  }
+
+  // Profile-first: signed-in users see the account screen once before choosing a
+  // language. Guests (no account) and resolved-null profiles fall through.
+  if (!track && !setupDone) {
+    if (!profileResolved) {
+      return (
+        <div className="min-h-screen bg-ink text-paper font-sans flex items-center justify-center">
+          <Loader2 className="w-7 h-7 text-paper-2 animate-spin" />
+        </div>
+      );
+    }
+    if (profile && !profile.isGuest) {
+      return (
+        <AccountScreen
+          mode="setup"
+          profile={profile}
+          onSaved={setProfile}
+          onLogout={() => { void logOutUser(); }}
+          onContinue={completeSetup}
+        />
+      );
+    }
   }
 
   if (track === 'de') {

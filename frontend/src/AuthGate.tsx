@@ -24,6 +24,9 @@ const GUEST_KEY = 'vivid-lingua-guest';
 // the "What do you want to learn?" chooser instead of silently reopening the
 // last track (which made every login jump straight into German).
 const TRACK_KEY = 'vivid-lingua-track';
+// Cleared on a fresh interactive login so the profile-first setup screen shows
+// once per new login (LanguageGate persists it once completed).
+const SETUP_KEY = 'vivid-lingua-setup-done';
 
 function BrandLoader() {
   return (
@@ -78,9 +81,13 @@ function AuthFlow() {
         // A real session always wins over a lingering guest flag.
         try { localStorage.removeItem(GUEST_KEY); } catch { /* ignore */ }
         setGuest(false);
-        // Fresh, interactive sign-in → forget the last track so the chooser shows.
+        // Fresh, interactive sign-in → forget the last track (so the chooser
+        // shows) and the setup-done flag (so profile-first shows once).
         if (interactiveEntry.current) {
-          try { localStorage.removeItem(TRACK_KEY); } catch { /* ignore */ }
+          try {
+            localStorage.removeItem(TRACK_KEY);
+            localStorage.removeItem(SETUP_KEY);
+          } catch { /* ignore */ }
           interactiveEntry.current = false;
         }
       }
@@ -100,6 +107,7 @@ function AuthFlow() {
     try {
       localStorage.setItem(GUEST_KEY, '1');
       localStorage.removeItem(TRACK_KEY);
+      localStorage.removeItem(SETUP_KEY);
     } catch { /* ignore */ }
     setGuest(true);
   }

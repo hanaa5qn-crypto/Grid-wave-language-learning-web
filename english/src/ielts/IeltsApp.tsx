@@ -8,9 +8,10 @@
 // =============================================================================
 import React, { useState } from 'react';
 import {
-  Home, BookOpen, Headphones, Edit3, Mic, BookA, ClipboardList,
-  ArrowLeft, Globe,
+  LayoutDashboard, Home, BookOpen, Headphones, Edit3, Mic, BookA, ClipboardList,
+  ArrowLeft, Globe, LogOut,
 } from 'lucide-react';
+import { useEnglishStats } from '../stats';
 import IeltsHomeTab, { IeltsTabKey } from './tabs/IeltsHomeTab';
 import IeltsReadingTab from './tabs/IeltsReadingTab';
 import IeltsListeningTab from './tabs/IeltsListeningTab';
@@ -18,6 +19,7 @@ import IeltsWritingTab from './tabs/IeltsWritingTab';
 import IeltsSpeakingTab from './tabs/IeltsSpeakingTab';
 import IeltsVocabTab from './tabs/IeltsVocabTab';
 import IeltsTestsTab from './tabs/IeltsTestsTab';
+import DashboardTab from '../DashboardTab';
 
 // Brand mark — mirrors the EnglishApp chooser logo so the tracks feel unified.
 function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
@@ -36,6 +38,7 @@ function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
 }
 
 const TABS: { key: IeltsTabKey; label: string; icon: React.ElementType }[] = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'home', label: 'Home', icon: Home },
   { key: 'reading', label: 'Reading', icon: BookOpen },
   { key: 'listening', label: 'Listening', icon: Headphones },
@@ -52,10 +55,12 @@ export default function IeltsApp({
   onBack: () => void;
   onSwitchLanguage?: () => void;
 }) {
-  const [tab, setTab] = useState<IeltsTabKey>('home');
+  const { logout } = useEnglishStats();
+  const [tab, setTab] = useState<IeltsTabKey>('dashboard');
 
   function renderTab() {
     switch (tab) {
+      case 'dashboard': return <DashboardTab />;
       case 'home': return <IeltsHomeTab onGo={setTab} />;
       case 'reading': return <IeltsReadingTab />;
       case 'listening': return <IeltsListeningTab />;
@@ -93,6 +98,12 @@ export default function IeltsApp({
                 <Globe className="w-4 h-4" /> <span className="hidden sm:inline">Switch language</span>
               </button>
             )}
+            <button
+              onClick={logout}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-paper-2 hover:text-paper"
+            >
+              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Гарах</span>
+            </button>
           </div>
         </div>
 

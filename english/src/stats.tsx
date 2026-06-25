@@ -15,9 +15,10 @@
 import React, {
   createContext, useCallback, useContext, useEffect, useRef, useState,
 } from 'react';
-import { subscribeToAuthedProfile, saveProfileProgress } from '../../frontend/src/auth';
+import { subscribeToAuthedProfile, saveProfileProgress, logOutUser } from '../../frontend/src/auth';
 import { calculateStreakWithGrace, localDateKey } from '../../frontend/src/learning';
 import type { UserProfile } from '../../frontend/src/profiles';
+import AccountScreen from '../../frontend/src/AccountScreen';
 
 // Mirrors the German app's tracker tuning (App.tsx).
 const ACTIVE_IDLE_LIMIT_MS = 2 * 60 * 1000; // stop counting after 2 min idle
@@ -35,6 +36,12 @@ export interface EnglishStats {
   enabled: boolean;
   /** Mark today as studied after an English activity (adds today to studyDaysEn). */
   recordStudy: () => void;
+  /** Push a profile edit (from the settings screen) into the provider's state. */
+  applyProfile: (next: UserProfile) => void;
+  /** Open the shared account/settings overlay (from the dashboard). */
+  openSettings: () => void;
+  /** Log out (or exit guest mode) — returns to the top-level hero/login. */
+  logout: () => void;
 }
 
 const StatsContext = createContext<EnglishStats>({
@@ -43,17 +50,35 @@ const StatsContext = createContext<EnglishStats>({
   loading: true,
   enabled: false,
   recordStudy: () => {},
+  applyProfile: () => {},
+  openSettings: () => {},
+  logout: () => {},
 });
+
+// Shared with AuthGate — the localStorage flag that marks a guest session.
+const GUEST_KEY = 'vivid-lingua-guest';
 
 export function useEnglishStats(): EnglishStats {
   return useContext(StatsContext);
 }
 
-export function EnglishStatsProvider({ children }: { children: React.ReactNode }) {
+export function EnglishStatsProvider({
+  children,
+  onSwitchLanguage,
+}: {
+  children: React.ReactNode;
+  onSwitchLanguage?: () => void;
+}) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const profileRef = useRef<UserProfile | null>(null);
+  // Mirror settingsOpen into a ref so the study-time interval can pause while the
+  // settings overlay is up (time on the settings screen is not study time —
+  // matches the German tracker excluding non-study tabs).
+  const settingsOpenRef = useRef(false);
+  useEffect(() => { settingsOpenRef.current = settingsOpen; }, [settingsOpen]);
   const lastInteractionRef = useRef<number>(Date.now());
   const pendingSaveSecondsRef = useRef<number>(0);
 
@@ -149,7 +174,7 @@ export function EnglishStatsProvider({ children }: { children: React.ReactNode }
       lastTick = now;
       const visible = document.visibilityState === 'visible';
       const recentlyActive = now - lastInteractionRef.current <= ACTIVE_IDLE_LIMIT_MS;
-      if (!visible || !recentlyActive || !canTrack(profileRef.current)) return;
+      if (!visible || !recentlyActive || settingsOpenRef.current || !canTrack(profileRef.current)) return;
       recordStudySeconds(elapsed);
     }, TICK_MS);
 
@@ -173,13 +198,53 @@ export function EnglishStatsProvider({ children }: { children: React.ReactNode }
   // German streak (profile.studyDays / profile.streak).
   const streak = calculateStreakWithGrace(profile?.studyDaysEn ?? []).streak;
 
+  // Sync the provider after a settings save (saveProfileProgress doesn't re-fire
+  // the auth listener, so the provider's copy would otherwise go stale).
+  const applyProfile = useCallback((next: UserProfile) => {
+    profileRef.current = next;
+    setProfile(next);
+  }, []);
+
+  const openSettings = useCallback(() => setSettingsOpen(true), []);
+
+  // Mirrors the German logout: a guest (no Firebase session) clears its flag and
+  // reloads so the top-level AuthGate returns to the hero/login; a signed-in user
+  // signs out and the auth listener tears the session down.
+  const logout = useCallback(() => {
+    const p = profileRef.current;
+    if (!p || p.isGuest) {
+      try { localStorage.removeItem(GUEST_KEY); } catch { /* ignore */ }
+      window.location.reload();
+      return;
+    }
+    logOutUser().catch((err) => console.warn('Sign out failed:', err));
+  }, []);
+
   const value: EnglishStats = {
     profile,
     streak,
     loading,
     enabled: canTrack(profile),
     recordStudy,
+    applyProfile,
+    openSettings,
+    logout,
   };
 
-  return <StatsContext.Provider value={value}>{children}</StatsContext.Provider>;
+  return (
+    <StatsContext.Provider value={value}>
+      {settingsOpen && profile ? (
+        <AccountScreen
+          mode="settings"
+          profile={profile}
+          onSaved={applyProfile}
+          onLogout={logout}
+          onSwitchLanguage={onSwitchLanguage}
+          onClose={() => setSettingsOpen(false)}
+        />
+      ) : (
+        children
+      )}
+    </StatsContext.Provider>
+  );
 }

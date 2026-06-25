@@ -10,11 +10,9 @@ import {
   BookOpen, Headphones, Edit3, Mic, BookA, ClipboardList,
   GraduationCap, Award, ArrowRight,
 } from 'lucide-react';
-import StreakLeaderboard from '../../StreakLeaderboard';
-
 // Tab keys the home cards can navigate to (mirrors the shell's tab union).
 export type IeltsTabKey =
-  | 'home' | 'reading' | 'listening' | 'writing' | 'speaking' | 'vocab' | 'tests';
+  | 'dashboard' | 'home' | 'reading' | 'listening' | 'writing' | 'speaking' | 'vocab' | 'tests';
 
 const SKILLS: { icon: React.ElementType; name: string; mn: string; detail: string }[] = [
   { icon: BookOpen, name: 'Reading', mn: 'Унших', detail: '60 минут · 3 эх бичвэр · 40 асуулт' },
@@ -35,8 +33,6 @@ const QUICK: { tab: IeltsTabKey; icon: React.ElementType; title: string; mn: str
 export default function IeltsHomeTab({ onGo }: { onGo: (tab: IeltsTabKey) => void }) {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-10">
-      <StreakLeaderboard />
-
       <section className="rounded-3xl bg-ink-raise p-7 sm:p-9">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-ink-2 text-paper px-3 py-1 text-xs font-bold">
           <GraduationCap className="w-4 h-4" /> IELTS бэлтгэл

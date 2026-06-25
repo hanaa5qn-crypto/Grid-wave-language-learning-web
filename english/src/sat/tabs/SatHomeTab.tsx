@@ -12,7 +12,6 @@ import {
   Layers, ArrowRight,
 } from 'lucide-react';
 import { SatTabKey } from '../SatApp';
-import StreakLeaderboard from '../../StreakLeaderboard';
 
 const SECTIONS: {
   icon: React.ElementType;
@@ -47,8 +46,6 @@ const QUICK: { tab: SatTabKey; icon: React.ElementType; title: string; mn: strin
 export default function SatHomeTab({ onGo }: { onGo: (tab: SatTabKey) => void }) {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-10">
-      <StreakLeaderboard />
-
       <section className="rounded-3xl bg-ink-raise p-7 sm:p-9">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-ink-2 text-paper px-3 py-1 text-xs font-bold">
           <GraduationCap className="w-4 h-4" /> Digital SAT бэлтгэл

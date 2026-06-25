@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { GraduationCap, Globe, BookMarked, Sigma, ArrowRight } from 'lucide-react';
+import { GraduationCap, Globe, BookMarked, Sigma, ArrowRight, LogOut } from 'lucide-react';
 import IeltsApp from './ielts/IeltsApp';
 import SatApp from './sat/SatApp';
-import { EnglishStatsProvider } from './stats';
+import { EnglishStatsProvider, useEnglishStats } from './stats';
 
 // Brand mark — matches the German track's logo so the tracks feel like one product.
 function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
@@ -29,6 +29,7 @@ function isExam(v: string | null): v is Exam {
 }
 
 function ExamChooser({ onPick, onSwitchLanguage }: { onPick: (e: Exam) => void; onSwitchLanguage?: () => void }) {
+  const { logout } = useEnglishStats();
   return (
     <div className="min-h-screen bg-ink text-paper font-sans flex flex-col">
       <header className="border-b border-ink-line/50">
@@ -38,11 +39,16 @@ function ExamChooser({ onPick, onSwitchLanguage }: { onPick: (e: Exam) => void; 
             <span><span className="text-paper">Vivid</span> Lingua</span>
             <span className="ml-2 text-xs font-semibold rounded-full bg-ink-2 text-paper px-2 py-0.5">English</span>
           </div>
-          {onSwitchLanguage && (
-            <button onClick={onSwitchLanguage} className="inline-flex items-center gap-2 text-sm text-paper-2 hover:text-paper">
-              <Globe className="w-4 h-4" /> Switch language
+          <div className="flex items-center gap-3">
+            {onSwitchLanguage && (
+              <button onClick={onSwitchLanguage} className="inline-flex items-center gap-2 text-sm text-paper-2 hover:text-paper">
+                <Globe className="w-4 h-4" /> <span className="hidden sm:inline">Switch language</span>
+              </button>
+            )}
+            <button onClick={logout} className="inline-flex items-center gap-2 text-sm text-paper-2 hover:text-paper">
+              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Гарах</span>
             </button>
-          )}
+          </div>
         </div>
       </header>
 
@@ -119,7 +125,7 @@ export default function EnglishApp({ onSwitchLanguage }: { onSwitchLanguage?: ()
   // time tracker run the whole time the English track is open (mirrors how the
   // German App tracks study while it is mounted), against the shared profile.
   return (
-    <EnglishStatsProvider>
+    <EnglishStatsProvider onSwitchLanguage={onSwitchLanguage}>
       {exam === 'ielts'
         ? <IeltsApp onBack={back} onSwitchLanguage={onSwitchLanguage} />
         : exam === 'sat'

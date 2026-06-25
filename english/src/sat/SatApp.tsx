@@ -8,16 +8,18 @@
 // =============================================================================
 import React, { useState } from 'react';
 import {
-  Home, BookOpen, Sigma, BookA, ClipboardList, ArrowLeft, Globe,
+  LayoutDashboard, Home, BookOpen, Sigma, BookA, ClipboardList, ArrowLeft, Globe, LogOut,
 } from 'lucide-react';
+import { useEnglishStats } from '../stats';
 import SatHomeTab from './tabs/SatHomeTab';
 import SatReadingWritingTab from './tabs/SatReadingWritingTab';
 import SatMathTab from './tabs/SatMathTab';
 import SatVocabTab from './tabs/SatVocabTab';
 import SatTestsTab from './tabs/SatTestsTab';
+import DashboardTab from '../DashboardTab';
 
 // Tab keys the shell and home cards share (mirrors IELTS's IeltsTabKey).
-export type SatTabKey = 'home' | 'rw' | 'math' | 'vocab' | 'tests';
+export type SatTabKey = 'dashboard' | 'home' | 'rw' | 'math' | 'vocab' | 'tests';
 
 // Brand mark — mirrors the EnglishApp chooser logo so the tracks feel unified.
 function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
@@ -36,6 +38,7 @@ function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
 }
 
 const TABS: { key: SatTabKey; label: string; icon: React.ElementType }[] = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'home', label: 'Home', icon: Home },
   { key: 'rw', label: 'Reading & Writing', icon: BookOpen },
   { key: 'math', label: 'Math', icon: Sigma },
@@ -50,10 +53,12 @@ export default function SatApp({
   onBack: () => void;
   onSwitchLanguage?: () => void;
 }) {
-  const [tab, setTab] = useState<SatTabKey>('home');
+  const { logout } = useEnglishStats();
+  const [tab, setTab] = useState<SatTabKey>('dashboard');
 
   function renderTab() {
     switch (tab) {
+      case 'dashboard': return <DashboardTab />;
       case 'home': return <SatHomeTab onGo={setTab} />;
       case 'rw': return <SatReadingWritingTab />;
       case 'math': return <SatMathTab />;
@@ -89,6 +94,12 @@ export default function SatApp({
                 <Globe className="w-4 h-4" /> <span className="hidden sm:inline">Switch language</span>
               </button>
             )}
+            <button
+              onClick={logout}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-paper-2 hover:text-paper"
+            >
+              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Гарах</span>
+            </button>
           </div>
         </div>
 
