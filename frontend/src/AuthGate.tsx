@@ -5,6 +5,7 @@ import { getAuthInstance, isFirebaseConfigured } from './firebase';
 import LanguageGate from './LanguageGate';
 import LoginScreen from './LoginScreen';
 import HeroPage from './HeroPage';
+import AdminDashboard from './AdminDashboard';
 
 // Login comes first — before the user picks a language. Once they're signed in
 // (or chose to continue as a guest), we hand off to LanguageGate, which renders
@@ -32,7 +33,21 @@ function BrandLoader() {
   );
 }
 
+// /admin (+ /admin/english, /admin/german) must reach the dashboard for anyone —
+// it has its own Firebase admin login. Check the path before the auth flow so
+// the route isn't swallowed by the signed-out hero / login screen.
 export default function AuthGate() {
+  const path = window.location.pathname;
+  if (path.startsWith('/admin')) {
+    const track = path.startsWith('/admin/english') ? 'en'
+      : path.startsWith('/admin/german') ? 'de'
+      : undefined;
+    return <AdminDashboard track={track} />;
+  }
+  return <AuthFlow />;
+}
+
+function AuthFlow() {
   // `ready` flips true after the first auth callback so we don't flash the login
   // screen at a user whose saved session is still being restored.
   const [ready, setReady] = useState(false);

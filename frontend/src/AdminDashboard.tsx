@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Component, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
 import {
   Activity, AlertCircle, BarChart3, Clock, CreditCard, DollarSign,
   Flame, Gift, GraduationCap, Loader2, LogOut, Plus, RefreshCw, Search, ShieldCheck,
@@ -33,6 +33,16 @@ import {
 
 const ADMIN_EMAILS = ['hanaa5qn@gmail.com', 'yubndaayubnda@gmail.com'];
 
+// Track scope for the dashboard. undefined = all customers; 'en'/'de' restrict
+// to one learning track via the profile's `track` field.
+type Track = 'en' | 'de';
+const TRACK_NAV: { key: Track | 'all'; label: string; path: string }[] = [
+  { key: 'all', label: 'All', path: '/admin' },
+  { key: 'en', label: 'English', path: '/admin/english' },
+  { key: 'de', label: 'German', path: '/admin/german' },
+];
+const TRACK_TITLE: Record<Track, string> = { en: 'English', de: 'German' };
+
 interface CustomerRow {
   id: string;
   profile: UserProfile;
@@ -65,11 +75,19 @@ function formatDate(value: unknown): string {
 }
 
 function formatMoney(cents: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(cents / 100);
+  const amount = (Number.isFinite(cents) ? cents : 0) / 100;
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    // A non-ISO currency code in the data (e.g. the symbol '₮' instead of 'MNT')
+    // makes Intl.NumberFormat throw RangeError — which, with no error boundary,
+    // used to blank the whole dashboard. Degrade to a plain amount + raw code.
+    return `${Math.round(amount).toLocaleString()} ${currency}`.trim();
+  }
 }
 
 // Багшийн комисс/хямдрал бүгд төгрөгөөр: cents → ₮.
@@ -168,7 +186,57 @@ function KpiCard({
   );
 }
 
-export default function AdminDashboard() {
+// A render crash anywhere in the dashboard (e.g. one malformed Firestore record)
+// would otherwise unmount the whole tree and leave a blank dark screen with no
+// clue why. This catches it and shows the actual error instead.
+interface BoundaryProps { children: ReactNode }
+interface BoundaryState { error: Error | null }
+class DashboardErrorBoundary extends Component<BoundaryProps, BoundaryState> {
+  // `declare` refines the inherited members for the type-checker without
+  // re-emitting fields (React types aren't fully resolved in this project).
+  declare props: BoundaryProps;
+  state: BoundaryState = { error: null };
+  static getDerivedStateFromError(error: Error): BoundaryState {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Admin dashboard render crashed:', error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="min-h-screen bg-ink text-paper flex items-center justify-center p-6">
+          <div className="w-full max-w-lg bg-ink-raise border border-ink-line rounded-2xl p-6">
+            <div className="flex items-center gap-2 text-paper">
+              <AlertCircle className="w-5 h-5 shrink-0" />
+              <h1 className="text-lg font-serif font-light tracking-tight">Dashboard hit an error</h1>
+            </div>
+            <p className="mt-3 text-xs font-mono text-paper-2 break-words whitespace-pre-wrap">
+              {this.state.error.message}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-5 px-5 py-2.5 bg-paper text-ink rounded-full text-xs font-medium uppercase tracking-[0.15em] hover:bg-white transition-colors"
+            >
+              Reload
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function AdminDashboard(props: { track?: Track } = {}) {
+  return (
+    <DashboardErrorBoundary>
+      <AdminDashboardInner {...props} />
+    </DashboardErrorBoundary>
+  );
+}
+
+function AdminDashboardInner({ track }: { track?: Track } = {}) {
   const [authUser, setAuthUser] = useState<FirebaseUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [email, setEmail] = useState('');
@@ -253,7 +321,10 @@ export default function AdminDashboard() {
         adminListTeacherCodes(),
         getDocs(collection(db, 'commissions')).catch(() => null),
       ]);
-      setTeacherCodes(codesResult.codes);
+      // The teacher-codes API can resolve to {} when the backend is unreachable
+      // (e.g. the Vite-only dev server, which SPA-falls-back to index.html with a
+      // 200), leaving `.codes` undefined — guard so the render never maps over it.
+      setTeacherCodes(Array.isArray(codesResult.codes) ? codesResult.codes : []);
       setCommissions(commissionSnap ? commissionSnap.docs.map((doc) => doc.data() as CommissionRecord) : []);
     } catch (err) {
       console.error('Teacher codes load failed:', err);
@@ -330,21 +401,33 @@ export default function AdminDashboard() {
     }
   };
 
+  // When a track view is active (/admin/english or /admin/german), restrict the
+  // customer set to that track via the profile `track` field. Payments and
+  // traffic analytics come from collections that aren't tagged by track, so a
+  // track view reads them as empty (no cross-track leakage) until tagging is
+  // wired up. Bare /admin (track === undefined) shows everything, unchanged.
+  const scopedCustomers = useMemo(
+    () => (track ? customers.filter((c) => c.profile.track === track) : customers),
+    [customers, track],
+  );
+  const scopedPayments = useMemo(() => (track ? [] : payments), [payments, track]);
+  const scopedAnalytics = useMemo(() => (track ? [] : analytics), [analytics, track]);
+
   const metrics = useMemo(() => {
-    const totalCustomers = customers.length;
-    const active7d = customers.filter((c) => isRecent(c.profile.lastActiveAt, 7)).length;
-    const active30d = customers.filter((c) => isRecent(c.profile.lastActiveAt, 30)).length;
+    const totalCustomers = scopedCustomers.length;
+    const active7d = scopedCustomers.filter((c) => isRecent(c.profile.lastActiveAt, 7)).length;
+    const active30d = scopedCustomers.filter((c) => isRecent(c.profile.lastActiveAt, 30)).length;
     const avgProgress = totalCustomers
-      ? Math.round(customers.reduce((sum, c) => sum + (c.profile.progress ?? 0), 0) / totalCustomers)
+      ? Math.round(scopedCustomers.reduce((sum, c) => sum + (c.profile.progress ?? 0), 0) / totalCustomers)
       : 0;
     const avgStudyHours = totalCustomers
-      ? customers.reduce((sum, c) => sum + totalStudyHours(c.profile), 0) / totalCustomers
+      ? scopedCustomers.reduce((sum, c) => sum + totalStudyHours(c.profile), 0) / totalCustomers
       : 0;
-    const paidPayments = payments.filter(isPaidPayment);
-    const currency = paidPayments[0]?.currency ?? customers.find((c) => c.profile.billing?.currency)?.profile.billing?.currency ?? 'USD';
+    const paidPayments = scopedPayments.filter(isPaidPayment);
+    const currency = paidPayments[0]?.currency ?? scopedCustomers.find((c) => c.profile.billing?.currency)?.profile.billing?.currency ?? 'USD';
     const grossRevenueCents = paidPayments.reduce((sum, p) => sum + paymentAmountCents(p), 0);
-    const mrrCents = customers.reduce((sum, c) => sum + monthlyValueCents(c.profile), 0);
-    const paidCustomers = customers.filter((c) => monthlyValueCents(c.profile) > 0 || lifetimeValueCents(c.profile) > 0).length;
+    const mrrCents = scopedCustomers.reduce((sum, c) => sum + monthlyValueCents(c.profile), 0);
+    const paidCustomers = scopedCustomers.filter((c) => monthlyValueCents(c.profile) > 0 || lifetimeValueCents(c.profile) > 0).length;
     const arpuCents = paidCustomers ? Math.round(grossRevenueCents / paidCustomers) : 0;
 
     const revenueMonths = lastMonthKeys(6);
@@ -369,35 +452,35 @@ export default function AdminDashboard() {
       currency,
       revenueByMonth,
     };
-  }, [customers, payments]);
+  }, [scopedCustomers, scopedPayments]);
 
   const filteredCustomers = useMemo(() => {
     const query = queryText.trim().toLowerCase();
-    if (!query) return customers;
-    return customers.filter(({ profile }) => (
-      profile.name.toLowerCase().includes(query) ||
-      profile.email.toLowerCase().includes(query) ||
-      profile.targetLevel.toLowerCase().includes(query) ||
+    if (!query) return scopedCustomers;
+    return scopedCustomers.filter(({ profile }) => (
+      (profile.name ?? '').toLowerCase().includes(query) ||
+      (profile.email ?? '').toLowerCase().includes(query) ||
+      (profile.targetLevel ?? '').toLowerCase().includes(query) ||
       (profile.billing?.plan ?? '').toLowerCase().includes(query)
     ));
-  }, [customers, queryText]);
+  }, [scopedCustomers, queryText]);
 
   const topCustomers = useMemo(() => {
-    return [...customers]
+    return [...scopedCustomers]
       .sort((a, b) => (b.profile.progress ?? 0) - (a.profile.progress ?? 0))
       .slice(0, 5);
-  }, [customers]);
+  }, [scopedCustomers]);
 
   // Everyone on a 3-day free Pro trial, with the reason (new signup vs invited).
   // Active (still has access) first, then by soonest expiry.
   const trialUsers = useMemo(() => {
-    const rows = customers
+    const rows = scopedCustomers
       .map(({ id, profile }) => ({ id, profile, trial: trialInfo(profile) }))
       .filter((row): row is { id: string; profile: UserProfile; trial: TrialInfo } => row.trial !== null);
     rows.sort((a, b) =>
       Number(b.trial.active) - Number(a.trial.active) || a.trial.daysLeft - b.trial.daysLeft);
     return rows;
-  }, [customers]);
+  }, [scopedCustomers]);
 
   const trialSummary = useMemo(() => {
     const active = trialUsers.filter((r) => r.trial.active);
@@ -412,13 +495,13 @@ export default function AdminDashboard() {
   // Everyone who bought full access or redeemed a promo code. Paying customers
   // first (highest lifetime value), then promo-only redeemers.
   const paidPromoUsers = useMemo(() => {
-    const rows = customers
+    const rows = scopedCustomers
       .map(({ id, profile }) => ({ id, profile, info: paidPromoInfo(profile) }))
       .filter((row): row is { id: string; profile: UserProfile; info: PaidPromoInfo } => row.info !== null);
     rows.sort((a, b) =>
       Number(b.info.paid) - Number(a.info.paid) || b.info.ltvCents - a.info.ltvCents);
     return rows;
-  }, [customers]);
+  }, [scopedCustomers]);
 
   const paidPromoSummary = useMemo(() => ({
     paid: paidPromoUsers.filter((r) => r.info.paid).length,
@@ -439,7 +522,7 @@ export default function AdminDashboard() {
 
   // Traffic + signup-funnel rollups from the per-day analytics counters.
   const traffic = useMemo(() => {
-    const byDate = new Map<string, AnalyticsDay>(analytics.map((d) => [d.date, d] as const));
+    const byDate = new Map<string, AnalyticsDay>(scopedAnalytics.map((d) => [d.date, d] as const));
     const dayKey = (offset: number) => {
       const d = new Date();
       d.setUTCDate(d.getUTCDate() - offset);
@@ -456,15 +539,15 @@ export default function AdminDashboard() {
 
     const sumSince = (days: number, field: keyof AnalyticsDay) => {
       const cutoff = dayKey(days - 1);
-      return analytics.reduce((sum, d) => (d.date >= cutoff ? sum + (d[field] as number) : sum), 0);
+      return scopedAnalytics.reduce((sum, d) => (d.date >= cutoff ? sum + (d[field] as number) : sum), 0);
     };
     const total = (field: keyof AnalyticsDay) =>
-      analytics.reduce((sum, d) => sum + (d[field] as number), 0);
+      scopedAnalytics.reduce((sum, d) => sum + (d[field] as number), 0);
 
     const visitorsTotal = total('visitors');
     const signupsTotal = total('signups');
     return {
-      hasData: analytics.length > 0,
+      hasData: scopedAnalytics.length > 0,
       visitorsToday: byDate.get(todayStr)?.visitors ?? 0,
       visitors7d: sumSince(7, 'visitors'),
       visitors30d: sumSince(30, 'visitors'),
@@ -478,7 +561,7 @@ export default function AdminDashboard() {
       series,
       maxVisitors: Math.max(...series.map((s) => s.visitors), 1),
     };
-  }, [analytics]);
+  }, [scopedAnalytics]);
 
   // Historical signups reconstructed from each user doc's createdAt — this is
   // real past data (the admin page already loads every user), so it works
@@ -492,7 +575,7 @@ export default function AdminDashboard() {
     };
     const counts = new Map<string, number>();
     let undated = 0; // users created before createdAt was recorded
-    for (const c of customers) {
+    for (const c of scopedCustomers) {
       const created = parseDate(c.profile.createdAt);
       if (!created) { undated += 1; continue; }
       const key = created.toISOString().slice(0, 10);
@@ -511,10 +594,10 @@ export default function AdminDashboard() {
       prev7,
       // Net change in weekly signups, the "are signups stuck?" number.
       weekDeltaPct: prev7 > 0 ? Math.round(((last7 - prev7) / prev7) * 100) : null,
-      datedTotal: customers.length - undated,
+      datedTotal: scopedCustomers.length - undated,
       undated,
     };
-  }, [customers]);
+  }, [scopedCustomers]);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -596,9 +679,30 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-paper-3">Vivid Lingua Admin</p>
-            <h1 className="text-2xl font-serif font-light tracking-tight text-paper">Business Dashboard</h1>
+            <h1 className="text-2xl font-serif font-light tracking-tight text-paper">
+              {track ? `${TRACK_TITLE[track]} Dashboard` : 'Business Dashboard'}
+            </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {/* Switch the dashboard between all customers and one track. Each
+                opens its own page (/admin, /admin/english, /admin/german). */}
+            <div className="inline-flex items-center rounded-full border border-ink-line bg-ink-raise p-0.5">
+              {TRACK_NAV.map((t) => {
+                const active = (t.key === 'all' && !track) || t.key === track;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => { if (!active) window.location.assign(t.path); }}
+                    aria-current={active ? 'page' : undefined}
+                    className={`px-4 py-1.5 rounded-full text-xs font-medium uppercase tracking-[0.15em] transition-colors ${
+                      active ? 'bg-paper text-ink' : 'text-paper-2 hover:text-paper'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
             <button
               onClick={loadDashboard}
               disabled={loading}

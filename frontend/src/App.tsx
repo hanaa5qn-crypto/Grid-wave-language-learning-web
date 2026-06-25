@@ -213,7 +213,14 @@ function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
 
 export default function App() {
   const path = window.location.pathname;
-  if (path.startsWith('/admin')) return <AdminDashboard />;
+  if (path.startsWith('/admin')) {
+    // /admin/english and /admin/german open the same dashboard scoped to one
+    // track; bare /admin shows everyone.
+    const track = path.startsWith('/admin/english') ? 'en'
+      : path.startsWith('/admin/german') ? 'de'
+      : undefined;
+    return <AdminDashboard track={track} />;
+  }
   if (path.startsWith('/terms')) return <TermsPage />;
   if (path.startsWith('/privacy')) return <PrivacyPage />;
   if (path.startsWith('/contact')) return <ContactPage />;

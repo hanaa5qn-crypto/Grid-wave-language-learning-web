@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import App from './App';
 import EnglishApp from '../../english/src/EnglishApp';
+import { saveTrackChoice } from './auth';
 
 // localStorage key shared by both tracks. 'de' => German app, 'en' => English app.
 const TRACK_KEY = 'vivid-lingua-track';
@@ -98,6 +99,9 @@ export default function LanguageGate() {
       /* persistence failed — still proceed for this session */
     }
     setTrack(next);
+    // Mirror the choice onto the signed-in user's profile (no-op for guests) so
+    // the admin English/German dashboards can split customers by track.
+    void saveTrackChoice(next);
   }
 
   function reset() {

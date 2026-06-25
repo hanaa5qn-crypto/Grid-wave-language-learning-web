@@ -66,6 +66,11 @@ export interface UserProfile {
     commissionPercent: number;
     firstPaymentDone: boolean;
   };
+  // Which learning track the account belongs to: 'de' = German, 'en' = English
+  // (IELTS/SAT). The track is currently a client-side choice (localStorage), so
+  // this isn't written yet — it's the hook the admin English/German views filter
+  // on once track tagging is wired up. Until then a track view shows no rows.
+  track?: 'en' | 'de';
   billing?: {
     plan?: string;
     status?: string;

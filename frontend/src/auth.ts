@@ -86,6 +86,22 @@ export async function saveProfileProgress(profile: UserProfile): Promise<void> {
   await setDoc(profileRef(user.uid), stripServerOwnedFields(profile), { merge: true });
 }
 
+// Persist which learning track the signed-in user picked ('de' German / 'en'
+// English). The choice already lives in localStorage for routing; this mirrors
+// it onto the profile so the admin English/German dashboards can split customers
+// by track. No-op for guests (no session) and best-effort — a failed write must
+// never block entering the track. `track` isn't a server-owned field, so the
+// owner-write Firestore rule allows it.
+export async function saveTrackChoice(track: 'en' | 'de'): Promise<void> {
+  const user = getAuthInstance().currentUser;
+  if (!user) return;
+  try {
+    await setDoc(profileRef(user.uid), { track }, { merge: true });
+  } catch (err) {
+    console.warn('Could not save track choice to profile:', err);
+  }
+}
+
 // Single source of truth for "who is logged in". Fires on page load (restoring a
 // saved session), on login, and on logout. Returns an unsubscribe function.
 export function subscribeToAuthedProfile(
