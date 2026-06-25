@@ -118,8 +118,12 @@ export function redeemReferralCode(
   });
 }
 
-export function fetchLeaderboard(): Promise<{ leaderboard: LeaderboardRow[] }> {
-  return socialFetch('/api/social/leaderboard');
+// Weekly minutes leaderboard. Pass track 'en' to rank the English track's
+// minutes (studySecondsByDateEn); omitted/'de' keeps the German behaviour so
+// the two tracks have independent boards.
+export function fetchLeaderboard(track?: 'en' | 'de'): Promise<{ leaderboard: LeaderboardRow[] }> {
+  const query = track === 'en' ? '?track=en' : '';
+  return socialFetch(`/api/social/leaderboard${query}`);
 }
 
 // Хуваалцах линкүүд.

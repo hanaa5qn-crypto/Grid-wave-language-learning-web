@@ -1,10 +1,10 @@
 // =============================================================================
 // English track — streak badge + weekly leaderboard.
 // -----------------------------------------------------------------------------
-// Surfaces the SAME streak and weekly-minutes leaderboard the German track shows,
-// driven by the SAME shared account profile (see stats.tsx). Rendered at the top
-// of the IELTS and SAT home tabs so the English section has identical streak +
-// leaderboard function and monochrome design to German.
+// Surfaces the English track's OWN streak (from studyDaysEn) and its OWN weekly
+// minutes leaderboard (fetchLeaderboard('en') → studySecondsByDateEn), fully
+// independent from the German track — see stats.tsx. Same monochrome design as
+// the German board; rendered at the top of the IELTS and SAT home tabs.
 // =============================================================================
 import React, { useEffect, useState } from 'react';
 import { Flame, Loader2, Trophy } from 'lucide-react';
@@ -22,7 +22,7 @@ export default function StreakLeaderboard() {
     let cancelled = false;
     void (async () => {
       try {
-        const board = await fetchLeaderboard();
+        const board = await fetchLeaderboard('en');
         if (cancelled) return;
         setLeaderboard(board.leaderboard);
         setBoardAvailable(true);
@@ -35,7 +35,7 @@ export default function StreakLeaderboard() {
       }
     })();
     return () => { cancelled = true; };
-  }, [enabled, profile?.studySecondsByDate]);
+  }, [enabled, profile?.studySecondsByDateEn]);
 
   // Signed-out / guest: nothing to show (no cloud streak or leaderboard).
   if (!enabled) return null;

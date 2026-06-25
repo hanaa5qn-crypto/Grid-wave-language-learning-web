@@ -13,6 +13,13 @@ export interface UserProfile {
   completedActivityIds?: string[];
   studyDays?: string[];
   studySecondsByDate?: Record<string, number>;
+  // Per-track study tracking for the English (IELTS/SAT) track. The German
+  // track owns the top-level studyDays/studySecondsByDate (and the `streak`
+  // scalar). English keeps its OWN study days + seconds here so the two tracks
+  // have completely independent streaks and weekly leaderboards — studying
+  // English never touches the German streak and vice versa.
+  studyDaysEn?: string[];
+  studySecondsByDateEn?: Record<string, number>;
   createdAt?: string;
   lastActiveAt?: string;
   // Spaced repetition state per vocabulary word (SM-2 style)

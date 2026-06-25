@@ -465,10 +465,16 @@ export function registerSocialRoute(app: Express) {
       friendUids.map((fuid) => admin.db.collection('users').doc(fuid).get()),
     );
 
+    // The English (IELTS/SAT) track keeps its own weekly minutes in
+    // studySecondsByDateEn, separate from the German studySecondsByDate, so the
+    // two tracks rank independent leaderboards. `?track=en` selects the English
+    // field; anything else (incl. omitted) keeps the original German behaviour.
+    const secondsField = req.query.track === 'en' ? 'studySecondsByDateEn' : 'studySecondsByDate';
+
     const row = (profile: Record<string, unknown>, isMe: boolean) => ({
       name: typeof profile.name === 'string' && profile.name ? profile.name : 'Суралцагч',
       avatar: typeof profile.avatar === 'string' ? profile.avatar : '',
-      minutes: weekMinutes(profile.studySecondsByDate as Record<string, number> | undefined),
+      minutes: weekMinutes(profile[secondsField] as Record<string, number> | undefined),
       isMe,
     });
 

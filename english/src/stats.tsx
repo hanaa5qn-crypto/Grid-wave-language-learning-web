@@ -1,16 +1,16 @@
 // =============================================================================
-// English track — shared learner stats (streak + study time).
+// English track — learner stats (streak + study time), INDEPENDENT from German.
 // -----------------------------------------------------------------------------
 // The English IELTS/SAT track and the German track sign into the SAME Firebase
-// account and read the SAME `users/{uid}` profile. The German app (App.tsx)
-// records `studyDays` + `studySecondsByDate` and derives the streak from them;
-// the leaderboard endpoint reads the same `studySecondsByDate`.
-//
-// Previously the English track recorded nothing, so studying IELTS/SAT never
-// advanced the streak or the weekly leaderboard — the streak effectively
-// reflected only the *other* section. This provider gives the English track the
-// exact same recording + streak logic the German track uses, against the same
-// shared profile, so the streak and leaderboard are correct in either section.
+// account and share one `users/{uid}` profile document, but their streaks and
+// weekly leaderboards are COMPLETELY SEPARATE:
+//   • German owns the top-level fields: `studyDays`, `studySecondsByDate`, and
+//     the scalar `streak` (managed in App.tsx).
+//   • English owns its OWN fields: `studyDaysEn` + `studySecondsByDateEn`.
+// This provider reuses the German recording + streak logic (App.tsx's tracker
+// and learning.ts's calculateStreakWithGrace) but applies it ONLY to the
+// English fields, so studying English advances only the English streak/board
+// and never touches the German ones (and vice versa).
 // =============================================================================
 import React, {
   createContext, useCallback, useContext, useEffect, useRef, useState,
@@ -27,13 +27,13 @@ const TICK_MS = 30_000;
 export interface EnglishStats {
   /** The shared account profile, or null for guests / signed-out. */
   profile: UserProfile | null;
-  /** Consecutive study-day streak (with 1-day grace), derived from studyDays. */
+  /** English consecutive study-day streak (1-day grace), derived from studyDaysEn. */
   streak: number;
   /** True until the first auth callback resolves. */
   loading: boolean;
   /** Whether stats can be tracked (a real, non-guest account is signed in). */
   enabled: boolean;
-  /** Mark today as studied after an English activity (adds today to studyDays). */
+  /** Mark today as studied after an English activity (adds today to studyDaysEn). */
   recordStudy: () => void;
 }
 
@@ -73,19 +73,19 @@ export function EnglishStatsProvider({ children }: { children: React.ReactNode }
 
   const canTrack = (p: UserProfile | null): p is UserProfile => !!p && !p.isGuest;
 
-  // Add today to studyDays + recompute streak. Called when a learner completes a
-  // discrete activity (quiz, test, review). Identical shape to the German
-  // recordStudyActivity, minus the German-only completedActivityIds.
+  // Add today to the ENGLISH study days (studyDaysEn). Called when a learner
+  // completes a discrete English activity (quiz, test, review). Writes ONLY the
+  // English-track fields — never the German studyDays/streak — so the two tracks
+  // keep fully independent streaks.
   const recordStudy = useCallback(() => {
     const p = profileRef.current;
     if (!canTrack(p)) return;
     const today = localDateKey();
-    if ((p.studyDays ?? []).includes(today)) return; // already counted today
-    const studyDays = Array.from(new Set([...(p.studyDays ?? []), today])).sort();
+    if ((p.studyDaysEn ?? []).includes(today)) return; // already counted today
+    const studyDaysEn = Array.from(new Set([...(p.studyDaysEn ?? []), today])).sort();
     const next: UserProfile = {
       ...p,
-      studyDays,
-      streak: calculateStreakWithGrace(studyDays).streak,
+      studyDaysEn,
       lastActiveAt: new Date().toISOString(),
     };
     profileRef.current = next;
@@ -95,21 +95,22 @@ export function EnglishStatsProvider({ children }: { children: React.ReactNode }
     });
   }, []);
 
-  // Accumulate real time-on-task into studySecondsByDate (drives the weekly
-  // leaderboard). Mirrors the German recordStudySeconds exactly: time alone does
-  // NOT advance the streak — only completing an activity (recordStudy) adds a
-  // study day. Flushes to Firestore on a threshold to limit writes.
+  // Accumulate real time-on-task into the ENGLISH seconds map
+  // (studySecondsByDateEn), which drives the English weekly leaderboard. Time
+  // alone does NOT advance the streak — only completing an activity
+  // (recordStudy) adds a study day. Flushes to Firestore on a threshold to
+  // limit writes. Never touches the German studySecondsByDate.
   const recordStudySeconds = useCallback((seconds: number) => {
     const p = profileRef.current;
     if (!canTrack(p) || seconds <= 0) return;
     const today = localDateKey();
-    const studySecondsByDate = {
-      ...(p.studySecondsByDate ?? {}),
-      [today]: Math.round((p.studySecondsByDate?.[today] ?? 0) + seconds),
+    const studySecondsByDateEn = {
+      ...(p.studySecondsByDateEn ?? {}),
+      [today]: Math.round((p.studySecondsByDateEn?.[today] ?? 0) + seconds),
     };
     const next: UserProfile = {
       ...p,
-      studySecondsByDate,
+      studySecondsByDateEn,
       lastActiveAt: new Date().toISOString(),
     };
     profileRef.current = next;
@@ -168,7 +169,9 @@ export function EnglishStatsProvider({ children }: { children: React.ReactNode }
     };
   }, [recordStudySeconds]);
 
-  const streak = calculateStreakWithGrace(profile?.studyDays ?? []).streak;
+  // English streak derives from the English-only study days, independent of the
+  // German streak (profile.studyDays / profile.streak).
+  const streak = calculateStreakWithGrace(profile?.studyDaysEn ?? []).streak;
 
   const value: EnglishStats = {
     profile,
