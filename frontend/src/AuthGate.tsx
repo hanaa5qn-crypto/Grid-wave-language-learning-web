@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { getAuthInstance, isFirebaseConfigured } from './firebase';
 import LanguageGate from './LanguageGate';
 import LoginScreen from './LoginScreen';
+import HeroPage from './HeroPage';
 
 // Login comes first — before the user picks a language. Once they're signed in
 // (or chose to continue as a guest), we hand off to LanguageGate, which renders
@@ -34,6 +35,9 @@ export default function AuthGate() {
   const [guest, setGuest] = useState<boolean>(() => {
     try { return localStorage.getItem(GUEST_KEY) === '1'; } catch { return false; }
   });
+  // Signed-out visitors see the hero first; the CTAs open the auth screen.
+  const [view, setView] = useState<'hero' | 'login'>('hero');
+  const [loginMode, setLoginMode] = useState<'login' | 'signup'>('login');
 
   useEffect(() => {
     if (!isFirebaseConfigured) { setReady(true); return; }
@@ -62,5 +66,21 @@ export default function AuthGate() {
 
   if (signedIn || guest) return <LanguageGate />;
 
-  return <LoginScreen onGuest={continueAsGuest} />;
+  if (view === 'login') {
+    return (
+      <LoginScreen
+        initialMode={loginMode}
+        onBack={() => setView('hero')}
+        onGuest={continueAsGuest}
+      />
+    );
+  }
+
+  return (
+    <HeroPage
+      onLogin={() => { setLoginMode('login'); setView('login'); }}
+      onSignup={() => { setLoginMode('signup'); setView('login'); }}
+      onGuest={continueAsGuest}
+    />
+  );
 }

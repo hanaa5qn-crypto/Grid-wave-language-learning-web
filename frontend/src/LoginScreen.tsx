@@ -61,6 +61,8 @@ interface LoginScreenProps {
   /** Optional: continue without an account (guest mode). When provided, a
    *  "Try without account" button is shown below the form. */
   onGuest?: () => void;
+  /** Which mode to open in when there's no invite. Defaults to 'login'. */
+  initialMode?: Mode;
 }
 
 /**
@@ -68,9 +70,9 @@ interface LoginScreenProps {
  * On success, App's auth listener picks up the new session and swaps this
  * screen out — so there's no success callback to wire up here.
  */
-export default function LoginScreen({ inviteContext, onBack, onGuest }: LoginScreenProps = {}) {
+export default function LoginScreen({ inviteContext, onBack, onGuest, initialMode }: LoginScreenProps = {}) {
   // Урилгаар ирсэн зочин ихэвчлэн шинэ хэрэглэгч тул бүртгүүлэх горимоор эхэлнэ.
-  const [mode, setMode] = useState<Mode>(inviteContext ? 'signup' : 'login');
+  const [mode, setMode] = useState<Mode>(inviteContext ? 'signup' : (initialMode ?? 'login'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
