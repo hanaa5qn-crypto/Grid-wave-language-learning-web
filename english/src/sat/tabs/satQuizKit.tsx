@@ -54,25 +54,25 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
   }
 
   return (
-    <div className="rounded-2xl bg-surface-container p-4 sm:p-5">
+    <div className="rounded-2xl bg-ink-raise p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-on-surface-variant font-semibold text-sm">
+        <span className="text-paper-2 font-semibold text-sm">
           {index + 1}.
         </span>
-        <span className="text-xs font-medium text-on-surface-variant">{q.domain}</span>
+        <span className="text-xs font-medium text-paper-2">{q.domain}</span>
       </div>
 
       {q.passage && (
-        <div className="rounded-xl bg-surface p-4 mb-4 leading-relaxed whitespace-pre-line text-on-surface">
+        <div className="rounded-xl bg-ink-raise p-4 mb-4 leading-relaxed whitespace-pre-line text-paper">
           {q.passage}
         </div>
       )}
 
-      <p className="font-semibold text-on-surface mb-4 whitespace-pre-line">{q.question}</p>
+      <p className="font-semibold text-paper mb-4 whitespace-pre-line">{q.question}</p>
 
       {gridIn ? (
         <div>
-          <label className="block text-sm text-on-surface-variant mb-2">
+          <label className="block text-sm text-paper-2 mb-2">
             Enter your answer
           </label>
           <input
@@ -83,18 +83,18 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
             onChange={(e) => setGrid(e.target.value)}
             placeholder="e.g. 12 or 3/4 or 0.5"
             className={[
-              'w-full sm:w-64 rounded-xl border bg-surface px-4 py-3 text-on-surface outline-none transition-colors',
+              'w-full sm:w-64 rounded-xl border bg-ink-raise px-4 py-3 text-paper outline-none transition-colors',
               submitted
                 ? wasCorrect
                   ? 'border-secondary-container bg-secondary-container text-on-secondary-container'
-                  : 'border-error-container bg-error-container text-on-error'
-                : 'border-surface-variant focus:border-primary',
+                  : 'border-error-container bg-error-container text-on-error-container'
+                : 'border-ink-line focus:border-primary',
             ].join(' ')}
           />
           {submitted && (
-            <p className="mt-2 text-sm font-medium text-on-surface-variant">
+            <p className="mt-2 text-sm font-medium text-paper-2">
               {wasCorrect ? (
-                <span className="inline-flex items-center gap-1.5 text-on-surface">
+                <span className="inline-flex items-center gap-1.5 text-paper">
                   <CheckCircle2 className="w-4 h-4" /> Correct
                 </span>
               ) : (
@@ -115,10 +115,10 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
               submitted && isAnswer
                 ? 'border-secondary-container bg-secondary-container text-on-secondary-container'
                 : submitted && isPicked
-                  ? 'border-error-container bg-error-container text-on-error'
+                  ? 'border-error-container bg-error-container text-on-error-container'
                   : isPicked
                     ? 'border-primary bg-primary-container text-on-primary-container'
-                    : 'border-surface-variant text-on-surface hover:border-primary/60',
+                    : 'border-ink-line text-paper hover:border-primary/60',
             ].join(' ');
             return (
               <button
@@ -152,7 +152,7 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
           <button
             type="button"
             onClick={reset}
-            className="inline-flex items-center gap-2 rounded-full bg-surface-container-high text-on-surface px-5 py-2 text-sm font-semibold hover:bg-surface-container"
+            className="inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2 text-sm font-semibold hover:bg-ink-raise"
           >
             <RotateCcw className="w-4 h-4" /> Try again
           </button>
@@ -160,11 +160,11 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
       </div>
 
       {submitted && q.explanation && (
-        <div className="mt-3 rounded-xl bg-surface p-4">
+        <div className="mt-3 rounded-xl bg-ink-raise p-4">
           <p className="text-xs font-bold text-primary uppercase tracking-wide mb-1">
             Тайлбар · Explanation
           </p>
-          <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-line">
+          <p className="text-sm text-paper-2 leading-relaxed whitespace-pre-line">
             {q.explanation}
           </p>
         </div>
@@ -197,7 +197,7 @@ export function DomainFilter<T extends string>({
               'rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
               on
                 ? 'bg-primary text-on-primary'
-                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface',
+                : 'bg-ink-2 text-paper-2 hover:text-paper',
             ].join(' ')}
           >
             {opt === 'all' ? 'Бүгд' : opt}

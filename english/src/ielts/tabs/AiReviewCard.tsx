@@ -12,9 +12,9 @@ import { AiReview } from '../../api';
 
 export function AiReviewCard({ review }: { review: AiReview }) {
   return (
-    <div className="rounded-2xl bg-surface-container p-5 space-y-5">
+    <div className="rounded-2xl bg-ink-raise p-5 space-y-5">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-xl font-black text-on-background flex items-center gap-2">
+        <h3 className="text-xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary" />
           {review.feedbackMessage}
         </h3>
@@ -26,17 +26,17 @@ export function AiReviewCard({ review }: { review: AiReview }) {
       </div>
 
       {review.fallback && (
-        <p className="text-xs text-on-surface-variant inline-flex items-center gap-1.5">
+        <p className="text-xs text-paper-2 inline-flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5" /> Энэ үнэлгээг локал жишгээр гаргалаа (AI тохируулаагүй).
         </p>
       )}
 
       {review.improved && (
         <div>
-          <h4 className="text-sm font-bold text-on-surface-variant uppercase tracking-wide mb-2">
+          <h4 className="text-sm font-bold text-paper-2 uppercase tracking-wide mb-2">
             Сайжруулсан хувилбар (English)
           </h4>
-          <article className="rounded-xl bg-surface-container-high p-4 leading-relaxed whitespace-pre-line text-on-surface">
+          <article className="rounded-xl bg-ink-2 p-4 leading-relaxed whitespace-pre-line text-paper">
             {review.improved}
           </article>
         </div>
@@ -44,10 +44,10 @@ export function AiReviewCard({ review }: { review: AiReview }) {
 
       {review.explanation && (
         <div>
-          <h4 className="text-sm font-bold text-on-surface-variant uppercase tracking-wide mb-2">
+          <h4 className="text-sm font-bold text-paper-2 uppercase tracking-wide mb-2">
             Тайлбар
           </h4>
-          <p className="leading-relaxed whitespace-pre-line text-on-surface">{review.explanation}</p>
+          <p className="leading-relaxed whitespace-pre-line text-paper">{review.explanation}</p>
         </div>
       )}
 
@@ -65,11 +65,11 @@ export function AiReviewCard({ review }: { review: AiReview }) {
           </div>
         )}
         {review.improvements.length > 0 && (
-          <div className="rounded-xl bg-surface-container-high p-4">
-            <h4 className="font-bold mb-2 flex items-center gap-2 text-on-surface">
+          <div className="rounded-xl bg-ink-2 p-4">
+            <h4 className="font-bold mb-2 flex items-center gap-2 text-paper">
               <Wrench className="w-4 h-4 text-primary" /> Сайжруулах зүйл
             </h4>
-            <ul className="space-y-1.5 text-sm list-disc pl-5 text-on-surface">
+            <ul className="space-y-1.5 text-sm list-disc pl-5 text-paper">
               {review.improvements.map((s, i) => (
                 <li key={i}>{s}</li>
               ))}

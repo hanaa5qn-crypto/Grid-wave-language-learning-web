@@ -25,10 +25,10 @@ export default function SatTestsTab() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-black text-on-background flex items-center gap-2">
+        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
           <ClipboardList className="w-6 h-6 text-primary" /> Practice Tests
         </h2>
-        <p className="text-on-surface-variant mt-1">
+        <p className="text-paper-2 mt-1">
           Бүрэн Digital SAT дасгал шалгалт — Reading & Writing ба Math, тус бүр
           хоёр адаптив модультай, тооцоолсон оноотой.
         </p>
@@ -43,16 +43,16 @@ export default function SatTestsTab() {
             <button
               key={t.id}
               onClick={() => setSelected(t)}
-              className="group text-left rounded-2xl bg-surface-container hover:bg-surface-container-high p-5 transition-colors"
+              className="group text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors"
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="rounded-full bg-primary-container text-on-primary-container px-2.5 py-0.5 text-xs font-bold">
                   Digital SAT
                 </span>
-                <span className="text-xs text-on-surface-variant">{t.source}</span>
+                <span className="text-xs text-paper-2">{t.source}</span>
               </div>
-              <h3 className="text-lg font-bold text-on-surface">{t.title}</h3>
-              <div className="flex flex-wrap gap-3 mt-3 text-sm text-on-surface-variant">
+              <h3 className="text-lg font-bold text-paper">{t.title}</h3>
+              <div className="flex flex-wrap gap-3 mt-3 text-sm text-paper-2">
                 <span className="inline-flex items-center gap-1.5">
                   <BookOpen className="w-4 h-4" /> Reading & Writing · {rwSections.length} modules
                 </span>

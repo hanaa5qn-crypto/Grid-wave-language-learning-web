@@ -82,7 +82,7 @@ function ModuleTimer({ minutes, sectionKey }: { minutes: number; sectionKey: str
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold tabular-nums ${
-        low ? 'bg-error-container text-on-error' : 'bg-surface-container-high text-on-surface'
+        low ? 'bg-error-container text-on-error-container' : 'bg-ink-2 text-paper'
       }`}
       aria-label="Time remaining in this module"
     >
@@ -116,25 +116,25 @@ function QuestionCard({
   const wasCorrect = gridIn ? gridInCorrect(q, gridValue) : mcqCorrect(q, selectedChoice);
 
   return (
-    <div className="rounded-2xl bg-surface-container p-5 sm:p-6">
+    <div className="rounded-2xl bg-ink-raise p-5 sm:p-6">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-bold text-primary uppercase tracking-wide">
           Question {index + 1} of {total}
         </span>
-        <span className="text-xs font-medium text-on-surface-variant">{q.domain}</span>
+        <span className="text-xs font-medium text-paper-2">{q.domain}</span>
       </div>
 
       {q.passage && (
-        <div className="rounded-xl bg-surface p-4 mb-4 leading-relaxed whitespace-pre-line text-on-surface">
+        <div className="rounded-xl bg-ink-raise p-4 mb-4 leading-relaxed whitespace-pre-line text-paper">
           {q.passage}
         </div>
       )}
 
-      <p className="font-semibold text-on-surface mb-4 whitespace-pre-line">{q.question}</p>
+      <p className="font-semibold text-paper mb-4 whitespace-pre-line">{q.question}</p>
 
       {gridIn ? (
         <div>
-          <label className="block text-sm text-on-surface-variant mb-2">
+          <label className="block text-sm text-paper-2 mb-2">
             Enter your answer
           </label>
           <input
@@ -144,18 +144,18 @@ function QuestionCard({
             disabled={graded}
             onChange={(e) => onGridChange(e.target.value)}
             placeholder="e.g. 12 or 3/4 or 0.5"
-            className={`w-full sm:w-64 rounded-xl border bg-surface px-4 py-3 text-on-surface outline-none transition-colors ${
+            className={`w-full sm:w-64 rounded-xl border bg-ink-raise px-4 py-3 text-paper outline-none transition-colors ${
               graded
                 ? wasCorrect
                   ? 'border-secondary bg-secondary-container text-on-secondary-container'
-                  : 'border-error bg-error-container text-on-error'
-                : 'border-surface-variant focus:border-primary'
+                  : 'border-error bg-error-container text-on-error-container'
+                : 'border-ink-line focus:border-primary'
             }`}
           />
           {graded && (
-            <p className="mt-2 text-sm font-medium text-on-surface-variant">
+            <p className="mt-2 text-sm font-medium text-paper-2">
               {wasCorrect ? (
-                <span className="inline-flex items-center gap-1.5 text-on-surface">
+                <span className="inline-flex items-center gap-1.5 text-paper">
                   <CheckCircle2 className="w-4 h-4" /> Correct
                 </span>
               ) : (
@@ -175,11 +175,11 @@ function QuestionCard({
               ? isRight
                 ? 'border-secondary bg-secondary-container text-on-secondary-container'
                 : picked
-                ? 'border-error bg-error-container text-on-error'
-                : 'border-surface-variant text-on-surface-variant'
+                ? 'border-error bg-error-container text-on-error-container'
+                : 'border-ink-line text-paper-2'
               : picked
               ? 'border-primary bg-primary-container text-on-primary-container'
-              : 'border-surface-variant hover:border-primary/60 text-on-surface';
+              : 'border-ink-line hover:border-primary/60 text-paper';
             return (
               <button
                 key={ci}
@@ -194,7 +194,7 @@ function QuestionCard({
                       ? 'border-primary bg-primary text-on-primary'
                       : graded && isRight
                       ? 'border-secondary'
-                      : 'border-surface-variant'
+                      : 'border-ink-line'
                   }`}
                 >
                   {LETTERS[ci]}
@@ -209,9 +209,9 @@ function QuestionCard({
       )}
 
       {graded && (
-        <div className="mt-4 rounded-xl bg-surface p-4">
+        <div className="mt-4 rounded-xl bg-ink-raise p-4">
           <p className="text-xs font-bold text-primary uppercase tracking-wide mb-1">Explanation</p>
-          <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-line">
+          <p className="text-sm text-paper-2 leading-relaxed whitespace-pre-line">
             {q.explanation}
           </p>
         </div>
@@ -246,14 +246,14 @@ function Palette({
           : answers[q.id] !== undefined;
         const isCurrent = i === current;
         let state =
-          'border-surface-variant text-on-surface-variant bg-surface-container-high';
+          'border-ink-line text-paper-2 bg-ink-2';
         if (graded) {
           const ok = isGridIn(q)
             ? gridInCorrect(q, grids[q.id] ?? '')
             : mcqCorrect(q, answers[q.id]);
           state = ok
             ? 'border-secondary bg-secondary-container text-on-secondary-container'
-            : 'border-error bg-error-container text-on-error';
+            : 'border-error bg-error-container text-on-error-container';
         } else if (answered) {
           state = 'border-primary bg-primary-container text-on-primary-container';
         }
@@ -299,13 +299,13 @@ function ModuleResult({
       <div className="flex flex-wrap items-end gap-x-8 gap-y-3 mt-2">
         <div>
           <p className="text-xs uppercase tracking-wide opacity-80">Raw score</p>
-          <p className="text-3xl font-black tabular-nums">
+          <p className="text-3xl font-serif font-light tabular-nums">
             {correct}<span className="text-xl opacity-70"> / {total}</span>
           </p>
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide opacity-80">Estimated section score</p>
-          <p className="text-3xl font-black tabular-nums">{scaled}</p>
+          <p className="text-3xl font-serif font-light tabular-nums">{scaled}</p>
         </div>
       </div>
       <p className="text-xs mt-3 opacity-80">
@@ -362,11 +362,11 @@ export default function SatTestRunner({
       <div className="max-w-3xl">
         <button
           onClick={onExit}
-          className="inline-flex items-center gap-2 text-on-surface-variant mb-4"
+          className="inline-flex items-center gap-2 text-paper-2 mb-4"
         >
           <ChevronLeft className="w-4 h-4" /> Back to tests
         </button>
-        <div className="rounded-2xl bg-surface-container p-6 text-on-surface-variant">
+        <div className="rounded-2xl bg-ink-raise p-6 text-paper-2">
           This test has no questions yet.
         </div>
       </div>
@@ -433,15 +433,15 @@ export default function SatTestRunner({
       {/* Persistent Back button — always returns to the tests hub. */}
       <button
         onClick={onExit}
-        className="inline-flex items-center gap-2 text-on-surface-variant hover:text-on-surface mb-4"
+        className="inline-flex items-center gap-2 text-paper-2 hover:text-paper mb-4"
       >
         <ChevronLeft className="w-4 h-4" /> Back to tests
       </button>
 
       <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
         <div>
-          <h2 className="text-2xl font-bold text-on-background">{test.title}</h2>
-          <p className="text-sm text-on-surface-variant">{test.source}</p>
+          <h2 className="text-2xl font-bold text-paper">{test.title}</h2>
+          <p className="text-sm text-paper-2">{test.source}</p>
         </div>
         <ModuleTimer minutes={section.minutes} sectionKey={`${activeSection}`} />
       </div>
@@ -459,7 +459,7 @@ export default function SatTestRunner({
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
                 active
                   ? 'bg-primary text-on-primary border-primary'
-                  : 'border-surface-variant text-on-surface-variant hover:text-on-surface'
+                  : 'border-ink-line text-paper-2 hover:text-paper'
               }`}
             >
               {sectionLabel(s)}
@@ -470,7 +470,7 @@ export default function SatTestRunner({
       </div>
 
       {/* Module meta + progress. */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-4 text-sm text-on-surface-variant">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4 text-sm text-paper-2">
         <span>
           {section.module} · Module {section.moduleNumber} · {questions.length} questions · {section.minutes} min
         </span>
@@ -493,8 +493,8 @@ export default function SatTestRunner({
       )}
 
       {/* Question palette. */}
-      <div className="rounded-2xl bg-surface-container p-4 mb-5">
-        <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wide mb-3">
+      <div className="rounded-2xl bg-ink-raise p-4 mb-5">
+        <p className="text-xs font-bold text-paper-2 uppercase tracking-wide mb-3">
           Question navigator
         </p>
         <Palette
@@ -527,7 +527,7 @@ export default function SatTestRunner({
             type="button"
             onClick={() => setCurrent((c) => Math.max(0, c - 1))}
             disabled={current === 0}
-            className="inline-flex items-center gap-2 rounded-full border border-surface-variant px-4 py-2 text-sm font-medium disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-full border border-ink-line px-4 py-2 text-sm font-medium disabled:opacity-40"
           >
             <ArrowLeft className="w-4 h-4" /> Prev
           </button>
@@ -535,7 +535,7 @@ export default function SatTestRunner({
             type="button"
             onClick={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))}
             disabled={current === questions.length - 1}
-            className="inline-flex items-center gap-2 rounded-full border border-surface-variant px-4 py-2 text-sm font-medium disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-full border border-ink-line px-4 py-2 text-sm font-medium disabled:opacity-40"
           >
             Next <ArrowRight className="w-4 h-4" />
           </button>
@@ -550,7 +550,7 @@ export default function SatTestRunner({
             className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium ${
               flagged[q.id]
                 ? 'border-primary text-primary'
-                : 'border-surface-variant text-on-surface-variant'
+                : 'border-ink-line text-paper-2'
             }`}
           >
             <Flag className={`w-4 h-4 ${flagged[q.id] ? 'fill-primary' : ''}`} />
@@ -561,8 +561,8 @@ export default function SatTestRunner({
 
       {/* Submit / next-module controls. */}
       {!isGraded ? (
-        <div className="mt-6 rounded-2xl bg-surface-container-high p-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-on-surface-variant">
+        <div className="mt-6 rounded-2xl bg-ink-2 p-5 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-paper-2">
             {answeredCount === questions.length
               ? 'All questions answered. Submit to see your scaled section score.'
               : `${questions.length - answeredCount} unanswered — you can still submit.`}
@@ -577,8 +577,8 @@ export default function SatTestRunner({
         </div>
       ) : (
         activeSection < sections.length - 1 && (
-          <div className="mt-6 rounded-2xl bg-surface-container-high p-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-on-surface-variant">
+          <div className="mt-6 rounded-2xl bg-ink-2 p-5 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-paper-2">
               Module complete. Continue to the next module.
             </p>
             <button

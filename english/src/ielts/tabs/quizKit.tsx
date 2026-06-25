@@ -25,9 +25,9 @@ export const McqBlock: React.FC<{
   onPick,
 }) => {
   return (
-    <div className="rounded-2xl bg-surface-container p-4 sm:p-5">
-      <p className="font-semibold mb-3 text-on-surface">
-        <span className="text-on-surface-variant mr-2">{index + 1}.</span>
+    <div className="rounded-2xl bg-ink-raise p-4 sm:p-5">
+      <p className="font-semibold mb-3 text-paper">
+        <span className="text-paper-2 mr-2">{index + 1}.</span>
         {q.question}
       </p>
       <div className="grid gap-2">
@@ -39,10 +39,10 @@ export const McqBlock: React.FC<{
             submitted && isAnswer
               ? 'border-secondary-container bg-secondary-container text-on-secondary-container'
               : submitted && picked
-                ? 'border-error-container bg-error-container text-on-error'
+                ? 'border-error-container bg-error-container text-on-error-container'
                 : picked
                   ? 'border-primary bg-primary-container text-on-primary-container'
-                  : 'border-surface-variant text-on-surface hover:border-primary/60',
+                  : 'border-ink-line text-paper hover:border-primary/60',
           ].join(' ');
           return (
             <button
@@ -61,8 +61,8 @@ export const McqBlock: React.FC<{
         })}
       </div>
       {submitted && q.explanation && (
-        <p className="mt-3 text-sm text-on-surface-variant">
-          <span className="font-semibold text-on-surface">Тайлбар: </span>
+        <p className="mt-3 text-sm text-paper-2">
+          <span className="font-semibold text-paper">Тайлбар: </span>
           {q.explanation}
         </p>
       )}
@@ -96,7 +96,7 @@ export function LevelFilter({
               'rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
               on
                 ? 'bg-primary text-on-primary'
-                : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface',
+                : 'bg-ink-2 text-paper-2 hover:text-paper',
             ].join(' ')}
           >
             {opt === 'all' ? 'Бүгд' : opt}

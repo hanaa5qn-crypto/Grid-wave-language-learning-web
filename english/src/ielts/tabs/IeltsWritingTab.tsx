@@ -127,10 +127,10 @@ export default function IeltsWritingTab() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-black text-on-background flex items-center gap-2">
+        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
           <Edit3 className="w-6 h-6 text-primary" /> Writing practice
         </h2>
-        <p className="text-on-surface-variant mt-1">
+        <p className="text-paper-2 mt-1">
           Task 1 ба Task 2-ыг бичээд AI-аас Монгол хэлээр үнэлгээ аваарай.
         </p>
       </div>
@@ -146,7 +146,7 @@ export default function IeltsWritingTab() {
                 'rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
                 on
                   ? 'bg-primary text-on-primary'
-                  : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface',
+                  : 'bg-ink-2 text-paper-2 hover:text-paper',
               ].join(' ')}
             >
               {p.label}: {p.title}
@@ -155,16 +155,16 @@ export default function IeltsWritingTab() {
         })}
       </div>
 
-      <div className="rounded-2xl bg-surface-container p-5 space-y-3">
+      <div className="rounded-2xl bg-ink-raise p-5 space-y-3">
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-primary-container text-on-primary-container px-2.5 py-0.5 text-xs font-bold">
             {prompt.label}
           </span>
-          <span className="text-xs text-on-surface-variant">Хамгийн багадаа {prompt.minWords} үг</span>
+          <span className="text-xs text-paper-2">Хамгийн багадаа {prompt.minWords} үг</span>
         </div>
-        <p className="leading-relaxed text-on-surface">{prompt.prompt}</p>
+        <p className="leading-relaxed text-paper">{prompt.prompt}</p>
         {prompt.visual && (
-          <div className="rounded-xl bg-surface-container-high p-4 text-sm text-on-surface flex gap-2">
+          <div className="rounded-xl bg-ink-2 p-4 text-sm text-paper flex gap-2">
             <BarChart3 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
             <span><span className="font-semibold">Visual: </span>{prompt.visual}</span>
           </div>
@@ -172,7 +172,7 @@ export default function IeltsWritingTab() {
       </div>
 
       <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm font-bold text-on-surface">
+        <label className="flex items-center gap-2 text-sm font-bold text-paper">
           <PenLine className="w-4 h-4 text-primary" /> Таны хариулт
         </label>
         <textarea
@@ -180,15 +180,15 @@ export default function IeltsWritingTab() {
           onChange={(e) => setAnswer(e.target.value)}
           rows={12}
           placeholder="Эндээс бичиж эхэлнэ үү…"
-          className="w-full rounded-2xl bg-surface-container border border-surface-variant p-4 text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary leading-relaxed resize-y"
+          className="w-full rounded-2xl bg-ink-raise border border-ink-line p-4 text-paper placeholder:text-paper-2 focus:outline-none focus:border-primary leading-relaxed resize-y"
         />
         <div className="flex items-center justify-between text-sm">
-          <span className={meetsMin ? 'text-on-surface-variant' : 'text-on-surface-variant'}>
-            <span className={`font-bold ${meetsMin ? 'text-primary' : 'text-on-surface'}`}>{words}</span>
+          <span className={meetsMin ? 'text-paper-2' : 'text-paper-2'}>
+            <span className={`font-bold ${meetsMin ? 'text-primary' : 'text-paper'}`}>{words}</span>
             {' '}/ {prompt.minWords} үг
           </span>
           {!meetsMin && words > 0 && (
-            <span className="text-on-surface-variant">Цөөн байна — үргэлжлүүлээрэй.</span>
+            <span className="text-paper-2">Цөөн байна — үргэлжлүүлээрэй.</span>
           )}
         </div>
       </div>
@@ -204,7 +204,7 @@ export default function IeltsWritingTab() {
         </button>
         <button
           onClick={() => setShowModel((s) => !s)}
-          className="inline-flex items-center gap-2 rounded-full bg-surface-container-high text-on-surface px-5 py-2.5 font-semibold hover:bg-surface-container"
+          className="inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"
         >
           {showModel ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           {showModel ? 'Жишээ хариулт нуух' : 'Show model answer'}
@@ -212,7 +212,7 @@ export default function IeltsWritingTab() {
       </div>
 
       {error && (
-        <div className="rounded-2xl bg-error-container text-on-error p-4 flex items-start gap-2">
+        <div className="rounded-2xl bg-error-container text-on-error-container p-4 flex items-start gap-2">
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -221,11 +221,11 @@ export default function IeltsWritingTab() {
       {review && <AiReviewCard review={review} />}
 
       {showModel && (
-        <div className="rounded-2xl bg-surface-container p-5">
-          <h3 className="text-sm font-bold text-on-surface-variant uppercase tracking-wide mb-2">
+        <div className="rounded-2xl bg-ink-raise p-5">
+          <h3 className="text-sm font-bold text-paper-2 uppercase tracking-wide mb-2">
             Band 9 жишээ хариулт
           </h3>
-          <article className="leading-relaxed whitespace-pre-line text-on-surface">
+          <article className="leading-relaxed whitespace-pre-line text-paper">
             {prompt.modelAnswer}
           </article>
         </div>

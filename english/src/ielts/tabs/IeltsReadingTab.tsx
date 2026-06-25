@@ -43,7 +43,7 @@ export default function IeltsReadingTab() {
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
         <button
           onClick={() => setActive(null)}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-paper-2 hover:text-paper"
         >
           <ChevronLeft className="w-4 h-4" /> Бүх эх бичвэр рүү буцах
         </button>
@@ -53,17 +53,17 @@ export default function IeltsReadingTab() {
             <span className="rounded-full bg-primary-container text-on-primary-container px-2.5 py-0.5 text-xs font-bold">
               {active.level}
             </span>
-            <span className="text-xs text-on-surface-variant">{active.topic}</span>
+            <span className="text-xs text-paper-2">{active.topic}</span>
           </div>
-          <h2 className="text-2xl font-black text-on-background">{active.title}</h2>
+          <h2 className="text-2xl font-serif font-light tracking-tight text-paper">{active.title}</h2>
         </div>
 
-        <article className="rounded-2xl bg-surface-container p-5 leading-relaxed whitespace-pre-line text-on-surface">
+        <article className="rounded-2xl bg-ink-raise p-5 leading-relaxed whitespace-pre-line text-paper">
           {active.text}
         </article>
 
         <div className="space-y-4">
-          <h3 className="flex items-center gap-2 text-lg font-bold text-on-background">
+          <h3 className="flex items-center gap-2 text-lg font-bold text-paper">
             <ListChecks className="w-5 h-5 text-primary" /> Асуултууд
           </h3>
           {active.questions.map((q, i) => (
@@ -83,7 +83,7 @@ export default function IeltsReadingTab() {
             <ScoreBanner correct={correctCount} total={active.questions.length} />
             <button
               onClick={reset}
-              className="inline-flex items-center gap-2 rounded-full bg-surface-container-high text-on-surface px-5 py-2.5 font-semibold hover:bg-surface-container"
+              className="inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"
             >
               <RotateCcw className="w-4 h-4" /> Дахин оролдох
             </button>
@@ -104,10 +104,10 @@ export default function IeltsReadingTab() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-black text-on-background flex items-center gap-2">
+        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
           <BookOpen className="w-6 h-6 text-primary" /> Reading practice
         </h2>
-        <p className="text-on-surface-variant mt-1">
+        <p className="text-paper-2 mt-1">
           Эрдэм шинжилгээний эх бичвэр уншиж, ойлгосноо асуултаар шалгаарай.
         </p>
       </div>
@@ -119,16 +119,16 @@ export default function IeltsReadingTab() {
           <button
             key={p.id}
             onClick={() => open(p)}
-            className="text-left rounded-2xl bg-surface-container hover:bg-surface-container-high p-5 transition-colors"
+            className="text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors"
           >
             <div className="flex items-center gap-2 mb-2">
               <span className="rounded-full bg-primary-container text-on-primary-container px-2.5 py-0.5 text-xs font-bold">
                 {p.level}
               </span>
-              <span className="text-xs text-on-surface-variant">{p.topic}</span>
+              <span className="text-xs text-paper-2">{p.topic}</span>
             </div>
-            <h3 className="font-bold text-on-surface">{p.title}</h3>
-            <p className="text-sm text-on-surface-variant mt-1">
+            <h3 className="font-bold text-paper">{p.title}</h3>
+            <p className="text-sm text-paper-2 mt-1">
               {p.questions.length} асуулт
             </p>
           </button>
@@ -136,7 +136,7 @@ export default function IeltsReadingTab() {
       </div>
 
       {passages.length === 0 && (
-        <p className="text-on-surface-variant">Энэ түвшинд эх бичвэр алга байна.</p>
+        <p className="text-paper-2">Энэ түвшинд эх бичвэр алга байна.</p>
       )}
     </div>
   );

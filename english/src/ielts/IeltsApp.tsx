@@ -68,10 +68,10 @@ export default function IeltsApp({
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-background font-sans flex flex-col">
-      <header className="border-b border-surface-variant/50 sticky top-0 z-20 bg-background/95 backdrop-blur">
+    <div className="min-h-screen bg-ink text-paper font-sans flex flex-col">
+      <header className="border-b border-ink-line/50 sticky top-0 z-20 bg-ink/95 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 font-black text-lg">
+          <div className="flex items-center gap-2 font-serif font-bold text-lg tracking-tight">
             <BrandLogo className="w-8 h-8" />
             <span><span className="text-primary">Vivid</span> Lingua</span>
             <span className="ml-1 text-xs font-semibold rounded-full bg-primary-container text-on-primary-container px-2 py-0.5">
@@ -81,14 +81,14 @@ export default function IeltsApp({
           <div className="flex items-center gap-2">
             <button
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-paper-2 hover:text-paper"
             >
               <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Change exam</span>
             </button>
             {onSwitchLanguage && (
               <button
                 onClick={onSwitchLanguage}
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-paper-2 hover:text-paper"
               >
                 <Globe className="w-4 h-4" /> <span className="hidden sm:inline">Switch language</span>
               </button>
@@ -108,7 +108,7 @@ export default function IeltsApp({
                     'inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold whitespace-nowrap transition-colors',
                     on
                       ? 'bg-primary text-on-primary'
-                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+                      : 'text-paper-2 hover:bg-ink-raise hover:text-paper',
                   ].join(' ')}
                 >
                   <t.icon className="w-4 h-4" /> {t.label}

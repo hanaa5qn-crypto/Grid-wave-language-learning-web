@@ -29,16 +29,16 @@ function isExam(v: string | null): v is Exam {
 
 function ExamChooser({ onPick, onSwitchLanguage }: { onPick: (e: Exam) => void; onSwitchLanguage?: () => void }) {
   return (
-    <div className="min-h-screen bg-background text-on-background font-sans flex flex-col">
-      <header className="border-b border-surface-variant/50">
+    <div className="min-h-screen bg-ink text-paper font-sans flex flex-col">
+      <header className="border-b border-ink-line/50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-black text-lg">
+          <div className="flex items-center gap-2 font-serif font-bold text-lg tracking-tight">
             <BrandLogo className="w-8 h-8" />
             <span><span className="text-primary">Vivid</span> Lingua</span>
             <span className="ml-2 text-xs font-semibold rounded-full bg-primary-container text-on-primary-container px-2 py-0.5">English</span>
           </div>
           {onSwitchLanguage && (
-            <button onClick={onSwitchLanguage} className="inline-flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface">
+            <button onClick={onSwitchLanguage} className="inline-flex items-center gap-2 text-sm text-paper-2 hover:text-paper">
               <Globe className="w-4 h-4" /> Switch language
             </button>
           )}
@@ -47,21 +47,21 @@ function ExamChooser({ onPick, onSwitchLanguage }: { onPick: (e: Exam) => void; 
 
       <main className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-3xl text-center py-12">
-          <h1 className="text-3xl sm:text-4xl font-black mb-3">Which exam are you preparing for?</h1>
-          <p className="text-on-surface-variant text-lg mb-10">
+          <h1 className="text-3xl sm:text-4xl font-serif font-light tracking-tight mb-3">Which exam are you preparing for?</h1>
+          <p className="text-paper-2 text-lg mb-10">
             Аль шалгалтад бэлдэх вэ? Тус бүр нь өөрийн гэсэн бүрэн сургалттай.
           </p>
 
           <div className="grid sm:grid-cols-2 gap-5">
             <button
               onClick={() => onPick('ielts')}
-              className="group text-left rounded-3xl bg-surface-container hover:bg-surface-container-high p-7 transition-colors"
+              className="group text-left rounded-3xl bg-ink-raise hover:bg-ink-2 p-7 transition-colors"
             >
               <div className="flex items-center gap-3 mb-3">
                 <span className="rounded-2xl bg-primary-container text-on-primary-container p-3"><BookMarked className="w-7 h-7" /></span>
                 <span className="text-2xl font-bold">IELTS</span>
               </div>
-              <p className="text-on-surface-variant">
+              <p className="text-paper-2">
                 Four skills — Reading, Listening, Writing &amp; Speaking — with full practice tests, band scoring, and AI feedback in Mongolian.
               </p>
               <span className="mt-4 inline-flex items-center gap-1 text-primary font-semibold">
@@ -71,13 +71,13 @@ function ExamChooser({ onPick, onSwitchLanguage }: { onPick: (e: Exam) => void; 
 
             <button
               onClick={() => onPick('sat')}
-              className="group text-left rounded-3xl bg-surface-container hover:bg-surface-container-high p-7 transition-colors"
+              className="group text-left rounded-3xl bg-ink-raise hover:bg-ink-2 p-7 transition-colors"
             >
               <div className="flex items-center gap-3 mb-3">
                 <span className="rounded-2xl bg-primary-container text-on-primary-container p-3"><Sigma className="w-7 h-7" /></span>
                 <span className="text-2xl font-bold">SAT</span>
               </div>
-              <p className="text-on-surface-variant">
+              <p className="text-paper-2">
                 Digital SAT — Reading &amp; Writing and Math — with adaptive-style modules, full practice tests, and SAT vocabulary.
               </p>
               <span className="mt-4 inline-flex items-center gap-1 text-primary font-semibold">
@@ -86,7 +86,7 @@ function ExamChooser({ onPick, onSwitchLanguage }: { onPick: (e: Exam) => void; 
             </button>
           </div>
 
-          <p className="mt-8 text-xs text-on-surface-variant inline-flex items-center gap-2">
+          <p className="mt-8 text-xs text-paper-2 inline-flex items-center gap-2">
             <GraduationCap className="w-4 h-4" /> Each is a complete, separate learning app tailored to the exam.
           </p>
         </div>

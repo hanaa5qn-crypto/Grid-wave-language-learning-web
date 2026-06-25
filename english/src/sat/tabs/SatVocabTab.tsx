@@ -53,10 +53,10 @@ export default function SatVocabTab() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-black text-on-background flex items-center gap-2">
+        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
           <BookA className="w-6 h-6 text-primary" /> SAT Vocabulary
         </h2>
-        <p className="text-on-surface-variant mt-1">
+        <p className="text-paper-2 mt-1">
           Шалгалтад байнга тааралддаг {SAT_VOCAB.length} үгийг Монгол орчуулгатай нь сурцгаая.
         </p>
       </div>
@@ -64,33 +64,33 @@ export default function SatVocabTab() {
       <LevelFilter levels={SAT_LEVELS} active={level} onChange={setLevel} />
 
       {deck.length === 0 || !card ? (
-        <p className="text-on-surface-variant">Энэ түвшинд үг алга байна.</p>
+        <p className="text-paper-2">Энэ түвшинд үг алга байна.</p>
       ) : (
         <>
-          <div className="rounded-3xl bg-surface-container p-6 sm:p-8 min-h-[18rem] flex flex-col">
+          <div className="rounded-3xl bg-ink-raise p-6 sm:p-8 min-h-[18rem] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <span className="rounded-full bg-primary-container text-on-primary-container px-2.5 py-0.5 text-xs font-bold">
                 {card.level}
               </span>
-              <span className="text-xs text-on-surface-variant">{card.category}</span>
+              <span className="text-xs text-paper-2">{card.category}</span>
             </div>
 
             <div className="flex-1">
               <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="text-3xl font-black text-on-background">{card.word}</h3>
+                <h3 className="text-3xl font-serif font-light tracking-tight text-paper">{card.word}</h3>
                 <button
                   onClick={say}
-                  className="rounded-full bg-surface-container-high text-on-surface p-2 hover:bg-primary-container hover:text-on-primary-container transition-colors"
+                  className="rounded-full bg-ink-2 text-paper p-2 hover:bg-primary-container hover:text-on-primary-container transition-colors"
                   aria-label="Say it"
                 >
                   <Volume2 className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-on-surface-variant mt-1">
+              <p className="text-paper-2 mt-1">
                 {card.phonetic} · <span className="italic">{card.partOfSpeech}</span>
               </p>
 
-              <p className="mt-5 text-on-surface leading-relaxed">{card.definition}</p>
+              <p className="mt-5 text-paper leading-relaxed">{card.definition}</p>
 
               {revealed ? (
                 <div className="mt-4 space-y-3">
@@ -98,7 +98,7 @@ export default function SatVocabTab() {
                     <span className="text-xs font-bold uppercase tracking-wide opacity-80">Монгол</span>
                     <p className="text-lg font-bold">{card.mongolian}</p>
                   </div>
-                  <p className="text-on-surface-variant italic">“{card.example}”</p>
+                  <p className="text-paper-2 italic">“{card.example}”</p>
                 </div>
               ) : (
                 <button
@@ -113,7 +113,7 @@ export default function SatVocabTab() {
             {revealed && (
               <button
                 onClick={() => setRevealed(false)}
-                className="mt-4 self-start inline-flex items-center gap-2 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+                className="mt-4 self-start inline-flex items-center gap-2 text-sm font-semibold text-paper-2 hover:text-paper"
               >
                 <EyeOff className="w-4 h-4" /> Нуух
               </button>
@@ -123,18 +123,18 @@ export default function SatVocabTab() {
           <div className="flex items-center justify-between gap-3">
             <button
               onClick={() => go(-1)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-surface-container-high text-on-surface px-5 py-2.5 font-semibold hover:bg-surface-container"
+              className="inline-flex items-center gap-1.5 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"
             >
               <ChevronLeft className="w-4 h-4" /> Өмнөх
             </button>
 
             <div className="flex items-center gap-3">
-              <span className="text-sm text-on-surface-variant font-semibold">
+              <span className="text-sm text-paper-2 font-semibold">
                 {index + 1} / {deck.length}
               </span>
               <button
                 onClick={shuffle}
-                className="rounded-full bg-surface-container-high text-on-surface p-2.5 hover:bg-surface-container"
+                className="rounded-full bg-ink-2 text-paper p-2.5 hover:bg-ink-raise"
                 aria-label="Shuffle"
               >
                 <Shuffle className="w-4 h-4" />
@@ -143,7 +143,7 @@ export default function SatVocabTab() {
 
             <button
               onClick={() => go(1)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-surface-container-high text-on-surface px-5 py-2.5 font-semibold hover:bg-surface-container"
+              className="inline-flex items-center gap-1.5 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"
             >
               Дараах <ChevronRight className="w-4 h-4" />
             </button>

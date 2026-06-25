@@ -113,10 +113,10 @@ export default function SatReadingWritingTab() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-black text-on-background flex items-center gap-2">
+        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
           <BookOpen className="w-6 h-6 text-primary" /> Reading & Writing
         </h2>
-        <p className="text-on-surface-variant mt-1">
+        <p className="text-paper-2 mt-1">
           Дөрвөн домэйнаар ангилсан {all.length} дасгал — богино эх бичвэр уншаад
           хариулж, тайлбарыг үзээрэй.
         </p>
@@ -125,15 +125,15 @@ export default function SatReadingWritingTab() {
       <DomainFilter domains={RW_DOMAINS} active={domain} onChange={setDomain} />
 
       {groups.length === 0 ? (
-        <p className="text-on-surface-variant">Энэ домэйнд асуулт алга байна.</p>
+        <p className="text-paper-2">Энэ домэйнд асуулт алга байна.</p>
       ) : (
         <div className="space-y-8">
           {groups.map((g) => (
             <section key={g.domain} className="space-y-4">
-              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
+              <h3 className="text-lg font-bold text-paper flex items-center gap-2">
                 <span className="h-5 w-1.5 rounded-full bg-primary" />
                 {g.domain}
-                <span className="text-sm font-normal text-on-surface-variant">
+                <span className="text-sm font-normal text-paper-2">
                   · {g.questions.length}
                 </span>
               </h3>
