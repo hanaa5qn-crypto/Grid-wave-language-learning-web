@@ -4,7 +4,7 @@ import LegalLayout from './LegalLayout';
 export default function PrivacyPage() {
   return (
     <LegalLayout title="Нууцлалын бодлого">
-      <p className="text-xs text-slate-500">Сүүлд шинэчилсэн: 2026 оны 6-р сарын 16</p>
+      <p className="text-xs uppercase tracking-[0.18em] text-paper-3">Сүүлд шинэчилсэн: 2026 оны 6-р сарын 16</p>
 
       <hr />
 

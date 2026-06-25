@@ -4,7 +4,7 @@ import LegalLayout from './LegalLayout';
 export default function TermsPage() {
   return (
     <LegalLayout title="Үйлчилгээний нөхцөл">
-      <p className="text-xs text-slate-500">Сүүлд шинэчилсэн: 2026 оны 6-р сарын 16</p>
+      <p className="text-xs uppercase tracking-[0.18em] text-paper-3">Сүүлд шинэчилсэн: 2026 оны 6-р сарын 16</p>
 
       <hr />
 

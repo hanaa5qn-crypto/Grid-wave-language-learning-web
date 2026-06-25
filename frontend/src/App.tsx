@@ -201,8 +201,8 @@ function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
       <defs>
         <linearGradient id="brand-logo-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f0cd7e" />
-          <stop offset="1" stopColor="#cf982f" />
+          <stop offset="0" stopColor="#ededeb" />
+          <stop offset="1" stopColor="#9b9893" />
         </linearGradient>
       </defs>
       <circle cx="13" cy="19" r="9" fill="url(#brand-logo-grad)" />
@@ -1116,17 +1116,17 @@ function LearnerApp() {
         <React.Fragment key={i}>
           {lead}
           <span
-            className="word-highlight font-extrabold text-secondary tracking-tight cursor-pointer relative"
+            className="word-highlight font-extrabold text-paper-2 tracking-tight cursor-pointer relative"
             onClick={() => speakGerman(spoken)}
           >
             {core}
             <span className="tooltip-container">
-              <span className="block bg-surface text-white border-2 border-on-background font-space font-bold text-xs rounded-xl p-3 shadow-2xl flex flex-col gap-1">
-                <span className="flex items-center gap-2 text-secondary-fixed">
-                  <Volume2 className="w-3 h-3 fill-current text-secondary" />
-                  <span className="text-[13px] text-white">{entry.article ? `${entry.article} ` : ''}{core} — {entry.mongolian}</span>
+              <span className="block bg-ink-raise text-paper border-2 border-ink-line font-serif font-bold text-xs rounded-xl p-3 shadow-2xl flex flex-col gap-1">
+                <span className="flex items-center gap-2 text-paper">
+                  <Volume2 className="w-3 h-3 fill-current text-paper-2" />
+                  <span className="text-[13px] text-paper">{entry.article ? `${entry.article} ` : ''}{core} — {entry.mongolian}</span>
                 </span>
-                {cls && <span className="text-[11px] text-slate-400">{cls}</span>}
+                {cls && <span className="text-[11px] text-paper-2">{cls}</span>}
               </span>
             </span>
           </span>
@@ -1794,15 +1794,15 @@ function LearnerApp() {
   // feature; the button jumps to the Profile tab where plans are sold.
   // ---------------------------------------------------------------------------
   const renderPlanLockCard = (title: string, description: string, requiredPlan: 'pro' | 'max') => (
-    <div className="w-full flex flex-col items-center justify-center text-center gap-3 py-8 px-6 bg-surface-container-low border-2 border-on-background border-dashed rounded-xl block-shadow my-4">
-      <span className="w-14 h-14 rounded-full bg-primary-container border-2 border-on-background flex items-center justify-center block-shadow">
-        <Lock className="w-6 h-6 text-on-surface" />
+    <div className="w-full flex flex-col items-center justify-center text-center gap-3 py-8 px-6 bg-ink-raise border-2 border-ink-line border-dashed rounded-xl block-shadow my-4">
+      <span className="w-14 h-14 rounded-full bg-ink-raise border-2 border-ink-line flex items-center justify-center block-shadow">
+        <Lock className="w-6 h-6 text-paper" />
       </span>
-      <h4 className="text-lg font-black font-space text-on-surface">{title}</h4>
-      <p className="text-sm text-on-surface-variant max-w-md leading-relaxed">{description}</p>
+      <h4 className="text-lg font-light font-serif text-paper">{title}</h4>
+      <p className="text-sm text-paper-2 max-w-md leading-relaxed">{description}</p>
       <button
         onClick={() => setActiveTab('profile')}
-        className="flex items-center gap-2 px-5 py-2.5 bg-secondary text-white border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform"
+        className="flex items-center gap-2 px-5 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform"
       >
         <Zap className="w-4 h-4" /> {PLANS[requiredPlan].name} багц авах
       </button>
@@ -1818,10 +1818,10 @@ function LearnerApp() {
   // Small counter strip shown above AI features while teaser uses remain.
   const renderAiTeaserBanner = () =>
     !aiAllowed && aiQuota && aiQuota.limit !== null && (aiQuota.remaining ?? 0) > 0 ? (
-      <div className="w-full flex flex-wrap items-center justify-center gap-2 px-4 py-2 mb-3 bg-primary-container/60 border-2 border-on-background rounded-xl text-xs font-bold text-on-surface block-shadow">
+      <div className="w-full flex flex-wrap items-center justify-center gap-2 px-4 py-2 mb-3 bg-ink-raise/60 border-2 border-ink-line rounded-xl text-xs font-bold text-paper block-shadow">
         <Sparkles className="w-3.5 h-3.5" />
         Энэ сарын үнэгүй AI туршилт: {aiQuota.remaining}/{aiQuota.limit} үлдсэн
-        <button onClick={() => setActiveTab('profile')} className="text-secondary underline cursor-pointer font-black">
+        <button onClick={() => setActiveTab('profile')} className="text-paper-2 underline cursor-pointer font-black">
           Max багцаар хязгааргүй
         </button>
       </div>
@@ -1840,9 +1840,9 @@ function LearnerApp() {
     'max',
   ) : (
     // Microphone Interface Area — real voice recording for the AI coach
-    <div className="w-full flex flex-col items-center justify-center relative py-6 bg-surface-container-low border-2 border-on-background border-dashed rounded-xl block-shadow my-4">
+    <div className="w-full flex flex-col items-center justify-center relative py-6 bg-ink-raise border-2 border-ink-line border-dashed rounded-xl block-shadow my-4">
 
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 bg-primary-container border-2 border-on-background text-[11px] font-black font-space rounded-full uppercase tracking-wider block-shadow">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 bg-ink-raise border-2 border-ink-line text-[11px] font-light font-serif rounded-full uppercase tracking-wider block-shadow">
         <AudioLines className="w-3.5 h-3.5" /> Дуут AI багш
       </span>
 
@@ -1853,37 +1853,37 @@ function LearnerApp() {
           onClick={() => toggleMic(target)}
           disabled={speakingLoading && !isRecording}
           title={isRecording ? 'Зогсоох' : 'Бичиж эхлэх'}
-          className={`relative z-10 w-24 h-24 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none border-2 border-on-background cursor-pointer block-shadow disabled:opacity-60 disabled:cursor-not-allowed ${
-            isRecording ? 'bg-error text-white animate-ripple' : 'bg-secondary'
+          className={`relative z-10 w-24 h-24 text-paper rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none border-2 border-ink-line cursor-pointer block-shadow disabled:opacity-60 disabled:cursor-not-allowed ${
+            isRecording ? 'bg-paper text-ink animate-ripple' : 'bg-paper'
           }`}
         >
           {isRecording ? <Square className="w-9 h-9 fill-current" /> : <Mic className="w-10 h-10 stroke-[2.5px]" />}
         </button>
       </div>
 
-      <h4 className="text-xl font-black text-secondary font-sans mb-1 flex items-center gap-2">
-        {isRecording && <span className="w-2.5 h-2.5 rounded-full bg-error animate-pulse" />}
+      <h4 className="text-xl font-black text-paper-2 font-sans mb-1 flex items-center gap-2">
+        {isRecording && <span className="w-2.5 h-2.5 rounded-full bg-paper animate-pulse" />}
         {speakingLoading && !isRecording
           ? 'AI сонсож байна...'
           : isRecording
             ? `Бичиж байна  ${String(Math.floor(recordSeconds / 60)).padStart(2, '0')}:${String(recordSeconds % 60).padStart(2, '0')}`
             : 'Бичихийн тулд дарна уу'}
       </h4>
-      <p className="text-sm font-semibold text-outline text-center px-4 max-w-md">
+      <p className="text-sm font-semibold text-paper-3 text-center px-4 max-w-md">
         {voiceSupportMessage || 'Микрофон дээр дарж германаар чанга ярина уу. Дуусаад зогсоох товчийг дарвал AI таны дуу хоолойг сонсож, дуудлага, аялга, дүрэм, үгсийн санг үнэлнэ.'}
       </p>
 
       {/* Playback of the learner's own recording */}
       {recordedAudioUrl && !isRecording && (
         <div className="mt-5 w-full max-w-sm px-4 flex flex-col items-center gap-1.5">
-          <p className="text-[11px] font-space text-outline font-bold uppercase">Таны бичлэг:</p>
+          <p className="text-[11px] font-serif text-paper-3 font-bold uppercase">Таны бичлэг:</p>
           <audio src={recordedAudioUrl} controls className="w-full h-10" />
         </div>
       )}
 
       {/* Text alternative input field for users with missing micro permissions */}
       <div className="mt-6 w-full max-w-sm px-4 flex flex-col gap-2">
-        <p className="text-[11px] font-space text-outline font-bold uppercase text-center">Эсвэл дуу бичихгүйгээр шивж туршина уу:</p>
+        <p className="text-[11px] font-serif text-paper-3 font-bold uppercase text-center">Эсвэл дуу бичихгүйгээр шивж туршина уу:</p>
         <div className="flex gap-2">
           <input
             type="text"
@@ -1891,12 +1891,12 @@ function LearnerApp() {
             value={speakingTextEntered}
             onChange={(e) => setSpeakingTextEntered(e.target.value)}
             maxLength={500}
-            className="flex-grow bg-surface-container-low border-2 border-on-background font-bold text-sm px-3 py-2 rounded-xl outline-none focus:border-primary transition-all text-on-surface"
+            className="flex-grow bg-ink-raise border-2 border-ink-line font-bold text-sm px-3 py-2 rounded-xl outline-none focus:border-ink-line transition-all text-paper"
           />
           <button
             onClick={() => evaluateSpeechText(speakingTextEntered, target)}
             disabled={!speakingTextEntered.trim() || speakingLoading}
-            className="px-4 py-2 border-2 border-on-background text-sm font-bold bg-primary text-on-primary rounded-xl block-shadow cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 border-2 border-ink-line text-sm font-bold bg-paper text-ink rounded-xl block-shadow cursor-pointer disabled:opacity-50"
           >
             {speakingLoading ? 'Үнэлж байна...' : 'Шалгах'}
           </button>
@@ -1911,15 +1911,15 @@ function LearnerApp() {
       <div className="w-full flex flex-col gap-4 animate-scale-up">
 
         {/* Headline + summary */}
-        <div className="w-full border-2 border-on-background rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow">
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 border-on-background shrink-0 block-shadow ${
-            speakingEvaluation.isCorrect ? 'bg-secondary-container' : 'bg-error-container'
+        <div className="w-full border-2 border-ink-line rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow">
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 border-ink-line shrink-0 block-shadow ${
+            speakingEvaluation.isCorrect ? 'bg-ink-raise' : 'bg-ink-raise'
           }`}>
-            {speakingEvaluation.isCorrect ? <CheckCircle className="w-5 h-5 text-secondary" /> : <AlertCircle className="w-5 h-5 text-error" />}
+            {speakingEvaluation.isCorrect ? <CheckCircle className="w-5 h-5 text-paper-2" /> : <AlertCircle className="w-5 h-5 text-paper-2" />}
           </div>
           <div className="flex-grow">
-            <h5 className="text-lg font-black text-on-surface mb-1 font-sans">{speakingEvaluation.feedbackMessage}</h5>
-            <p className="text-sm text-on-surface-variant leading-relaxed font-sans">{speakingEvaluation.analysis}</p>
+            <h5 className="text-lg font-black text-paper mb-1 font-sans">{speakingEvaluation.feedbackMessage}</h5>
+            <p className="text-sm text-paper-2 leading-relaxed font-sans">{speakingEvaluation.analysis}</p>
           </div>
         </div>
 
@@ -1932,14 +1932,14 @@ function LearnerApp() {
               { label: 'Чөлөөтэй байдал', value: speakingEvaluation.fluencyScore, icon: Gauge },
             ].filter((s) => typeof s.value === 'number').map((s, i) => {
               const v = s.value as number;
-              const tone = v >= 75 ? 'text-secondary' : v >= 50 ? 'text-amber-600' : 'text-error';
-              const barTone = v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-amber-500' : 'bg-error';
+              const tone = v >= 75 ? 'text-paper-2' : v >= 50 ? 'text-paper' : 'text-paper-2';
+              const barTone = v >= 75 ? 'bg-paper' : v >= 50 ? 'bg-paper' : 'bg-paper';
               return (
-                <div key={i} className="border-2 border-on-background rounded-xl p-4 block-shadow flex flex-col items-center text-center">
+                <div key={i} className="border-2 border-ink-line rounded-xl p-4 block-shadow flex flex-col items-center text-center">
                   <s.icon className={`w-5 h-5 mb-1 ${tone}`} />
-                  <span className={`text-3xl font-black font-space ${tone}`}>{v}</span>
-                  <span className="text-[10px] font-bold uppercase text-outline tracking-wide mt-0.5">{s.label}</span>
-                  <div className="w-full h-1.5 bg-surface-container-high rounded-full mt-2 overflow-hidden">
+                  <span className={`text-3xl font-light font-serif ${tone}`}>{v}</span>
+                  <span className="text-[10px] font-bold uppercase text-paper-3 tracking-wide mt-0.5">{s.label}</span>
+                  <div className="w-full h-1.5 bg-ink-2 rounded-full mt-2 overflow-hidden">
                     <div className={`h-full ${barTone} rounded-full transition-all`} style={{ width: `${v}%` }} />
                   </div>
                 </div>
@@ -1950,30 +1950,30 @@ function LearnerApp() {
 
         {/* What the AI heard */}
         {speakingEvaluation.transcript && (
-          <div className="w-full bg-surface-container-low border-2 border-on-background rounded-xl p-4 block-shadow">
-            <p className="text-[11px] font-space font-bold uppercase text-outline mb-1 flex items-center gap-1.5">
+          <div className="w-full bg-ink-raise border-2 border-ink-line rounded-xl p-4 block-shadow">
+            <p className="text-[11px] font-serif font-bold uppercase text-paper-3 mb-1 flex items-center gap-1.5">
               <MessageSquareText className="w-3.5 h-3.5" /> AI сонссон нь
             </p>
-            <p className="text-base font-bold text-on-surface font-sans">"{speakingEvaluation.transcript}"</p>
+            <p className="text-base font-bold text-paper font-sans">"{speakingEvaluation.transcript}"</p>
           </div>
         )}
 
         {/* Detailed feedback cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
-            { label: 'Дуудлага', text: speakingEvaluation.pronunciationFeedback, icon: AudioLines, tint: 'bg-primary-container' },
-            { label: 'Аялга', text: speakingEvaluation.accentNote, icon: Languages, tint: 'bg-secondary-container' },
-            { label: 'Дүрэм', text: speakingEvaluation.grammarFeedback, icon: SpellCheck, tint: 'bg-error-container' },
-            { label: 'Үгсийн сан', text: speakingEvaluation.vocabularyFeedback, icon: BookOpen, tint: 'bg-primary-container' },
+            { label: 'Дуудлага', text: speakingEvaluation.pronunciationFeedback, icon: AudioLines, tint: 'bg-ink-raise' },
+            { label: 'Аялга', text: speakingEvaluation.accentNote, icon: Languages, tint: 'bg-ink-raise' },
+            { label: 'Дүрэм', text: speakingEvaluation.grammarFeedback, icon: SpellCheck, tint: 'bg-ink-raise' },
+            { label: 'Үгсийн сан', text: speakingEvaluation.vocabularyFeedback, icon: BookOpen, tint: 'bg-ink-raise' },
           ].filter((c) => c.text).map((c, i) => (
-            <div key={i} className="border-2 border-on-background rounded-xl p-4 block-shadow">
-              <p className="text-xs font-black uppercase text-on-surface mb-1.5 flex items-center gap-1.5">
-                <span className={`w-6 h-6 rounded-full ${c.tint} border-2 border-on-background flex items-center justify-center`}>
+            <div key={i} className="border-2 border-ink-line rounded-xl p-4 block-shadow">
+              <p className="text-xs font-black uppercase text-paper mb-1.5 flex items-center gap-1.5">
+                <span className={`w-6 h-6 rounded-full ${c.tint} border-2 border-ink-line flex items-center justify-center`}>
                   <c.icon className="w-3.5 h-3.5" />
                 </span>
                 {c.label}
               </p>
-              <p className="text-sm text-on-surface-variant leading-relaxed font-sans">{c.text}</p>
+              <p className="text-sm text-paper-2 leading-relaxed font-sans">{c.text}</p>
             </div>
           ))}
         </div>
@@ -1982,21 +1982,21 @@ function LearnerApp() {
         {((speakingEvaluation.strengths?.length || 0) > 0 || (speakingEvaluation.improvements?.length || 0) > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {(speakingEvaluation.strengths?.length || 0) > 0 && (
-              <div className="bg-secondary-container/40 border-2 border-secondary rounded-xl p-4">
-                <p className="text-xs font-black uppercase text-secondary mb-2 flex items-center gap-1.5"><ThumbsUp className="w-4 h-4" /> Сайн байгаа тал</p>
+              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4">
+                <p className="text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"><ThumbsUp className="w-4 h-4" /> Сайн байгаа тал</p>
                 <ul className="space-y-1.5">
                   {speakingEvaluation.strengths!.map((s, i) => (
-                    <li key={i} className="text-sm text-on-surface font-medium flex items-start gap-2"><Check className="w-4 h-4 text-secondary shrink-0 mt-0.5" />{s}</li>
+                    <li key={i} className="text-sm text-paper font-medium flex items-start gap-2"><Check className="w-4 h-4 text-paper-2 shrink-0 mt-0.5" />{s}</li>
                   ))}
                 </ul>
               </div>
             )}
             {(speakingEvaluation.improvements?.length || 0) > 0 && (
-              <div className="bg-error-container/40 border-2 border-error rounded-xl p-4">
-                <p className="text-xs font-black uppercase text-error mb-2 flex items-center gap-1.5"><Target className="w-4 h-4" /> Сайжруулах зүйл</p>
+              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4">
+                <p className="text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"><Target className="w-4 h-4" /> Сайжруулах зүйл</p>
                 <ul className="space-y-1.5">
                   {speakingEvaluation.improvements!.map((s, i) => (
-                    <li key={i} className="text-sm text-on-surface font-medium flex items-start gap-2"><ArrowRight className="w-4 h-4 text-error shrink-0 mt-0.5" />{s}</li>
+                    <li key={i} className="text-sm text-paper font-medium flex items-start gap-2"><ArrowRight className="w-4 h-4 text-paper-2 shrink-0 mt-0.5" />{s}</li>
                   ))}
                 </ul>
               </div>
@@ -2008,14 +2008,14 @@ function LearnerApp() {
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => speakGerman(target)}
-            className="px-4 py-2 bg-surface border-2 border-on-background rounded-lg text-xs font-bold text-primary hover:bg-surface-container transition-colors font-space flex items-center gap-2 block-shadow cursor-pointer"
+            className="px-4 py-2 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold text-paper hover:bg-ink-raise transition-colors font-serif flex items-center gap-2 block-shadow cursor-pointer"
           >
             <Volume2 className="w-4 h-4" /> Загвар дуудлага сонсох
           </button>
           <button
             onClick={() => toggleMic(target)}
             disabled={isRecording || speakingLoading}
-            className="px-4 py-2 bg-secondary border-2 border-on-background rounded-lg text-xs font-bold text-white hover:scale-[1.02] transition-transform font-space flex items-center gap-2 block-shadow cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 bg-paper border-2 border-ink-line rounded-lg text-xs font-bold text-ink hover:scale-[1.02] transition-transform font-serif flex items-center gap-2 block-shadow cursor-pointer disabled:opacity-50"
           >
             <RotateCcw className="w-4 h-4" /> Дахин бичих
           </button>
@@ -2043,7 +2043,7 @@ function LearnerApp() {
         <button
           onClick={() => checkComposition(text, ctx)}
           disabled={!text.trim() || writeFeedbackLoading}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-5 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Sparkles className="w-4 h-4" /> {writeFeedbackLoading ? 'AI шалгаж байна...' : 'AI-аар шалгуулах'}
         </button>
@@ -2057,15 +2057,15 @@ function LearnerApp() {
       <div className="w-full flex flex-col gap-4 mt-5 animate-scale-up">
 
         {/* Headline + summary */}
-        <div className="w-full border-2 border-on-background rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow">
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 border-on-background shrink-0 block-shadow ${
-            writeFeedback.isCorrect ? 'bg-secondary-container' : 'bg-error-container'
+        <div className="w-full border-2 border-ink-line rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow">
+          <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 border-ink-line shrink-0 block-shadow ${
+            writeFeedback.isCorrect ? 'bg-ink-raise' : 'bg-ink-raise'
           }`}>
-            {writeFeedback.isCorrect ? <CheckCircle className="w-5 h-5 text-secondary" /> : <AlertCircle className="w-5 h-5 text-error" />}
+            {writeFeedback.isCorrect ? <CheckCircle className="w-5 h-5 text-paper-2" /> : <AlertCircle className="w-5 h-5 text-paper-2" />}
           </div>
           <div className="flex-grow">
-            <h5 className="text-lg font-black text-on-surface mb-1 font-sans">{writeFeedback.feedbackMessage}</h5>
-            <p className="text-sm text-on-surface-variant leading-relaxed font-sans">{writeFeedback.analysis}</p>
+            <h5 className="text-lg font-black text-paper mb-1 font-sans">{writeFeedback.feedbackMessage}</h5>
+            <p className="text-sm text-paper-2 leading-relaxed font-sans">{writeFeedback.analysis}</p>
           </div>
         </div>
 
@@ -2078,14 +2078,14 @@ function LearnerApp() {
               { label: 'Үгсийн сан', value: writeFeedback.vocabularyScore, icon: BookOpen },
             ].filter((s) => typeof s.value === 'number').map((s, i) => {
               const v = s.value as number;
-              const tone = v >= 75 ? 'text-secondary' : v >= 50 ? 'text-amber-600' : 'text-error';
-              const barTone = v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-amber-500' : 'bg-error';
+              const tone = v >= 75 ? 'text-paper-2' : v >= 50 ? 'text-paper' : 'text-paper-2';
+              const barTone = v >= 75 ? 'bg-paper' : v >= 50 ? 'bg-paper' : 'bg-paper';
               return (
-                <div key={i} className="border-2 border-on-background rounded-xl p-4 block-shadow flex flex-col items-center text-center">
+                <div key={i} className="border-2 border-ink-line rounded-xl p-4 block-shadow flex flex-col items-center text-center">
                   <s.icon className={`w-5 h-5 mb-1 ${tone}`} />
-                  <span className={`text-3xl font-black font-space ${tone}`}>{v}</span>
-                  <span className="text-[10px] font-bold uppercase text-outline tracking-wide mt-0.5">{s.label}</span>
-                  <div className="w-full h-1.5 bg-surface-container-high rounded-full mt-2 overflow-hidden">
+                  <span className={`text-3xl font-light font-serif ${tone}`}>{v}</span>
+                  <span className="text-[10px] font-bold uppercase text-paper-3 tracking-wide mt-0.5">{s.label}</span>
+                  <div className="w-full h-1.5 bg-ink-2 rounded-full mt-2 overflow-hidden">
                     <div className={`h-full ${barTone} rounded-full transition-all`} style={{ width: `${v}%` }} />
                   </div>
                 </div>
@@ -2097,39 +2097,39 @@ function LearnerApp() {
         {/* What you wrote vs the corrected version */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {writeFeedbackText && (
-            <div className="bg-surface-container-low border-2 border-on-background rounded-xl p-4 block-shadow">
-              <p className="text-[11px] font-space font-bold uppercase text-outline mb-1 flex items-center gap-1.5">
+            <div className="bg-ink-raise border-2 border-ink-line rounded-xl p-4 block-shadow">
+              <p className="text-[11px] font-serif font-bold uppercase text-paper-3 mb-1 flex items-center gap-1.5">
                 <Edit3 className="w-3.5 h-3.5" /> Таны бичсэн нь
               </p>
-              <p className="text-sm text-on-surface font-sans whitespace-pre-line leading-relaxed">{writeFeedbackText}</p>
+              <p className="text-sm text-paper font-sans whitespace-pre-line leading-relaxed">{writeFeedbackText}</p>
             </div>
           )}
           {writeFeedback.corrected && (
-            <div className="bg-secondary-container/30 border-2 border-secondary rounded-xl p-4 block-shadow">
-              <p className="text-[11px] font-space font-bold uppercase text-secondary mb-1 flex items-center gap-1.5">
+            <div className="bg-ink-raise/30 border-2 border-ink-line rounded-xl p-4 block-shadow">
+              <p className="text-[11px] font-serif font-bold uppercase text-paper-2 mb-1 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" /> Засаж сайжруулсан хувилбар
               </p>
-              <p className="text-sm text-on-surface font-medium font-sans whitespace-pre-line leading-relaxed">{writeFeedback.corrected}</p>
+              <p className="text-sm text-paper font-medium font-sans whitespace-pre-line leading-relaxed">{writeFeedback.corrected}</p>
             </div>
           )}
         </div>
 
         {/* Specific corrections — wrong grammar / wrong word → better wording */}
         {(writeFeedback.corrections?.length || 0) > 0 && (
-          <div className="border-2 border-on-background rounded-xl p-4 block-shadow">
-            <p className="text-xs font-black uppercase text-on-surface mb-3 flex items-center gap-1.5">
-              <SpellCheck className="w-4 h-4 text-primary" /> Засварууд ({writeFeedback.corrections!.length})
+          <div className="border-2 border-ink-line rounded-xl p-4 block-shadow">
+            <p className="text-xs font-black uppercase text-paper mb-3 flex items-center gap-1.5">
+              <SpellCheck className="w-4 h-4 text-paper" /> Засварууд ({writeFeedback.corrections!.length})
             </p>
             <div className="flex flex-col gap-2.5">
               {writeFeedback.corrections!.map((c, i) => (
-                <div key={i} className="border-2 border-on-background rounded-lg p-3 bg-surface-container-low">
+                <div key={i} className="border-2 border-ink-line rounded-lg p-3 bg-ink-raise">
                   <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <span className="text-sm font-bold text-error line-through font-mono">{c.original}</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-outline shrink-0" />
-                    <span className="text-sm font-bold text-secondary font-mono">{c.suggestion}</span>
-                    <span className="text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary-container border border-on-background text-on-surface">{c.type}</span>
+                    <span className="text-sm font-bold text-paper-2 line-through font-mono">{c.original}</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-paper-3 shrink-0" />
+                    <span className="text-sm font-bold text-paper-2 font-mono">{c.suggestion}</span>
+                    <span className="text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded bg-ink-raise border border-ink-line text-paper">{c.type}</span>
                   </div>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">{c.explanation}</p>
+                  <p className="text-xs text-paper-2 leading-relaxed">{c.explanation}</p>
                 </div>
               ))}
             </div>
@@ -2140,17 +2140,17 @@ function LearnerApp() {
         {(writeFeedback.grammarFeedback || writeFeedback.vocabularyFeedback) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
-              { label: 'Дүрэм', text: writeFeedback.grammarFeedback, icon: SpellCheck, tint: 'bg-error-container' },
-              { label: 'Үгсийн сан', text: writeFeedback.vocabularyFeedback, icon: BookOpen, tint: 'bg-primary-container' },
+              { label: 'Дүрэм', text: writeFeedback.grammarFeedback, icon: SpellCheck, tint: 'bg-ink-raise' },
+              { label: 'Үгсийн сан', text: writeFeedback.vocabularyFeedback, icon: BookOpen, tint: 'bg-ink-raise' },
             ].filter((c) => c.text).map((c, i) => (
-              <div key={i} className="border-2 border-on-background rounded-xl p-4 block-shadow">
-                <p className="text-xs font-black uppercase text-on-surface mb-1.5 flex items-center gap-1.5">
-                  <span className={`w-6 h-6 rounded-full ${c.tint} border-2 border-on-background flex items-center justify-center`}>
+              <div key={i} className="border-2 border-ink-line rounded-xl p-4 block-shadow">
+                <p className="text-xs font-black uppercase text-paper mb-1.5 flex items-center gap-1.5">
+                  <span className={`w-6 h-6 rounded-full ${c.tint} border-2 border-ink-line flex items-center justify-center`}>
                     <c.icon className="w-3.5 h-3.5" />
                   </span>
                   {c.label}
                 </p>
-                <p className="text-sm text-on-surface-variant leading-relaxed font-sans">{c.text}</p>
+                <p className="text-sm text-paper-2 leading-relaxed font-sans">{c.text}</p>
               </div>
             ))}
           </div>
@@ -2160,21 +2160,21 @@ function LearnerApp() {
         {((writeFeedback.strengths?.length || 0) > 0 || (writeFeedback.improvements?.length || 0) > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {(writeFeedback.strengths?.length || 0) > 0 && (
-              <div className="bg-secondary-container/40 border-2 border-secondary rounded-xl p-4">
-                <p className="text-xs font-black uppercase text-secondary mb-2 flex items-center gap-1.5"><ThumbsUp className="w-4 h-4" /> Сайн байгаа тал</p>
+              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4">
+                <p className="text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"><ThumbsUp className="w-4 h-4" /> Сайн байгаа тал</p>
                 <ul className="space-y-1.5">
                   {writeFeedback.strengths!.map((s, i) => (
-                    <li key={i} className="text-sm text-on-surface font-medium flex items-start gap-2"><Check className="w-4 h-4 text-secondary shrink-0 mt-0.5" />{s}</li>
+                    <li key={i} className="text-sm text-paper font-medium flex items-start gap-2"><Check className="w-4 h-4 text-paper-2 shrink-0 mt-0.5" />{s}</li>
                   ))}
                 </ul>
               </div>
             )}
             {(writeFeedback.improvements?.length || 0) > 0 && (
-              <div className="bg-error-container/40 border-2 border-error rounded-xl p-4">
-                <p className="text-xs font-black uppercase text-error mb-2 flex items-center gap-1.5"><Target className="w-4 h-4" /> Сайжруулах зүйл</p>
+              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4">
+                <p className="text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"><Target className="w-4 h-4" /> Сайжруулах зүйл</p>
                 <ul className="space-y-1.5">
                   {writeFeedback.improvements!.map((s, i) => (
-                    <li key={i} className="text-sm text-on-surface font-medium flex items-start gap-2"><ArrowRight className="w-4 h-4 text-error shrink-0 mt-0.5" />{s}</li>
+                    <li key={i} className="text-sm text-paper font-medium flex items-start gap-2"><ArrowRight className="w-4 h-4 text-paper-2 shrink-0 mt-0.5" />{s}</li>
                   ))}
                 </ul>
               </div>
@@ -2189,12 +2189,12 @@ function LearnerApp() {
   // so we don't flash the login page at an already-signed-in user.
   if (authLoading) {
     return (
-      <div className="bg-background text-white font-sans min-h-screen flex flex-col justify-center items-center gap-4">
-        <h1 className="text-3xl font-black font-space tracking-tight flex items-center gap-3">
+      <div className="bg-ink text-paper font-sans min-h-screen flex flex-col justify-center items-center gap-4">
+        <h1 className="text-3xl font-light font-serif tracking-tight flex items-center gap-3">
           <BrandLogo className="w-9 h-9" />
-          <span><span className="text-primary">Vivid</span> Lingua</span>
+          <span><span className="text-paper">Vivid</span> <span className="text-paper-2">Lingua</span></span>
         </h1>
-        <Loader2 className="w-7 h-7 text-amber-400 animate-spin" />
+        <Loader2 className="w-7 h-7 text-paper animate-spin" />
       </div>
     );
   }
@@ -2265,19 +2265,19 @@ function LearnerApp() {
   }
 
   return (
-    <div className="bg-background text-white font-sans min-h-screen flex flex-col md:flex-row relative overflow-x-hidden">
+    <div className="bg-ink text-paper font-sans min-h-screen flex flex-col md:flex-row relative overflow-x-hidden">
 
       {/* Зочин горим — явцаа хадгалахын тулд бүртгүүлэх уриалга (бусад дэлгэцийг хаахгүй, хөвдөг) */}
       {currentUser?.isGuest && (
         <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[120] w-[calc(100%-2rem)] max-w-md animate-fade-in">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-surface/95 backdrop-blur-md border border-primary/40 shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
-            <Sparkles className="w-5 h-5 text-amber-300 flex-shrink-0" />
-            <p className="text-xs md:text-sm font-semibold text-slate-200 flex-grow">
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-ink-raise/95 backdrop-blur-md border border-ink-line/40 shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+            <Sparkles className="w-5 h-5 text-paper-2 flex-shrink-0" />
+            <p className="text-xs md:text-sm font-semibold text-paper flex-grow">
               Зочин горимоор үзэж байна. Явцаа хадгалж, бүх түвшин нээхийн тулд бүртгүүлээрэй.
             </p>
             <button
               onClick={exitGuestToSignup}
-              className="flex-shrink-0 px-4 py-2 rounded-xl bg-primary hover:bg-surface-tint text-on-primary text-xs md:text-sm font-bold border border-primary/40 transition-all cursor-pointer"
+              className="flex-shrink-0 px-4 py-2 rounded-xl bg-paper hover:bg-paper text-ink text-xs md:text-sm font-bold border border-ink-line/40 transition-all cursor-pointer"
             >
               Бүртгүүлэх
             </button>
@@ -2291,34 +2291,34 @@ function LearnerApp() {
       {/* Тулааны урилгын pop-up — над руу challenge ирэхэд */}
       {incomingDuel && !activeDuel && (
         <div className="fixed inset-0 z-[130] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 animate-fade-in">
-          <div className="bg-surface border border-primary/30 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up text-on-surface shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+          <div className="bg-ink-raise border border-ink-line/30 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up text-paper shadow-[0_0_40px_rgba(0,0,0,0.5)]">
             <div className="flex flex-col items-center text-center gap-3">
-              <span className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">
+              <span className="w-14 h-14 rounded-2xl bg-ink-raise border border-ink-line flex items-center justify-center text-paper-2">
                 <Swords className="w-7 h-7" />
               </span>
               {incomingDuel.challenger?.avatar && (
                 <img src={incomingDuel.challenger.avatar} alt="" className="w-12 h-12 rounded-full object-cover -mt-1" />
               )}
-              <h3 className="text-xl font-black font-space">
-                <span className="text-primary">
+              <h3 className="text-xl font-light font-serif">
+                <span className="text-paper">
                   {incomingDuel.challenger?.name ?? 'Нэгэн суралцагч'}
                 </span>{' '}
                 таныг тулаанд уриалаа!
               </h3>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                {incomingDuel.level} түвшний 10 асуултад өрсөлдөнө — ялагч <b className="text-teal-300">+1 Streak Freeze</b> авна.
+              <p className="text-sm text-paper-2 leading-relaxed">
+                {incomingDuel.level} түвшний 10 асуултад өрсөлдөнө — ялагч <b className="text-paper-2">+1 Streak Freeze</b> авна.
               </p>
             </div>
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => { markDuelChallengeSeen(incomingDuel.code); setIncomingDuel(null); }}
-                className="flex-1 py-3 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-300 cursor-pointer"
+                className="flex-1 py-3 border border-ink-line hover:bg-ink-raise rounded-xl font-bold transition-all text-paper cursor-pointer"
               >
                 Дараа
               </button>
               <button
                 onClick={() => { markDuelChallengeSeen(incomingDuel.code); setActiveDuel(incomingDuel); setIncomingDuel(null); }}
-                className="flex-[2] bg-primary text-on-primary font-bold rounded-xl py-3 px-4 hover:bg-surface-tint transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="flex-[2] bg-paper text-ink font-bold rounded-xl py-3 px-4 hover:bg-paper transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <Swords className="w-4 h-4" /> Тоглох
               </button>
@@ -2340,10 +2340,10 @@ function LearnerApp() {
 
       {/* Standalone Duolingo Core Quiz Overlay (Matches Screen 1 format explicitly) */}
       {coreLessonActive && (
-        <div id="core-lesson-modal" className="fixed inset-0 bg-background z-100 flex flex-col items-center justify-between pb-8 pt-4 px-4 md:px-12 animate-fade-in text-white">
+        <div id="core-lesson-modal" className="fixed inset-0 bg-ink z-100 flex flex-col items-center justify-between pb-8 pt-4 px-4 md:px-12 animate-fade-in text-paper">
           {/* Atmospheric background glows in overlay */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-900/10 rounded-full blur-[120px] pointer-events-none"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-paper/[0.02] rounded-full blur-[120px] pointer-events-none"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-paper/[0.02] rounded-full blur-[120px] pointer-events-none"></div>
           
           {/* Top Header progress & close buttons */}
           <header className="w-full max-w-[800px] flex items-center gap-4 py-2 relative z-10">
@@ -2354,16 +2354,16 @@ function LearnerApp() {
                 setCoreLessonAnswer(null);
                 setCoreLessonFeedback(null);
               }}
-              className="w-12 h-12 flex items-center justify-center border border-white/10 rounded-full hover:bg-white/10 transition-all block-shadow bg-white/5 text-white cursor-pointer"
+              className="w-12 h-12 flex items-center justify-center border border-ink-line rounded-full hover:bg-ink-raise transition-all block-shadow bg-ink-raise text-paper cursor-pointer"
             >
               <span className="material-symbols-outlined text-xl font-bold">close</span>
             </button>
-            <div className="flex-grow h-4 bg-white/5 border border-white/10 rounded-full overflow-hidden relative">
+            <div className="flex-grow h-4 bg-ink-raise border border-ink-line rounded-full overflow-hidden relative">
               <div 
-                className="h-full bg-primary transition-all duration-500 relative"
+                className="h-full bg-paper transition-all duration-500 relative"
                 style={{ width: coreLessonStep === 1 ? '60%' : '100%' }}
               >
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-white/40"></div>
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-ink-raise"></div>
               </div>
             </div>
           </header>
@@ -2374,13 +2374,13 @@ function LearnerApp() {
               {/* Present German Word Display */}
               <div className="flex flex-col items-center justify-center flex-grow mb-12">
                 <div className="flex items-center gap-6">
-                  <h1 className="font-sans font-extrabold text-4xl md:text-5xl text-center tracking-tight text-on-background">
+                  <h1 className="font-sans font-extrabold text-4xl md:text-5xl text-center tracking-tight text-paper">
                     Guten Tag
                   </h1>
                   <button 
                     id="audio-prompt-btn"
                     onClick={() => speakGerman('Guten Tag')}
-                    className="w-16 h-16 flex items-center justify-center bg-primary text-on-primary rounded-full border-2 border-on-background block-shadow hover:bg-surface-tint hover:scale-105 transition-all cursor-pointer"
+                    className="w-16 h-16 flex items-center justify-center bg-paper text-ink rounded-full border-2 border-ink-line block-shadow hover:bg-paper hover:scale-105 transition-all cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-2xl fill">volume_up</span>
                   </button>
@@ -2393,13 +2393,13 @@ function LearnerApp() {
                 <button 
                   onClick={() => !coreLessonFeedback && submitCoreLessonAnswer(0)}
                   disabled={coreLessonFeedback !== null}
-                  className={`choice-card relative w-full text-left bg-white/5 border border-white/10 rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
-                    coreLessonAnswer === 0 && coreLessonFeedback === 'incorrect' ? 'bg-red-950/40 border-red-500 text-white opacity-100 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
-                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-amber-500/50 hover:bg-white/10'
+                  className={`choice-card relative w-full text-left bg-ink-raise border border-ink-line rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
+                    coreLessonAnswer === 0 && coreLessonFeedback === 'incorrect' ? 'bg-ink-raise border-ink-line text-paper opacity-100 shadow-black/40' :
+                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-ink-line hover:bg-ink-raise'
                   }`}
                 >
-                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-amber-500/50 group-hover:text-amber-400">1</span>
-                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 0 && coreLessonFeedback === 'incorrect' ? 'text-red-300' : 'text-slate-200 group-hover:text-amber-300'}`}>Өглөөний мэнд</span>
+                  <span className="absolute top-4 right-4 border border-ink-line bg-ink-raise px-2 py-1 rounded font-serif text-[12px] font-bold text-paper-2 group-hover:border-ink-line group-hover:text-paper">1</span>
+                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 0 && coreLessonFeedback === 'incorrect' ? 'text-paper-2' : 'text-paper group-hover:text-paper-2'}`}>Өглөөний мэнд</span>
                 </button>
 
                 {/* Option 2 (Correct) */}
@@ -2407,64 +2407,64 @@ function LearnerApp() {
                   onClick={() => !coreLessonFeedback && submitCoreLessonAnswer(1)}
                   disabled={coreLessonFeedback !== null}
                   className={`choice-card relative w-full text-left rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
-                    coreLessonAnswer === 1 && coreLessonFeedback === 'correct' ? 'bg-amber-950/40 border-amber-500 text-amber-200 opacity-100 shadow-[0_0_15px_rgba(230,184,92,0.32)]' :
-                    coreLessonFeedback === 'incorrect' ? 'bg-amber-950/20 border-dashed border-amber-500/40 opacity-100' : 
-                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'bg-white/5 border border-white/10 hover:border-amber-500/50'
+                    coreLessonAnswer === 1 && coreLessonFeedback === 'correct' ? 'bg-ink-raise border-ink-line text-paper-2 opacity-100 shadow-black/40' :
+                    coreLessonFeedback === 'incorrect' ? 'bg-ink-raise border-dashed border-ink-line opacity-100' : 
+                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'bg-ink-raise border border-ink-line hover:border-ink-line'
                   }`}
                 >
-                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-amber-500/50 group-hover:text-amber-400">2</span>
-                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 1 && coreLessonFeedback === 'correct' ? 'text-amber-200' : 'text-slate-200 group-hover:text-amber-300'}`}>Өдрийн мэнд</span>
+                  <span className="absolute top-4 right-4 border border-ink-line bg-ink-raise px-2 py-1 rounded font-serif text-[12px] font-bold text-paper-2 group-hover:border-ink-line group-hover:text-paper">2</span>
+                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 1 && coreLessonFeedback === 'correct' ? 'text-paper-2' : 'text-paper group-hover:text-paper-2'}`}>Өдрийн мэнд</span>
                 </button>
 
                 {/* Option 3 */}
                 <button 
                   onClick={() => !coreLessonFeedback && submitCoreLessonAnswer(2)}
                   disabled={coreLessonFeedback !== null}
-                  className={`choice-card relative w-full text-left bg-white/5 border border-white/10 rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
-                    coreLessonAnswer === 2 && coreLessonFeedback === 'incorrect' ? 'bg-red-950/40 border-red-500 text-white opacity-100 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
-                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-amber-500/50 hover:bg-white/10'
+                  className={`choice-card relative w-full text-left bg-ink-raise border border-ink-line rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
+                    coreLessonAnswer === 2 && coreLessonFeedback === 'incorrect' ? 'bg-ink-raise border-ink-line text-paper opacity-100 shadow-black/40' :
+                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-ink-line hover:bg-ink-raise'
                   }`}
                 >
-                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-amber-500/50 group-hover:text-amber-400">3</span>
-                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 2 && coreLessonFeedback === 'incorrect' ? 'text-red-300' : 'text-slate-200 group-hover:text-amber-300'}`}>Баяртай</span>
+                  <span className="absolute top-4 right-4 border border-ink-line bg-ink-raise px-2 py-1 rounded font-serif text-[12px] font-bold text-paper-2 group-hover:border-ink-line group-hover:text-paper">3</span>
+                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 2 && coreLessonFeedback === 'incorrect' ? 'text-paper-2' : 'text-paper group-hover:text-paper-2'}`}>Баяртай</span>
                 </button>
 
                 {/* Option 4 */}
                 <button 
                   onClick={() => !coreLessonFeedback && submitCoreLessonAnswer(3)}
                   disabled={coreLessonFeedback !== null}
-                  className={`choice-card relative w-full text-left bg-white/5 border border-white/10 rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
-                    coreLessonAnswer === 3 && coreLessonFeedback === 'incorrect' ? 'bg-red-950/40 border-red-500 text-white opacity-100 shadow-[0_0_15px_rgba(239,68,68,0.2)]' :
-                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-amber-500/50 hover:bg-white/10'
+                  className={`choice-card relative w-full text-left bg-ink-raise border border-ink-line rounded-xl p-6 group transition-all block-shadow cursor-pointer ${
+                    coreLessonAnswer === 3 && coreLessonFeedback === 'incorrect' ? 'bg-ink-raise border-ink-line text-paper opacity-100 shadow-black/40' :
+                    coreLessonFeedback !== null ? 'opacity-40 cursor-not-allowed' : 'hover:border-ink-line hover:bg-ink-raise'
                   }`}
                 >
-                  <span className="absolute top-4 right-4 border border-white/10 bg-white/5 px-2 py-1 rounded font-space text-[12px] font-bold text-slate-400 group-hover:border-amber-500/50 group-hover:text-amber-400">4</span>
-                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 3 && coreLessonFeedback === 'incorrect' ? 'text-red-300' : 'text-slate-200 group-hover:text-amber-300'}`}>Сайн байна уу</span>
+                  <span className="absolute top-4 right-4 border border-ink-line bg-ink-raise px-2 py-1 rounded font-serif text-[12px] font-bold text-paper-2 group-hover:border-ink-line group-hover:text-paper">4</span>
+                  <span className={`font-sans text-lg font-bold ${coreLessonAnswer === 3 && coreLessonFeedback === 'incorrect' ? 'text-paper-2' : 'text-paper group-hover:text-paper-2'}`}>Сайн байна уу</span>
                 </button>
               </div>
             </main>
           ) : (
             // Core Lesson Completed Screen
             <div className="flex-grow w-full max-w-[800px] flex flex-col items-center justify-center p-8 text-center my-auto transition-all animate-scale-up">
-              <div className="w-24 h-24 rounded-full bg-secondary-container flex items-center justify-center border-4 border-on-background block-shadow-green mb-8">
-                <span className="material-symbols-outlined text-4xl text-on-secondary-container font-black fill">trophy</span>
+              <div className="w-24 h-24 rounded-full bg-ink-raise flex items-center justify-center border-4 border-ink-line block-shadow-green mb-8">
+                <span className="material-symbols-outlined text-4xl text-paper font-black fill">trophy</span>
               </div>
-              <h2 className="text-3xl md:text-4xl font-extrabold text-on-background mb-4">Хичээл Амжилттай Дууслаа!</h2>
-              <p className="text-body-lg text-on-surface-variant max-w-md mb-8">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-paper mb-4">Хичээл Амжилттай Дууслаа!</h2>
+              <p className="text-body-lg text-paper-2 max-w-md mb-8">
                 Баяр хүргэе! Та өнөөдрийн quick-lesson даалгаврыг амжилттай дуусгаж, Германы суурь мэндийг цээжиллээ.
               </p>
-              <div className="border-2 border-on-background rounded-xl p-6 max-w-sm block-shadow w-full flex justify-around items-center">
+              <div className="border-2 border-ink-line rounded-xl p-6 max-w-sm block-shadow w-full flex justify-around items-center">
                 <div>
-                  <p className="text-[12px] font-space text-outline font-bold uppercase">Streak</p>
-                  <p className="text-2xl font-black text-secondary flex items-center justify-center gap-1">
-                    <Flame className="w-6 h-6 text-orange-500 fill-orange-500" /> {streak} өдөр
+                  <p className="text-[12px] font-serif text-paper-3 font-bold uppercase">Streak</p>
+                  <p className="text-2xl font-black text-paper-2 flex items-center justify-center gap-1">
+                    <Flame className="w-6 h-6 text-paper fill-paper-2" /> {streak} өдөр
                   </p>
                 </div>
-                <div className="w-[1px] h-10 bg-outline-variant"></div>
+                <div className="w-[1px] h-10 bg-ink-line"></div>
                 <div>
-                  <p className="text-[12px] font-space text-outline font-bold uppercase">Прогресс</p>
-                  <p className="text-2xl font-black text-primary flex items-center justify-center gap-1">
-                    <CheckCircle className="w-6 h-6 text-secondary fill-secondary-container" /> {lessonProgress}%
+                  <p className="text-[12px] font-serif text-paper-3 font-bold uppercase">Прогресс</p>
+                  <p className="text-2xl font-black text-paper flex items-center justify-center gap-1">
+                    <CheckCircle className="w-6 h-6 text-paper-2 fill-paper-2" /> {lessonProgress}%
                   </p>
                 </div>
               </div>
@@ -2473,10 +2473,10 @@ function LearnerApp() {
 
           {/* Dynamic Slider Toast Bottom Panel */}
           {coreLessonFeedback && (
-            <div className={`w-full max-w-[800px] p-6 border-4 border-on-background rounded-2xl flex flex-col sm:flex-row justify-between items-center shadow-[0_-8px_24px_rgba(0,0,0,0.1)] gap-4 transition-all duration-300 ${
+            <div className={`w-full max-w-[800px] p-6 border-4 border-ink-line rounded-2xl flex flex-col sm:flex-row justify-between items-center shadow-[0_-8px_24px_rgba(0,0,0,0.1)] gap-4 transition-all duration-300 ${
               coreLessonFeedback === 'correct' 
-                ? 'bg-secondary-container text-on-secondary-fixed border-on-secondary-container shadow-secondary/15' 
-                : 'bg-error-container text-on-error-container border-on-error-container shadow-error/15'
+                ? 'bg-paper text-ink border-paper shadow-black/40'
+                : 'bg-ink-raise text-paper border-ink-line shadow-black/40'
             }`}>
               <div className="flex items-center gap-4">
                 <span className="material-symbols-outlined text-4xl fill">
@@ -2505,10 +2505,10 @@ function LearnerApp() {
                     setCoreLessonFeedback(null);
                   }
                 }}
-                className={`px-8 py-3 font-sans font-bold text-[16px] rounded-xl border-2 border-on-background transition-all block-shadow w-full sm:w-auto cursor-pointer ${
+                className={`px-8 py-3 font-sans font-bold text-[16px] rounded-xl border-2 border-ink-line transition-all block-shadow w-full sm:w-auto cursor-pointer ${
                   coreLessonFeedback === 'correct' 
-                    ? 'bg-secondary text-on-secondary hover:bg-on-secondary-fixed-variant' 
-                    : 'bg-error text-on-error hover:bg-on-error-container'
+                    ? 'bg-paper text-ink hover:bg-white' 
+                    : 'bg-paper text-ink hover:bg-white'
                 }`}
               >
                 Үргэлжлүүлэх
@@ -2519,39 +2519,39 @@ function LearnerApp() {
       )}
 
       {/* Shared Sidebar - Visible on Desktop only */}
-      <nav aria-label="Desktop menu" className="hidden md:flex flex-col h-screen py-8 px-4 gap-y-6 bg-surface-container-lowest w-[280px] fixed left-0 top-0 text-on-surface border-r border-outline-variant select-none z-30 shadow-[4px_0_24px_rgba(0,0,0,0.6)]">
+      <nav aria-label="Desktop menu" className="hidden md:flex flex-col h-screen py-8 px-4 gap-y-6 bg-ink w-[280px] fixed left-0 top-0 text-paper border-r border-ink-line select-none z-30 shadow-[4px_0_24px_rgba(0,0,0,0.6)]">
         <div>
-          <h1 className="text-2xl font-black tracking-tight font-space flex items-center gap-2">
+          <h1 className="text-2xl font-light tracking-tight font-serif flex items-center gap-2">
             <BrandLogo className="w-8 h-8" />
-            <span><span className="text-primary">Vivid</span> Lingua</span>
+            <span><span className="text-paper">Vivid</span> <span className="text-paper-2">Lingua</span></span>
           </h1>
         </div>
 
         {/* User Context Avatar Panel */}
         {currentUser ? (
-          <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 cursor-pointer hover:bg-white/10 transition-colors" onClick={() => selectTab('profile')}>
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-amber-500/50">
+          <div className="flex items-center gap-3 bg-ink-raise p-3 rounded-xl border border-ink-line cursor-pointer hover:bg-ink-raise transition-colors" onClick={() => selectTab('profile')}>
+            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-ink-line">
               <img 
                 alt="Profile" 
-                className="w-full h-full object-cover bg-slate-800" 
+                className="w-full h-full object-cover bg-ink-2" 
                 src={currentUser.avatar}
               />
             </div>
             <div className="overflow-hidden">
-              <p className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
+              <p className="text-[10px] font-black uppercase text-paper tracking-wider flex items-center gap-1">
                 <Target className="w-2.5 h-2.5" /> {currentUser.targetLevel} ТҮВШИН
               </p>
-              <h2 className="text-[15px] font-extrabold truncate text-white leading-tight">{currentUser.name}</h2>
-              <p className="text-[11px] text-slate-400 truncate leading-none mt-0.5">{currentUser.role}</p>
+              <h2 className="text-[15px] font-extrabold truncate text-paper leading-tight">{currentUser.name}</h2>
+              <p className="text-[11px] text-paper-2 truncate leading-none mt-0.5">{currentUser.role}</p>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10">
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-white/20 flex items-center justify-center bg-white/5 text-slate-400">
+          <div className="flex items-center gap-3 bg-ink-raise p-3 rounded-xl border border-ink-line">
+            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-ink-line flex items-center justify-center bg-ink-raise text-paper-2">
               <span className="material-symbols-outlined">account_circle</span>
             </div>
             <div>
-              <p className="text-xs text-slate-400">Сайн байна уу?</p>
+              <p className="text-xs text-paper-2">Сайн байна уу?</p>
               <h2 className="text-[16px] font-bold">Нэвтрээгүй</h2>
             </div>
           </div>
@@ -2559,12 +2559,12 @@ function LearnerApp() {
 
         {/* Dynamic Streak Badge Card */}
         <div>
-          <div className="bg-white/5 text-white text-[14px] font-bold rounded-xl px-4 py-3 flex items-center justify-between border border-white/10">
-            <span className="flex items-center gap-2 text-amber-300">
-              <Flame className="w-5 h-5 text-amber-400 fill-amber-400 animate-pulse" />
+          <div className="bg-ink-raise text-paper text-[14px] font-bold rounded-xl px-4 py-3 flex items-center justify-between border border-ink-line">
+            <span className="flex items-center gap-2 text-paper-2">
+              <Flame className="w-5 h-5 text-paper fill-paper-2 animate-pulse" />
               Streak: {streak} өдөр
             </span>
-            <span className="text-[11px] font-space bg-primary text-on-primary px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wide">AUTO</span>
+            <span className="text-[11px] font-serif bg-paper text-ink px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wide">AUTO</span>
           </div>
         </div>
 
@@ -2576,11 +2576,11 @@ function LearnerApp() {
                 onClick={() => selectTab('profile')}
                 className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
                   activeTab === 'profile' 
-                    ? 'text-on-primary border-l-4 border-secondary bg-white/15' 
-                    : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
+                    ? 'text-paper border-l-4 border-paper bg-ink-raise' 
+                    : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
                 }`}
               >
-                <Target className={`w-5 h-5 ${activeTab === 'profile' ? 'text-secondary-fixed' : ''}`} />
+                <Target className={`w-5 h-5 ${activeTab === 'profile' ? 'text-paper' : ''}`} />
                 <span className="text-[14px] font-bold">Хяналтын самбар</span>
               </button>
             </li>
@@ -2590,11 +2590,11 @@ function LearnerApp() {
               onClick={() => selectTab('read')}
               className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
                 activeTab === 'read' 
-                  ? 'text-on-primary border-l-4 border-secondary bg-white/15' 
-                  : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
+                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
+                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
               }`}
             >
-              <BookOpen className={`w-5 h-5 ${activeTab === 'read' ? 'text-secondary-fixed' : ''}`} />
+              <BookOpen className={`w-5 h-5 ${activeTab === 'read' ? 'text-paper' : ''}`} />
               <span className="text-[14px] font-bold">Унших</span>
             </button>
           </li>
@@ -2603,11 +2603,11 @@ function LearnerApp() {
               onClick={() => selectTab('listen')}
               className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
                 activeTab === 'listen' 
-                  ? 'text-on-primary border-l-4 border-secondary bg-white/15' 
-                  : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
+                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
+                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
               }`}
             >
-              <Headphones className={`w-5 h-5 ${activeTab === 'listen' ? 'text-secondary-fixed' : ''}`} />
+              <Headphones className={`w-5 h-5 ${activeTab === 'listen' ? 'text-paper' : ''}`} />
               <span className="text-[14px] font-bold">Сонсох</span>
             </button>
           </li>
@@ -2616,11 +2616,11 @@ function LearnerApp() {
               onClick={() => selectTab('speak')}
               className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
                 activeTab === 'speak' 
-                  ? 'text-on-primary border-l-4 border-secondary bg-white/15' 
-                  : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
+                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
+                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
               }`}
             >
-              <Mic className={`w-5 h-5 ${activeTab === 'speak' ? 'text-secondary-fixed' : ''}`} />
+              <Mic className={`w-5 h-5 ${activeTab === 'speak' ? 'text-paper' : ''}`} />
               <span className="text-[14px] font-bold">Ярих</span>
             </button>
           </li>
@@ -2629,11 +2629,11 @@ function LearnerApp() {
               onClick={() => selectTab('write')}
               className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
                 activeTab === 'write' 
-                  ? 'text-on-primary border-l-4 border-secondary bg-white/15' 
-                  : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
+                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
+                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
               }`}
             >
-              <Edit3 className={`w-5 h-5 ${activeTab === 'write' ? 'text-secondary-fixed' : ''}`} />
+              <Edit3 className={`w-5 h-5 ${activeTab === 'write' ? 'text-paper' : ''}`} />
               <span className="text-[14px] font-bold">Бичих</span>
             </button>
           </li>
@@ -2642,15 +2642,15 @@ function LearnerApp() {
               onClick={() => selectTab('vocab')}
               className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
                 activeTab === 'vocab' 
-                  ? 'text-on-primary border-l-4 border-secondary bg-white/15' 
-                  : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
+                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
+                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
               }`}
             >
-              <Languages className={`w-5 h-5 ${activeTab === 'vocab' ? 'text-secondary-fixed' : ''}`} />
+              <Languages className={`w-5 h-5 ${activeTab === 'vocab' ? 'text-paper' : ''}`} />
               <span className="text-[14px] font-bold flex-grow flex justify-between items-center pr-4">
                 <span>Үгсийн сан</span>
                 {dueCount > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] font-black font-space px-2 py-0.5 rounded-full">
+                  <span className="bg-paper text-ink text-[10px] font-bold font-serif px-2 py-0.5 rounded-full">
                     {dueCount}
                   </span>
                 )}
@@ -2662,11 +2662,11 @@ function LearnerApp() {
               onClick={() => selectTab('translate')}
               className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
                 activeTab === 'translate' 
-                  ? 'text-on-primary border-l-4 border-secondary bg-white/15' 
-                  : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
+                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
+                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
               }`}
             >
-              <Sparkles className={`w-5 h-5 ${activeTab === 'translate' ? 'text-secondary-fixed text-amber-400' : ''}`} />
+              <Sparkles className={`w-5 h-5 ${activeTab === 'translate' ? 'text-paper text-paper' : ''}`} />
               <span className="text-[14px] font-bold">Орчуулагч</span>
             </button>
           </li>
@@ -2675,11 +2675,11 @@ function LearnerApp() {
               onClick={() => selectTab('exam')}
               className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
                 activeTab === 'exam' 
-                  ? 'text-on-primary border-l-4 border-secondary bg-white/15' 
-                  : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
+                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
+                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
               }`}
             >
-              <GraduationCap className={`w-5 h-5 ${activeTab === 'exam' ? 'text-secondary-fixed' : ''} text-amber-400`} />
+              <GraduationCap className={`w-5 h-5 ${activeTab === 'exam' ? 'text-paper' : ''} text-paper`} />
               <span className="text-[14px] font-bold">Шалгалт</span>
             </button>
           </li>
@@ -2688,33 +2688,33 @@ function LearnerApp() {
               onClick={() => selectTab('friends')}
               className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
                 activeTab === 'friends'
-                  ? 'text-on-primary border-l-4 border-secondary bg-white/15'
-                  : 'text-on-primary-container hover:text-secondary-fixed hover:bg-white/5'
+                  ? 'text-paper border-l-4 border-paper bg-ink-raise'
+                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
               }`}
             >
-              <Swords className={`w-5 h-5 ${activeTab === 'friends' ? 'text-secondary-fixed' : ''} text-amber-400`} />
+              <Swords className={`w-5 h-5 ${activeTab === 'friends' ? 'text-paper' : ''} text-paper`} />
               <span className="text-[14px] font-bold">Найзууд</span>
             </button>
           </li>
         </ul>
 
         {/* Sidebar Settings Footer */}
-        <div className="border-t border-white/15 pt-4 flex flex-col gap-1">
+        <div className="border-t border-ink-line pt-4 flex flex-col gap-1">
           <button 
             onClick={() => selectTab('settings')}
             className={`flex items-center gap-3 py-2 px-4 rounded-lg font-bold text-left transition-colors cursor-pointer ${
-              activeTab === 'settings' ? 'text-white bg-white/10' : 'text-on-primary-container hover:text-white hover:bg-white/5'
+              activeTab === 'settings' ? 'text-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
             }`}
           >
-            <Settings className="w-4 h-4 text-outline" />
+            <Settings className="w-4 h-4 text-paper-3" />
             <span className="text-sm">Тохиргоо</span>
           </button>
           {currentUser && (
             <button 
               onClick={logoutUser}
-              className="flex items-center gap-3 py-2 px-4 rounded-lg font-bold text-left text-on-primary-container hover:text-error hover:bg-white/5 transition-colors cursor-pointer w-full"
+              className="flex items-center gap-3 py-2 px-4 rounded-lg font-bold text-left text-paper hover:text-paper-2 hover:bg-ink-raise transition-colors cursor-pointer w-full"
             >
-              <LogOut className="w-4 h-4 text-outline" />
+              <LogOut className="w-4 h-4 text-paper-3" />
               <span className="text-sm">Гарах</span>
             </button>
           )}
@@ -2722,23 +2722,23 @@ function LearnerApp() {
       </nav>
 
       {/* Shared TopAppBar - Mobile Only */}
-      <header className="md:hidden flex justify-between items-center w-full px-4 h-16 bg-surface border-b-2 border-on-background fixed top-0 left-0 z-40 shrink-0">
+      <header className="md:hidden flex justify-between items-center w-full px-4 h-16 bg-ink-raise border-b-2 border-ink-line fixed top-0 left-0 z-40 shrink-0">
         <button 
           onClick={() => setMobileMenuOpen(prev => !prev)}
-          className="text-primary p-2 border-2 border-on-background rounded-lg bg-surface-container-low hover:bg-surface shadow-[2px_2px_0_0_#3a352a] cursor-pointer"
+          className="text-paper p-2 border-2 border-ink-line rounded-lg bg-ink-raise hover:bg-ink-2 shadow-[2px_2px_0_0_#000000] cursor-pointer"
         >
           <span className="material-symbols-outlined text-xl font-bold">menu</span>
         </button>
-        <h1 className="text-xl font-black text-primary tracking-tight flex items-center gap-2">
+        <h1 className="text-xl font-light font-serif text-paper tracking-tight flex items-center gap-2">
           <BrandLogo className="w-6 h-6" />
           Vivid Lingua
         </h1>
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center p-2 text-secondary select-none">
-            <Flame className="w-5 h-5 text-orange-500 fill-orange-500 animate-pulse" />
-            <span className="text-xs font-black text-on-background ml-1">{streak}</span>
+          <div className="flex items-center justify-center p-2 text-paper-2 select-none">
+            <Flame className="w-5 h-5 text-paper fill-paper-2 animate-pulse" />
+            <span className="text-xs font-black text-paper ml-1">{streak}</span>
           </div>
-          <div className="p-2 text-amber-500 select-none">
+          <div className="p-2 text-paper select-none">
             <span className="material-symbols-outlined fill text-lg">military_tech</span>
           </div>
         </div>
@@ -2748,40 +2748,40 @@ function LearnerApp() {
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black/50 z-45 md:hidden" onClick={() => setMobileMenuOpen(false)}>
           <div 
-            className="w-[280px] h-full bg-primary py-8 px-4 flex flex-col gap-y-6 text-on-primary animate-slide-right relative"
+            className="w-[280px] h-full bg-paper py-8 px-4 flex flex-col gap-y-6 text-ink animate-slide-right relative"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center px-2">
-              <h1 className="text-2xl font-black font-space flex items-center gap-2">
+              <h1 className="text-2xl font-light font-serif flex items-center gap-2">
                 <BrandLogo className="w-7 h-7" />
                 Vivid Lingua
               </h1>
               <button 
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 cursor-pointer"
+                className="p-1 rounded-full border border-ink-line bg-ink-raise hover:bg-ink-raise cursor-pointer"
               >
-                <X className="w-5 h-5 text-white" />
+                <X className="w-5 h-5 text-paper" />
               </button>
             </div>
 
             {currentUser ? (
-              <div className="bg-white/5 p-3 rounded-xl border border-white/10 mx-2 flex gap-3 items-center cursor-pointer hover:bg-white/10" onClick={() => selectTab('profile')}>
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20 border border-amber-500/50 flex-shrink-0">
+              <div className="bg-ink-raise p-3 rounded-xl border border-ink-line mx-2 flex gap-3 items-center cursor-pointer hover:bg-ink-raise" onClick={() => selectTab('profile')}>
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-ink-raise border border-ink-line flex-shrink-0">
                   <img alt="User" className="w-full h-full object-cover" src={currentUser.avatar} />
                 </div>
                 <div className="overflow-hidden">
-                  <h3 className="text-sm font-bold truncate text-white leading-tight">{currentUser.name}</h3>
-                  <p className="text-[10px] text-amber-300 font-bold truncate leading-none mt-0.5">{currentUser.role}</p>
+                  <h3 className="text-sm font-bold truncate text-paper leading-tight">{currentUser.name}</h3>
+                  <p className="text-[10px] text-paper-2 font-bold truncate leading-none mt-0.5">{currentUser.role}</p>
                 </div>
               </div>
             ) : (
-              <div className="bg-white/5 p-3 rounded-xl border border-white/10 mx-2 flex gap-3 items-center">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-slate-400">
+              <div className="bg-ink-raise p-3 rounded-xl border border-ink-line mx-2 flex gap-3 items-center">
+                <div className="w-10 h-10 rounded-full bg-ink-raise flex items-center justify-center text-paper-2">
                   <span className="material-symbols-outlined">account_circle</span>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Нэвтрээгүй</h3>
-                  <p className="text-[10px] text-slate-400">Сайн байна уу?</p>
+                  <h3 className="text-sm font-bold text-paper">Нэвтрээгүй</h3>
+                  <p className="text-[10px] text-paper-2">Сайн байна уу?</p>
                 </div>
               </div>
             )}
@@ -2791,7 +2791,7 @@ function LearnerApp() {
                 <li>
                   <button 
                     onClick={() => selectTab('profile')}
-                    className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'profile' ? 'bg-white/15' : 'text-on-primary-container'}`}
+                    className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'profile' ? 'bg-ink-raise' : 'text-paper'}`}
                   >
                     <Target className="w-5 h-5" />
                     <span>Хяналтын самбар</span>
@@ -2801,7 +2801,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('read')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'read' ? 'bg-white/15' : 'text-on-primary-container'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'read' ? 'bg-ink-raise' : 'text-paper'}`}
                 >
                   <BookOpen className="w-5 h-5" />
                   <span>Унших</span>
@@ -2810,7 +2810,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('listen')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'listen' ? 'bg-white/15' : 'text-on-primary-container'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'listen' ? 'bg-ink-raise' : 'text-paper'}`}
                 >
                   <Headphones className="w-5 h-5" />
                   <span>Сонсох</span>
@@ -2819,7 +2819,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('speak')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'speak' ? 'bg-white/15' : 'text-on-primary-container'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'speak' ? 'bg-ink-raise' : 'text-paper'}`}
                 >
                   <Mic className="w-5 h-5" />
                   <span>Ярих</span>
@@ -2828,7 +2828,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('write')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'write' ? 'bg-white/15' : 'text-on-primary-container'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'write' ? 'bg-ink-raise' : 'text-paper'}`}
                 >
                   <Edit3 className="w-5 h-5" />
                   <span>Бичих</span>
@@ -2837,13 +2837,13 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('vocab')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'vocab' ? 'bg-white/15' : 'text-on-primary-container'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'vocab' ? 'bg-ink-raise' : 'text-paper'}`}
                 >
                   <Languages className="w-5 h-5" />
                   <span className="flex-grow flex justify-between items-center pr-4">
                     <span>Үгсийн сан</span>
                     {dueCount > 0 && (
-                      <span className="bg-red-500 text-white text-[10px] font-black font-space px-2 py-0.5 rounded-full">
+                      <span className="bg-paper text-ink text-[10px] font-bold font-serif px-2 py-0.5 rounded-full">
                         {dueCount}
                       </span>
                     )}
@@ -2853,36 +2853,36 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('translate')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'translate' ? 'bg-white/15' : 'text-on-primary-container'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'translate' ? 'bg-ink-raise' : 'text-paper'}`}
                 >
-                  <Sparkles className="w-5 h-5 text-amber-400" />
+                  <Sparkles className="w-5 h-5 text-paper" />
                   <span>Орчуулагч</span>
                 </button>
               </li>
               <li>
                 <button 
                   onClick={() => selectTab('exam')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'exam' ? 'bg-white/15' : 'text-on-primary-container'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'exam' ? 'bg-ink-raise' : 'text-paper'}`}
                 >
-                  <GraduationCap className="w-5 h-5 text-amber-400" />
+                  <GraduationCap className="w-5 h-5 text-paper" />
                   <span>Шалгалт</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => selectTab('friends')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'friends' ? 'bg-white/15' : 'text-on-primary-container'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'friends' ? 'bg-ink-raise' : 'text-paper'}`}
                 >
-                  <Swords className="w-5 h-5 text-amber-400" />
+                  <Swords className="w-5 h-5 text-paper" />
                   <span>Найзууд</span>
                 </button>
               </li>
             </ul>
 
-            <div className="border-t border-white/10 pt-4 px-2 flex flex-col gap-1 shrink-0">
+            <div className="border-t border-ink-line pt-4 px-2 flex flex-col gap-1 shrink-0">
               <button 
                 onClick={() => selectTab('settings')}
-                className="flex items-center gap-3 py-2 w-full text-left text-on-primary-container hover:text-white"
+                className="flex items-center gap-3 py-2 w-full text-left text-paper hover:text-paper"
               >
                 <Settings className="w-4 h-4" />
                 <span>Тохиргоо</span>
@@ -2893,9 +2893,9 @@ function LearnerApp() {
                     logoutUser();
                     setMobileMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 py-2 w-full text-left text-on-primary-container hover:text-error cursor-pointer"
+                  className="flex items-center gap-3 py-2 w-full text-left text-paper hover:text-paper-2 cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4 text-outline" />
+                  <LogOut className="w-4 h-4 text-paper-3" />
                   <span>Гарах</span>
                 </button>
               )}
@@ -2905,25 +2905,25 @@ function LearnerApp() {
       )}
 
       {/* Main Workspace Frame */}
-      <main className="flex-grow md:ml-[280px] px-4 md:px-8 flex flex-col justify-between pt-24 md:pt-8 w-full min-h-screen relative overflow-x-hidden max-lg:overflow-y-auto max-lg:overscroll-y-contain lg:overflow-hidden bg-background">
+      <main className="flex-grow md:ml-[280px] px-4 md:px-8 flex flex-col justify-between pt-24 md:pt-8 w-full min-h-screen relative overflow-x-hidden max-lg:overflow-y-auto max-lg:overscroll-y-contain lg:overflow-hidden bg-ink">
         {/* Ambient neon flares */}
-        <div className="absolute top-10 left-10 w-96 h-96 bg-amber-900/15 rounded-full blur-[140px] pointer-events-none"></div>
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-900/10 rounded-full blur-[140px] pointer-events-none"></div>
+        <div className="absolute top-10 left-10 w-96 h-96 bg-paper/[0.02] rounded-full blur-[140px] pointer-events-none"></div>
+        <div className="absolute bottom-10 right-10 w-96 h-96 bg-paper/[0.02] rounded-full blur-[140px] pointer-events-none"></div>
 
         <div className="w-full max-w-[1200px] mx-auto flex flex-col h-full relative z-10">
 
           {/* Unified Lesson Progress Bar - Screen 2/3 style */}
           {activeTab !== 'settings' && activeTab !== 'profile' && activeTab !== 'friends' && (
-            <div className="w-full mb-8 flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 block-shadow">
-              <div className="h-4 flex-grow bg-white/5 border border-white/10 rounded-full overflow-hidden relative shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <div className="w-full mb-8 flex items-center gap-4 bg-ink-raise p-4 rounded-2xl border border-ink-line block-shadow">
+              <div className="h-4 flex-grow bg-ink-raise border border-ink-line rounded-full overflow-hidden relative shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
                 <div 
-                  className="h-full bg-primary transition-all duration-300 rounded-full relative" 
+                  className="h-full bg-paper transition-all duration-300 rounded-full relative" 
                   style={{ width: `${lessonProgress}%` }}
                 >
-                  <div className="absolute top-0 left-0 w-full h-[2px] bg-white/35"></div>
+                  <div className="absolute top-0 left-0 w-full h-[2px] bg-ink-raise"></div>
                 </div>
               </div>
-              <span className="text-xs font-space font-bold bg-primary text-on-primary px-4 py-1.5 rounded-full border border-white/20 shadow-[0_0_15px_rgba(230,184,92,0.28)]">
+              <span className="text-xs font-serif font-bold bg-paper text-ink px-4 py-1.5 rounded-full border border-ink-line shadow-black/40">
                 {lessonProgress}% дууссан
               </span>
             </div>
@@ -3009,11 +3009,11 @@ function LearnerApp() {
                   <>
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                     {/* List of readings */}
-                    <aside className="lg:col-span-4 border-2 border-on-background rounded-xl p-4 block-shadow">
+                    <aside className="lg:col-span-4 border-2 border-ink-line rounded-xl p-4 block-shadow">
                       <div className="flex gap-1 mb-3">
                         {LIB_LEVELS.map(lv => (
                           <button key={lv} onClick={() => setLibReadLevel(lv)}
-                            className={`flex-1 py-1.5 rounded-lg border-2 border-on-background text-xs font-bold cursor-pointer transition-colors ${libReadLevel === lv ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                            className={`flex-1 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${libReadLevel === lv ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2'}`}>
                             {lv === 'all' ? 'Бүгд' : lv}
                           </button>
                         ))}
@@ -3023,15 +3023,15 @@ function LearnerApp() {
                           const isLocked = (lockedActivityIds.read.has(r.id) && r.level === currentUser?.targetLevel) || isLessonLocked(currentUser, r.level);
                           return (
                             <button key={r.id} onClick={() => openReadItem(r)}
-                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libReadId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libReadId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-paper text-ink shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-paper truncate flex items-center gap-1.5">
                                   {isLocked && <span>🔒</span>}
                                   {r.titleMn}
                                 </span>
                               </div>
-                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                              <p className="text-[10px] text-paper-2 mt-0.5 truncate">{r.title} · {r.topic}</p>
                             </button>
                           );
                         })}
@@ -3039,19 +3039,19 @@ function LearnerApp() {
                     </aside>
 
                     {/* Reader */}
-                    <section className="lg:col-span-8 border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-on-surface">
+                    <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
                       {isLessonLocked(currentUser, item.level) ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', item.level + ' түвшний хичээлүүд үнэгүй эрхэд хаалттай. Үнэгүй эрхээр A1 түвшний бүх хичээл, үгийн сан нээлттэй.', 'pro') : lockedActivityIds.read.has(item.id) && item.level === currentUser?.targetLevel ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                          <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+                          <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
                             <Shield className="w-8 h-8" />
                           </div>
-                          <h2 className="text-xl font-bold text-on-surface">🔒 Энэ дасгал түгжигдсэн байна</h2>
-                          <p className="text-sm text-on-surface-variant max-w-sm font-sans font-medium">
+                          <h2 className="text-xl font-bold text-paper">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-paper-2 max-w-sm font-sans font-medium">
                             Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
                           </p>
                           <button 
                             onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-primary text-on-primary font-bold rounded-xl text-sm hover:bg-surface-tint transition-all shadow-md cursor-pointer font-space"
+                            className="px-5 py-2.5 bg-paper text-ink font-bold rounded-xl text-sm hover:bg-paper transition-all shadow-md cursor-pointer font-serif"
                           >
                             Сургалтын зам руу очих
                           </button>
@@ -3059,34 +3059,34 @@ function LearnerApp() {
                       ) : (
                         <>
                           <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                            <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
                             <div className="flex gap-2">
                               <button onClick={() => speakGerman(item.text, audioSpeed === '0.8' ? 0.8 : 1.0)} title="Сонсох"
-                                className="p-2 border-2 border-on-background rounded-full bg-surface-container hover:scale-105 transition-transform text-on-surface block-shadow cursor-pointer">
+                                className="p-2 border-2 border-ink-line rounded-full bg-ink-raise hover:scale-105 transition-transform text-paper block-shadow cursor-pointer">
                                 <Volume2 className="w-5 h-5" />
                               </button>
                               <button onClick={() => setLibReadTrans(v => !v)}
-                                className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libReadTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
+                                className={`px-3 py-1 border-2 border-ink-line rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libReadTrans ? 'bg-paper text-ink' : 'bg-ink-raise text-paper'}`}>
                                 <Languages className="w-4 h-4" /> {libReadTrans ? 'Нуух' : 'Орчуулга'}
                               </button>
                             </div>
                           </div>
 
-                          <h2 className="text-2xl md:text-3xl font-extrabold text-on-surface mb-1 tracking-tight">{item.title}</h2>
-                          <p className="text-sm text-on-surface-variant mb-5">{item.titleMn}</p>
+                          <h2 className="text-2xl md:text-3xl font-extrabold text-paper mb-1 tracking-tight">{item.title}</h2>
+                          <p className="text-sm text-paper-2 mb-5">{item.titleMn}</p>
 
-                          <p className="text-lg leading-relaxed text-on-surface whitespace-pre-line font-medium">{renderRichGerman(item.text)}</p>
+                          <p className="text-lg leading-relaxed text-paper whitespace-pre-line font-medium">{renderRichGerman(item.text)}</p>
                           {libReadTrans && (
-                            <p className="text-sm leading-relaxed text-on-surface-variant whitespace-pre-line mt-4 pt-4 border-t border-outline-variant/50 italic">{item.translation}</p>
+                            <p className="text-sm leading-relaxed text-paper-2 whitespace-pre-line mt-4 pt-4 border-t border-ink-line/50 italic">{item.translation}</p>
                           )}
 
                           {/* Comprehension questions — multi-question set with prev/next */}
-                          <div className="mt-6 pt-5 border-t border-outline-variant">
-                            <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах · Асуулт {qIdx + 1}/{questions.length}:</p>
-                            <p className="text-base font-bold text-on-surface mb-3">{q.question}</p>
+                          <div className="mt-6 pt-5 border-t border-ink-line">
+                            <p className="text-xs font-serif font-bold uppercase text-paper mb-2">Ойлголт шалгах · Асуулт {qIdx + 1}/{questions.length}:</p>
+                            <p className="text-base font-bold text-paper mb-3">{q.question}</p>
                             <div className="mb-4 flex flex-wrap gap-2">
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border-2 border-on-background text-xs font-semibold rounded-full font-space block-shadow text-on-surface">
-                                <Lightbulb className="w-4 h-4 text-orange-500 fill-orange-500" />
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ink-raise border-2 border-ink-line text-xs font-semibold rounded-full font-serif block-shadow text-paper">
+                                <Lightbulb className="w-4 h-4 text-paper fill-paper-2" />
                                 {q.hint ?? 'Санамж: тодруулсан үг дээр дарж утга, дуудлагыг нь үзээрэй.'}
                               </span>
                             </div>
@@ -3124,7 +3124,7 @@ function LearnerApp() {
                               <>
                                 <button
                                   onClick={() => { const na = { ...libReadAnswers }; delete na[qIdx]; setLibReadAnswers(na); }}
-                                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface border-2 border-on-background rounded-lg font-bold text-xs font-space cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
                                   <RotateCcw className="w-3.5 h-3.5" /> Дахин оролдох
                                 </button>
                                 <GrammarTipCard
@@ -3150,14 +3150,14 @@ function LearnerApp() {
 
                           {/* Prev/next lesson */}
                           {idxInFiltered >= 0 && filtered.length > 1 && (
-                            <div className="flex items-center justify-between mt-6 pt-4 border-t border-outline-variant">
+                            <div className="flex items-center justify-between mt-6 pt-4 border-t border-ink-line">
                               <button onClick={() => openReadItem(filtered[(idxInFiltered - 1 + filtered.length) % filtered.length])}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-on-background bg-surface-container text-on-surface font-bold text-xs font-space cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
                                 <ArrowLeft className="w-3.5 h-3.5" /> Өмнөх хичээл
                               </button>
-                              <span className="text-[11px] font-space font-bold text-on-surface-variant">{idxInFiltered + 1} / {filtered.length}</span>
+                              <span className="text-[11px] font-serif font-bold text-paper-2">{idxInFiltered + 1} / {filtered.length}</span>
                               <button onClick={() => openReadItem(filtered[(idxInFiltered + 1) % filtered.length])}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-on-background bg-surface-container text-on-surface font-bold text-xs font-space cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
                                 Дараах хичээл <ArrowRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
@@ -3192,11 +3192,11 @@ function LearnerApp() {
                 return (
                   <>
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    <aside className="lg:col-span-4 border-2 border-on-background rounded-xl p-4 block-shadow">
+                    <aside className="lg:col-span-4 border-2 border-ink-line rounded-xl p-4 block-shadow">
                       <div className="flex gap-1 mb-3">
                         {LIB_LEVELS.map(lv => (
                           <button key={lv} onClick={() => setLibListenLevel(lv)}
-                            className={`flex-1 py-1.5 rounded-lg border-2 border-on-background text-xs font-bold cursor-pointer transition-colors ${libListenLevel === lv ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                            className={`flex-1 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${libListenLevel === lv ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2'}`}>
                             {lv === 'all' ? 'Бүгд' : lv}
                           </button>
                         ))}
@@ -3206,34 +3206,34 @@ function LearnerApp() {
                           const isLocked = (lockedActivityIds.listen.has(r.id) && r.level === currentUser?.targetLevel) || isLessonLocked(currentUser, r.level);
                           return (
                             <button key={r.id} onClick={() => openListenItem(r)}
-                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libListenId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libListenId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-paper text-ink shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-paper truncate flex items-center gap-1.5">
                                   {isLocked && <span>🔒</span>}
                                   {r.titleMn}
                                 </span>
                               </div>
-                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                              <p className="text-[10px] text-paper-2 mt-0.5 truncate">{r.title} · {r.topic}</p>
                             </button>
                           );
                         })}
                       </div>
                     </aside>
 
-                    <section className="lg:col-span-8 border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-on-surface">
+                    <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
                       {isLessonLocked(currentUser, item.level) ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', item.level + ' түвшний хичээлүүд үнэгүй эрхэд хаалттай. Үнэгүй эрхээр A1 түвшний бүх хичээл, үгийн сан нээлттэй.', 'pro') : lockedActivityIds.listen.has(item.id) && item.level === currentUser?.targetLevel ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                          <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+                          <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
                             <Shield className="w-8 h-8" />
                           </div>
-                          <h2 className="text-xl font-bold text-on-surface">🔒 Энэ дасгал түгжигдсэн байна</h2>
-                          <p className="text-sm text-on-surface-variant max-w-sm font-sans font-medium">
+                          <h2 className="text-xl font-bold text-paper">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-paper-2 max-w-sm font-sans font-medium">
                             Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
                           </p>
                           <button 
                             onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-primary text-on-primary font-bold rounded-xl text-sm hover:bg-surface-tint transition-all shadow-md cursor-pointer font-space"
+                            className="px-5 py-2.5 bg-paper text-ink font-bold rounded-xl text-sm hover:bg-paper transition-all shadow-md cursor-pointer font-serif"
                           >
                             Сургалтын зам руу очих
                           </button>
@@ -3241,23 +3241,23 @@ function LearnerApp() {
                       ) : (
                         <>
                           <div className="flex items-center justify-between mb-5">
-                            <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                            <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
                             <button onClick={() => setLibListenTrans(v => !v)}
-                              className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libListenTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
+                              className={`px-3 py-1 border-2 border-ink-line rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libListenTrans ? 'bg-paper text-ink' : 'bg-ink-raise text-paper'}`}>
                               <Languages className="w-4 h-4" /> {libListenTrans ? 'Нуух' : 'Текст'}
                             </button>
                           </div>
 
-                          <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mb-1">{item.titleMn}</h2>
-                          <p className="text-xs text-on-surface-variant mb-5">{item.title}</p>
+                          <h2 className="text-xl md:text-2xl font-extrabold text-paper mb-1">{item.titleMn}</h2>
+                          <p className="text-xs text-paper-2 mb-5">{item.title}</p>
 
                           {/* Play controls */}
-                          <div className="flex flex-col items-center gap-3 py-6 bg-surface-container-low border-2 border-on-background rounded-xl mb-5">
+                          <div className="flex flex-col items-center gap-3 py-6 bg-ink-raise border-2 border-ink-line rounded-xl mb-5">
                             <div className="flex items-center gap-4">
                               {/* Replay from start */}
                               <button onClick={() => playListening(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0)}
                                 title="Эхнээс дахин тоглуулах"
-                                className="w-11 h-11 rounded-full bg-surface-container text-on-surface border-2 border-on-background flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
+                                className="w-11 h-11 rounded-full bg-ink-raise text-paper border-2 border-ink-line flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
                                 <RotateCcw className="w-5 h-5" />
                               </button>
                               {/* Play / Pause / Resume toggle */}
@@ -3267,39 +3267,39 @@ function LearnerApp() {
                                   else playListening(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0);
                                 }}
                                 title={listenState === 'playing' ? 'Түр зогсоох' : 'Тоглуулах'}
-                                className={`w-16 h-16 rounded-full bg-secondary text-white border-2 border-on-background flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow ${listenState === 'playing' ? 'animate-pulse ring-4 ring-secondary/30' : ''}`}>
+                                className={`w-16 h-16 rounded-full bg-paper text-ink border-2 border-ink-line flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow ${listenState === 'playing' ? 'animate-pulse ring-4 ring-paper/30' : ''}`}>
                                 {listenState === 'playing' ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-0.5" />}
                               </button>
                             </div>
-                            <p className="text-xs text-on-surface-variant font-sans">
+                            <p className="text-xs text-paper-2 font-sans">
                               {listenState === 'playing' ? 'Тоглож байна… дарж түр зогсоо' : listenState === 'paused' ? 'Түр зогссон… дарж үргэлжлүүл' : 'Сонсохын тулд тоглуулах товчийг дарна уу'}
                             </p>
                             <div className="flex items-center gap-2">
                               <button onClick={() => { setAudioSpeed('0.8'); if (listenState !== 'idle') playListening(item.audioText, 0.8); }}
-                                className={`px-3 py-1 rounded-full border-2 border-on-background text-[11px] font-bold font-space cursor-pointer block-shadow ${audioSpeed === '0.8' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                                className={`px-3 py-1 rounded-full border-2 border-ink-line text-[11px] font-bold font-serif cursor-pointer block-shadow ${audioSpeed === '0.8' ? 'bg-ink-raise text-paper' : 'bg-ink-raise text-paper-2'}`}>
                                 0.8x (Удаан)
                               </button>
                               <button onClick={() => { setAudioSpeed('1.0'); if (listenState !== 'idle') playListening(item.audioText, 1.0); }}
-                                className={`px-3 py-1 rounded-full border-2 border-on-background text-[11px] font-bold font-space cursor-pointer block-shadow ${audioSpeed === '1.0' ? 'bg-primary-container text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                                className={`px-3 py-1 rounded-full border-2 border-ink-line text-[11px] font-bold font-serif cursor-pointer block-shadow ${audioSpeed === '1.0' ? 'bg-ink-raise text-paper' : 'bg-ink-raise text-paper-2'}`}>
                                 1.0x (Хэвийн)
                               </button>
                             </div>
                           </div>
 
                           {libListenTrans && (
-                            <div className="bg-surface-container-low border-l-4 border-secondary rounded-lg p-3 mb-5">
-                              <p className="text-sm text-on-surface font-medium whitespace-pre-line">{renderRichGerman(item.audioText)}</p>
-                              <p className="text-xs text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/50 italic">{item.transcriptMn}</p>
+                            <div className="bg-ink-raise border-l-4 border-ink-line rounded-lg p-3 mb-5">
+                              <p className="text-sm text-paper font-medium whitespace-pre-line">{renderRichGerman(item.audioText)}</p>
+                              <p className="text-xs text-paper-2 mt-2 pt-2 border-t border-ink-line/50 italic">{item.transcriptMn}</p>
                             </div>
                           )}
 
                           {/* Comprehension — multi-question set with prev/next */}
-                          <div className="pt-5 border-t border-outline-variant">
-                            <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах · Асуулт {qIdx + 1}/{questions.length}:</p>
-                            <p className="text-base font-bold text-on-surface mb-3">{q.question}</p>
+                          <div className="pt-5 border-t border-ink-line">
+                            <p className="text-xs font-serif font-bold uppercase text-paper mb-2">Ойлголт шалгах · Асуулт {qIdx + 1}/{questions.length}:</p>
+                            <p className="text-base font-bold text-paper mb-3">{q.question}</p>
                             <div className="mb-4 flex flex-wrap gap-2">
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container border-2 border-on-background text-xs font-semibold rounded-full font-space block-shadow text-on-surface">
-                                <Lightbulb className="w-4 h-4 text-orange-500 fill-orange-500" />
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ink-raise border-2 border-ink-line text-xs font-semibold rounded-full font-serif block-shadow text-paper">
+                                <Lightbulb className="w-4 h-4 text-paper fill-paper-2" />
                                 {q.hint ?? 'Санамж: "Текст" товчийг дарж, тодруулсан үг дээр дарна уу.'}
                               </span>
                             </div>
@@ -3336,7 +3336,7 @@ function LearnerApp() {
                               <>
                                 <button
                                   onClick={() => { const na = { ...libListenAnswers }; delete na[qIdx]; setLibListenAnswers(na); }}
-                                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-surface-container text-on-surface border-2 border-on-background rounded-lg font-bold text-xs font-space cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
                                   <RotateCcw className="w-3.5 h-3.5" /> Дахин оролдох
                                 </button>
                                 <GrammarTipCard
@@ -3362,14 +3362,14 @@ function LearnerApp() {
 
                           {/* Prev/next lesson */}
                           {idxInFiltered >= 0 && filtered.length > 1 && (
-                            <div className="flex items-center justify-between mt-6 pt-4 border-t border-outline-variant">
+                            <div className="flex items-center justify-between mt-6 pt-4 border-t border-ink-line">
                               <button onClick={() => openListenItem(filtered[(idxInFiltered - 1 + filtered.length) % filtered.length])}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-on-background bg-surface-container text-on-surface font-bold text-xs font-space cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
                                 <ArrowLeft className="w-3.5 h-3.5" /> Өмнөх хичээл
                               </button>
-                              <span className="text-[11px] font-space font-bold text-on-surface-variant">{idxInFiltered + 1} / {filtered.length}</span>
+                              <span className="text-[11px] font-serif font-bold text-paper-2">{idxInFiltered + 1} / {filtered.length}</span>
                               <button onClick={() => openListenItem(filtered[(idxInFiltered + 1) % filtered.length])}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-on-background bg-surface-container text-on-surface font-bold text-xs font-space cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
                                 Дараах хичээл <ArrowRight className="w-3.5 h-3.5" />
                               </button>
                             </div>
@@ -3400,11 +3400,11 @@ function LearnerApp() {
                 return (
                   <>
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    <aside className="lg:col-span-4 border-2 border-on-background rounded-xl p-4 block-shadow">
+                    <aside className="lg:col-span-4 border-2 border-ink-line rounded-xl p-4 block-shadow">
                       <div className="flex gap-1 mb-3">
                         {LIB_LEVELS.map(lv => (
                           <button key={lv} onClick={() => setLibSpeakLevel(lv)}
-                            className={`flex-1 py-1.5 rounded-lg border-2 border-on-background text-xs font-bold cursor-pointer transition-colors ${libSpeakLevel === lv ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                            className={`flex-1 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${libSpeakLevel === lv ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2'}`}>
                             {lv === 'all' ? 'Бүгд' : lv}
                           </button>
                         ))}
@@ -3414,81 +3414,81 @@ function LearnerApp() {
                           const isLocked = (lockedActivityIds.speak.has(r.id) && r.level === currentUser?.targetLevel) || isLessonLocked(currentUser, r.level);
                           return (
                             <button key={r.id} onClick={() => openSpeakItem(r)}
-                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libSpeakId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libSpeakId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-paper text-ink shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-paper truncate flex items-center gap-1.5">
                                   {isLocked && <span>🔒</span>}
                                   {r.titleMn}
                                 </span>
                               </div>
-                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                              <p className="text-[10px] text-paper-2 mt-0.5 truncate">{r.title} · {r.topic}</p>
                             </button>
                           );
                         })}
                       </div>
                     </aside>
 
-                    <section className="lg:col-span-8 border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-on-surface">
+                    <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
                       {isLessonLocked(currentUser, item.level) ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', item.level + ' түвшний хичээлүүд үнэгүй эрхэд хаалттай. Үнэгүй эрхээр A1 түвшний бүх хичээл, үгийн сан нээлттэй.', 'pro') : lockedActivityIds.speak.has(item.id) && item.level === currentUser?.targetLevel ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                          <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+                          <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
                             <Shield className="w-8 h-8" />
                           </div>
-                          <h2 className="text-xl font-bold text-on-surface">🔒 Энэ дасгал түгжигдсэн байна</h2>
-                          <p className="text-sm text-on-surface-variant max-w-sm font-sans font-medium">
+                          <h2 className="text-xl font-bold text-paper">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-paper-2 max-w-sm font-sans font-medium">
                             Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
                           </p>
                           <button 
                             onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-primary text-on-primary font-bold rounded-xl text-sm hover:bg-surface-tint transition-all shadow-md cursor-pointer font-space"
+                            className="px-5 py-2.5 bg-paper text-ink font-bold rounded-xl text-sm hover:bg-paper transition-all shadow-md cursor-pointer font-serif"
                           >
                             Сургалтын зам руу очих
                           </button>
                         </div>
                       ) : (
                         <>
-                          <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                          <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mt-4 mb-1">{item.titleMn}</h2>
-                          <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
+                          <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                          <h2 className="text-xl md:text-2xl font-extrabold text-paper mt-4 mb-1">{item.titleMn}</h2>
+                          <p className="text-xs text-paper-2 mb-4">{item.title}</p>
 
                       {/* Task prompt */}
-                      <div className="bg-surface-container-low border-l-4 border-secondary rounded-lg p-4 mb-5">
-                        <p className="text-xs font-space font-bold uppercase text-primary mb-1">Даалгавар:</p>
-                        <p className="text-base font-bold text-on-surface">{item.prompt}</p>
+                      <div className="bg-ink-raise border-l-4 border-ink-line rounded-lg p-4 mb-5">
+                        <p className="text-xs font-serif font-bold uppercase text-paper mb-1">Даалгавар:</p>
+                        <p className="text-base font-bold text-paper">{item.prompt}</p>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 mb-5">
                         <button onClick={() => speakGerman(item.modelAnswer, 1.0)}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-white border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform">
+                          className="flex items-center gap-2 px-4 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform">
                           <Volume2 className="w-4 h-4" /> Загварыг сонсох
                         </button>
                         <button onClick={() => setLibSpeakReveal(v => !v)}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-surface-container text-primary border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                          <Lightbulb className="w-4 h-4 text-amber-400 fill-current" /> {libSpeakReveal ? 'Нуух' : 'Загвар хариулт харах'}
+                          className="flex items-center gap-2 px-4 py-2.5 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                          <Lightbulb className="w-4 h-4 text-paper fill-current" /> {libSpeakReveal ? 'Нуух' : 'Загвар хариулт харах'}
                         </button>
                       </div>
 
                       {/* Tips */}
                       <div className="mb-2">
-                        <p className="text-[11px] font-space font-bold uppercase text-on-surface-variant mb-2">Хэрэгтэй хэллэг:</p>
+                        <p className="text-[11px] font-serif font-bold uppercase text-paper-2 mb-2">Хэрэгтэй хэллэг:</p>
                         <div className="flex flex-col gap-1.5">
                           {item.tips.map((t, i) => (
-                            <div key={i} className="flex items-start gap-2 text-xs text-on-surface">
-                              <span className="text-secondary font-black">›</span>{t}
+                            <div key={i} className="flex items-start gap-2 text-xs text-paper">
+                              <span className="text-paper-2 font-black">›</span>{t}
                             </div>
                           ))}
                         </div>
                       </div>
 
                       {libSpeakReveal && (
-                        <div className="bg-secondary-container/40 border-2 border-secondary rounded-lg p-4 mt-4">
-                          <p className="text-[10px] font-bold uppercase text-secondary mb-1">Загвар хариулт:</p>
-                          <p className="text-base text-on-surface font-medium leading-relaxed">{renderRichGerman(item.modelAnswer)}</p>
-                          <p className="text-xs text-on-surface-variant mt-2 italic leading-relaxed">{item.modelMn}</p>
+                        <div className="bg-ink-raise/40 border-2 border-ink-line rounded-lg p-4 mt-4">
+                          <p className="text-[10px] font-bold uppercase text-paper-2 mb-1">Загвар хариулт:</p>
+                          <p className="text-base text-paper font-medium leading-relaxed">{renderRichGerman(item.modelAnswer)}</p>
+                          <p className="text-xs text-paper-2 mt-2 italic leading-relaxed">{item.modelMn}</p>
                         </div>
                       )}
-                      <p className="text-[11px] text-on-surface-variant mt-4 italic">Зөвлөмж: эхлээд өөрөө чангаар хэлж үзээд, дараа нь загвартай харьцуулаарай.</p>
+                      <p className="text-[11px] text-paper-2 mt-4 italic">Зөвлөмж: эхлээд өөрөө чангаар хэлж үзээд, дараа нь загвартай харьцуулаарай.</p>
 
                       {/* AI judge — graded against this item's model answer. Every imported
                           speaking resource gets it automatically because it is data-driven. */}
@@ -3497,14 +3497,14 @@ function LearnerApp() {
 
                       {/* Prev/next lesson */}
                       {idxInFiltered >= 0 && filtered.length > 1 && (
-                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-outline-variant">
+                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-ink-line">
                           <button onClick={() => openSpeakItem(filtered[(idxInFiltered - 1 + filtered.length) % filtered.length])}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-on-background bg-surface-container text-on-surface font-bold text-xs font-space cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
                             <ArrowLeft className="w-3.5 h-3.5" /> Өмнөх хичээл
                           </button>
-                          <span className="text-[11px] font-space font-bold text-on-surface-variant">{idxInFiltered + 1} / {filtered.length}</span>
+                          <span className="text-[11px] font-serif font-bold text-paper-2">{idxInFiltered + 1} / {filtered.length}</span>
                           <button onClick={() => openSpeakItem(filtered[(idxInFiltered + 1) % filtered.length])}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-on-background bg-surface-container text-on-surface font-bold text-xs font-space cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
                             Дараах хичээл <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -3536,11 +3536,11 @@ function LearnerApp() {
                 return (
                   <>
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    <aside className="lg:col-span-4 border-2 border-on-background rounded-xl p-4 block-shadow">
+                    <aside className="lg:col-span-4 border-2 border-ink-line rounded-xl p-4 block-shadow">
                       <div className="flex gap-1 mb-3">
                         {LIB_LEVELS.map(lv => (
                           <button key={lv} onClick={() => setLibWriteLevel(lv)}
-                            className={`flex-1 py-1.5 rounded-lg border-2 border-on-background text-xs font-bold cursor-pointer transition-colors ${libWriteLevel === lv ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface-variant'}`}>
+                            className={`flex-1 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${libWriteLevel === lv ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2'}`}>
                             {lv === 'all' ? 'Бүгд' : lv}
                           </button>
                         ))}
@@ -3550,69 +3550,69 @@ function LearnerApp() {
                           const isLocked = (lockedActivityIds.write.has(r.id) && r.level === currentUser?.targetLevel) || isLessonLocked(currentUser, r.level);
                           return (
                             <button key={r.id} onClick={() => openWriteItem(r)}
-                              className={`text-left p-2.5 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${r.id === libWriteId ? 'bg-secondary-container' : 'bg-surface-container hover:bg-surface-container-high'}`}>
+                              className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libWriteId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-secondary text-white shrink-0">{r.level}</span>
-                                <span className="text-xs font-bold text-on-surface truncate flex items-center gap-1.5">
+                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-paper text-ink shrink-0">{r.level}</span>
+                                <span className="text-xs font-bold text-paper truncate flex items-center gap-1.5">
                                   {isLocked && <span>🔒</span>}
                                   {r.titleMn}
                                 </span>
                               </div>
-                              <p className="text-[10px] text-on-surface-variant mt-0.5 truncate">{r.title} · {r.topic}</p>
+                              <p className="text-[10px] text-paper-2 mt-0.5 truncate">{r.title} · {r.topic}</p>
                             </button>
                           );
                         })}
                       </div>
                     </aside>
 
-                    <section className="lg:col-span-8 border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow text-on-surface">
+                    <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
                       {isLessonLocked(currentUser, item.level) ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', item.level + ' түвшний хичээлүүд үнэгүй эрхэд хаалттай. Үнэгүй эрхээр A1 түвшний бүх хичээл, үгийн сан нээлттэй.', 'pro') : lockedActivityIds.write.has(item.id) && item.level === currentUser?.targetLevel ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                          <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+                          <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
                             <Shield className="w-8 h-8" />
                           </div>
-                          <h2 className="text-xl font-bold text-on-surface">🔒 Энэ дасгал түгжигдсэн байна</h2>
-                          <p className="text-sm text-on-surface-variant max-w-sm font-sans font-medium">
+                          <h2 className="text-xl font-bold text-paper">🔒 Энэ дасгал түгжигдсэн байна</h2>
+                          <p className="text-sm text-paper-2 max-w-sm font-sans font-medium">
                             Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
                           </p>
                           <button 
                             onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-primary text-on-primary font-bold rounded-xl text-sm hover:bg-surface-tint transition-all shadow-md cursor-pointer font-space"
+                            className="px-5 py-2.5 bg-paper text-ink font-bold rounded-xl text-sm hover:bg-paper transition-all shadow-md cursor-pointer font-serif"
                           >
                             Сургалтын зам руу очих
                           </button>
                         </div>
                       ) : (
                         <>
-                          <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                          <h2 className="text-xl md:text-2xl font-extrabold text-on-surface mt-4 mb-1">{item.titleMn}</h2>
-                          <p className="text-xs text-on-surface-variant mb-4">{item.title}</p>
+                          <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
+                          <h2 className="text-xl md:text-2xl font-extrabold text-paper mt-4 mb-1">{item.titleMn}</h2>
+                          <p className="text-xs text-paper-2 mb-4">{item.title}</p>
 
-                      <div className="bg-surface-container-low rounded-lg p-4 mb-4">
-                        <p className="text-xs font-space font-bold uppercase text-primary mb-1">Даалгавар:</p>
-                        <p className="text-sm font-bold text-on-surface mb-2">{item.prompt}</p>
-                        <ul className="text-xs text-on-surface-variant space-y-1 list-disc list-inside">
+                      <div className="bg-ink-raise rounded-lg p-4 mb-4">
+                        <p className="text-xs font-serif font-bold uppercase text-paper mb-1">Даалгавар:</p>
+                        <p className="text-sm font-bold text-paper mb-2">{item.prompt}</p>
+                        <ul className="text-xs text-paper-2 space-y-1 list-disc list-inside">
                           {item.points.map((p, i) => <li key={i}>{p}</li>)}
                         </ul>
                       </div>
 
                       <textarea value={libWriteText} onChange={(e) => setLibWriteText(e.target.value)}
                         placeholder="Энд герман хэлээр бичнэ үү..." rows={6} maxLength={2000}
-                        className="w-full px-3 py-2 text-sm border-2 border-on-background rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline outline-none focus:border-secondary resize-y" />
+                        className="w-full px-3 py-2 text-sm border-2 border-ink-line rounded-lg bg-ink-raise text-paper placeholder:text-paper-3 outline-none focus:border-ink-line resize-y" />
 
                       <div className="flex items-center justify-between mt-3">
-                        <span className="text-[11px] text-on-surface-variant">{words} үг</span>
+                        <span className="text-[11px] text-paper-2">{words} үг</span>
                         <button onClick={() => setLibWriteReveal(v => !v)}
-                          className="px-4 py-2 bg-surface-container text-primary border-2 border-on-background rounded-lg font-bold text-xs cursor-pointer block-shadow hover:scale-[1.02] transition-transform flex items-center gap-1">
-                          <Lightbulb className="w-3.5 h-3.5 text-amber-400 fill-current" /> {libWriteReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
+                          className="px-4 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-xs cursor-pointer block-shadow hover:scale-[1.02] transition-transform flex items-center gap-1">
+                          <Lightbulb className="w-3.5 h-3.5 text-paper fill-current" /> {libWriteReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
                         </button>
                       </div>
 
                       {libWriteReveal && (
-                        <div className="bg-secondary-container/40 border-2 border-secondary rounded-lg p-4 mt-4">
-                          <p className="text-[10px] font-bold uppercase text-secondary mb-1">Загвар хариулт:</p>
-                          <p className="text-sm text-on-surface whitespace-pre-line leading-relaxed font-medium">{renderRichGerman(item.modelAnswer)}</p>
-                          <p className="text-xs text-on-surface-variant whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-secondary/30 italic">{item.modelMn}</p>
+                        <div className="bg-ink-raise/40 border-2 border-ink-line rounded-lg p-4 mt-4">
+                          <p className="text-[10px] font-bold uppercase text-paper-2 mb-1">Загвар хариулт:</p>
+                          <p className="text-sm text-paper whitespace-pre-line leading-relaxed font-medium">{renderRichGerman(item.modelAnswer)}</p>
+                          <p className="text-xs text-paper-2 whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-ink-line/30 italic">{item.modelMn}</p>
                         </div>
                       )}
 
@@ -3622,14 +3622,14 @@ function LearnerApp() {
 
                       {/* Prev/next lesson */}
                       {idxInFiltered >= 0 && filtered.length > 1 && (
-                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-outline-variant">
+                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-ink-line">
                           <button onClick={() => openWriteItem(filtered[(idxInFiltered - 1 + filtered.length) % filtered.length])}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-on-background bg-surface-container text-on-surface font-bold text-xs font-space cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
                             <ArrowLeft className="w-3.5 h-3.5" /> Өмнөх хичээл
                           </button>
-                          <span className="text-[11px] font-space font-bold text-on-surface-variant">{idxInFiltered + 1} / {filtered.length}</span>
+                          <span className="text-[11px] font-serif font-bold text-paper-2">{idxInFiltered + 1} / {filtered.length}</span>
                           <button onClick={() => openWriteItem(filtered[(idxInFiltered + 1) % filtered.length])}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-on-background bg-surface-container text-on-surface font-bold text-xs font-space cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
                             Дараах хичээл <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -3651,11 +3651,11 @@ function LearnerApp() {
           <div className="mt-4 animate-fade-in">
 
             {/* Sub-view toggle: flashcard Trainer vs in-app Dictionary */}
-            <div className="flex w-full sm:w-auto sm:inline-flex p-1.5 bg-surface-container border-2 border-on-background rounded-2xl block-shadow mb-6">
+            <div className="flex w-full sm:w-auto sm:inline-flex p-1.5 bg-ink-raise border-2 border-ink-line rounded-2xl block-shadow mb-6">
               <button
                 onClick={() => setVocabView('trainer')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-space text-sm transition-all cursor-pointer ${
-                  vocabView === 'trainer' ? 'bg-secondary text-white border-2 border-on-background block-shadow-green' : 'text-on-surface-variant hover:bg-white/60'
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-serif text-sm transition-all cursor-pointer ${
+                  vocabView === 'trainer' ? 'bg-paper text-ink border-2 border-ink-line block-shadow-green' : 'text-paper-2 hover:bg-ink-raise'
                 }`}
               >
                 <RotateCcw className="w-4 h-4" />
@@ -3663,8 +3663,8 @@ function LearnerApp() {
               </button>
               <button
                 onClick={() => setVocabView('browse')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-space text-sm transition-all cursor-pointer ${
-                  vocabView === 'browse' ? 'bg-secondary text-white border-2 border-on-background block-shadow-green' : 'text-on-surface-variant hover:bg-white/60'
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-serif text-sm transition-all cursor-pointer ${
+                  vocabView === 'browse' ? 'bg-paper text-ink border-2 border-ink-line block-shadow-green' : 'text-paper-2 hover:bg-ink-raise'
                 }`}
               >
                 <Library className="w-4 h-4" />
@@ -3676,13 +3676,13 @@ function LearnerApp() {
             <>
             {/* Trainer level filter (A1 → C2) + placement-based suggestion */}
             <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="text-xs font-space font-bold text-outline uppercase tracking-wider mr-1">Түвшин:</span>
+              <span className="text-xs font-serif font-bold text-paper-3 uppercase tracking-wider mr-1">Түвшин:</span>
               {LEVEL_OPTIONS.map((lvl) => (
                 <button
                   key={lvl}
                   onClick={() => selectTrainerLevel(lvl)}
-                  className={`px-3.5 py-1.5 border-2 border-on-background rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                    trainerLevel === lvl ? 'bg-secondary text-white' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
+                  className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                    trainerLevel === lvl ? 'bg-paper text-ink' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
                   }`}
                 >
                   {lvl === 'all' ? 'Бүгд' : lvl}
@@ -3692,15 +3692,15 @@ function LearnerApp() {
                 </button>
               ))}
               {placementSuggestedLevel && (
-                <span className="text-xs font-bold text-secondary font-sans ml-1">
+                <span className="text-xs font-bold text-paper-2 font-sans ml-1">
                   ★ Түвшин тогтоох шалгалтын дүнгээр танд {placementSuggestedLevel} түвшний үгсийг санал болгож байна
                 </span>
               )}
             </div>
 
             {vocabList.length === 0 ? (
-              <div className="rounded-2xl border-2 border-on-background p-10 block-shadow text-center">
-                <p className="font-bold text-on-surface-variant font-sans">
+              <div className="rounded-2xl border-2 border-ink-line p-10 block-shadow text-center">
+                <p className="font-bold text-paper-2 font-sans">
                   Энэ түвшинд дасгал хийх үг алга. Өөр түвшин сонгоно уу.
                 </p>
               </div>
@@ -3715,27 +3715,27 @@ function LearnerApp() {
                   onClick={() => setVocabFlipped(prev => !prev)}
                   className="w-full max-w-2xl aspect-[4/3] sm:aspect-video perspective-1000 cursor-pointer"
                 >
-                  <div className="relative w-full h-full transform-style-3d border-2 border-on-background rounded-2xl block-shadow">
+                  <div className="relative w-full h-full transform-style-3d border-2 border-ink-line rounded-2xl block-shadow">
                     
                     {/* FRONT of the card (displays German word) - Backface hidden layout */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-surface-container-high text-on-surface rounded-2xl flex flex-col items-center justify-between p-8 transition-transform duration-500 transform-style-3d ${
+                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-ink-2 text-paper rounded-2xl flex flex-col items-center justify-between p-8 transition-transform duration-500 transform-style-3d ${
                       vocabFlipped ? '[transform:rotateY(-180deg)]' : '[transform:rotateY(0deg)]'
                     }`}>
-                      <span className="text-xs font-space font-bold text-on-surface-variant uppercase tracking-wider px-3 py-1 bg-surface-container border border-on-background rounded-full">
+                      <span className="text-xs font-serif font-bold text-paper-2 uppercase tracking-wider px-3 py-1 bg-ink-raise border border-ink-line rounded-full">
                         Шинэ үг
                       </span>
                       
                       <div className="flex flex-col items-center gap-4">
                         {vocabList[currentVocabIndex].article && (
-                          <span className={`text-base font-black lowercase tracking-widest px-4 py-1 rounded-full border-2 border-on-background block-shadow ${
-                            vocabList[currentVocabIndex].article === 'der' ? 'bg-teal-100 text-teal-700' :
-                            vocabList[currentVocabIndex].article === 'die' ? 'bg-orange-100 text-orange-700' :
-                            'bg-amber-100 text-amber-700'
+                          <span className={`text-base font-black lowercase tracking-widest px-4 py-1 rounded-full border-2 border-ink-line block-shadow ${
+                            vocabList[currentVocabIndex].article === 'der' ? 'bg-ink-raise text-paper-2' :
+                            vocabList[currentVocabIndex].article === 'die' ? 'bg-ink-raise text-paper-2' :
+                            'bg-ink-raise text-paper-2'
                           }`}>
                             {vocabList[currentVocabIndex].article}
                           </span>
                         )}
-                        <h2 className="text-4xl sm:text-5xl font-black text-primary text-center font-sans tracking-tight">
+                        <h2 className="text-4xl sm:text-5xl font-black text-paper text-center font-sans tracking-tight">
                           {vocabList[currentVocabIndex].german}
                         </h2>
 
@@ -3745,7 +3745,7 @@ function LearnerApp() {
                             const w = vocabList[currentVocabIndex];
                             speakGerman(w.article ? `${w.article} ${w.german}` : w.german);
                           }}
-                          className="p-4 rounded-full bg-surface-container hover:bg-surface-container-high border-2 border-on-background hover:scale-110 text-secondary transition-all block-shadow cursor-pointer flex items-center justify-center"
+                          className="p-4 rounded-full bg-ink-raise hover:bg-ink-2 border-2 border-ink-line hover:scale-110 text-paper-2 transition-all block-shadow cursor-pointer flex items-center justify-center"
                         >
                           <Volume2 className="w-8 h-8 font-black stroke-[2.5px]" />
                         </button>
@@ -3756,30 +3756,30 @@ function LearnerApp() {
                           e.stopPropagation();
                           setVocabFlipped(true);
                         }}
-                        className="mb-2 px-6 py-2.5 bg-secondary text-white border-2 border-on-background rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
+                        className="mb-2 px-6 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
                       >
                         Хариултыг харах ↺
                       </button>
                     </div>
 
                     {/* BACK of the card (displays Mongolian definitions & explanations) */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-surface-container-high text-on-surface rounded-2xl flex flex-col items-center justify-between p-8 border-2 border-secondary shadow-[0_4px_16px_rgba(0,108,73,0.1)] transition-transform duration-500 transform-style-3d ${
+                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-ink-2 text-paper rounded-2xl flex flex-col items-center justify-between p-8 border-2 border-ink-line shadow-black/40 transition-transform duration-500 transform-style-3d ${
                       vocabFlipped ? '[transform:rotateY(0deg)]' : '[transform:rotateY(180deg)]'
                     }`}>
-                      <span className="text-xs font-space font-bold text-secondary bg-secondary-container px-3 py-1 border border-on-background rounded-full uppercase tracking-wider">
+                      <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise px-3 py-1 border border-ink-line rounded-full uppercase tracking-wider">
                         {vocabList[currentVocabIndex].category}
                       </span>
 
                       <div className="flex flex-col items-center gap-6 w-full max-w-md">
-                        <h2 className="text-3xl font-extrabold text-primary text-center font-sans tracking-tight">
+                        <h2 className="text-3xl font-extrabold text-paper text-center font-sans tracking-tight">
                           {vocabList[currentVocabIndex].mongolian}
                         </h2>
                         
-                        <div className="w-full bg-surface-container-low p-4 rounded-xl border-2 border-on-background block-shadow text-center">
-                          <p className="text-sm leading-normal text-on-surface-variant italic mb-2 font-sans font-bold">
+                        <div className="w-full bg-ink-raise p-4 rounded-xl border-2 border-ink-line block-shadow text-center">
+                          <p className="text-sm leading-normal text-paper-2 italic mb-2 font-sans font-bold">
                             "{vocabList[currentVocabIndex].exampleGerman}"
                           </p>
-                          <p className="text-sm font-bold text-secondary leading-normal font-sans">
+                          <p className="text-sm font-bold text-paper-2 leading-normal font-sans">
                             {vocabList[currentVocabIndex].exampleMongolian}
                           </p>
                         </div>
@@ -3790,7 +3790,7 @@ function LearnerApp() {
                           e.stopPropagation();
                           setVocabFlipped(false);
                         }}
-                        className="mb-2 px-6 py-2.5 bg-primary text-on-primary border-2 border-on-background rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
+                        className="mb-2 px-6 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
                       >
                         Үгийг харах ↺
                       </button>
@@ -3805,14 +3805,14 @@ function LearnerApp() {
                 }`}>
                   <button
                     onClick={() => handleVocabAction(false)}
-                    className="flex-1 basis-0 flex items-center justify-center gap-2 border-2 border-orange-500 text-orange-400 hover:bg-orange-500 hover:text-white py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-orange cursor-pointer transition-all active:scale-95"
+                    className="flex-1 basis-0 flex items-center justify-center gap-2 border-2 border-ink-line text-paper hover:bg-ink-raise0 hover:text-paper py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-orange cursor-pointer transition-all active:scale-95"
                   >
                     <RotateCcw className="w-5 h-5 font-black" />
                     Дахин давтах
                   </button>
                   <button
                     onClick={() => handleVocabAction(true)}
-                    className="flex-1 basis-0 flex items-center justify-center gap-2 bg-secondary border-2 border-on-background text-white hover:bg-on-secondary-fixed-variant py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-green cursor-pointer transition-all active:scale-95"
+                    className="flex-1 basis-0 flex items-center justify-center gap-2 bg-paper border-2 border-ink-line text-ink hover:bg-white py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-green cursor-pointer transition-all active:scale-95"
                   >
                     <CheckCircle className="w-5 h-5 font-black fill-current" />
                     Мэднэ
@@ -3824,8 +3824,8 @@ function LearnerApp() {
               {/* Right Sidebar: Progression Circular SVG & upcoming word panels */}
               <aside className="lg:col-span-4 flex flex-col gap-6">
                 {/* SVGs Progress tracking ring list items */}
-                <div className="rounded-xl border-2 border-on-background p-6 block-shadow flex flex-col items-center">
-                  <h3 className="text-lg font-bold text-primary mb-6 w-full font-space pb-2 border-b border-outline-variant uppercase tracking-wider">
+                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow flex flex-col items-center">
+                  <h3 className="text-lg font-bold text-paper mb-6 w-full font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
                     Өнөөдрийн явц
                   </h3>
                   
@@ -3833,14 +3833,14 @@ function LearnerApp() {
                     {/* SVG circular calculation */}
                     <svg className="w-full h-full transform -rotate-90">
                       <circle 
-                        className="text-surface-container stroke-current" 
+                        className="text-paper-2 stroke-current" 
                         cx="80" 
                         cy="80" 
                         fill="transparent" 
                         r="60" 
                         strokeWidth="10"                      ></circle>
                       <circle 
-                        className="text-secondary stroke-current progress-ring__circle transition-all duration-500" 
+                        className="text-paper-2 stroke-current progress-ring__circle transition-all duration-500" 
                         cx="80" 
                         cy="80" 
                         fill="transparent" 
@@ -3853,28 +3853,28 @@ function LearnerApp() {
                     
                     {/* Central counter summary text */}
                     <div className="absolute flex flex-col items-center justify-center text-center">
-                      <span className="text-3xl font-extrabold text-primary font-space">
+                      <span className="text-3xl font-extrabold text-paper font-serif">
                         {vocabMemorizedCount}/{vocabTotalCount}
                       </span>
-                      <span className="text-xs font-bold text-outline uppercase font-space">Цээжилсэн үг</span>
+                      <span className="text-xs font-bold text-paper-3 uppercase font-serif">Цээжилсэн үг</span>
                     </div>
                   </div>
 
-                  <div className="flex justify-between w-full mt-4 text-xs font-space font-bold border-t border-slate-100 pt-4">
-                    <div className="flex items-center gap-2 text-on-surface-variant">
-                      <div className="w-3 h-3 rounded-full bg-secondary"></div>
+                  <div className="flex justify-between w-full mt-4 text-xs font-serif font-bold border-t border-ink-line pt-4">
+                    <div className="flex items-center gap-2 text-paper-2">
+                      <div className="w-3 h-3 rounded-full bg-paper"></div>
                       <span>Мэдэхгүй</span>
                     </div>
-                    <div className="flex items-center gap-2 text-on-surface-variant">
-                      <div className="w-3 h-3 rounded-full bg-secondary-container"></div>
+                    <div className="flex items-center gap-2 text-paper-2">
+                      <div className="w-3 h-3 rounded-full bg-ink-raise"></div>
                       <span>Цээжилсэн</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Carousel Upcoming Cards lists previews */}
-                <div className="rounded-xl border-2 border-on-background p-6 block-shadow">
-                  <h3 className="text-lg font-bold text-primary mb-4 font-space pb-2 border-b border-slate-100 uppercase tracking-wider">
+                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
+                  <h3 className="text-lg font-bold text-paper mb-4 font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
                     Дараагийн үгс
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -3889,33 +3889,33 @@ function LearnerApp() {
                             setVocabFlipped(false);
                             setCurrentVocabIndex(idx);
                           }}
-                          className={`px-3 py-1.5 border-2 border-on-background rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                          className={`px-3 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
                             idx === currentVocabIndex
-                              ? 'bg-primary-container text-white border-on-background'
-                              : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
+                              ? 'bg-ink-raise text-paper border-ink-line'
+                              : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
                           }`}
                         >
                           {item.german}
                         </button>
                       );
                     })}
-                    <span className="px-3 py-1.5 bg-surface-container border-2 border-on-background rounded-lg text-xs font-bold text-on-surface-variant blur-[0.5px] opacity-70">
+                    <span className="px-3 py-1.5 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold text-paper-2 blur-[0.5px] opacity-70">
                       ...
                     </span>
                   </div>
                 </div>
 
                 {/* Resource card — opens the in-app dictionary (Browse) */}
-                <div className="rounded-xl border-2 border-on-background p-6 block-shadow">
-                  <h3 className="text-lg font-bold text-primary mb-2 font-space pb-2 border-b border-slate-100 uppercase tracking-wider">
+                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
+                  <h3 className="text-lg font-bold text-paper mb-2 font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
                     Нэмэлт эх сурвалж
                   </h3>
-                  <p className="text-xs text-on-surface-variant mb-4 leading-normal font-sans">
+                  <p className="text-xs text-paper-2 mb-4 leading-normal font-sans">
                     Илүү олон герман үг, жишээ өгүүлбэрийг апп дотроос шууд хайж, түвшингээр шүүж үзээрэй.
                   </p>
                   <button
                     onClick={() => setVocabView('browse')}
-                    className="w-full flex items-center justify-center gap-2 bg-secondary text-white border-2 border-on-background py-3 px-4 rounded-xl font-bold font-sans text-sm block-shadow-green cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
+                    className="w-full flex items-center justify-center gap-2 bg-paper text-ink border-2 border-ink-line py-3 px-4 rounded-xl font-bold font-sans text-sm block-shadow-green cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
                   >
                     <Library className="w-4 h-4" />
                     Толь бичиг нээх ({DICTIONARY.length})
@@ -3933,14 +3933,14 @@ function LearnerApp() {
             <div className="flex flex-col gap-6 pb-24">
 
               {/* Header + search + filters */}
-              <div className="rounded-2xl border-2 border-on-background p-6 block-shadow flex flex-col gap-5">
+              <div className="rounded-2xl border-2 border-ink-line p-6 block-shadow flex flex-col gap-5">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div>
-                    <h2 className="text-2xl font-black text-on-background font-space flex items-center gap-2">
-                      <Library className="w-6 h-6 text-secondary" />
+                    <h2 className="text-2xl font-light text-paper font-serif flex items-center gap-2">
+                      <Library className="w-6 h-6 text-paper-2" />
                       Герман–Монгол толь бичиг
                     </h2>
-                    <p className="text-xs text-on-surface-variant font-sans mt-1">
+                    <p className="text-xs text-paper-2 font-sans mt-1">
                       Нийт {DICTIONARY.length} үг · хайж, төрөл болон түвшингээр шүүнэ
                     </p>
                   </div>
@@ -3948,18 +3948,18 @@ function LearnerApp() {
 
                 {/* Search box */}
                 <div className="relative">
-                  <Search className="w-5 h-5 text-outline absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Search className="w-5 h-5 text-paper-3 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
                     value={dictSearch}
                     onChange={(e) => setDictSearch(e.target.value)}
                     placeholder="Герман эсвэл монгол үгээр хайх..."
-                    className="w-full bg-surface-container-low border-2 border-on-background rounded-xl pl-12 pr-10 py-3 text-md font-bold text-on-surface focus:border-secondary outline-none transition-all placeholder:text-outline placeholder:font-normal shadow-inner"
+                    className="w-full bg-ink-raise border-2 border-ink-line rounded-xl pl-12 pr-10 py-3 text-md font-bold text-paper focus:border-ink-line outline-none transition-all placeholder:text-paper-3 placeholder:font-normal shadow-inner"
                   />
                   {dictSearch && (
                     <button
                       onClick={() => setDictSearch('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-background cursor-pointer"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-paper-3 hover:text-paper cursor-pointer"
                       title="Цэвэрлэх"
                     >
                       <X className="w-5 h-5" />
@@ -3973,8 +3973,8 @@ function LearnerApp() {
                     <button
                       key={c.value}
                       onClick={() => setDictClass(c.value)}
-                      className={`px-3.5 py-1.5 border-2 border-on-background rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                        dictClass === c.value ? 'bg-primary-container text-white' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
+                      className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                        dictClass === c.value ? 'bg-ink-raise text-paper' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
                       }`}
                     >
                       {c.label}
@@ -3984,13 +3984,13 @@ function LearnerApp() {
 
                 {/* Level filter chips */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-space font-bold text-outline uppercase tracking-wider mr-1">Түвшин:</span>
+                  <span className="text-xs font-serif font-bold text-paper-3 uppercase tracking-wider mr-1">Түвшин:</span>
                   {LEVEL_OPTIONS.map((lvl) => (
                     <button
                       key={lvl}
                       onClick={() => setDictLevel(lvl)}
-                      className={`px-3.5 py-1.5 border-2 border-on-background rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                        dictLevel === lvl ? 'bg-secondary text-white' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
+                      className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                        dictLevel === lvl ? 'bg-paper text-ink' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
                       }`}
                     >
                       {lvl === 'all' ? 'Бүгд' : lvl}
@@ -4001,17 +4001,17 @@ function LearnerApp() {
 
               {/* Results count */}
               <div className="flex items-center justify-between px-1">
-                <span className="text-sm font-bold text-on-surface-variant font-space">
+                <span className="text-sm font-bold text-paper-2 font-serif">
                   {filteredDictionary.length} үг олдлоо
                 </span>
               </div>
 
               {/* Word cards grid */}
               {filteredDictionary.length === 0 ? (
-                <div className="rounded-2xl border-2 border-on-background p-12 block-shadow text-center">
-                  <HelpCircle className="w-12 h-12 text-outline mx-auto mb-3" />
-                  <p className="text-on-surface-variant font-bold font-sans">Тохирох үг олдсонгүй.</p>
-                  <p className="text-xs text-outline mt-1">Хайлт эсвэл шүүлтүүрээ өөрчилж үзнэ үү.</p>
+                <div className="rounded-2xl border-2 border-ink-line p-12 block-shadow text-center">
+                  <HelpCircle className="w-12 h-12 text-paper-3 mx-auto mb-3" />
+                  <p className="text-paper-2 font-bold font-sans">Тохирох үг олдсонгүй.</p>
+                  <p className="text-xs text-paper-3 mt-1">Хайлт эсвэл шүүлтүүрээ өөрчилж үзнэ үү.</p>
                 </div>
               ) : (
                 <>
@@ -4019,39 +4019,39 @@ function LearnerApp() {
                     {filteredDictionary.slice(0, dictVisible).map((w, idx) => (
                       <div
                         key={`${w.german}-${idx}`}
-                        className="rounded-xl border-2 border-on-background p-5 block-shadow flex flex-col gap-3 hover:-translate-y-0.5 transition-transform"
+                        className="rounded-xl border-2 border-ink-line p-5 block-shadow flex flex-col gap-3 hover:-translate-y-0.5 transition-transform"
                       >
                         <div className="flex items-start justify-between gap-2">
                           {w.article ? (
-                            <span className={`text-sm font-black lowercase tracking-widest px-3 py-0.5 rounded-full border-2 border-on-background ${
-                              w.article === 'der' ? 'bg-teal-100 text-teal-700' :
-                              w.article === 'die' ? 'bg-orange-100 text-orange-700' :
-                              'bg-amber-100 text-amber-700'
+                            <span className={`text-sm font-black lowercase tracking-widest px-3 py-0.5 rounded-full border-2 border-ink-line ${
+                              w.article === 'der' ? 'bg-ink-raise text-paper-2' :
+                              w.article === 'die' ? 'bg-ink-raise text-paper-2' :
+                              'bg-ink-raise text-paper-2'
                             }`}>
                               {w.article}
                             </span>
                           ) : (
-                            <span className="text-[11px] font-space font-bold text-secondary bg-secondary-container px-2.5 py-1 border border-on-background rounded-full uppercase tracking-wider">
+                            <span className="text-[11px] font-serif font-bold text-paper-2 bg-ink-raise px-2.5 py-1 border border-ink-line rounded-full uppercase tracking-wider">
                               {WORD_CLASS_LABELS.find((c) => c.value === w.wordClass)?.label || ''}
                             </span>
                           )}
-                          <span className="text-[11px] font-space font-extrabold text-on-surface-variant bg-surface-container px-2.5 py-1 border border-on-background rounded-full">
+                          <span className="text-[11px] font-serif font-extrabold text-paper-2 bg-ink-raise px-2.5 py-1 border border-ink-line rounded-full">
                             {w.level}
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <h3 className="text-2xl font-black text-primary font-sans tracking-tight leading-tight truncate">
+                            <h3 className="text-2xl font-black text-paper font-sans tracking-tight leading-tight truncate">
                               {w.german}
                             </h3>
                             {w.phonetic && (
-                              <p className="text-xs text-on-surface-variant/70 font-mono mt-0.5">{w.phonetic}</p>
+                              <p className="text-xs text-paper-2/70 font-mono mt-0.5">{w.phonetic}</p>
                             )}
                           </div>
                           <button
                             onClick={() => speakGerman(w.article ? `${w.article} ${w.german}` : w.german)}
-                            className="shrink-0 p-2.5 rounded-full bg-surface-container hover:bg-surface-container-high border-2 border-on-background hover:scale-110 text-secondary transition-all cursor-pointer"
+                            className="shrink-0 p-2.5 rounded-full bg-ink-raise hover:bg-ink-2 border-2 border-ink-line hover:scale-110 text-paper-2 transition-all cursor-pointer"
                             title="Дуудлага сонсох"
                           >
                             <Volume2 className="w-5 h-5 stroke-[2.5px]" />
@@ -4060,25 +4060,25 @@ function LearnerApp() {
 
                         {/* Meaning: Mongolian once translated, otherwise the English gloss. */}
                         {w.mongolian.trim() ? (
-                          <p className="text-base font-bold text-secondary font-sans">{w.mongolian}</p>
+                          <p className="text-base font-bold text-paper-2 font-sans">{w.mongolian}</p>
                         ) : (
-                          <p className="text-base font-bold text-secondary font-sans">
+                          <p className="text-base font-bold text-paper-2 font-sans">
                             {w.english}
-                            <span className="ml-1.5 text-[10px] font-space font-bold text-outline align-middle">EN</span>
+                            <span className="ml-1.5 text-[10px] font-serif font-bold text-paper-3 align-middle">EN</span>
                           </p>
                         )}
                         {w.wordClass === 'noun' && w.plural && (
-                          <p className="text-xs text-on-surface-variant/80 font-sans -mt-1">
+                          <p className="text-xs text-paper-2/80 font-sans -mt-1">
                             Олон тоо: <span className="font-bold">die {w.plural}</span>
                           </p>
                         )}
 
                         {w.exampleGerman.trim() && (
-                          <div className="mt-auto bg-surface-container-low p-3 rounded-lg border border-outline-variant">
-                            <p className="text-xs leading-normal text-on-surface-variant italic font-sans font-semibold mb-1">
+                          <div className="mt-auto bg-ink-raise p-3 rounded-lg border border-ink-line">
+                            <p className="text-xs leading-normal text-paper-2 italic font-sans font-semibold mb-1">
                               „{w.exampleGerman}“
                             </p>
-                            <p className="text-xs text-on-surface-variant/80 leading-normal font-sans">
+                            <p className="text-xs text-paper-2/80 leading-normal font-sans">
                               {w.exampleMongolian}
                             </p>
                           </div>
@@ -4092,7 +4092,7 @@ function LearnerApp() {
                     <div className="flex justify-center mt-2">
                       <button
                         onClick={() => setDictVisible((n) => n + 24)}
-                        className="flex items-center gap-2 border-2 border-on-background text-on-background hover:bg-surface-container py-3 px-8 rounded-xl font-bold font-sans text-sm block-shadow cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
+                        className="flex items-center gap-2 border-2 border-ink-line text-paper hover:bg-ink-raise py-3 px-8 rounded-xl font-bold font-sans text-sm block-shadow cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
                       >
                         <ChevronRight className="w-4 h-4 rotate-90" />
                         Цааш үзэх ({filteredDictionary.length - dictVisible})
@@ -4102,7 +4102,7 @@ function LearnerApp() {
                 </>
               )}
 
-              <p className="text-center text-[11px] text-outline font-sans mt-2">
+              <p className="text-center text-[11px] text-paper-3 font-sans mt-2">
                 Vocabeo.com-ийн загвараар бүтээв
               </p>
             </div>
@@ -4129,24 +4129,24 @@ function LearnerApp() {
               
               {/* Left Side: Translation Workspace */}
               <div className="lg:col-span-12 xl:col-span-7 flex flex-col gap-6">
-                <div className="rounded-xl p-6 md:p-8 border-2 border-on-background block-shadow relative">
+                <div className="rounded-xl p-6 md:p-8 border-2 border-ink-line block-shadow relative">
                   
                   {/* Neon top accent */}
-                  <div className="absolute top-0 left-0 w-full h-[5px] bg-primary rounded-t-xl"></div>
+                  <div className="absolute top-0 left-0 w-full h-[5px] bg-paper rounded-t-xl"></div>
                   
                   <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-amber-500 fill-amber-300 animate-pulse" />
-                      <h2 className="text-2xl font-black text-on-background font-space">
+                      <Sparkles className="w-5 h-5 text-paper fill-paper-2 animate-pulse" />
+                      <h2 className="text-2xl font-light text-paper font-serif">
                         Орчуулагч
                       </h2>
                     </div>
-                    <span className="text-[11px] font-space font-extrabold bg-surface text-amber-300 px-3 py-1 rounded-full border border-amber-500/20 uppercase tracking-widest">
+                    <span className="text-[11px] font-serif font-extrabold bg-ink-raise text-paper-2 px-3 py-1 rounded-full border border-ink-line uppercase tracking-widest">
                       PRO
                     </span>
                   </div>
 
-                  <p className="text-xs text-on-surface-variant mb-4 leading-relaxed font-sans">
+                  <p className="text-xs text-paper-2 mb-4 leading-relaxed font-sans">
                     Энгийн орчуулгын системүүд шиг шууд холбож орчуулахгүй, энэхүү ухаалаг систем нь өгүүлбэрийн зүй, үгс тус бүрийн хувирал, дуудлагыг дүрмийн тайлбартай хамт гаргаж заах сургалтын зориулалттай.
                   </p>
 
@@ -4155,12 +4155,12 @@ function LearnerApp() {
                       value={translationInput}
                       onChange={(e) => setTranslationInput(e.target.value)}
                       placeholder="Орчуулах герман эсвэл монгол өгүүлбэрээ энд бичнэ үү..."
-                      className="w-full min-h-[120px] bg-surface-container-low border-2 border-on-background font-bold rounded-xl p-4 text-md text-on-surface focus:border-amber-500 outline-none transition-all placeholder:text-outline resize-none shadow-inner"
+                      className="w-full min-h-[120px] bg-ink-raise border-2 border-ink-line font-bold rounded-xl p-4 text-md text-paper focus:border-ink-line outline-none transition-all placeholder:text-paper-3 resize-none shadow-inner"
                     />
                     {translationInput && (
                       <button 
                         onClick={() => setTranslationInput('')}
-                        className="absolute right-3 top-3 text-[12px] text-outline font-bold border border-outline-variant bg-surface-container hover:bg-surface-container-high px-2.5 py-1 rounded-md transition-all cursor-pointer"
+                        className="absolute right-3 top-3 text-[12px] text-paper-3 font-bold border border-ink-line bg-ink-raise hover:bg-ink-2 px-2.5 py-1 rounded-md transition-all cursor-pointer"
                         title="Арилгах"
                       >
                         Цэвэрлэх
@@ -4170,27 +4170,27 @@ function LearnerApp() {
 
                   {/* Sample Phrases cards */}
                   <div className="mt-4">
-                    <p className="text-xs font-bold text-outline font-space mb-2 uppercase">Туршиж үзэх жишээ өгүүлбэрүүд:</p>
+                    <p className="text-xs font-bold text-paper-3 font-serif mb-2 uppercase">Туршиж үзэх жишээ өгүүлбэрүүд:</p>
                     <div className="flex flex-col gap-2">
                       <button 
                         onClick={() => {
                           setTranslationInput('Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche.');
                           translateText('Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche.');
                         }}
-                        className="text-left py-2 px-3 bg-surface-container border border-outline-variant rounded-lg hover:border-amber-400 text-xs font-semibold hover:bg-surface-container-high text-on-surface-variant transition-all flex justify-between items-center group cursor-pointer"
+                        className="text-left py-2 px-3 bg-ink-raise border border-ink-line rounded-lg hover:border-ink-line text-xs font-semibold hover:bg-ink-2 text-paper-2 transition-all flex justify-between items-center group cursor-pointer"
                       >
                         <span>🇩🇪 "Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche."</span>
-                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-amber-500" />
+                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-paper" />
                       </button>
                       <button 
                         onClick={() => {
                           setTranslationInput('Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална.');
                           translateText('Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална.');
                         }}
-                        className="text-left py-2 px-3 bg-surface-container border border-outline-variant rounded-lg hover:border-amber-400 text-xs font-semibold hover:bg-surface-container-high text-on-surface-variant transition-all flex justify-between items-center group cursor-pointer"
+                        className="text-left py-2 px-3 bg-ink-raise border border-ink-line rounded-lg hover:border-ink-line text-xs font-semibold hover:bg-ink-2 text-paper-2 transition-all flex justify-between items-center group cursor-pointer"
                       >
                         <span>🇲🇳 "Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална."</span>
-                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-amber-500" />
+                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-paper" />
                       </button>
                     </div>
                   </div>
@@ -4199,16 +4199,16 @@ function LearnerApp() {
                     <button 
                       onClick={() => translateText()}
                       disabled={translationLoading || !translationInput.trim()}
-                      className="px-6 py-3 border-2 border-on-background text-sm font-bold bg-surface text-amber-300 rounded-xl hover:bg-amber-950/20 transition-all cursor-pointer block-shadow flex items-center gap-2 border-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-3 border-2 border-ink-line text-sm font-bold bg-ink-raise text-paper-2 rounded-xl hover:bg-ink-raise transition-all cursor-pointer block-shadow flex items-center gap-2 border-ink-line disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {translationLoading ? (
                         <>
-                          <div className="w-4 h-4 border-2 border-amber-300 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 border-2 border-ink-line border-t-transparent rounded-full animate-spin"></div>
                           Орчуулж байна...
                         </>
                       ) : (
                         <>
-                          <Sparkles className="w-4 h-4 fill-current text-amber-400" />
+                          <Sparkles className="w-4 h-4 fill-current text-paper" />
                           Нэгдсэн Орчуулга Хийх
                         </>
                       )}
@@ -4216,8 +4216,8 @@ function LearnerApp() {
                   </div>
 
                   {translationError && (
-                    <div className="mt-4 p-4 border border-orange-200 bg-orange-50 rounded-xl text-orange-700 text-xs font-bold leading-relaxed flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-orange-500 shrink-0" />
+                    <div className="mt-4 p-4 border border-ink-line bg-ink-raise rounded-xl text-paper-2 text-xs font-bold leading-relaxed flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-paper shrink-0" />
                       <span>{translationError}</span>
                     </div>
                   )}
@@ -4229,13 +4229,13 @@ function LearnerApp() {
               <div className="lg:col-span-12 xl:col-span-5 flex flex-col gap-6">
                 
                 {translationLoading ? (
-                  <div className="rounded-xl border-2 border-on-background p-8 block-shadow h-[400px] flex flex-col items-center justify-center text-center">
+                  <div className="rounded-xl border-2 border-ink-line p-8 block-shadow h-[400px] flex flex-col items-center justify-center text-center">
                     <div className="relative mb-6">
-                      <div className="w-16 h-16 border-4 border-amber-100 border-t-amber-500 rounded-full animate-spin"></div>
-                      <Sparkles className="w-6 h-6 text-amber-400 absolute inset-0 m-auto animate-pulse" />
+                      <div className="w-16 h-16 border-4 border-ink-line border-t-amber-500 rounded-full animate-spin"></div>
+                      <Sparkles className="w-6 h-6 text-paper absolute inset-0 m-auto animate-pulse" />
                     </div>
-                    <h3 className="text-lg font-bold text-primary font-space mb-2">Герман Хэлний Үйлчилгээ</h3>
-                    <p className="text-xs text-on-surface-variant max-w-xs leading-normal">
+                    <h3 className="text-lg font-bold text-paper font-serif mb-2">Герман Хэлний Үйлчилгээ</h3>
+                    <p className="text-xs text-paper-2 max-w-xs leading-normal">
                       Өгүүлбэрийг орчуулж, үгс бүрийн үндсэн хэлбэрийг олох болон хэл зүйн бүтцийг судалж байна.
                     </p>
                   </div>
@@ -4243,16 +4243,16 @@ function LearnerApp() {
                   <div className="flex flex-col gap-6 animate-scale-up">
                     
                     {/* Translation Core Card */}
-                    <div className="rounded-xl border-2 border-on-background p-6 block-shadow">
-                      <div className="flex justify-between items-center pb-3 border-b border-outline-variant mb-4">
-                        <span className="text-xs font-extrabold uppercase tracking-widest text-[#0c5440] bg-[#e7f7f0] px-2.5 py-1 rounded-md border border-[#bfe9da]">
+                    <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
+                      <div className="flex justify-between items-center pb-3 border-b border-ink-line mb-4">
+                        <span className="text-xs font-medium uppercase tracking-widest text-paper-2 bg-ink-raise px-2.5 py-1 rounded-md border border-ink-line">
                           Илэрсэн хэл: {translationResult.detectedLanguage === 'German' ? '🇩🇪 Герман' : '🇲🇳 Монгол'}
                         </span>
                         <div className="flex gap-2">
                           {translationResult.detectedLanguage === 'German' || translationResult.detectedLanguage === 'german' ? (
                             <button 
                               onClick={() => speakGerman(translationInput)}
-                              className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-stone-700 cursor-pointer"
+                              className="w-8 h-8 rounded-full bg-ink-raise border border-ink-line hover:bg-ink-2 flex items-center justify-center text-paper-2 cursor-pointer"
                               title="Германаар уншуулах"
                             >
                               <Volume2 className="w-4 h-4" />
@@ -4260,7 +4260,7 @@ function LearnerApp() {
                           ) : (
                             <button 
                               onClick={() => speakGerman(translationResult.translation)}
-                              className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-stone-700 cursor-pointer"
+                              className="w-8 h-8 rounded-full bg-ink-raise border border-ink-line hover:bg-ink-2 flex items-center justify-center text-paper-2 cursor-pointer"
                               title="Орчуулгыг германаар уншуулах"
                             >
                               <Volume2 className="w-4 h-4" />
@@ -4270,16 +4270,16 @@ function LearnerApp() {
                       </div>
 
                       <div className="mb-4">
-                        <p className="text-[10px] uppercase font-bold text-outline font-space tracking-wide mb-1">Гүйцэтгэсэн Орчуулга:</p>
-                        <p className="text-lg font-black text-on-surface leading-snug">
+                        <p className="text-[10px] uppercase font-bold text-paper-3 font-serif tracking-wide mb-1">Гүйцэтгэсэн Орчуулга:</p>
+                        <p className="text-lg font-black text-paper leading-snug">
                           {translationResult.translation}
                         </p>
                       </div>
 
                       {translationResult.pronunciation && (
-                        <div className="mb-1 p-3 bg-surface-container-low border border-outline-variant rounded-lg">
-                          <p className="text-[10px] uppercase font-bold text-outline font-space tracking-wide mb-0.5">Унших удирдамж:</p>
-                          <code className="text-xs font-mono font-bold text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20">
+                        <div className="mb-1 p-3 bg-ink-raise border border-ink-line rounded-lg">
+                          <p className="text-[10px] uppercase font-bold text-paper-3 font-serif tracking-wide mb-0.5">Унших удирдамж:</p>
+                          <code className="text-xs font-mono font-bold text-paper-2 bg-ink-raise px-1.5 py-0.5 rounded border border-ink-line">
                             {translationResult.pronunciation}
                           </code>
                         </div>
@@ -4287,35 +4287,35 @@ function LearnerApp() {
                     </div>
 
                     {/* Linguistic Grammar Explanation Card */}
-                    <div className="rounded-xl border-2 border-on-background p-6 block-shadow">
-                      <h3 className="text-sm font-black text-amber-300 font-space mb-3 flex items-center gap-2">
-                        <Lightbulb className="w-4 h-4 text-amber-500 fill-amber-300 animate-pulse" />
+                    <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
+                      <h3 className="text-sm font-medium text-paper-2 font-serif mb-3 flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4 text-paper fill-paper-2 animate-pulse" />
                         БҮТЭЦ & ДҮРМИЙН ТАЙЛБАР:
                       </h3>
-                      <p className="text-xs leading-relaxed text-on-surface-variant font-sans">
+                      <p className="text-xs leading-relaxed text-paper-2 font-sans">
                         {translationResult.grammarExplanation}
                       </p>
                     </div>
 
                     {/* Vocabulary Parsing List */}
-                    <div className="rounded-xl border-2 border-on-background p-6 block-shadow">
-                      <h3 className="text-sm font-black text-secondary font-space mb-4 pb-2 border-b border-outline-variant uppercase tracking-wider">
+                    <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
+                      <h3 className="text-sm font-medium text-paper-2 font-serif mb-4 pb-2 border-b border-ink-line uppercase tracking-wider">
                         Үгсийн бүтэц (Дэлгэрэнгүй):
                       </h3>
                       <div className="flex flex-col gap-3">
                         {translationResult.words && translationResult.words.map((w, index) => (
-                          <div key={index} className="flex flex-col gap-1 p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-xs hover:border-amber-400 transition-all">
+                          <div key={index} className="flex flex-col gap-1 p-2.5 bg-ink-raise border border-ink-line rounded-lg text-xs hover:border-ink-line transition-all">
                             <div className="flex justify-between items-center">
-                              <span className="font-extrabold text-on-surface">{w.word}</span>
-                              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-teal-100 text-teal-800">
+                              <span className="font-extrabold text-paper">{w.word}</span>
+                              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-ink-raise text-paper-2">
                                 {w.partOfSpeech}
                               </span>
                             </div>
-                            <div className="text-[11px] text-on-surface-variant flex justify-between mt-1">
-                              <span>Толь бичгийн хэлбэр: <strong className="text-amber-300">{w.baseForm}</strong></span>
-                              <span>= <strong className="text-on-surface">{w.translation}</strong></span>
+                            <div className="text-[11px] text-paper-2 flex justify-between mt-1">
+                              <span>Толь бичгийн хэлбэр: <strong className="text-paper-2">{w.baseForm}</strong></span>
+                              <span>= <strong className="text-paper">{w.translation}</strong></span>
                             </div>
-                            <p className="text-[10.5px] text-outline leading-normal mt-1 border-t border-dashed border-outline-variant pt-1">
+                            <p className="text-[10.5px] text-paper-3 leading-normal mt-1 border-t border-dashed border-ink-line pt-1">
                               {w.explanation}
                             </p>
                           </div>
@@ -4325,15 +4325,15 @@ function LearnerApp() {
 
                     {/* Context Examples */}
                     {translationResult.examples && translationResult.examples.length > 0 && (
-                      <div className="rounded-xl border-2 border-on-background p-6 block-shadow">
-                        <h3 className="text-sm font-black text-on-surface font-space mb-3 uppercase tracking-wider">
+                      <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
+                        <h3 className="text-sm font-medium text-paper font-serif mb-3 uppercase tracking-wider">
                           Холбогдох Жишээнүүд:
                         </h3>
                         <div className="space-y-3">
                           {translationResult.examples.map((ex, idx) => (
-                            <div key={idx} className="p-3 bg-surface-container-low rounded-xl border border-outline-variant">
-                              <p className="text-xs font-bold text-amber-300">🇩🇪 {ex.german}</p>
-                              <p className="text-xs text-on-surface-variant mt-1">🇲🇳 {ex.mongolian}</p>
+                            <div key={idx} className="p-3 bg-ink-raise rounded-xl border border-ink-line">
+                              <p className="text-xs font-bold text-paper-2">🇩🇪 {ex.german}</p>
+                              <p className="text-xs text-paper-2 mt-1">🇲🇳 {ex.mongolian}</p>
                             </div>
                           ))}
                         </div>
@@ -4342,12 +4342,12 @@ function LearnerApp() {
 
                   </div>
                 ) : (
-                  <div className="rounded-xl border-2 border-on-background p-8 block-shadow h-[320px] flex flex-col items-center justify-center text-center relative overflow-hidden group">
-                    <div className="w-16 h-16 rounded-full bg-primary-container border border-amber-500/30 flex items-center justify-center text-amber-300 mb-4 transition-all group-hover:scale-110">
-                      <Languages className="w-8 h-8 text-amber-400" />
+                  <div className="rounded-xl border-2 border-ink-line p-8 block-shadow h-[320px] flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                    <div className="w-16 h-16 rounded-full bg-ink-raise border border-ink-line flex items-center justify-center text-paper-2 mb-4 transition-all group-hover:scale-110">
+                      <Languages className="w-8 h-8 text-paper" />
                     </div>
-                    <h3 className="text-lg font-bold text-primary font-space mb-2">Үгийн Шинжилгээ Ба Орчуулга</h3>
-                    <p className="text-xs text-on-surface-variant max-w-xs leading-normal font-sans">
+                    <h3 className="text-lg font-bold text-paper font-serif mb-2">Үгийн Шинжилгээ Ба Орчуулга</h3>
+                    <p className="text-xs text-paper-2 max-w-xs leading-normal font-sans">
                       Зүүн талбар дахь өгүүлбэрийг орчуулсны дараа энд дэлгэрэнгүй толь бичиг, дуудлагын зөвлөмжүүд болон дүрэм харагдах болно.
                     </p>
                   </div>
@@ -4363,11 +4363,11 @@ function LearnerApp() {
             <div className="w-full pb-24 animate-fade-in">
 
               {/* Header */}
-              <div className="flex items-center gap-3 pb-4 border-b border-outline-variant mb-6 text-primary">
-                <GraduationCap className="w-8 h-8 text-amber-400" />
+              <div className="flex items-center gap-3 pb-4 border-b border-ink-line mb-6 text-paper">
+                <GraduationCap className="w-8 h-8 text-paper" />
                 <div>
-                  <h2 className="text-2xl font-extrabold font-space text-on-surface">Шалгалт</h2>
-                  <p className="text-xs text-on-surface-variant font-mono">CEFR түвшин (A1–C2) · Унших · Сонсох · Бичих · Ярих</p>
+                  <h2 className="text-2xl font-extrabold font-serif text-paper">Шалгалт</h2>
+                  <p className="text-xs text-paper-2 font-mono">CEFR түвшин (A1–C2) · Унших · Сонсох · Бичих · Ярих</p>
                 </div>
               </div>
 
@@ -4376,53 +4376,53 @@ function LearnerApp() {
                 <>
                   {/* Түвшин тогтоох үнэлгээний тест — 4 ур чадвар, CEFR түвшин */}
                   <button onClick={() => setPlacementOpen(true)}
-                    className="w-full text-left mb-4 bg-gradient-to-br from-primary-container to-surface-variant border-2 border-on-background rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
+                    className="w-full text-left mb-4 bg-gradient-to-br from-ink-raise to-ink-2 border-2 border-ink-line rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-white/15 border-2 border-on-background flex items-center justify-center shrink-0">
-                        <Sparkles className="w-7 h-7 text-amber-300" />
+                      <div className="w-12 h-12 rounded-xl bg-ink-raise border-2 border-ink-line flex items-center justify-center shrink-0">
+                        <Sparkles className="w-7 h-7 text-paper-2" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-lg md:text-xl font-black font-space text-white">Түвшин тогтоох тест</h3>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-300 text-teal-900">Einstufungstest</span>
+                          <h3 className="text-lg md:text-xl font-light font-serif text-paper">Түвшин тогтоох тест</h3>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-paper text-ink">Einstufungstest</span>
                         </div>
-                        <p className="text-xs text-white/85 leading-relaxed mt-1">Дөрвөн ур чадварыг бүгдийг шалгаад <b className="text-white">CEFR түвшнээ</b> (A1–C2) тогтоолгоно. Асуултууд таны түвшинд автоматаар тохирно. 10–15 минут.</p>
-                        <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-white bg-white/15 border border-on-background px-3 py-1 rounded-full">Тест эхлүүлэх <ArrowRight className="w-3.5 h-3.5" /></span>
+                        <p className="text-xs text-paper leading-relaxed mt-1">Дөрвөн ур чадварыг бүгдийг шалгаад <b className="text-paper">CEFR түвшнээ</b> (A1–C2) тогтоолгоно. Асуултууд таны түвшинд автоматаар тохирно. 10–15 минут.</p>
+                        <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-paper bg-ink-raise border border-ink-line px-3 py-1 rounded-full">Тест эхлүүлэх <ArrowRight className="w-3.5 h-3.5" /></span>
                       </div>
                     </div>
                   </button>
 
                   {/* TestDaF бүрэн загвар шалгалтын симуляци — Pro ба түүнээс дээш багцад. */}
                   <button onClick={() => fullContent ? setTestdafOpen(true) : setActiveTab('profile')}
-                    className="w-full text-left mb-6 bg-gradient-to-br from-secondary-container to-surface-variant border-2 border-on-background rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
+                    className="w-full text-left mb-6 bg-gradient-to-br from-ink-raise to-ink-2 border-2 border-ink-line rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-white/15 border-2 border-on-background flex items-center justify-center shrink-0">
-                        <GraduationCap className="w-7 h-7 text-amber-300" />
+                      <div className="w-12 h-12 rounded-xl bg-ink-raise border-2 border-ink-line flex items-center justify-center shrink-0">
+                        <GraduationCap className="w-7 h-7 text-paper-2" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-lg md:text-xl font-black font-space text-white">TestDaF — Бүрэн загвар шалгалт</h3>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-300 text-amber-900">Prüfungssimulation</span>
+                          <h3 className="text-lg md:text-xl font-light font-serif text-paper">TestDaF — Бүрэн загвар шалгалт</h3>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-paper text-ink">Prüfungssimulation</span>
                         </div>
-                        <p className="text-xs text-white/85 leading-relaxed mt-1">Жинхэнэ шалгалтын бүтэц: <b className="text-white">Унших</b> 60′/30, <b className="text-white">Сонсох</b> 40′/25, <b className="text-white">Бичих</b> 60′/график-эссэ, <b className="text-white">Ярих</b> 35′/7 ситуаци. Цаг хэмжсэн, дараалсан, AI үнэлгээтэй.</p>
-                        <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-white bg-white/15 border border-on-background px-3 py-1 rounded-full">
+                        <p className="text-xs text-paper leading-relaxed mt-1">Жинхэнэ шалгалтын бүтэц: <b className="text-paper">Унших</b> 60′/30, <b className="text-paper">Сонсох</b> 40′/25, <b className="text-paper">Бичих</b> 60′/график-эссэ, <b className="text-paper">Ярих</b> 35′/7 ситуаци. Цаг хэмжсэн, дараалсан, AI үнэлгээтэй.</p>
+                        <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-paper bg-ink-raise border border-ink-line px-3 py-1 rounded-full">
                           {fullContent ? <>Симуляци эхлүүлэх <ArrowRight className="w-3.5 h-3.5" /></> : <><Lock className="w-3.5 h-3.5" /> Pro багцаар нээгдэнэ</>}
                         </span>
                       </div>
                     </div>
                   </button>
 
-                  <p className="text-sm text-on-surface-variant mb-5 max-w-2xl">Эсвэл <b className="text-on-surface">CEFR түвшнээ</b> сонгоно уу. Түвшин бүр <b className="text-on-surface">Унших, Сонсох, Бичих, Ярих</b> гэсэн дөрвөн хэсэгтэй бөгөөд хэсэг бүрт 5+ тест байна. Доош нь A1 хамгийн хялбар, C2 хамгийн хүнд.</p>
+                  <p className="text-sm text-paper-2 mb-5 max-w-2xl">Эсвэл <b className="text-paper">CEFR түвшнээ</b> сонгоно уу. Түвшин бүр <b className="text-paper">Унших, Сонсох, Бичих, Ярих</b> гэсэн дөрвөн хэсэгтэй бөгөөд хэсэг бүрт 5+ тест байна. Доош нь A1 хамгийн хялбар, C2 хамгийн хүнд.</p>
 
                   {/* Free tier: only the first N questions of the bank are open. */}
                   {!fullContent && (
-                    <div className="flex items-start gap-3 mb-5 p-4 bg-primary-container/60 border-2 border-on-background rounded-xl block-shadow max-w-2xl">
-                      <Lock className="w-5 h-5 text-on-surface shrink-0 mt-0.5" />
+                    <div className="flex items-start gap-3 mb-5 p-4 bg-ink-raise/60 border-2 border-ink-line rounded-xl block-shadow max-w-2xl">
+                      <Lock className="w-5 h-5 text-paper shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-sm font-extrabold text-on-surface">Үнэгүй эрхээр A1 шалгалт бүрийн (унших/сонсох/бичих/ярих) эхний {FREE_QUESTIONS_PER_SECTION} асуулт нээлттэй.</p>
-                        <p className="text-xs text-on-surface-variant mt-1">
+                        <p className="text-sm font-extrabold text-paper">Үнэгүй эрхээр A1 шалгалт бүрийн (унших/сонсох/бичих/ярих) эхний {FREE_QUESTIONS_PER_SECTION} асуулт нээлттэй.</p>
+                        <p className="text-xs text-paper-2 mt-1">
                           Бүх түвшний {EXAM_LEVEL_ORDER.reduce((n, lv) => n + EXAMS[lv].reading.length + EXAMS[lv].listening.length + EXAMS[lv].writing.length + EXAMS[lv].speaking.length, 0)} тестийг бүрэн нээхийн тулд{' '}
-                          <button onClick={() => setActiveTab('profile')} className="font-bold text-secondary underline cursor-pointer">Pro эсвэл Max багц</button> аваарай.
+                          <button onClick={() => setActiveTab('profile')} className="font-bold text-paper-2 underline cursor-pointer">Pro эсвэл Max багц</button> аваарай.
                         </p>
                       </div>
                     </div>
@@ -4433,14 +4433,14 @@ function LearnerApp() {
                       const total = ex.reading.length + ex.listening.length + ex.writing.length + ex.speaking.length;
                       return (
                         <button key={lv} onClick={() => { setExamLevelSel(lv); selectExamSection('reading'); }}
-                          className="text-left border-2 border-on-background rounded-xl p-5 block-shadow hover:scale-[1.02] active:scale-95 transition-transform cursor-pointer">
+                          className="text-left border-2 border-ink-line rounded-xl p-5 block-shadow hover:scale-[1.02] active:scale-95 transition-transform cursor-pointer">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-3xl font-black font-space text-on-surface">{lv}</span>
-                            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-secondary text-white">{total} тест</span>
+                            <span className="text-3xl font-light font-serif text-paper">{lv}</span>
+                            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-paper text-ink">{total} тест</span>
                           </div>
-                          <p className="text-sm font-extrabold text-secondary mb-1">{ex.titleMn}</p>
-                          <p className="text-xs text-on-surface-variant leading-relaxed">{ex.descriptionMn}</p>
-                          <div className="flex items-center gap-2 mt-3 text-on-surface-variant">
+                          <p className="text-sm font-extrabold text-paper-2 mb-1">{ex.titleMn}</p>
+                          <p className="text-xs text-paper-2 leading-relaxed">{ex.descriptionMn}</p>
+                          <div className="flex items-center gap-2 mt-3 text-paper-2">
                             <BookOpen className="w-4 h-4" /><Headphones className="w-4 h-4" /><Edit3 className="w-4 h-4" /><Mic className="w-4 h-4" />
                           </div>
                         </button>
@@ -4470,10 +4470,10 @@ function LearnerApp() {
                     {/* Back + level title */}
                     <div className="flex items-center gap-3 mb-4">
                       <button onClick={() => setExamLevelSel(null)}
-                        className="px-3 py-2 bg-surface-container text-on-surface border-2 border-on-background rounded-xl font-bold text-xs cursor-pointer block-shadow hover:bg-surface-container-high transition-colors flex items-center gap-1">
+                        className="px-3 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-xl font-bold text-xs cursor-pointer block-shadow hover:bg-ink-2 transition-colors flex items-center gap-1">
                         <ArrowLeft className="w-4 h-4" /> Түвшнүүд
                       </button>
-                      <span className="text-lg font-black font-space text-on-surface">{examLevelSel} · {exam.titleMn}</span>
+                      <span className="text-lg font-light font-serif text-paper">{examLevelSel} · {exam.titleMn}</span>
                     </div>
 
                     {/* Section tabs */}
@@ -4482,9 +4482,9 @@ function LearnerApp() {
                         const Icon = s.icon; const active = examSec === s.key;
                         return (
                           <button key={s.key} onClick={() => selectExamSection(s.key)}
-                            className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-lg border-2 border-on-background cursor-pointer transition-colors ${active ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
+                            className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${active ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2 hover:bg-ink-2'}`}>
                             <Icon className="w-4 h-4" />
-                            <span className="text-[10px] font-bold font-space">{s.mn} ({exam[s.key].length})</span>
+                            <span className="text-[10px] font-bold font-serif">{s.mn} ({exam[s.key].length})</span>
                           </button>
                         );
                       })}
@@ -4496,7 +4496,7 @@ function LearnerApp() {
                         const locked = isExamQuestionLocked(currentUser, examLevelSel, examSec, i);
                         return (
                           <button key={i} onClick={() => selectExamItem(i)}
-                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border-2 border-on-background text-xs font-bold cursor-pointer transition-colors ${examItemIdx === i ? 'bg-secondary-container text-on-surface' : locked ? 'bg-surface-container text-on-surface-variant opacity-60 hover:opacity-80' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${examItemIdx === i ? 'bg-ink-raise text-paper' : locked ? 'bg-ink-raise text-paper-2 opacity-60 hover:opacity-80' : 'bg-ink-raise text-paper-2 hover:bg-ink-2'}`}>
                             {locked && <Lock className="w-3 h-3" />} Тест {i + 1}
                           </button>
                         );
@@ -4504,32 +4504,32 @@ function LearnerApp() {
                     </div>
 
                     {/* Detail card */}
-                    <div className="border-2 border-on-background rounded-xl p-6 md:p-8 block-shadow">
+                    <div className="border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow">
                       {itemLocked ? renderPlanLockCard(
                         `Тест ${examItemIdx + 1} түгжээтэй`,
                         `Үнэгүй эрхээр A1 шалгалт бүрийн эхний ${FREE_QUESTIONS_PER_SECTION} асуулт нээлттэй. Энэ тестийг нээхийн тулд Pro эсвэл Max багц аваарай.`,
                         'pro',
                       ) : (<>
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-xs font-space font-bold text-secondary bg-secondary-container border border-on-background px-3 py-1.5 rounded-full">{examLevelSel} · {(item as ExamItem).topic}</span>
+                        <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{examLevelSel} · {(item as ExamItem).topic}</span>
                         {(examSec === 'reading' || examSec === 'listening') && (
                           <div className="flex gap-2">
                             {examSec === 'reading' && (
                               <button onClick={() => speakGerman((item as typeof exam.reading[number]).text, audioSpeed === '0.8' ? 0.8 : 1.0)} title="Сонсох"
-                                className="p-2 border-2 border-on-background rounded-full bg-surface-container hover:scale-105 transition-transform text-on-surface block-shadow cursor-pointer">
+                                className="p-2 border-2 border-ink-line rounded-full bg-ink-raise hover:scale-105 transition-transform text-paper block-shadow cursor-pointer">
                                 <Volume2 className="w-5 h-5" />
                               </button>
                             )}
                             <button onClick={() => setExamItemTrans(v => !v)}
-                              className={`px-3 py-1 border-2 border-on-background rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${examItemTrans ? 'bg-secondary text-white' : 'bg-surface-container text-on-surface'}`}>
+                              className={`px-3 py-1 border-2 border-ink-line rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${examItemTrans ? 'bg-paper text-ink' : 'bg-ink-raise text-paper'}`}>
                               <Languages className="w-4 h-4" /> {examItemTrans ? 'Нуух' : (examSec === 'reading' ? 'Орчуулга' : 'Текст')}
                             </button>
                           </div>
                         )}
                       </div>
 
-                      <h3 className="text-xl md:text-2xl font-extrabold text-on-surface mb-1">{(item as ExamItem).titleMn}</h3>
-                      <p className="text-xs text-on-surface-variant mb-5">{(item as ExamItem).title}</p>
+                      <h3 className="text-xl md:text-2xl font-extrabold text-paper mb-1">{(item as ExamItem).titleMn}</h3>
+                      <p className="text-xs text-paper-2 mb-5">{(item as ExamItem).title}</p>
 
                       {/* READING */}
                       {examSec === 'reading' && (() => {
@@ -4537,11 +4537,11 @@ function LearnerApp() {
                         const sq = shuffleQuiz(`exam:${exam.level}:reading:${r.id}`, { question: r.question, choices: r.choices, correctIndex: r.correctIndex });
                         return (
                           <>
-                            <p className="text-lg leading-relaxed text-on-surface whitespace-pre-line font-medium">{r.text}</p>
-                            {examItemTrans && <p className="text-sm leading-relaxed text-on-surface-variant whitespace-pre-line mt-4 pt-4 border-t border-outline-variant/50 italic">{r.translation}</p>}
-                            <div className="mt-6 pt-5 border-t border-outline-variant">
-                              <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах:</p>
-                              <p className="text-base font-bold text-on-surface mb-3">{r.question}</p>
+                            <p className="text-lg leading-relaxed text-paper whitespace-pre-line font-medium">{r.text}</p>
+                            {examItemTrans && <p className="text-sm leading-relaxed text-paper-2 whitespace-pre-line mt-4 pt-4 border-t border-ink-line/50 italic">{r.translation}</p>}
+                            <div className="mt-6 pt-5 border-t border-ink-line">
+                              <p className="text-xs font-serif font-bold uppercase text-paper mb-2">Ойлголт шалгах:</p>
+                              <p className="text-base font-bold text-paper mb-3">{r.question}</p>
                               <MCQBlock
                                 choices={sq.choices}
                                 correctIndex={sq.correctIndex}
@@ -4562,22 +4562,22 @@ function LearnerApp() {
                         const sq = shuffleQuiz(`exam:${exam.level}:listening:${l.id}`, { question: l.question, choices: l.choices, correctIndex: l.correctIndex });
                         return (
                           <>
-                            <div className="flex flex-col items-center gap-3 py-6 bg-surface-container-low border-2 border-on-background rounded-xl mb-5">
+                            <div className="flex flex-col items-center gap-3 py-6 bg-ink-raise border-2 border-ink-line rounded-xl mb-5">
                               <button onClick={() => speakGerman(l.audioText, audioSpeed === '0.8' ? 0.8 : 1.0)}
-                                className="w-16 h-16 rounded-full bg-secondary text-white border-2 border-on-background flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
+                                className="w-16 h-16 rounded-full bg-paper text-ink border-2 border-ink-line flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
                                 <Volume2 className="w-7 h-7" />
                               </button>
-                              <p className="text-xs text-on-surface-variant">Бичлэгийг сонсохын тулд дарна уу (2 удаа)</p>
+                              <p className="text-xs text-paper-2">Бичлэгийг сонсохын тулд дарна уу (2 удаа)</p>
                             </div>
                             {examItemTrans && (
-                              <div className="bg-surface-container-low border-l-4 border-secondary rounded-lg p-3 mb-5">
-                                <p className="text-sm text-on-surface font-medium">{l.audioText}</p>
-                                <p className="text-xs text-on-surface-variant mt-2 pt-2 border-t border-outline-variant/50 italic">{l.transcriptMn}</p>
+                              <div className="bg-ink-raise border-l-4 border-ink-line rounded-lg p-3 mb-5">
+                                <p className="text-sm text-paper font-medium">{l.audioText}</p>
+                                <p className="text-xs text-paper-2 mt-2 pt-2 border-t border-ink-line/50 italic">{l.transcriptMn}</p>
                               </div>
                             )}
-                            <div className="pt-5 border-t border-outline-variant">
-                              <p className="text-xs font-space font-bold uppercase text-primary mb-2">Ойлголт шалгах:</p>
-                              <p className="text-base font-bold text-on-surface mb-3">{l.question}</p>
+                            <div className="pt-5 border-t border-ink-line">
+                              <p className="text-xs font-serif font-bold uppercase text-paper mb-2">Ойлголт шалгах:</p>
+                              <p className="text-base font-bold text-paper mb-3">{l.question}</p>
                               <MCQBlock
                                 choices={sq.choices}
                                 correctIndex={sq.correctIndex}
@@ -4598,25 +4598,25 @@ function LearnerApp() {
                         const words = examItemWrite.trim() ? examItemWrite.trim().split(/\s+/).length : 0;
                         return (
                           <>
-                            <div className="bg-surface-container-low rounded-lg p-4 mb-4">
-                              <p className="text-xs font-space font-bold uppercase text-primary mb-1">Даалгавар:</p>
-                              <p className="text-sm font-bold text-on-surface mb-2">{w.prompt}</p>
-                              <ul className="text-xs text-on-surface-variant space-y-1 list-disc list-inside">{w.points.map((p, i) => <li key={i}>{p}</li>)}</ul>
+                            <div className="bg-ink-raise rounded-lg p-4 mb-4">
+                              <p className="text-xs font-serif font-bold uppercase text-paper mb-1">Даалгавар:</p>
+                              <p className="text-sm font-bold text-paper mb-2">{w.prompt}</p>
+                              <ul className="text-xs text-paper-2 space-y-1 list-disc list-inside">{w.points.map((p, i) => <li key={i}>{p}</li>)}</ul>
                             </div>
                             <textarea value={examItemWrite} onChange={(e) => setExamItemWrite(e.target.value)} placeholder="Энд герман хэлээр бичнэ үү..." rows={6} maxLength={2000}
-                              className="w-full px-3 py-2 text-sm border-2 border-on-background rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline outline-none focus:border-secondary resize-y" />
+                              className="w-full px-3 py-2 text-sm border-2 border-ink-line rounded-lg bg-ink-raise text-paper placeholder:text-paper-3 outline-none focus:border-ink-line resize-y" />
                             <div className="flex items-center justify-between mt-3">
-                              <span className="text-[11px] text-on-surface-variant">{words} үг</span>
+                              <span className="text-[11px] text-paper-2">{words} үг</span>
                               <button onClick={() => setExamItemReveal(v => !v)}
-                                className="px-4 py-2 bg-surface-container text-primary border-2 border-on-background rounded-lg font-bold text-xs cursor-pointer block-shadow hover:scale-[1.02] transition-transform flex items-center gap-1">
-                                <Lightbulb className="w-3.5 h-3.5 text-amber-400 fill-current" /> {examItemReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
+                                className="px-4 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-xs cursor-pointer block-shadow hover:scale-[1.02] transition-transform flex items-center gap-1">
+                                <Lightbulb className="w-3.5 h-3.5 text-paper fill-current" /> {examItemReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
                               </button>
                             </div>
                             {examItemReveal && (
-                              <div className="bg-secondary-container/40 border-2 border-secondary rounded-lg p-4 mt-4">
-                                <p className="text-[10px] font-bold uppercase text-secondary mb-1">Загвар хариулт:</p>
-                                <p className="text-sm text-on-surface whitespace-pre-line leading-relaxed font-medium">{w.modelAnswer}</p>
-                                <p className="text-xs text-on-surface-variant whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-secondary/30 italic">{w.modelMn}</p>
+                              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-lg p-4 mt-4">
+                                <p className="text-[10px] font-bold uppercase text-paper-2 mb-1">Загвар хариулт:</p>
+                                <p className="text-sm text-paper whitespace-pre-line leading-relaxed font-medium">{w.modelAnswer}</p>
+                                <p className="text-xs text-paper-2 whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-ink-line/30 italic">{w.modelMn}</p>
                               </div>
                             )}
 
@@ -4631,32 +4631,32 @@ function LearnerApp() {
                         const sp = item as typeof exam.speaking[number];
                         return (
                           <>
-                            <div className="bg-surface-container-low border-l-4 border-secondary rounded-lg p-4 mb-5">
-                              <p className="text-xs font-space font-bold uppercase text-primary mb-1">Даалгавар:</p>
-                              <p className="text-base font-bold text-on-surface">{sp.prompt}</p>
+                            <div className="bg-ink-raise border-l-4 border-ink-line rounded-lg p-4 mb-5">
+                              <p className="text-xs font-serif font-bold uppercase text-paper mb-1">Даалгавар:</p>
+                              <p className="text-base font-bold text-paper">{sp.prompt}</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2 mb-5">
                               <button onClick={() => speakGerman(sp.modelAnswer, 1.0)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-white border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform">
+                                className="flex items-center gap-2 px-4 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform">
                                 <Volume2 className="w-4 h-4" /> Загварыг сонсох
                               </button>
                               <button onClick={() => setExamItemReveal(v => !v)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-surface-container text-primary border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                                <Lightbulb className="w-4 h-4 text-amber-400 fill-current" /> {examItemReveal ? 'Нуух' : 'Загвар хариулт харах'}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
+                                <Lightbulb className="w-4 h-4 text-paper fill-current" /> {examItemReveal ? 'Нуух' : 'Загвар хариулт харах'}
                               </button>
                             </div>
                             <div className="mb-2">
-                              <p className="text-[11px] font-space font-bold uppercase text-on-surface-variant mb-2">Хэрэгтэй хэллэг:</p>
-                              <div className="flex flex-col gap-1.5">{sp.tips.map((t, i) => <div key={i} className="flex items-start gap-2 text-xs text-on-surface"><span className="text-secondary font-black">›</span>{t}</div>)}</div>
+                              <p className="text-[11px] font-serif font-bold uppercase text-paper-2 mb-2">Хэрэгтэй хэллэг:</p>
+                              <div className="flex flex-col gap-1.5">{sp.tips.map((t, i) => <div key={i} className="flex items-start gap-2 text-xs text-paper"><span className="text-paper-2 font-black">›</span>{t}</div>)}</div>
                             </div>
                             {examItemReveal && (
-                              <div className="bg-secondary-container/40 border-2 border-secondary rounded-lg p-4 mt-4">
-                                <p className="text-[10px] font-bold uppercase text-secondary mb-1">Загвар хариулт:</p>
-                                <p className="text-base text-on-surface font-medium leading-relaxed">{sp.modelAnswer}</p>
-                                <p className="text-xs text-on-surface-variant mt-2 italic leading-relaxed">{sp.modelMn}</p>
+                              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-lg p-4 mt-4">
+                                <p className="text-[10px] font-bold uppercase text-paper-2 mb-1">Загвар хариулт:</p>
+                                <p className="text-base text-paper font-medium leading-relaxed">{sp.modelAnswer}</p>
+                                <p className="text-xs text-paper-2 mt-2 italic leading-relaxed">{sp.modelMn}</p>
                               </div>
                             )}
-                            <p className="text-[11px] text-on-surface-variant mt-4 italic">Зөвлөмж: эхлээд өөрөө чангаар хэлж үзээд, дараа нь загвартай харьцуулаарай.</p>
+                            <p className="text-[11px] text-paper-2 mt-4 italic">Зөвлөмж: эхлээд өөрөө чангаар хэлж үзээд, дараа нь загвартай харьцуулаарай.</p>
 
                             {/* AI judge for exam speaking — graded against this item's model answer. */}
                             {renderSpeakingJudge(sp.modelAnswer)}
@@ -4668,19 +4668,19 @@ function LearnerApp() {
                     </div>
 
                     {/* Prev / Next navigation */}
-                    <div className="flex justify-between items-center mt-6 pt-4 border-t border-outline-variant/50">
+                    <div className="flex justify-between items-center mt-6 pt-4 border-t border-ink-line/50">
                       <button
                         onClick={() => selectExamItem(examItemIdx - 1)}
                         disabled={examItemIdx === 0}
-                        className={`flex items-center gap-1 px-4 py-2.5 border-2 border-on-background rounded-xl font-bold text-xs block-shadow transition-colors ${examItemIdx === 0 ? 'opacity-40 cursor-not-allowed bg-surface-container text-on-surface-variant' : 'bg-surface-container text-on-surface cursor-pointer hover:bg-surface-container-high'}`}
+                        className={`flex items-center gap-1 px-4 py-2.5 border-2 border-ink-line rounded-xl font-bold text-xs block-shadow transition-colors ${examItemIdx === 0 ? 'opacity-40 cursor-not-allowed bg-ink-raise text-paper-2' : 'bg-ink-raise text-paper cursor-pointer hover:bg-ink-2'}`}
                       >
                         <ArrowLeft className="w-4 h-4" /> Өмнөх
                       </button>
-                      <span className="text-xs text-on-surface-variant font-space font-bold">{examItemIdx + 1} / {items.length}</span>
+                      <span className="text-xs text-paper-2 font-serif font-bold">{examItemIdx + 1} / {items.length}</span>
                       <button
                         onClick={() => selectExamItem(examItemIdx + 1)}
                         disabled={examItemIdx >= items.length - 1}
-                        className={`flex items-center gap-1 px-4 py-2.5 border-2 border-on-background rounded-xl font-bold text-xs block-shadow transition-colors ${examItemIdx >= items.length - 1 ? 'opacity-40 cursor-not-allowed bg-surface-container text-on-surface-variant' : 'bg-secondary text-white cursor-pointer hover:scale-[1.02]'}`}
+                        className={`flex items-center gap-1 px-4 py-2.5 border-2 border-ink-line rounded-xl font-bold text-xs block-shadow transition-colors ${examItemIdx >= items.length - 1 ? 'opacity-40 cursor-not-allowed bg-ink-raise text-paper-2' : 'bg-paper text-ink cursor-pointer hover:scale-[1.02]'}`}
                       >
                         Дараах <ArrowRight className="w-4 h-4" />
                       </button>
@@ -4695,44 +4695,44 @@ function LearnerApp() {
 
           {/* Special view Module: Settings (Тохиргоо) view panel */}
           {activeTab === 'settings' && (
-            <div className="max-w-xl mx-auto w-full border-2 border-on-background rounded-xl p-8 block-shadow animate-fade-in pb-24">
-              <div className="flex items-center gap-3 pb-4 border-b border-outline-variant mb-6 text-primary">
+            <div className="max-w-xl mx-auto w-full border-2 border-ink-line rounded-xl p-8 block-shadow animate-fade-in pb-24">
+              <div className="flex items-center gap-3 pb-4 border-b border-ink-line mb-6 text-paper">
                 <Settings className="w-6 h-6 outline" />
-                <h2 className="text-2xl font-extrabold font-space">Тохиргоо ба Хувийн Төлөв</h2>
+                <h2 className="text-2xl font-extrabold font-serif">Тохиргоо ба Хувийн Төлөв</h2>
               </div>
 
               <div className="space-y-6 font-sans">
                 {/* 1. Profile editor — avatar, name, level, daily goal, learning goal */}
                 {profileDraft && currentUser && (
-                  <div className="space-y-5 bg-surface-container-low p-4 md:p-5 rounded-xl border-2 border-on-background block-shadow">
-                    <div className="flex items-center gap-2 text-primary">
+                  <div className="space-y-5 bg-ink-raise p-4 md:p-5 rounded-xl border-2 border-ink-line block-shadow">
+                    <div className="flex items-center gap-2 text-paper">
                       <Target className="w-5 h-5" />
-                      <h4 className="text-sm font-space font-bold uppercase tracking-wide">Профайл</h4>
+                      <h4 className="text-sm font-serif font-bold uppercase tracking-wide">Профайл</h4>
                     </div>
 
                     {/* Avatar + name */}
                     <div className="flex items-center gap-4">
                       <div className="relative shrink-0">
-                        <div className="w-20 h-20 rounded-full overflow-hidden bg-surface-container border-2 border-on-background block-shadow">
+                        <div className="w-20 h-20 rounded-full overflow-hidden bg-ink-raise border-2 border-ink-line block-shadow">
                           <img src={profileDraft.avatar} alt={profileDraft.name} className="w-full h-full object-cover" />
                         </div>
                         <button
                           type="button"
                           onClick={() => setShowAvatarPicker((v) => !v)}
-                          className="absolute -bottom-1 -right-1 p-1.5 bg-secondary text-on-secondary rounded-full border-2 border-on-background block-shadow cursor-pointer hover:opacity-90"
+                          className="absolute -bottom-1 -right-1 p-1.5 bg-paper text-ink rounded-full border-2 border-ink-line block-shadow cursor-pointer hover:opacity-90"
                           aria-label="Зураг солих"
                         >
                           <Camera className="w-3.5 h-3.5" />
                         </button>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <label className="text-[11px] font-bold uppercase text-outline font-space">Нэр</label>
+                        <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Нэр</label>
                         <input
                           type="text"
                           value={profileDraft.name}
                           maxLength={30}
                           onChange={(e) => setProfileDraft((d) => d && { ...d, name: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 bg-surface-container border-2 border-on-background rounded-xl text-on-surface font-bold outline-none focus:border-secondary"
+                          className="w-full mt-1 px-3 py-2 bg-ink-raise border-2 border-ink-line rounded-xl text-paper font-bold outline-none focus:border-ink-line"
                           placeholder="Таны нэр"
                         />
                       </div>
@@ -4740,9 +4740,9 @@ function LearnerApp() {
 
                     {/* Avatar picker grid */}
                     {showAvatarPicker && (
-                      <div className="space-y-3 p-3 bg-surface-container rounded-xl border border-outline-variant">
+                      <div className="space-y-3 p-3 bg-ink-raise rounded-xl border border-ink-line">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-[11px] font-bold uppercase text-outline font-space">Зургаа сонгох эсвэл оруулах</span>
+                          <span className="text-[11px] font-bold uppercase text-paper-3 font-serif">Зургаа сонгох эсвэл оруулах</span>
                           <div className="flex items-center gap-2">
                             <input
                               ref={avatarFileInputRef}
@@ -4755,7 +4755,7 @@ function LearnerApp() {
                               type="button"
                               onClick={() => avatarFileInputRef.current?.click()}
                               disabled={avatarUploading}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary text-on-secondary border-2 border-on-background rounded-lg text-xs font-bold cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-paper text-ink border-2 border-ink-line rounded-lg text-xs font-bold cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {avatarUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                               Зураг оруулах
@@ -4763,20 +4763,20 @@ function LearnerApp() {
                             <button
                               type="button"
                               onClick={() => setAvatarPage((p) => p + 1)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low border-2 border-on-background rounded-lg text-xs font-bold cursor-pointer hover:bg-secondary/10"
+                              className="flex items-center gap-1.5 px-3 py-1.5 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold cursor-pointer hover:bg-ink-raise"
                             >
                               <Shuffle className="w-3.5 h-3.5" /> Шинэчлэх
                             </button>
                           </div>
                         </div>
-                        {avatarError && <p className="text-[11px] text-red-300 font-semibold">{avatarError}</p>}
+                        {avatarError && <p className="text-[11px] text-paper-2 font-semibold">{avatarError}</p>}
                         <div className="flex flex-wrap gap-1.5">
                           {AVATAR_STYLES.map((s) => (
                             <button
                               key={s.id}
                               type="button"
                               onClick={() => { setAvatarStyle(s.id); setAvatarPage(0); }}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border-2 cursor-pointer transition-all ${avatarStyle === s.id ? 'bg-secondary text-on-secondary border-on-background' : 'bg-surface-container-low border-on-background text-on-surface hover:bg-secondary/10'}`}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border-2 cursor-pointer transition-all ${avatarStyle === s.id ? 'bg-paper text-ink border-ink-line' : 'bg-ink-raise border-ink-line text-paper hover:bg-ink-raise'}`}
                             >
                               {s.label}
                             </button>
@@ -4790,11 +4790,11 @@ function LearnerApp() {
                                 key={url}
                                 type="button"
                                 onClick={() => setProfileDraft((d) => d && { ...d, avatar: url })}
-                                className={`relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${selected ? 'border-secondary ring-2 ring-secondary/40' : 'border-on-background hover:border-secondary/60'}`}
+                                className={`relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${selected ? 'border-ink-line ring-2 ring-paper/30' : 'border-ink-line hover:border-ink-line/60'}`}
                               >
-                                <img src={url} alt="avatar" className="w-full h-full object-cover bg-surface-container-low" />
+                                <img src={url} alt="avatar" className="w-full h-full object-cover bg-ink-raise" />
                                 {selected && (
-                                  <span className="absolute top-0.5 right-0.5 bg-secondary text-on-secondary rounded-full p-0.5">
+                                  <span className="absolute top-0.5 right-0.5 bg-paper text-ink rounded-full p-0.5">
                                     <Check className="w-3 h-3" />
                                   </span>
                                 )}
@@ -4807,14 +4807,14 @@ function LearnerApp() {
 
                     {/* Target level */}
                     <div>
-                      <label className="text-[11px] font-bold uppercase text-outline font-space">Зорилтот түвшин</label>
+                      <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Зорилтот түвшин</label>
                       <div className="grid grid-cols-6 gap-1.5 mt-1.5">
                         {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const).map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setProfileDraft((d) => d && { ...d, targetLevel: lvl })}
-                            className={`py-2 rounded-lg text-sm font-black border-2 cursor-pointer transition-all ${profileDraft.targetLevel === lvl ? 'bg-secondary text-on-secondary border-on-background' : 'bg-surface-container border-on-background text-on-surface hover:bg-secondary/10'}`}
+                            className={`py-2 rounded-lg text-sm font-black border-2 cursor-pointer transition-all ${profileDraft.targetLevel === lvl ? 'bg-paper text-ink border-ink-line' : 'bg-ink-raise border-ink-line text-paper hover:bg-ink-raise'}`}
                           >
                             {lvl}
                           </button>
@@ -4824,14 +4824,14 @@ function LearnerApp() {
 
                     {/* Daily goal */}
                     <div>
-                      <label className="text-[11px] font-bold uppercase text-outline font-space">Өдрийн зорилго</label>
+                      <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Өдрийн зорилго</label>
                       <div className="grid grid-cols-5 gap-1.5 mt-1.5">
                         {[5, 10, 15, 30, 60].map((m) => (
                           <button
                             key={m}
                             type="button"
                             onClick={() => setProfileDraft((d) => d && { ...d, dailyGoalMinutes: m })}
-                            className={`py-2 rounded-lg text-xs font-bold border-2 cursor-pointer transition-all ${profileDraft.dailyGoalMinutes === m ? 'bg-secondary text-on-secondary border-on-background' : 'bg-surface-container border-on-background text-on-surface hover:bg-secondary/10'}`}
+                            className={`py-2 rounded-lg text-xs font-bold border-2 cursor-pointer transition-all ${profileDraft.dailyGoalMinutes === m ? 'bg-paper text-ink border-ink-line' : 'bg-ink-raise border-ink-line text-paper hover:bg-ink-raise'}`}
                           >
                             {m}<span className="text-[9px]">мин</span>
                           </button>
@@ -4841,16 +4841,16 @@ function LearnerApp() {
 
                     {/* Learning goal */}
                     <div>
-                      <label className="text-[11px] font-bold uppercase text-outline font-space">Суралцах зорилго</label>
+                      <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Суралцах зорилго</label>
                       <textarea
                         value={profileDraft.learningGoal}
                         maxLength={280}
                         rows={3}
                         onChange={(e) => setProfileDraft((d) => d && { ...d, learningGoal: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 bg-surface-container border-2 border-on-background rounded-xl text-on-surface text-sm outline-none focus:border-secondary resize-none"
+                        className="w-full mt-1 px-3 py-2 bg-ink-raise border-2 border-ink-line rounded-xl text-paper text-sm outline-none focus:border-ink-line resize-none"
                         placeholder="Жишээ: Goethe B1 шалгалт өгөх"
                       />
-                      <p className="text-right text-[10px] text-outline mt-0.5">{profileDraft.learningGoal.length}/280</p>
+                      <p className="text-right text-[10px] text-paper-3 mt-0.5">{profileDraft.learningGoal.length}/280</p>
                     </div>
 
                     {/* Save */}
@@ -4859,29 +4859,29 @@ function LearnerApp() {
                         type="button"
                         onClick={saveProfileEdits}
                         disabled={profileSaving || !profileDraft.name.trim()}
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-secondary text-on-secondary font-black rounded-xl border-2 border-on-background block-shadow cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="w-full flex items-center justify-center gap-2 py-3 bg-paper text-ink font-black rounded-xl border-2 border-ink-line block-shadow cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                       >
                         {profileSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : profileSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                         {profileSaved ? 'Хадгалагдлаа' : 'Хадгалах'}
                       </button>
-                      {profileSaveError && <p className="text-center text-[11px] text-red-300 font-semibold">Хадгалж чадсангүй. Дахин оролдоно уу.</p>}
+                      {profileSaveError && <p className="text-center text-[11px] text-paper-2 font-semibold">Хадгалж чадсангүй. Дахин оролдоно уу.</p>}
                     </div>
                   </div>
                 )}
 
                 {/* 2. Interactive toggles state */}
                 <div className="space-y-4">
-                  <h4 className="text-xs font-space font-bold uppercase text-outline">Хичээлийн тохируулга:</h4>
+                  <h4 className="text-xs font-serif font-bold uppercase text-paper-3">Хичээлийн тохируулга:</h4>
                   
-                  <div className="flex justify-between items-center p-3 border-2 border-on-background rounded-xl select-none block-shadow">
+                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
                     <div>
                       <h5 className="text-sm font-bold">Орчуулга автоматаар харуулах</h5>
-                      <p className="text-[11px] text-outline">Унших, сонсох зохиолд орчуулгыг шууд харуулна. Унтраалттай үед эхлээд өөрөө уншиж, гацсан үедээ "Орчуулга" товчоор нээнэ.</p>
+                      <p className="text-[11px] text-paper-3">Унших, сонсох зохиолд орчуулгыг шууд харуулна. Унтраалттай үед эхлээд өөрөө уншиж, гацсан үедээ "Орчуулга" товчоор нээнэ.</p>
                     </div>
                     <button
                       onClick={() => setReadTranslateEnabled(prev => { const next = !prev; setLibReadTrans(next); setLibListenTrans(next); return next; })}
-                      className={`w-12 h-6 rounded-full transition-colors relative border border-on-background block-shadow cursor-pointer ${
-                        readTranslateEnabled ? 'bg-secondary' : 'bg-slate-300'
+                      className={`w-12 h-6 rounded-full transition-colors relative border border-ink-line block-shadow cursor-pointer ${
+                        readTranslateEnabled ? 'bg-paper' : 'bg-ink-2'
                       }`}
                     >
                       <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
@@ -4890,15 +4890,15 @@ function LearnerApp() {
                     </button>
                   </div>
 
-                  <div className="flex justify-between items-center p-3 border-2 border-on-background rounded-xl select-none block-shadow">
+                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
                     <div>
                       <h5 className="text-sm font-bold">Удаан хэмнэлтийн сонсох зам</h5>
-                      <p className="text-[11px] text-outline">Сонсох СД зам дээр Германы хурдыг 0.8х дээр удирдах тохиргоо.</p>
+                      <p className="text-[11px] text-paper-3">Сонсох СД зам дээр Германы хурдыг 0.8х дээр удирдах тохиргоо.</p>
                     </div>
                     <button 
                       onClick={() => setAudioSpeed(prev => prev === '1.0' ? '0.8' : '1.0')}
-                      className={`w-12 h-6 rounded-full transition-colors relative border border-on-background block-shadow cursor-pointer ${
-                        audioSpeed === '0.8' ? 'bg-secondary' : 'bg-slate-300'
+                      className={`w-12 h-6 rounded-full transition-colors relative border border-ink-line block-shadow cursor-pointer ${
+                        audioSpeed === '0.8' ? 'bg-paper' : 'bg-ink-2'
                       }`}
                     >
                       <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
@@ -4907,45 +4907,45 @@ function LearnerApp() {
                     </button>
                   </div>
 
-                  <div className="flex justify-between items-center p-3 border-2 border-on-background rounded-xl select-none block-shadow">
+                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
                     <div>
                       <h5 className="text-sm font-bold">Streak автоматаар тооцох</h5>
-                      <p className="text-[11px] text-outline">Зөв дуусгасан дасгалтай өдөр streak-д автоматаар орно.</p>
+                      <p className="text-[11px] text-paper-3">Зөв дуусгасан дасгалтай өдөр streak-д автоматаар орно.</p>
                     </div>
-                    <span className="font-bold text-sm bg-surface-container px-3 py-1 border border-on-background rounded-lg">{streak} өдөр</span>
+                    <span className="font-bold text-sm bg-ink-raise px-3 py-1 border border-ink-line rounded-lg">{streak} өдөр</span>
                   </div>
                 </div>
 
                 {/* 3. Account essentials */}
                 <div className="space-y-3">
-                  <h4 className="text-xs font-space font-bold uppercase text-outline">Бүртгэл:</h4>
-                  <div className="flex items-center justify-between p-3 border-2 border-on-background rounded-xl block-shadow">
+                  <h4 className="text-xs font-serif font-bold uppercase text-paper-3">Бүртгэл:</h4>
+                  <div className="flex items-center justify-between p-3 border-2 border-ink-line rounded-xl block-shadow">
                     <div className="flex items-center gap-2 min-w-0">
-                      <Mail className="w-4 h-4 text-outline shrink-0" />
-                      <span className="text-sm font-bold text-on-surface truncate">{currentUser?.email}</span>
+                      <Mail className="w-4 h-4 text-paper-3 shrink-0" />
+                      <span className="text-sm font-bold text-paper truncate">{currentUser?.email}</span>
                     </div>
-                    <span className="text-[10px] text-outline font-mono shrink-0 ml-2">Имэйл</span>
+                    <span className="text-[10px] text-paper-3 font-mono shrink-0 ml-2">Имэйл</span>
                   </div>
                   <button
                     type="button"
                     onClick={handleResetPassword}
-                    className="w-full flex items-center justify-between p-3 border-2 border-on-background rounded-xl block-shadow cursor-pointer hover:bg-secondary/5 transition-colors"
+                    className="w-full flex items-center justify-between p-3 border-2 border-ink-line rounded-xl block-shadow cursor-pointer hover:bg-ink-raise transition-colors"
                   >
-                    <span className="flex items-center gap-2 text-sm font-bold text-on-surface"><Lock className="w-4 h-4 text-outline" /> Нууц үг солих</span>
-                    <span className="text-[11px] text-secondary font-bold shrink-0 ml-2">{resetSent ? 'Имэйл илгээлээ ✓' : 'Имэйл авах'}</span>
+                    <span className="flex items-center gap-2 text-sm font-bold text-paper"><Lock className="w-4 h-4 text-paper-3" /> Нууц үг солих</span>
+                    <span className="text-[11px] text-paper-2 font-bold shrink-0 ml-2">{resetSent ? 'Имэйл илгээлээ ✓' : 'Имэйл авах'}</span>
                   </button>
                   <button
                     type="button"
                     onClick={logoutUser}
-                    className="w-full flex items-center justify-center gap-2 p-3 bg-red-950/20 border-2 border-red-500/40 text-red-300 font-bold rounded-xl cursor-pointer hover:bg-red-900/30 transition-all"
+                    className="w-full flex items-center justify-center gap-2 p-3 bg-ink-raise border-2 border-ink-line text-paper-2 font-bold rounded-xl cursor-pointer hover:bg-ink-raise transition-all"
                   >
                     <LogOut className="w-4 h-4" /> Гарах
                   </button>
                 </div>
 
                 {/* Explanations instructions */}
-                <div className="bg-surface-container-low border border-outline-variant p-4 rounded-xl text-center">
-                  <p className="text-xs text-on-surface-variant leading-snug">
+                <div className="bg-ink-raise border border-ink-line p-4 rounded-xl text-center">
+                  <p className="text-xs text-paper-2 leading-snug">
                     Vivid Lingua аппликэйшний бүхий л хичээлийн загваруудыг цээжлүүлэн бэлтгэлээ. Та settings цэсийг ашиглан хичээлийн удирдамжийг хялбархан тааруулж болно.
                   </p>
                 </div>
@@ -4954,95 +4954,95 @@ function LearnerApp() {
           )}
 
           {/* Bottom Interactive Sticky Navbar (Mobile Only) - matches screen specs */}
-          <nav aria-label="Mobile Navigation Drawer" className="md:hidden fixed bottom-0 left-0 w-full bg-primary border-t-2 border-on-background z-40 pb-safe">
+          <nav aria-label="Mobile Navigation Drawer" className="md:hidden fixed bottom-0 left-0 w-full bg-paper border-t-2 border-ink-line z-40 pb-safe">
             <div className="flex justify-around items-center h-16">
               
               <button 
                 onClick={() => selectTab('read')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'read' ? 'text-secondary-fixed' : 'text-on-primary-container'
+                  activeTab === 'read' ? 'text-paper' : 'text-paper'
                 }`}
               >
-                {activeTab === 'read' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full"></div>}
+                {activeTab === 'read' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
                 <BookOpen className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-space">Унших</span>
+                <span className="text-[10px] font-bold font-serif">Унших</span>
               </button>
 
               <button 
                 onClick={() => selectTab('listen')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'listen' ? 'text-secondary-fixed' : 'text-on-primary-container'
+                  activeTab === 'listen' ? 'text-paper' : 'text-paper'
                 }`}
               >
-                {activeTab === 'listen' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full"></div>}
+                {activeTab === 'listen' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
                 <Headphones className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-space">Сонсох</span>
+                <span className="text-[10px] font-bold font-serif">Сонсох</span>
               </button>
 
               <button 
                 onClick={() => selectTab('speak')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'speak' ? 'text-secondary-fixed' : 'text-on-primary-container'
+                  activeTab === 'speak' ? 'text-paper' : 'text-paper'
                 }`}
               >
-                {activeTab === 'speak' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full"></div>}
+                {activeTab === 'speak' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
                 <Mic className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-space">Ярих</span>
+                <span className="text-[10px] font-bold font-serif">Ярих</span>
               </button>
 
               <button 
                 onClick={() => selectTab('write')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'write' ? 'text-secondary-fixed' : 'text-on-primary-container'
+                  activeTab === 'write' ? 'text-paper' : 'text-paper'
                 }`}
               >
-                {activeTab === 'write' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full"></div>}
+                {activeTab === 'write' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
                 <Edit3 className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-space">Бичих</span>
+                <span className="text-[10px] font-bold font-serif">Бичих</span>
               </button>
 
               <button 
                 onClick={() => selectTab('vocab')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'vocab' ? 'text-secondary-fixed' : 'text-on-primary-container'
+                  activeTab === 'vocab' ? 'text-paper' : 'text-paper'
                 }`}
               >
-                {activeTab === 'vocab' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full"></div>}
+                {activeTab === 'vocab' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
                 <Languages className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-space font-medium">Үгс</span>
+                <span className="text-[10px] font-bold font-serif font-medium">Үгс</span>
               </button>
 
               <button 
                 onClick={() => selectTab('translate')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'translate' ? 'text-amber-400' : 'text-on-primary-container'
+                  activeTab === 'translate' ? 'text-paper' : 'text-paper'
                 }`}
               >
-                {activeTab === 'translate' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-amber-400 rounded-b-full text-amber-400"></div>}
-                <Sparkles className="w-5 h-5 text-amber-400" />
-                <span className="text-[10px] font-bold font-space">Орч</span>
+                {activeTab === 'translate' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full text-paper"></div>}
+                <Sparkles className="w-5 h-5 text-paper" />
+                <span className="text-[10px] font-bold font-serif">Орч</span>
               </button>
 
               <button 
                 onClick={() => selectTab('exam')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'exam' ? 'text-secondary-fixed' : 'text-on-primary-container'
+                  activeTab === 'exam' ? 'text-paper' : 'text-paper'
                 }`}
               >
-                {activeTab === 'exam' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full text-secondary-fixed"></div>}
-                <GraduationCap className="w-5 h-5 text-amber-400" />
-                <span className="text-[10px] font-bold font-space">Сорил</span>
+                {activeTab === 'exam' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full text-paper"></div>}
+                <GraduationCap className="w-5 h-5 text-paper" />
+                <span className="text-[10px] font-bold font-serif">Сорил</span>
               </button>
 
               <button
                 onClick={() => selectTab('friends')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'friends' ? 'text-secondary-fixed' : 'text-on-primary-container'
+                  activeTab === 'friends' ? 'text-paper' : 'text-paper'
                 }`}
               >
-                {activeTab === 'friends' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-secondary-fixed rounded-b-full"></div>}
-                <Swords className="w-5 h-5 text-amber-400" />
-                <span className="text-[10px] font-bold font-space">Найз</span>
+                {activeTab === 'friends' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
+                <Swords className="w-5 h-5 text-paper" />
+                <span className="text-[10px] font-bold font-serif">Найз</span>
               </button>
             </div>
           </nav>

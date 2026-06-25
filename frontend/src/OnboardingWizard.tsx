@@ -56,24 +56,24 @@ export default function OnboardingWizard({ userName, onComplete }: OnboardingWiz
   };
 
   return (
-    <div className="fixed inset-0 bg-background z-[100] flex flex-col items-center justify-between pb-12 pt-6 px-4 md:px-12 animate-fade-in text-white overflow-y-auto">
+    <div className="fixed inset-0 bg-ink z-[100] flex flex-col items-center justify-between pb-12 pt-6 px-4 md:px-12 animate-fade-in text-paper overflow-y-auto">
       {/* Atmospheric background glows in overlay */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-900/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-paper/[0.03] rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-paper/[0.03] rounded-full blur-[120px] pointer-events-none"></div>
 
       {/* Top Header & Progress */}
       <header className="w-full max-w-[600px] flex flex-col gap-4 py-2 relative z-10">
         <div className="flex justify-between items-center w-full">
-          <h1 className="text-2xl font-black font-space tracking-tight">
-            <span className="text-primary">Vivid</span> Lingua
+          <h1 className="text-2xl font-serif font-light tracking-tight">
+            <span className="text-paper">Vivid</span> <span className="text-paper-2">Lingua</span>
           </h1>
-          <span className="text-sm font-space text-slate-400 font-bold">Алхам {step} / 3</span>
+          <span className="text-[11px] uppercase tracking-[0.18em] text-paper-3 font-medium">Алхам {step} / 3</span>
         </div>
-        
+
         {/* Progress Bar */}
-        <div className="w-full h-2.5 bg-white/5 border border-white/10 rounded-full overflow-hidden relative">
-          <div 
-            className="h-full bg-primary transition-all duration-500"
+        <div className="w-full h-2.5 bg-ink-raise border border-ink-line rounded-full overflow-hidden relative">
+          <div
+            className="h-full bg-paper transition-all duration-500"
             style={{ width: `${(step / 3) * 100}%` }}
           />
         </div>
@@ -85,11 +85,11 @@ export default function OnboardingWizard({ userName, onComplete }: OnboardingWiz
           {step === 1 && (
             <div className="space-y-6">
               <div className="space-y-2 text-center md:text-left">
-                <div className="inline-flex p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 mb-2">
+                <div className="inline-flex p-3 bg-ink-raise border border-ink-line rounded-xl text-paper-2 mb-2">
                   <Target className="w-6 h-6" />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black font-space">Таны зорилго юу вэ?</h2>
-                <p className="text-slate-400 text-sm">Бид танд тохирсон сургалтын төлөвлөгөө бэлдэх болно</p>
+                <h2 className="text-2xl md:text-3xl font-serif font-light tracking-tight text-paper">Таны зорилго юу вэ?</h2>
+                <p className="text-paper-2 text-sm leading-relaxed">Бид танд тохирсон сургалтын төлөвлөгөө бэлдэх болно</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
@@ -99,15 +99,15 @@ export default function OnboardingWizard({ userName, onComplete }: OnboardingWiz
                     onClick={() => setGoal(g.label)}
                     className={`flex items-center justify-between text-left p-4 rounded-xl transition-all cursor-pointer ${
                       goal === g.label
-                        ? 'bg-amber-950/40 border-2 border-amber-500 shadow-[0_0_15px_rgba(230,184,92,0.32)]'
-                        : 'bg-white/5 border border-white/10 hover:border-amber-500/50 hover:bg-white/10'
+                        ? 'bg-ink-raise border-2 border-paper'
+                        : 'bg-ink-raise border border-ink-line hover:border-ink-line-2 hover:bg-ink-2'
                     }`}
                   >
                     <div>
-                      <div className="font-bold text-white text-base">{g.label}</div>
-                      <div className="text-xs text-slate-400 mt-1">{g.desc}</div>
+                      <div className="font-medium text-paper text-base">{g.label}</div>
+                      <div className="text-xs text-paper-2 mt-1">{g.desc}</div>
                     </div>
-                    {goal === g.label && <Check className="w-5 h-5 text-amber-400 flex-shrink-0 ml-3" />}
+                    {goal === g.label && <Check className="w-5 h-5 text-paper flex-shrink-0 ml-3" />}
                   </button>
                 ))}
               </div>
@@ -117,11 +117,11 @@ export default function OnboardingWizard({ userName, onComplete }: OnboardingWiz
           {step === 2 && (
             <div className="space-y-6">
               <div className="space-y-2 text-center md:text-left">
-                <div className="inline-flex p-3 bg-teal-500/10 border border-teal-500/20 rounded-xl text-teal-400 mb-2">
+                <div className="inline-flex p-3 bg-ink-raise border border-ink-line rounded-xl text-paper-2 mb-2">
                   <GraduationCap className="w-6 h-6" />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black font-space">Одоогийн түвшингээ сонгоно уу</h2>
-                <p className="text-slate-400 text-sm">Мэдэхгүй бол A1 сонгоно уу — бид тест авч тодорхойлно</p>
+                <h2 className="text-2xl md:text-3xl font-serif font-light tracking-tight text-paper">Одоогийн түвшингээ сонгоно уу</h2>
+                <p className="text-paper-2 text-sm leading-relaxed">Мэдэхгүй бол A1 сонгоно уу — бид тест авч тодорхойлно</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
@@ -131,15 +131,15 @@ export default function OnboardingWizard({ userName, onComplete }: OnboardingWiz
                     onClick={() => setLevel(l.id)}
                     className={`flex items-center justify-between text-left p-4 rounded-xl transition-all cursor-pointer ${
                       level === l.id
-                        ? 'bg-amber-950/40 border-2 border-amber-500 shadow-[0_0_15px_rgba(230,184,92,0.32)]'
-                        : 'bg-white/5 border border-white/10 hover:border-amber-500/50 hover:bg-white/10'
+                        ? 'bg-ink-raise border-2 border-paper'
+                        : 'bg-ink-raise border border-ink-line hover:border-ink-line-2 hover:bg-ink-2'
                     }`}
                   >
                     <div>
-                      <div className="font-extrabold text-white text-lg font-space">{l.label}</div>
-                      <div className="text-xs text-slate-400 mt-1">{l.desc}</div>
+                      <div className="font-serif font-normal text-paper text-lg">{l.label}</div>
+                      <div className="text-xs text-paper-2 mt-1">{l.desc}</div>
                     </div>
-                    {level === l.id && <Check className="w-5 h-5 text-amber-400 flex-shrink-0 ml-3" />}
+                    {level === l.id && <Check className="w-5 h-5 text-paper flex-shrink-0 ml-3" />}
                   </button>
                 ))}
               </div>
@@ -149,11 +149,11 @@ export default function OnboardingWizard({ userName, onComplete }: OnboardingWiz
           {step === 3 && (
             <div className="space-y-6">
               <div className="space-y-2 text-center md:text-left">
-                <div className="inline-flex p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 mb-2">
+                <div className="inline-flex p-3 bg-ink-raise border border-ink-line rounded-xl text-paper-2 mb-2">
                   <Clock className="w-6 h-6" />
                 </div>
-                <h2 className="text-2xl md:text-3xl font-black font-space">Өдөрт хэр удаан хичээллэх вэ?</h2>
-                <p className="text-slate-400 text-sm">Бид танд тохирсон хичээлийн хэмжээг тааруулна</p>
+                <h2 className="text-2xl md:text-3xl font-serif font-light tracking-tight text-paper">Өдөрт хэр удаан хичээллэх вэ?</h2>
+                <p className="text-paper-2 text-sm leading-relaxed">Бид танд тохирсон хичээлийн хэмжээг тааруулна</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3">
@@ -163,15 +163,15 @@ export default function OnboardingWizard({ userName, onComplete }: OnboardingWiz
                     onClick={() => setDailyGoalMinutes(d.minutes)}
                     className={`flex items-center justify-between text-left p-4 rounded-xl transition-all cursor-pointer ${
                       dailyGoalMinutes === d.minutes
-                        ? 'bg-amber-950/40 border-2 border-amber-500 shadow-[0_0_15px_rgba(230,184,92,0.32)]'
-                        : 'bg-white/5 border border-white/10 hover:border-amber-500/50 hover:bg-white/10'
+                        ? 'bg-ink-raise border-2 border-paper'
+                        : 'bg-ink-raise border border-ink-line hover:border-ink-line-2 hover:bg-ink-2'
                     }`}
                   >
                     <div>
-                      <div className="font-bold text-white text-base">{d.label}</div>
-                      <div className="text-xs text-slate-400 mt-1">{d.desc}</div>
+                      <div className="font-medium text-paper text-base">{d.label}</div>
+                      <div className="text-xs text-paper-2 mt-1">{d.desc}</div>
                     </div>
-                    {dailyGoalMinutes === d.minutes && <Check className="w-5 h-5 text-amber-400 flex-shrink-0 ml-3" />}
+                    {dailyGoalMinutes === d.minutes && <Check className="w-5 h-5 text-paper flex-shrink-0 ml-3" />}
                   </button>
                 ))}
               </div>
@@ -185,7 +185,7 @@ export default function OnboardingWizard({ userName, onComplete }: OnboardingWiz
         {step > 1 && (
           <button
             onClick={handleBack}
-            className="flex-1 py-3.5 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-300 cursor-pointer"
+            className="flex-1 py-3.5 bg-transparent border border-ink-line hover:border-paper/60 hover:bg-ink-raise rounded-xl text-xs font-medium uppercase tracking-[0.15em] transition-all text-paper-2 hover:text-paper cursor-pointer"
           >
             Буцах
           </button>
@@ -193,11 +193,11 @@ export default function OnboardingWizard({ userName, onComplete }: OnboardingWiz
         <button
           onClick={handleNext}
           disabled={isNextDisabled()}
-          className="flex-[2] bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95 shadow-[0_4px_20px_rgba(230,184,92,0.32)] transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="flex-[2] bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           {step === 3 ? (
             <>
-              Эхлэцгээе! <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+              Эхлэцгээе! <Sparkles className="w-5 h-5 text-ink animate-pulse" />
             </>
           ) : (
             <>

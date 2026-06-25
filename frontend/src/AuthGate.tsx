@@ -18,11 +18,11 @@ const GUEST_KEY = 'vivid-lingua-guest';
 
 function BrandLoader() {
   return (
-    <div className="bg-background text-white font-sans min-h-screen flex flex-col justify-center items-center gap-4">
-      <h1 className="text-3xl font-black tracking-tight">
-        <span className="text-primary">Vivid</span> Lingua
+    <div className="bg-ink text-paper font-sans min-h-screen flex flex-col justify-center items-center gap-4">
+      <h1 className="text-3xl font-serif font-light tracking-tight">
+        <span className="text-paper">Vivid</span> <span className="text-paper-2">Lingua</span>
       </h1>
-      <Loader2 className="w-7 h-7 text-amber-400 animate-spin" />
+      <Loader2 className="w-7 h-7 text-paper-2 animate-spin" />
     </div>
   );
 }

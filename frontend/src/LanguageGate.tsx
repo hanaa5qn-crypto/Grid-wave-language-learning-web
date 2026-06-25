@@ -13,30 +13,30 @@ function isTrack(value: string | null): value is Track {
 // First-screen chooser shown before any track is selected (or after a reset).
 function Chooser({ onPick }: { onPick: (track: Track) => void }) {
   return (
-    <div className="min-h-screen bg-background text-on-background font-sans flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-ink text-paper font-sans flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-xl text-center">
-        <h1 className="text-3xl sm:text-4xl font-black mb-2">
-          <span className="text-primary">Choose your language</span>
+        <h1 className="font-serif font-light tracking-tight text-4xl sm:text-5xl mb-3">
+          <span className="text-paper">Choose your language</span>
         </h1>
-        <p className="text-on-surface-variant text-lg mb-10">Хэл сонгох</p>
+        <p className="text-paper-3 text-xs uppercase tracking-[0.18em] font-medium mb-10">Хэл сонгох</p>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <button
             onClick={() => onPick('de')}
-            className="flex flex-col items-center gap-2 rounded-3xl bg-surface-container hover:bg-surface-container-high p-8 transition-colors"
+            className="flex flex-col items-center gap-2 rounded-3xl bg-transparent border border-ink-line hover:border-paper/60 hover:bg-ink-raise p-8 transition-colors"
           >
             <span className="text-5xl" aria-hidden="true">🇩🇪</span>
-            <span className="text-xl font-bold text-on-surface">Germany — Learn German</span>
-            <span className="text-sm text-on-surface-variant">Deutsch</span>
+            <span className="text-xl font-serif font-light tracking-tight text-paper">Germany — Learn German</span>
+            <span className="text-xs uppercase tracking-[0.18em] font-medium text-paper-2">Deutsch</span>
           </button>
 
           <button
             onClick={() => onPick('en')}
-            className="flex flex-col items-center gap-2 rounded-3xl bg-surface-container hover:bg-surface-container-high p-8 transition-colors"
+            className="flex flex-col items-center gap-2 rounded-3xl bg-transparent border border-ink-line hover:border-paper/60 hover:bg-ink-raise p-8 transition-colors"
           >
             <span className="text-5xl" aria-hidden="true">🇬🇧</span>
-            <span className="text-xl font-bold text-on-surface">English — Learn English</span>
-            <span className="text-sm text-on-surface-variant">English</span>
+            <span className="text-xl font-serif font-light tracking-tight text-paper">English — Learn English</span>
+            <span className="text-xs uppercase tracking-[0.18em] font-medium text-paper-2">English</span>
           </button>
         </div>
       </div>
@@ -87,7 +87,7 @@ export default function LanguageGate() {
           onClick={reset}
           title="Хэл солих / Switch language"
           aria-label="Switch language"
-          className="fixed right-3 top-20 md:top-3 z-[130] inline-flex items-center gap-1.5 rounded-full border border-surface-variant bg-surface-container/90 backdrop-blur px-3 py-1.5 text-xs font-semibold text-on-surface shadow-lg hover:bg-surface-container-high transition-colors"
+          className="fixed right-3 top-20 md:top-3 z-[130] inline-flex items-center gap-1.5 rounded-full border border-ink-line bg-ink-raise/90 backdrop-blur px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-paper-2 shadow-black/40 hover:border-paper/60 hover:bg-ink-2 hover:text-paper transition-colors"
         >
           <span aria-hidden="true">🌐</span> Хэл солих
         </button>

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen, Headphones, Edit3, Mic, Sparkles, ArrowRight, Volume2,
-  Lock, Crown, Loader2, QrCode, CheckCircle2, X, Clock, TrendingUp,
+  Lock, Crown, Loader2, QrCode, CheckCircle2, X, Clock, TrendingUp, AlertCircle,
 } from 'lucide-react';
 import {
   PLACEMENT_QUESTION_INDEX, PLACEMENT_TOTAL_QUESTIONS, PLACEMENT_RESULT_PRICE_MNT, SKILL_SEQUENCE,
@@ -340,32 +340,32 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
   };
 
   const shell = (content: React.ReactNode, footer?: React.ReactNode) => (
-    <div className="fixed inset-0 bg-[#020205] z-[100] flex flex-col items-center justify-between pb-10 pt-6 px-4 md:px-12 animate-fade-in text-white overflow-y-auto">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-900/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="fixed inset-0 bg-ink z-[100] flex flex-col items-center justify-between pb-10 pt-6 px-4 md:px-12 animate-fade-in text-paper overflow-y-auto">
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-paper/[0.03] rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-paper/[0.03] rounded-full blur-[120px] pointer-events-none"></div>
 
       <header className="w-full max-w-[640px] flex flex-col gap-4 py-2 relative z-10">
         <div className="flex justify-between items-center w-full">
-          <h1 className="text-2xl font-black font-space tracking-tight">
-            <span className="text-primary">Vivid</span> Lingua
+          <h1 className="text-2xl font-serif font-light tracking-tight">
+            <span className="text-paper">Vivid</span> <span className="text-paper-2">Lingua</span>
           </h1>
           {phase === 'quiz' && (
-            <span className="flex items-center gap-3 text-sm font-space text-slate-400 font-bold">
+            <span className="flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-paper-2 font-medium">
               <span className="inline-flex items-center gap-1.5"><Clock className="w-4 h-4" /> {elapsedLabel}</span>
               {Math.min(answeredCount + 1, PLACEMENT_TOTAL_QUESTIONS)} / {PLACEMENT_TOTAL_QUESTIONS}
               <button
                 onClick={() => setQuitConfirmOpen(true)}
                 aria-label="Тестээс гарах"
-                className="p-1.5 border border-white/10 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer"
+                className="p-1.5 border border-ink-line hover:bg-ink-2 rounded-lg text-paper-2 hover:text-paper transition-all cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </span>
           )}
         </div>
-        <div className="w-full h-2.5 bg-white/5 border border-white/10 rounded-full overflow-hidden relative">
+        <div className="w-full h-2.5 bg-ink-raise border border-ink-line rounded-full overflow-hidden relative">
           <div
-            className="h-full bg-primary transition-all duration-500"
+            className="h-full bg-paper transition-all duration-500"
             style={{ width: `${phase === 'intro' ? 2 : phase === 'quiz' ? Math.round((answeredCount / PLACEMENT_TOTAL_QUESTIONS) * 100) : 100}%` }}
           />
         </div>
@@ -379,22 +379,22 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
 
       {quitConfirmOpen && (
         <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4">
-          <div className="bg-surface border border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up">
-            <h3 className="text-xl font-black font-space">Тестээс гарах уу?</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
+          <div className="bg-ink-raise border border-ink-line rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up">
+            <h3 className="text-xl font-serif font-light">Тестээс гарах уу?</h3>
+            <p className="text-sm text-paper-2 leading-relaxed">
               Таны хариулсан {answeredCount} асуултын явц хадгалагдсан тул дараа
               яг энэ асуултаас үргэлжлүүлж болно.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setQuitConfirmOpen(false)}
-                className="flex-[2] bg-primary text-on-primary font-bold rounded-xl py-3 px-4 hover:opacity-95 transition-all cursor-pointer"
+                className="flex-[2] bg-paper text-ink rounded-xl py-3 px-4 text-xs uppercase tracking-[0.15em] font-medium hover:bg-white transition-all cursor-pointer"
               >
                 Үргэлжлүүлэх
               </button>
               <button
                 onClick={quitTest}
-                className="flex-1 py-3 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-300 cursor-pointer"
+                className="flex-1 py-3 border border-ink-line hover:border-paper/60 hover:bg-ink-raise rounded-xl text-xs uppercase tracking-[0.15em] font-medium transition-all text-paper-2 hover:text-paper cursor-pointer"
               >
                 Гарах
               </button>
@@ -410,14 +410,14 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
     return shell(
       <div className="space-y-6">
         <div className="space-y-2 text-center md:text-left">
-          <div className="inline-flex p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 mb-2">
+          <div className="inline-flex p-3 bg-ink-raise border border-ink-line rounded-xl text-paper-2 mb-2">
             <Sparkles className="w-6 h-6" />
           </div>
-          <h2 className="text-2xl md:text-3xl font-black font-space">Түвшин тогтоох үнэлгээний тест</h2>
-          <p className="text-slate-400 text-sm leading-relaxed">
-            Дөрвөн ур чадварыг бүгдийг шалгана: <b className="text-white">Унших · Сонсох · Бичих · Ярих</b> —
-            нийт <b className="text-white">{PLACEMENT_TOTAL_QUESTIONS} асуулт</b>, ойролцоогоор{' '}
-            <b className="text-white">40–50 минут</b>. Тест дасан зохицдог: зөв хариулах тусам асуулт
+          <h2 className="text-2xl md:text-3xl font-serif font-light">Түвшин тогтоох үнэлгээний тест</h2>
+          <p className="text-paper-2 text-sm leading-relaxed">
+            Дөрвөн ур чадварыг бүгдийг шалгана: <b className="text-paper">Унших · Сонсох · Бичих · Ярих</b> —
+            нийт <b className="text-paper">{PLACEMENT_TOTAL_QUESTIONS} асуулт</b>, ойролцоогоор{' '}
+            <b className="text-paper">40–50 минут</b>. Тест дасан зохицдог: зөв хариулах тусам асуулт
             аажмаар хүндэрч (A1 → C2), буруу хариулбал хөнгөрнө. Тиймээс яарах хэрэггүй — асуулт бүр
             дээр сайтар бодоорой. Мэдэхгүй зүйл таарвал санаа зовох хэрэггүй: тест таны бодит түвшнийг
             л хайж байгаа юм.
@@ -425,15 +425,15 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {(Object.keys(SKILL_META) as PlacementSkill[]).map((s) => (
-            <div key={s} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl p-3 text-sm font-bold text-slate-300">
-              <span className="text-amber-400">{SKILL_META[s].icon}</span>
+            <div key={s} className="flex items-center gap-2 bg-ink-raise border border-ink-line rounded-xl p-3 text-xs uppercase tracking-[0.18em] font-medium text-paper-2">
+              <span className="text-paper-2">{SKILL_META[s].icon}</span>
               {SKILL_META[s].label}
             </div>
           ))}
         </div>
-        <div className="flex items-start gap-3 bg-white/5 border border-white/10 rounded-xl p-4">
-          <TrendingUp className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-xs text-slate-400 leading-relaxed">
+        <div className="flex items-start gap-3 bg-ink-raise border border-ink-line rounded-xl p-4">
+          <TrendingUp className="w-5 h-5 text-paper-2 shrink-0 mt-0.5" />
+          <p className="text-xs text-paper-2 leading-relaxed">
             Тасалдуулахгүй, нэг дор өгөхөд хамгийн оновчтой. Сонсох асуултын бичлэгийг хэдэн ч удаа
             дахин тоглуулж болно.
           </p>
@@ -441,28 +441,28 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
         {saved?.phase === 'quiz' && (
           <button
             onClick={resumeQuiz}
-            className="w-full flex items-center justify-between gap-3 bg-amber-950/40 border-2 border-amber-500/60 hover:bg-amber-950/60 rounded-xl p-4 transition-all cursor-pointer text-left"
+            className="w-full flex items-center justify-between gap-3 bg-ink-raise border border-paper hover:bg-ink-2 rounded-xl p-4 transition-all cursor-pointer text-left"
           >
-            <span className="text-sm font-bold text-white">
+            <span className="text-sm font-medium text-paper">
               Дуусгаагүй тест байна — {saved.answers.length}/{PLACEMENT_TOTAL_QUESTIONS} хариулсан. Үргэлжлүүлэх
-              <span className="block text-xs text-slate-400 font-normal mt-0.5">
+              <span className="block text-xs text-paper-2 font-normal mt-0.5">
                 «Тест эхлүүлэх» дарвал шинээр эхэлж, өмнөх явц устана.
               </span>
             </span>
-            <ArrowRight className="w-5 h-5 text-amber-300 shrink-0" />
+            <ArrowRight className="w-5 h-5 text-paper shrink-0" />
           </button>
         )}
       </div>,
       <>
         <button
           onClick={onSkip}
-          className="flex-1 py-3.5 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-300 cursor-pointer"
+          className="flex-1 py-3.5 border border-ink-line hover:border-paper/60 hover:bg-ink-raise rounded-xl text-xs uppercase tracking-[0.15em] font-medium transition-all text-paper-2 hover:text-paper cursor-pointer"
         >
           Дараа өгөх
         </button>
         <button
           onClick={startQuiz}
-          className="flex-[2] bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 hover:opacity-95 shadow-[0_4px_20px_rgba(230,184,92,0.32)] transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="flex-[2] bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium hover:bg-white hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           Тест эхлүүлэх <ArrowRight className="w-5 h-5" />
         </button>
@@ -474,15 +474,15 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
   if (phase === 'quiz' && question) {
     return shell(
       <div className="space-y-5" data-question-id={question.id}>
-        <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-          <span className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] font-medium text-paper-2">
+          <span className="inline-flex items-center gap-1.5 bg-ink-raise border border-ink-line rounded-full px-3 py-1">
             {SKILL_META[question.skill].icon} {SKILL_META[question.skill].label}
           </span>
         </div>
-        <p className="text-sm text-slate-400">{question.instruction}</p>
+        <p className="text-sm text-paper-2">{question.instruction}</p>
 
         {question.passage && (
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-[15px] leading-relaxed text-slate-100">
+          <div className="bg-ink-raise border border-ink-line rounded-xl p-4 text-[15px] leading-relaxed text-paper">
             {question.passage}
           </div>
         )}
@@ -490,16 +490,16 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
         {question.audioText && (
           <button
             onClick={() => speakGerman(question.audioText!)}
-            className="flex items-center gap-3 bg-white/5 border border-white/10 hover:border-amber-500/50 rounded-xl p-4 w-full text-left transition-all cursor-pointer"
+            className="flex items-center gap-3 bg-ink-raise border border-ink-line hover:border-paper/60 rounded-xl p-4 w-full text-left transition-all cursor-pointer"
           >
-            <span className="w-11 h-11 flex items-center justify-center bg-primary rounded-full shrink-0">
+            <span className="w-11 h-11 flex items-center justify-center bg-paper text-ink rounded-full shrink-0">
               <Volume2 className="w-5 h-5" />
             </span>
-            <span className="text-sm font-bold text-slate-200">Сонсох (дахин дарж давтаж болно)</span>
+            <span className="text-sm font-medium text-paper-2">Сонсох (дахин дарж давтаж болно)</span>
           </button>
         )}
 
-        <h2 className="text-lg md:text-xl font-black font-space">{question.question}</h2>
+        <h2 className="text-lg md:text-xl font-serif font-light">{question.question}</h2>
 
         <div className="grid grid-cols-1 gap-3">
           {question.choices.map((choice, i) => (
@@ -508,8 +508,8 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
               onClick={() => setSelected(i)}
               className={`text-left p-4 rounded-xl transition-all cursor-pointer text-[15px] ${
                 selected === i
-                  ? 'bg-amber-950/40 border-2 border-amber-500 shadow-[0_0_15px_rgba(230,184,92,0.32)]'
-                  : 'bg-white/5 border border-white/10 hover:border-amber-500/50 hover:bg-white/10'
+                  ? 'bg-paper text-ink border border-paper'
+                  : 'bg-ink-raise border border-ink-line text-paper hover:border-paper/60 hover:bg-ink-2'
               }`}
             >
               {choice}
@@ -520,7 +520,7 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
       <button
         onClick={submitAnswer}
         disabled={selected === null}
-        className="flex-1 bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95 shadow-[0_4px_20px_rgba(230,184,92,0.32)] transition-all cursor-pointer flex items-center justify-center gap-2"
+        className="flex-1 bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
       >
         Дараах <ArrowRight className="w-5 h-5" />
       </button>,
@@ -532,26 +532,26 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
     return shell(
       <div className="space-y-6">
         <div className="space-y-2 text-center">
-          <div className="inline-flex p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-400 mb-2">
+          <div className="inline-flex p-4 bg-ink-raise border border-ink-line rounded-2xl text-paper-2 mb-2">
             <Lock className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl md:text-3xl font-black font-space">Тест дууслаа! 🎉</h2>
-          <p className="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">
+          <h2 className="text-2xl md:text-3xl font-serif font-light">Тест дууслаа! 🎉</h2>
+          <p className="text-paper-2 text-sm leading-relaxed max-w-md mx-auto">
             Таны CEFR түвшин тогтоогдож, сургалт автоматаар энэ түвшнээс эхэлнэ.
             Дөрвөн ур чадварын дэлгэрэнгүй задаргааг нээж үзэхэд{' '}
-            <b className="text-white">{PLACEMENT_RESULT_PRICE_MNT.toLocaleString()}₮</b>.
+            <b className="text-paper">{PLACEMENT_RESULT_PRICE_MNT.toLocaleString()}₮</b>.
           </p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+        <div className="bg-ink-raise border border-ink-line rounded-2xl p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-300">Таны CEFR түвшин</span>
-            <span className="text-2xl font-black font-space text-primary">{record.level}</span>
+            <span className="text-xs uppercase tracking-[0.18em] font-medium text-paper-2">Таны CEFR түвшин</span>
+            <span className="text-2xl font-serif font-light text-paper">{record.level}</span>
           </div>
           {(Object.keys(SKILL_META) as PlacementSkill[]).map((s) => (
             <div key={s} className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 text-slate-400">{SKILL_META[s].icon} {SKILL_META[s].label}</span>
-              <span className="blur-sm select-none font-bold">●●●</span>
+              <span className="flex items-center gap-2 text-paper-2">{SKILL_META[s].icon} {SKILL_META[s].label}</span>
+              <span className="blur-sm select-none font-bold text-paper-2">●●●</span>
             </div>
           ))}
         </div>
@@ -560,7 +560,7 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
           <button
             onClick={redeemEvalCredit}
             disabled={payLoading}
-            className="w-full bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 disabled:opacity-50 hover:opacity-95 shadow-[0_4px_20px_rgba(230,184,92,0.3)] transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium disabled:opacity-40 hover:bg-white hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             {payLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Crown className="w-5 h-5" />}
             Захиалгад багтсан — үнэгүй нээх ({evalCredits})
@@ -568,24 +568,24 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
         )}
 
         {invoice ? (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col items-center gap-3">
+          <div className="bg-ink-raise border border-ink-line rounded-2xl p-5 flex flex-col items-center gap-3">
             {invoice.url && (
               <a
                 href={invoice.url}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full bg-primary text-on-primary font-bold rounded-xl py-3 px-6 hover:opacity-95 transition-all flex items-center justify-center gap-2"
+                className="w-full bg-paper text-ink rounded-full py-3 px-6 text-xs uppercase tracking-[0.15em] font-medium hover:bg-white transition-all flex items-center justify-center gap-2"
               >
                 <QrCode className="w-5 h-5" /> Төлбөрийн хуудас нээх
               </a>
             )}
-            <p className="text-xs text-slate-400 text-center">
+            <p className="text-xs text-paper-2 text-center">
               Хуудсан дээр QPay QR, SocialPay эсвэл Pocket-оор төлөх боломжтой.
             </p>
             <button
               onClick={checkBylPayment}
               disabled={payLoading}
-              className="w-full bg-primary text-on-primary font-bold rounded-xl py-3 px-6 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+              className="w-full bg-transparent border border-ink-line text-paper rounded-full py-3 px-6 text-xs uppercase tracking-[0.15em] font-medium disabled:opacity-40 hover:border-paper/60 hover:bg-ink-2 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               {payLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} Төлбөр шалгах
             </button>
@@ -594,7 +594,7 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
           <button
             onClick={startBylPayment}
             disabled={payLoading}
-            className="w-full bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 disabled:opacity-50 hover:opacity-95 shadow-[0_4px_20px_rgba(230,184,92,0.32)] transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium disabled:opacity-40 hover:bg-white hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             {payLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <QrCode className="w-5 h-5" />}
             {PLACEMENT_RESULT_PRICE_MNT.toLocaleString()}₮ төлж нээх
@@ -602,14 +602,15 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
         )}
 
         {payMessage && (
-          <p className={`text-sm text-center font-bold ${payMessage.type === 'error' ? 'text-red-400' : 'text-slate-300'}`}>
+          <p className="text-sm text-center font-medium text-paper-2 flex items-center justify-center gap-2">
+            {payMessage.type === 'error' && <AlertCircle className="w-4 h-4 shrink-0" />}
             {payMessage.text}
           </p>
         )}
       </div>,
       <button
         onClick={() => completeAndExit(record)}
-        className="flex-1 py-3.5 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-400 cursor-pointer flex items-center justify-center gap-2"
+        className="flex-1 py-3.5 border border-ink-line hover:border-paper/60 hover:bg-ink-raise rounded-xl text-xs uppercase tracking-[0.15em] font-medium transition-all text-paper-2 hover:text-paper cursor-pointer flex items-center justify-center gap-2"
       >
         <X className="w-4 h-4" /> Үр дүнг нээлгүй үргэлжлүүлэх
       </button>,
@@ -622,31 +623,31 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
       <div className="space-y-6">
         <div className="space-y-2 text-center">
           {record.unlockedBy === 'founder' && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
+            <span className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] font-medium text-ink bg-paper rounded-full px-3 py-1">
               <Crown className="w-3.5 h-3.5" /> Founder — төлбөргүй нээгдлээ
             </span>
           )}
-          <h2 className="text-2xl md:text-3xl font-black font-space">Таны түвшин</h2>
-          <div className="text-7xl font-black font-space text-primary py-2">
+          <h2 className="text-2xl md:text-3xl font-serif font-light">Таны түвшин</h2>
+          <div className="text-7xl font-serif font-light text-paper py-2">
             {record.level}
           </div>
-          <p className="text-slate-400 text-sm">
+          <p className="text-paper-2 text-sm">
             Нийт {record.totalQuestions} асуултаас {record.totalCorrect} зөв. Сургалт таны түвшнээс эхэлнэ.
           </p>
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+        <div className="bg-ink-raise border border-ink-line rounded-2xl p-5 space-y-4">
           {(Object.keys(SKILL_META) as PlacementSkill[]).map((s) => {
             const score = skillTotals[s];
             const pct = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0;
             return (
               <div key={s} className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="flex items-center gap-2 text-slate-300 font-bold">{SKILL_META[s].icon} {SKILL_META[s].label}</span>
-                  <span className="text-slate-400 font-mono text-xs">{score.correct}/{score.total}</span>
+                  <span className="flex items-center gap-2 text-paper font-medium">{SKILL_META[s].icon} {SKILL_META[s].label}</span>
+                  <span className="text-paper-2 font-mono text-xs">{score.correct}/{score.total}</span>
                 </div>
-                <div className="w-full h-2 bg-white/5 border border-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-primary transition-all duration-700" style={{ width: `${pct}%` }} />
+                <div className="w-full h-2 bg-ink-2 border border-ink-line rounded-full overflow-hidden">
+                  <div className="h-full bg-paper transition-all duration-700" style={{ width: `${pct}%` }} />
                 </div>
               </div>
             );
@@ -655,9 +656,9 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
       </div>,
       <button
         onClick={() => completeAndExit(record)}
-        className="flex-1 bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 hover:opacity-95 shadow-[0_4px_20px_rgba(230,184,92,0.32)] transition-all cursor-pointer flex items-center justify-center gap-2"
+        className="flex-1 bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium hover:bg-white hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
       >
-        {record.level} түвшнээс суралцаж эхлэх <Sparkles className="w-5 h-5 text-amber-300" />
+        {record.level} түвшнээс суралцаж эхлэх <Sparkles className="w-5 h-5 text-ink" />
       </button>,
     );
   }

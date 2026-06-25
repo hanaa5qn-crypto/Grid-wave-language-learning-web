@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Golos+Text:wght@400..900&family=Unbounded:wght@400..900&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Golos+Text:wght@400..900&family=Unbounded:wght@400..900&family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 @import "tailwindcss";
 
 /*
@@ -62,6 +62,24 @@
   /* Outlines & placeholders — visible on dark *and* warm-paper fields */
   --color-outline: #8c8472;
   --color-outline-variant: #3a352a;
+
+  /* ──────────────────────────────────────────────────────────────
+     MINIMALIST MONOCHROME THEME (Image #1) — every page EXCEPT the
+     hero/landing. A self-contained ink↔paper grayscale scale + an
+     editorial serif. The hero (LandingPage.tsx) references NONE of
+     these tokens (it uses --color-primary / --font-space), so adding
+     them leaves the hero pixel-identical. Pure neutral — zero chroma.
+     ────────────────────────────────────────────────────────────── */
+  --font-serif: "Fraunces", "Times New Roman", Georgia, serif;
+
+  --color-ink: #0a0a0a;          /* page background (near-black)        */
+  --color-ink-raise: #141414;    /* cards · inputs · raised surfaces    */
+  --color-ink-2: #1e1e1e;        /* hover / pressed surface             */
+  --color-ink-line: #262626;     /* hairline borders · dividers         */
+  --color-ink-line-2: #3a3a3a;   /* stronger border · hover edge        */
+  --color-paper: #ededeb;        /* primary text · light fills (CTA)    */
+  --color-paper-2: #9b9893;      /* secondary text                      */
+  --color-paper-3: #66635e;      /* faint text · placeholders · captions*/
 
   /* Motion vocabulary (these utilities are referenced across the app) */
   --animate-fade-in: fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -157,11 +175,8 @@ main::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(38% 30% at 18% 22%, rgba(230, 184, 92, 0.06), transparent 70%),
-    radial-gradient(34% 28% at 82% 18%, rgba(92, 194, 168, 0.05), transparent 70%),
-    radial-gradient(40% 34% at 70% 85%, rgba(242, 133, 95, 0.035), transparent 70%),
-    radial-gradient(30% 26% at 28% 80%, rgba(230, 184, 92, 0.03), transparent 70%);
-  animation: aurora-drift 26s ease-in-out infinite alternate;
+    radial-gradient(46% 34% at 50% 0%, rgba(245, 245, 245, 0.035), transparent 72%),
+    radial-gradient(38% 38% at 84% 96%, rgba(245, 245, 245, 0.02), transparent 70%);
 }
 
 @keyframes aurora-drift {
@@ -213,16 +228,16 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
    (e.g. the white reader cards) win; borders/shadows stay unlayered to
    keep the subtle glass outline over the bold border-2 utilities. */
 @layer components {
-  .block-shadow { background-color: rgba(245, 241, 232, 0.025); }
-  .block-shadow:hover { background-color: rgba(245, 241, 232, 0.05); }
-  .block-shadow-orange { background-color: rgba(242, 133, 95, 0.05); }
-  .block-shadow-orange:hover { background-color: rgba(242, 133, 95, 0.1); }
-  .block-shadow-green { background-color: rgba(92, 194, 168, 0.05); }
-  .block-shadow-green:hover { background-color: rgba(92, 194, 168, 0.1); }
+  .block-shadow { background-color: rgba(237, 237, 235, 0.02); }
+  .block-shadow:hover { background-color: rgba(237, 237, 235, 0.045); }
+  .block-shadow-orange { background-color: rgba(237, 237, 235, 0.02); }
+  .block-shadow-orange:hover { background-color: rgba(237, 237, 235, 0.045); }
+  .block-shadow-green { background-color: rgba(237, 237, 235, 0.02); }
+  .block-shadow-green:hover { background-color: rgba(237, 237, 235, 0.045); }
 }
 
 .block-shadow {
-  border: 1px solid rgba(245, 241, 232, 0.09);
+  border: 1px solid rgba(237, 237, 235, 0.1);
   border-radius: 1rem;
   box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.5);
   transition:
@@ -233,9 +248,9 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 }
 
 .block-shadow:hover {
-  border-color: rgba(230, 184, 92, 0.4);
+  border-color: rgba(237, 237, 235, 0.28);
   box-shadow:
-    0 0 0 1px rgba(230, 184, 92, 0.12),
+    0 0 0 1px rgba(237, 237, 235, 0.08),
     0 10px 28px -6px rgba(0, 0, 0, 0.6);
   transform: translateY(-3px);
 }
@@ -246,7 +261,7 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 }
 
 .block-shadow-orange {
-  border: 1px solid rgba(242, 133, 95, 0.24);
+  border: 1px solid rgba(237, 237, 235, 0.12);
   border-radius: 1rem;
   box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.5);
   transition:
@@ -257,9 +272,9 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 }
 
 .block-shadow-orange:hover {
-  border-color: rgba(242, 133, 95, 0.5);
+  border-color: rgba(237, 237, 235, 0.28);
   box-shadow:
-    0 0 0 1px rgba(242, 133, 95, 0.16),
+    0 0 0 1px rgba(237, 237, 235, 0.08),
     0 10px 28px -6px rgba(0, 0, 0, 0.6);
   transform: translateY(-3px);
 }
@@ -270,7 +285,7 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 }
 
 .block-shadow-green {
-  border: 1px solid rgba(92, 194, 168, 0.24);
+  border: 1px solid rgba(237, 237, 235, 0.12);
   border-radius: 1rem;
   box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.5);
   transition:
@@ -281,9 +296,9 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 }
 
 .block-shadow-green:hover {
-  border-color: rgba(92, 194, 168, 0.5);
+  border-color: rgba(237, 237, 235, 0.28);
   box-shadow:
-    0 0 0 1px rgba(92, 194, 168, 0.16),
+    0 0 0 1px rgba(237, 237, 235, 0.08),
     0 10px 28px -6px rgba(0, 0, 0, 0.6);
   transform: translateY(-3px);
 }
@@ -314,13 +329,13 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 .word-highlight {
   position: relative;
   cursor: pointer;
-  border-bottom: 2px dashed #5cc2a8;
+  border-bottom: 2px dashed #66635e;
   transition: all 0.2s;
 }
 
 .word-highlight:hover {
-  background-color: #84d4bd;
-  color: #043026;
+  background-color: #ededeb;
+  color: #0a0a0a;
 }
 
 .tooltip-container {
@@ -368,7 +383,7 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
   position: absolute;
   inset: 0;
   border-radius: 9999px;
-  background-color: #84d4bd;
+  background-color: #ededeb;
   z-index: -1;
   animation: ripple 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
@@ -380,7 +395,7 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 /* Monospace code styling */
 code, pre {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  color: #84d4bd !important;
+  color: #c9c6c0 !important;
 }
 
 /* Respect users who prefer stillness */

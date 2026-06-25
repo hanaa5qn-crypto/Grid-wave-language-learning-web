@@ -98,34 +98,34 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
   const question: DuelQuestion | undefined = questions[qIdx];
 
   const shell = (content: React.ReactNode, footer?: React.ReactNode) => (
-    <div className="fixed inset-0 bg-[#020205] z-[100] flex flex-col items-center justify-between pb-10 pt-6 px-4 md:px-12 animate-fade-in text-white overflow-y-auto">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-900/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+    <div className="fixed inset-0 bg-ink z-[100] flex flex-col items-center justify-between pb-10 pt-6 px-4 md:px-12 animate-fade-in text-paper overflow-y-auto">
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-paper/[0.03] rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-paper/[0.03] rounded-full blur-[120px] pointer-events-none"></div>
 
       <header className="w-full max-w-[640px] flex flex-col gap-4 py-2 relative z-10">
         <div className="flex justify-between items-center w-full">
-          <h1 className="text-2xl font-black font-space tracking-tight flex items-center gap-2">
-            <Swords className="w-6 h-6 text-amber-400" />
-            <span className="text-primary">Тулаан</span>
-            <span className="text-sm font-bold text-slate-500 mt-1">{duel.level}</span>
+          <h1 className="text-2xl font-light font-serif tracking-tight flex items-center gap-2">
+            <Swords className="w-6 h-6 text-paper-2" />
+            <span className="text-paper">Тулаан</span>
+            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-paper-3 mt-1">{duel.level}</span>
           </h1>
           {stage === 'play' && (
-            <span className="flex items-center gap-3 text-sm font-space text-slate-400 font-bold">
+            <span className="flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-paper-2 font-medium">
               <span className="inline-flex items-center gap-1.5"><Clock className="w-4 h-4" /> {elapsedLabel}</span>
               {qIdx + 1} / {questions.length}
               <button
                 onClick={() => setQuitConfirmOpen(true)}
                 aria-label="Тулаанаас гарах"
-                className="p-1.5 border border-white/10 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer"
+                className="p-1.5 border border-ink-line hover:bg-ink-2 rounded-lg text-paper-2 hover:text-paper transition-all cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </span>
           )}
         </div>
-        <div className="w-full h-2.5 bg-white/5 border border-white/10 rounded-full overflow-hidden relative">
+        <div className="w-full h-2.5 bg-ink-raise border border-ink-line rounded-full overflow-hidden relative">
           <div
-            className="h-full bg-primary transition-all duration-500"
+            className="h-full bg-paper transition-all duration-500"
             style={{ width: `${stage === 'play' ? Math.round((qIdx / questions.length) * 100) : 100}%` }}
           />
         </div>
@@ -139,21 +139,21 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
 
       {quitConfirmOpen && (
         <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4">
-          <div className="bg-surface border border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up">
-            <h3 className="text-xl font-black font-space">Тулаанаас гарах уу?</h3>
-            <p className="text-sm text-slate-400 leading-relaxed">
+          <div className="bg-ink-raise border border-ink-line rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up">
+            <h3 className="text-xl font-light font-serif tracking-tight">Тулаанаас гарах уу?</h3>
+            <p className="text-sm text-paper-2 leading-relaxed">
               Тулааны оноо хадгалагдахгүй — дараа линкээр дахин орж эхнээс нь тоглож болно.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setQuitConfirmOpen(false)}
-                className="flex-[2] bg-primary text-on-primary font-bold rounded-xl py-3 px-4 hover:opacity-95 transition-all cursor-pointer"
+                className="flex-[2] bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3 px-4 hover:bg-white transition-all cursor-pointer"
               >
                 Үргэлжлүүлэх
               </button>
               <button
                 onClick={() => onExit(false)}
-                className="flex-1 py-3 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-300 cursor-pointer"
+                className="flex-1 py-3 border border-ink-line hover:border-paper/60 hover:bg-ink-raise rounded-xl text-xs font-medium uppercase tracking-[0.15em] transition-all text-paper-2 hover:text-paper cursor-pointer"
               >
                 Гарах
               </button>
@@ -169,21 +169,21 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
     return shell(
       <div className="space-y-5" data-duel-question-index={qIdx}>
         {result.challenger && !result.challenger.isMe && (
-          <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-            <span className="inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.15em] text-paper-2">
+            <span className="inline-flex items-center gap-1.5 bg-ink-raise border border-ink-line rounded-full px-3 py-1">
               <Swords className="w-3.5 h-3.5" /> {result.challenger.name} таныг өрсөлдөхөд урьсан
             </span>
           </div>
         )}
-        <p className="text-sm text-slate-400">{question.instruction}</p>
+        <p className="text-sm text-paper-2 leading-relaxed">{question.instruction}</p>
 
         {question.passage && (
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-[15px] leading-relaxed text-slate-100">
+          <div className="bg-ink-raise border border-ink-line rounded-xl p-4 text-[15px] leading-relaxed text-paper">
             {question.passage}
           </div>
         )}
 
-        <h2 className="text-lg md:text-xl font-black font-space">{question.question}</h2>
+        <h2 className="text-lg md:text-xl font-light font-serif tracking-tight text-paper">{question.question}</h2>
 
         <div className="grid grid-cols-1 gap-3">
           {question.choices.map((choice, i) => (
@@ -192,8 +192,8 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
               onClick={() => setSelected(i)}
               className={`text-left p-4 rounded-xl transition-all cursor-pointer text-[15px] ${
                 selected === i
-                  ? 'bg-amber-950/40 border-2 border-amber-500 shadow-[0_0_15px_rgba(230,184,92,0.32)]'
-                  : 'bg-white/5 border border-white/10 hover:border-amber-500/50 hover:bg-white/10'
+                  ? 'bg-paper text-ink border-2 border-paper'
+                  : 'bg-ink-raise border border-ink-line text-paper hover:border-ink-line-2 hover:bg-ink-2'
               }`}
             >
               {choice}
@@ -204,7 +204,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
       <button
         onClick={answer}
         disabled={selected === null}
-        className="flex-1 bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95 shadow-[0_4px_20px_rgba(230,184,92,0.32)] transition-all cursor-pointer flex items-center justify-center gap-2"
+        className="flex-1 bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white transition-all cursor-pointer flex items-center justify-center gap-2"
       >
         Дараах <ArrowRight className="w-5 h-5" />
       </button>,
@@ -214,9 +214,9 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
   // --- Илгээж байна ---------------------------------------------------------------
   if (stage === 'submitting') {
     return shell(
-      <div className="flex flex-col items-center gap-4 text-slate-300">
-        <Loader2 className="w-10 h-10 animate-spin text-amber-400" />
-        <p className="font-bold">Оноог илгээж байна…</p>
+      <div className="flex flex-col items-center gap-4 text-paper-2">
+        <Loader2 className="w-10 h-10 animate-spin text-paper-2" />
+        <p className="text-xs font-medium uppercase tracking-[0.18em]">Оноог илгээж байна…</p>
       </div>,
     );
   }
@@ -225,19 +225,19 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
   if (stage === 'error') {
     return shell(
       <div className="space-y-4 text-center">
-        <h2 className="text-2xl font-black font-space">Алдаа гарлаа</h2>
-        <p className="text-sm text-red-400 font-bold">{errorText}</p>
+        <h2 className="text-2xl font-light font-serif tracking-tight text-paper">Алдаа гарлаа</h2>
+        <p className="text-sm text-paper-2 inline-flex items-center gap-2"><X className="w-4 h-4" /> {errorText}</p>
       </div>,
       <>
         <button
           onClick={() => onExit(false)}
-          className="flex-1 py-3.5 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-300 cursor-pointer"
+          className="flex-1 py-3.5 border border-ink-line hover:border-paper/60 hover:bg-ink-raise rounded-xl text-xs font-medium uppercase tracking-[0.15em] transition-all text-paper-2 hover:text-paper cursor-pointer"
         >
           Гарах
         </button>
         <button
           onClick={() => void submit(correctCount)}
-          className="flex-[2] bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 hover:opacity-95 transition-all cursor-pointer"
+          className="flex-[2] bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 hover:bg-white transition-all cursor-pointer"
         >
           Дахин илгээх
         </button>
@@ -253,21 +253,21 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
   const draw = Boolean(result.draw);
 
   const slotCard = (slot: typeof me, label: string) => (
-    <div className={`flex-1 bg-white/5 border rounded-2xl p-4 flex flex-col items-center gap-2 ${
+    <div className={`flex-1 bg-ink-raise border rounded-2xl p-4 flex flex-col items-center gap-2 ${
       finished && slot && ((iWon && slot.isMe) || (!iWon && !draw && slot && !slot.isMe))
-        ? 'border-amber-400/60 shadow-[0_0_20px_rgba(251,191,36,0.15)]'
-        : 'border-white/10'
+        ? 'border-paper'
+        : 'border-ink-line'
     }`}>
       {slot?.avatar ? (
         <img src={slot.avatar} alt="" className="w-12 h-12 rounded-full object-cover" />
       ) : (
-        <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-lg font-black">?</div>
+        <div className="w-12 h-12 rounded-full bg-ink-2 border border-ink-line flex items-center justify-center text-lg font-light font-serif text-paper-2">?</div>
       )}
-      <span className="text-sm font-bold text-slate-200">{slot ? (slot.isMe ? 'Та' : slot.name) : label}</span>
-      <span className="text-2xl font-black font-space">
+      <span className="text-sm font-medium text-paper">{slot ? (slot.isMe ? 'Та' : slot.name) : label}</span>
+      <span className="text-3xl font-light font-serif tracking-tight text-paper">
         {slot?.submitted ? `${slot.score}/${slot.total}` : '—'}
       </span>
-      <span className="text-xs text-slate-500 font-mono inline-flex items-center gap-1">
+      <span className="text-xs text-paper-3 font-mono inline-flex items-center gap-1">
         <Clock className="w-3 h-3" /> {slot?.submitted ? timeLabel(slot.timeMs) : 'хүлээгдэж байна'}
       </span>
     </div>
@@ -279,33 +279,33 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
         {finished ? (
           <>
             <div className={`inline-flex p-4 rounded-2xl mb-2 border ${
-              iWon ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                : draw ? 'bg-teal-500/10 border-teal-500/20 text-teal-400'
-                : 'bg-white/5 border-white/10 text-slate-400'
+              iWon ? 'bg-paper border-paper text-ink'
+                : draw ? 'bg-ink-raise border-ink-line-2 text-paper'
+                : 'bg-ink-raise border-ink-line text-paper-3'
             }`}>
               <Trophy className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl md:text-3xl font-black font-space">
+            <h2 className="text-2xl md:text-3xl font-light font-serif tracking-tight text-paper">
               {iWon ? 'Та яллаа! 🏆' : draw ? 'Тэнцлээ! 🤝' : 'Ялагдлаа 😅'}
             </h2>
             {iWon && (
-              <p className="inline-flex items-center gap-1.5 text-sm font-bold text-teal-300 bg-teal-500/10 border border-teal-500/20 rounded-full px-4 py-1.5">
+              <p className="inline-flex items-center gap-1.5 text-sm font-medium text-ink bg-paper rounded-full px-4 py-1.5">
                 <Snowflake className="w-4 h-4" /> +1 Streak Freeze шагнал авлаа
               </p>
             )}
             {!iWon && !draw && (
-              <p className="text-slate-400 text-sm">Дараагийн тулаанд дахин оролдоорой — ялагч streak freeze авна.</p>
+              <p className="text-paper-2 text-sm">Дараагийн тулаанд дахин оролдоорой — ялагч streak freeze авна.</p>
             )}
           </>
         ) : (
           <>
-            <div className="inline-flex p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-400 mb-2">
+            <div className="inline-flex p-4 bg-ink-raise border border-ink-line rounded-2xl text-paper-2 mb-2">
               <Swords className="w-8 h-8" />
             </div>
-            <h2 className="text-2xl md:text-3xl font-black font-space">Таны оноо бүртгэгдлээ</h2>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">
+            <h2 className="text-2xl md:text-3xl font-light font-serif tracking-tight text-paper">Таны оноо бүртгэгдлээ</h2>
+            <p className="text-paper-2 text-sm leading-relaxed max-w-md mx-auto">
               {them?.name
-                ? <>Өрсөлдөгч <b className="text-amber-300">{them.name}</b> тоглоход үр дүн гарна — тулаан түүний тулаануудын жагсаалтад нэмэгдсэн.</>
+                ? <>Өрсөлдөгч <b className="text-paper font-medium">{them.name}</b> тоглоход үр дүн гарна — тулаан түүний тулаануудын жагсаалтад нэмэгдсэн.</>
                 : <>Найз тань тоглож дуустал үр дүн "хүлээгдэж байна" төлөвт байна. Линкийг хуваалцаад өрсөлдөгчөө урьж дуэлээ дуусгаарай!</>}
             </p>
           </>
@@ -314,28 +314,28 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
 
       <div className="flex gap-3">
         {slotCard(me, 'Та')}
-        <div className="self-center text-lg font-black text-slate-500 font-space">VS</div>
+        <div className="self-center text-lg font-light text-paper-3 font-serif">VS</div>
         {slotCard(them, 'Өрсөлдөгч')}
       </div>
 
       {!finished && submitted && (
         <button
           onClick={share}
-          className="w-full bg-primary text-on-primary font-bold rounded-xl py-3.5 px-6 hover:opacity-95 shadow-[0_4px_20px_rgba(230,184,92,0.32)] transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="w-full bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 hover:bg-white transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           {copied ? <><Check className="w-5 h-5" /> Линк хуулагдлаа</> : <><Share2 className="w-5 h-5" /> Урилгын линк хуваалцах</>}
         </button>
       )}
       {!finished && submitted && (
-        <p className="text-xs text-slate-500 text-center font-mono flex items-center justify-center gap-2">
+        <p className="text-xs text-paper-3 text-center font-mono flex items-center justify-center gap-2">
           {duelLink(duel.code)}
-          <button onClick={share} aria-label="Линк хуулах" className="p-1 hover:text-white cursor-pointer"><Copy className="w-3.5 h-3.5" /></button>
+          <button onClick={share} aria-label="Линк хуулах" className="p-1 hover:text-paper cursor-pointer"><Copy className="w-3.5 h-3.5" /></button>
         </p>
       )}
     </div>,
     <button
       onClick={() => onExit(submitted)}
-      className="flex-1 py-3.5 border border-white/10 hover:bg-white/5 rounded-xl font-bold transition-all text-slate-300 cursor-pointer"
+      className="flex-1 py-3.5 border border-ink-line hover:border-paper/60 hover:bg-ink-raise rounded-xl text-xs font-medium uppercase tracking-[0.15em] transition-all text-paper-2 hover:text-paper cursor-pointer"
     >
       Хаах
     </button>,

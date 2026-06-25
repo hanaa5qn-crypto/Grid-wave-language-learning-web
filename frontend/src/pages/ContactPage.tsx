@@ -48,7 +48,7 @@ export default function ContactPage() {
 
       <hr />
 
-      <p className="text-xs text-slate-500">
+      <p className="text-xs text-paper-3">
         <strong>Khansumber Altankhuyag</strong> — Vivid Lingua платформын эзэмшигч (хувь хүн).
       </p>
     </LegalLayout>

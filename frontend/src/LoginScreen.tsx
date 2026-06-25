@@ -159,35 +159,35 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
   const isSignup = mode === 'signup';
 
   return (
-    <div className="bg-background text-white font-sans min-h-screen flex flex-col justify-center items-center p-4 relative overflow-hidden w-full select-none">
-      {/* Glow ambient background effects */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-amber-900/10 rounded-full blur-[140px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-teal-900/10 rounded-full blur-[140px] pointer-events-none"></div>
+    <div className="bg-ink text-paper font-sans min-h-screen flex flex-col justify-center items-center p-4 relative overflow-hidden w-full select-none">
+      {/* Ambient depth — single faint monochrome glow */}
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-paper/[0.03] rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-paper/[0.03] rounded-full blur-[140px] pointer-events-none"></div>
 
       <div className="w-full max-w-5xl relative z-10 my-8">
         {onBack && (
           <button
             type="button"
             onClick={onBack}
-            className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="mb-6 inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.18em] text-paper-2 hover:text-paper transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" /> Нүүр хуудас
           </button>
         )}
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-black font-space tracking-tight mb-2 flex items-center justify-center gap-3">
+          <h1 className="text-4xl md:text-5xl font-serif font-light tracking-tight mb-3 flex items-center justify-center gap-3">
             <img src="/favicon.svg" alt="" className="w-10 h-10 md:w-12 md:h-12" />
-            <span><span className="text-primary">Vivid</span> Lingua</span>
+            <span><span className="text-paper">Vivid</span> <span className="text-paper-2">Lingua</span></span>
           </h1>
-          <p className="text-slate-400 text-sm md:text-base max-w-md mx-auto font-medium">
+          <p className="text-paper-2 text-sm md:text-base max-w-md mx-auto leading-relaxed">
             Герман хэл сурах ухаалаг платформ. Бүртгүүлж нэвтэрснээр таны явц хадгалагдаж, аль ч төхөөрөмжөөс үргэлжлүүлэн суралцах боломжтой.
           </p>
         </div>
 
         {inviteContext && (
-          <div className="max-w-2xl mx-auto mb-6 text-amber-200 text-sm font-bold bg-amber-950/40 p-4 rounded-xl border border-amber-500/40 flex items-start gap-3 animate-fade-in">
-            <Swords className="w-5 h-5 flex-shrink-0 mt-0.5 text-amber-300" />
+          <div className="max-w-2xl mx-auto mb-6 text-paper-2 text-sm bg-ink-raise p-4 rounded-xl border border-ink-line flex items-start gap-3 animate-fade-in">
+            <Swords className="w-5 h-5 flex-shrink-0 mt-0.5 text-paper" />
             <span>
               {inviteContext.kind === 'duel'
                 ? `🎮 ${inviteContext.challengerName || 'Найз тань'} таныг герман хэлний тулаанд урьж байна — бүртгүүлээд яг ижил 10 асуултад хариулж өрсөлдөөрэй!`
@@ -197,10 +197,10 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
         )}
 
         {!isFirebaseConfigured && (
-          <div className="max-w-2xl mx-auto mb-6 text-amber-300 text-xs font-bold bg-amber-950/40 p-4 rounded-xl border border-amber-500/30 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div className="max-w-2xl mx-auto mb-6 text-paper-2 text-xs bg-ink-raise p-4 rounded-xl border border-ink-line flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-paper" />
             <span>
-              Firebase тохиргоо хараахан хийгдээгүй байна. <code className="text-teal-400 font-mono bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20">frontend/src/firebaseConfig.ts</code> файлд
+              Firebase тохиргоо хараахан хийгдээгүй байна. <code className="text-paper font-mono bg-ink-2 px-1.5 py-0.5 rounded border border-ink-line">frontend/src/firebaseConfig.ts</code> файлд
               Firebase project-ийнхээ тохиргоог оруулсны дараа бүртгэл, нэвтрэлт идэвхжинэ.
             </span>
           </div>
@@ -208,50 +208,50 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           {/* Left Column: value props */}
-          <div className="lg:col-span-6 bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow flex flex-col justify-center">
-            <h2 className="text-xl font-extrabold mb-6 flex items-center gap-2 text-amber-300">
-              <Sparkles className="w-5 h-5 text-amber-400" /> Яагаад бүртгүүлэх вэ?
+          <div className="lg:col-span-6 bg-ink-raise border border-ink-line rounded-2xl p-6 md:p-8 flex flex-col justify-center">
+            <h2 className="text-2xl font-serif font-light tracking-tight mb-8 flex items-center gap-3 text-paper">
+              <Sparkles className="w-5 h-5 text-paper-2" /> Яагаад бүртгүүлэх вэ?
             </h2>
-            <ul className="space-y-5">
+            <ul className="space-y-7">
               <li className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
-                  <Target className="w-4.5 h-4.5 text-amber-300" />
+                <div className="w-9 h-9 rounded-xl bg-ink-raise border border-ink-line flex items-center justify-center flex-shrink-0">
+                  <Target className="w-4.5 h-4.5 text-paper-2" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm">Таны явц хадгалагдана</h3>
-                  <p className="text-slate-400 text-xs mt-0.5">Streak, дуусгасан хичээл, ахиц бүгд автоматаар хадгалагдана.</p>
+                  <h3 className="font-medium text-paper text-sm">Таны явц хадгалагдана</h3>
+                  <p className="text-paper-2 text-xs mt-1 leading-relaxed">Streak, дуусгасан хичээл, ахиц бүгд автоматаар хадгалагдана.</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
-                  <GraduationCap className="w-4.5 h-4.5 text-teal-300" />
+                <div className="w-9 h-9 rounded-xl bg-ink-raise border border-ink-line flex items-center justify-center flex-shrink-0">
+                  <GraduationCap className="w-4.5 h-4.5 text-paper-2" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm">Аль ч төхөөрөмжөөс</h3>
-                  <p className="text-slate-400 text-xs mt-0.5">Утас, зөөврийн компьютер — хаанаас ч нэг бүртгэлээр үргэлжлүүлнэ.</p>
+                  <h3 className="font-medium text-paper text-sm">Аль ч төхөөрөмжөөс</h3>
+                  <p className="text-paper-2 text-xs mt-1 leading-relaxed">Утас, зөөврийн компьютер — хаанаас ч нэг бүртгэлээр үргэлжлүүлнэ.</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center flex-shrink-0">
-                  <Headphones className="w-4.5 h-4.5 text-teal-300" />
+                <div className="w-9 h-9 rounded-xl bg-ink-raise border border-ink-line flex items-center justify-center flex-shrink-0">
+                  <Headphones className="w-4.5 h-4.5 text-paper-2" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-sm">Хувийн зөвлөмж</h3>
-                  <p className="text-slate-400 text-xs mt-0.5">Таны зорилгод тохирсон унших, сонсох, ярих, бичих дасгалууд.</p>
+                  <h3 className="font-medium text-paper text-sm">Хувийн зөвлөмж</h3>
+                  <p className="text-paper-2 text-xs mt-1 leading-relaxed">Таны зорилгод тохирсон унших, сонсох, ярих, бичих дасгалууд.</p>
                 </div>
               </li>
             </ul>
           </div>
 
           {/* Right Column: auth form */}
-          <div className="lg:col-span-6 bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 backdrop-blur-md block-shadow flex flex-col justify-between">
-            {/* Mode toggle */}
-            <div className="flex bg-slate-900/60 border border-white/10 rounded-xl p-1 mb-6">
+          <div className="lg:col-span-6 bg-ink-raise border border-ink-line rounded-2xl p-6 md:p-8 flex flex-col justify-between">
+            {/* Mode toggle — understated underline tabs */}
+            <div className="flex gap-8 border-b border-ink-line mb-7">
               <button
                 type="button"
                 onClick={() => switchMode('login')}
-                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                  !isSignup ? 'bg-primary text-on-primary' : 'text-slate-400 hover:text-white'
+                className={`relative pb-3 -mb-px text-[11px] font-medium uppercase tracking-[0.18em] transition-colors border-b ${
+                  !isSignup ? 'text-paper border-paper' : 'text-paper-2 border-transparent hover:text-paper'
                 }`}
               >
                 Нэвтрэх
@@ -259,8 +259,8 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
               <button
                 type="button"
                 onClick={() => switchMode('signup')}
-                className={`flex-1 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                  isSignup ? 'bg-primary text-on-primary' : 'text-slate-400 hover:text-white'
+                className={`relative pb-3 -mb-px text-[11px] font-medium uppercase tracking-[0.18em] transition-colors border-b ${
+                  isSignup ? 'text-paper border-paper' : 'text-paper-2 border-transparent hover:text-paper'
                 }`}
               >
                 Бүртгүүлэх
@@ -269,31 +269,31 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Имэйл хаяг</label>
+                <label className="block text-[11px] font-medium text-paper-3 uppercase tracking-[0.18em] mb-2">Имэйл хаяг</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-paper-3 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     autoComplete="email"
                     placeholder="нэр@gmail.com"
                     value={email}
                     onChange={(e) => { setEmail(e.target.value); setError(''); setInfo(''); }}
-                    className="w-full bg-slate-900 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-colors text-sm font-semibold"
+                    className="w-full bg-ink border border-ink-line rounded-xl pl-10 pr-4 py-3 text-paper placeholder:text-paper-3 focus:outline-none focus:border-paper/60 transition-colors text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Нууц үг</label>
+                <label className="block text-[11px] font-medium text-paper-3 uppercase tracking-[0.18em] mb-2">Нууц үг</label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-paper-3 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="password"
                     autoComplete={isSignup ? 'new-password' : 'current-password'}
                     placeholder="Дор хаяж 6 тэмдэгт"
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); setError(''); setInfo(''); }}
-                    className="w-full bg-slate-900 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-colors text-sm font-semibold"
+                    className="w-full bg-ink border border-ink-line rounded-xl pl-10 pr-4 py-3 text-paper placeholder:text-paper-3 focus:outline-none focus:border-paper/60 transition-colors text-sm"
                   />
                 </div>
                 {!isSignup && (
@@ -302,7 +302,7 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
                       type="button"
                       onClick={handleForgotPassword}
                       disabled={resetLoading}
-                      className="text-xs font-bold text-amber-300 hover:text-amber-200 disabled:opacity-60 flex items-center gap-1.5"
+                      className="text-[11px] font-medium uppercase tracking-[0.14em] text-paper-2 hover:text-paper disabled:opacity-40 flex items-center gap-1.5 cursor-pointer"
                     >
                       {resetLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                       Нууц үгээ мартсан уу?
@@ -312,28 +312,28 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
               </div>
 
               {isSignup && (
-                <div className="space-y-4 pt-4 border-t border-white/5 animate-fade-in">
+                <div className="space-y-4 pt-5 border-t border-ink-line animate-fade-in">
                   <div>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Таны нэр</label>
+                    <label className="block text-[11px] font-medium text-paper-3 uppercase tracking-[0.18em] mb-2">Таны нэр</label>
                     <div className="relative">
-                      <UserIcon className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <UserIcon className="w-4 h-4 text-paper-3 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
                         placeholder="Бат, Номин..."
                         value={name}
                         onChange={(e) => { setName(e.target.value); setError(''); }}
-                        className="w-full bg-slate-900 border border-white/15 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-colors text-sm font-semibold"
+                        className="w-full bg-ink border border-ink-line rounded-xl pl-10 pr-4 py-3 text-paper placeholder:text-paper-3 focus:outline-none focus:border-paper/60 transition-colors text-sm"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Зорилтот түвшин</label>
+                      <label className="block text-[11px] font-medium text-paper-3 uppercase tracking-[0.18em] mb-2">Зорилтот түвшин</label>
                       <select
                         value={level}
                         onChange={(e) => setLevel(e.target.value)}
-                        className="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm font-semibold cursor-pointer"
+                        className="w-full bg-ink border border-ink-line rounded-xl px-3 py-3 text-paper focus:outline-none focus:border-paper/60 transition-colors text-sm cursor-pointer"
                       >
                         <option value="A1">A1 (Анхан)</option>
                         <option value="A2">A2 (Суурь)</option>
@@ -342,11 +342,11 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Суралцах чиглэл</label>
+                      <label className="block text-[11px] font-medium text-paper-3 uppercase tracking-[0.18em] mb-2">Суралцах чиглэл</label>
                       <select
                         value={goal}
                         onChange={(e) => setGoal(e.target.value)}
-                        className="w-full bg-slate-900 border border-white/15 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm font-semibold cursor-pointer"
+                        className="w-full bg-ink border border-ink-line rounded-xl px-3 py-3 text-paper focus:outline-none focus:border-paper/60 transition-colors text-sm cursor-pointer"
                       >
                         <option value="Унших / Сургууль орон">Их сургууль / Шалгалт</option>
                         <option value="Ажил / Мэргэжил">Ажил / Мэргэжил</option>
@@ -359,15 +359,15 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
               )}
 
               {error && (
-                <div className="text-red-400 text-xs font-bold bg-red-950/40 p-3 rounded-lg border border-red-500/30 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <div className="text-paper-2 text-xs bg-ink border border-ink-line p-3 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-paper" />
                   <span className="min-w-0 break-words">{error}</span>
                 </div>
               )}
 
               {info && (
-                <div className="text-teal-300 text-xs font-bold bg-teal-950/40 p-3 rounded-lg border border-teal-500/30 flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <div className="text-paper-2 text-xs bg-ink border border-ink-line p-3 rounded-lg flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-paper" />
                   {info}
                 </div>
               )}
@@ -375,7 +375,7 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-primary hover:bg-surface-tint disabled:opacity-60 disabled:cursor-not-allowed text-on-primary font-bold py-3.5 px-6 rounded-xl border border-primary/30 block-shadow transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-99 mt-2"
+                className="w-full bg-paper hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed text-ink text-xs font-medium uppercase tracking-[0.15em] py-3.5 px-6 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 mt-2"
               >
                 {submitting ? (
                   <>
@@ -390,12 +390,12 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
                 )}
               </button>
 
-              <p className="text-center text-xs text-slate-500 pt-1">
+              <p className="text-center text-xs text-paper-3 pt-1">
                 {isSignup ? 'Аль хэдийн бүртгэлтэй юу? ' : 'Шинэ хэрэглэгч үү? '}
                 <button
                   type="button"
                   onClick={() => switchMode(isSignup ? 'login' : 'signup')}
-                  className="text-amber-300 font-bold hover:text-amber-200"
+                  className="text-paper font-medium hover:text-paper-2 cursor-pointer"
                 >
                   {isSignup ? 'Нэвтрэх' : 'Бүртгүүлэх'}
                 </button>
@@ -404,14 +404,14 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
               {onGuest && (
                 <div className="pt-3">
                   <div className="flex items-center gap-3 pb-3">
-                    <span className="h-px flex-1 bg-slate-600/40" />
-                    <span className="text-[11px] uppercase tracking-wider text-slate-500">эсвэл</span>
-                    <span className="h-px flex-1 bg-slate-600/40" />
+                    <span className="h-px flex-1 bg-ink-line" />
+                    <span className="text-[11px] uppercase tracking-wider text-paper-3">эсвэл</span>
+                    <span className="h-px flex-1 bg-ink-line" />
                   </div>
                   <button
                     type="button"
                     onClick={onGuest}
-                    className="w-full bg-transparent hover:bg-surface-container text-on-surface-variant hover:text-on-surface font-semibold py-3 px-6 rounded-xl border border-surface-variant transition-colors cursor-pointer"
+                    className="w-full bg-transparent hover:bg-ink-raise text-paper-2 hover:text-paper font-semibold py-3 px-6 rounded-xl border border-ink-line hover:border-ink-line-2 transition-colors cursor-pointer"
                   >
                     Бүртгэлгүй туршиж үзэх · Try without account
                   </button>
