@@ -199,7 +199,7 @@ export default function HeroPage({ onLogin, onSignup, onGuest }: HeroPageProps) 
       {/* ── Hero fold (the showcase) ───────────────────────────────────── */}
       <header className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 text-center md:px-16">
         <motion.p {...rise(0.15)} className="mb-7 text-[11px] font-medium uppercase tracking-[0.35em] text-[#8e9192]">
-          German&nbsp;·&nbsp;English&nbsp;·&nbsp;Built for Mongolia
+          German&nbsp;·&nbsp;English&nbsp;·&nbsp;Built for Mongolians
         </motion.p>
 
         <motion.h1
@@ -311,7 +311,7 @@ export default function HeroPage({ onLogin, onSignup, onGuest }: HeroPageProps) 
             </p>
           </StaggerItem>
           <StaggerItem className="vl-glass rounded-xl border border-white/10 p-8 transition-colors hover:bg-white/[0.04]">
-            <div className="mb-4 text-4xl" aria-hidden="true">🇬🇧</div>
+            <div className="mb-4 text-4xl" aria-hidden="true">🇺🇸</div>
             <h3 className="mb-2 text-2xl text-white" style={serif}>English</h3>
             <p className="text-[#c4c7c8]">
               A dedicated IELTS and SAT track — full practice tests, targeted vocabulary,
@@ -352,9 +352,7 @@ export default function HeroPage({ onLogin, onSignup, onGuest }: HeroPageProps) 
         <Reveal amount={0.4}>
           <GraduationCap className="mx-auto mb-8 h-8 w-8 text-white/70" strokeWidth={1.25} />
           <blockquote className="text-2xl leading-snug text-[#e5e2e1] md:text-[34px]" style={serif}>
-            “Монгол хэлтэй суралцагчдад зориулсан платформ байхгүй байсан — бүх зүйл англиар
-            дамждаг байлаа. Тэр цоорхойг бөглөхийн тулд Vivid Lingua-г бүтээсэн. Дуусаагүй
-            боловч үнэнч.”
+            “bi baga baihdaa iim l resource heregtei bailaa. tiim uchraas vivid linguag buteesen”
           </blockquote>
           <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.25em] text-[#8e9192]">
             Khansumber Altankhuyag — Founder, Vivid Lingua
