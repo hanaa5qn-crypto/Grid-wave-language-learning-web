@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { getAuthInstance, isFirebaseConfigured } from './firebase';
+import type { UserProfile } from './profiles';
 
 export interface MyPromo {
   code: string;
@@ -53,7 +54,13 @@ async function promoFetch<T>(path: string, init?: RequestInit): Promise<T> {
 // --- Сурагч ------------------------------------------------------------------
 
 // Шинэ данс бүрт 3 өдрийн үнэгүй туршилт (idempotent — давхар олгохгүй).
-export function ensureSignupTrial(): Promise<{ granted: boolean; plan?: string; trialDays?: number }> {
+// `billing` буцаавал клиент шууд merge хийж, туршилтыг reload-гүйгээр нээнэ.
+export function ensureSignupTrial(): Promise<{
+  granted: boolean;
+  plan?: string;
+  trialDays?: number;
+  billing?: NonNullable<UserProfile['billing']>;
+}> {
   return promoFetch('/api/account/ensure-trial', { method: 'POST' });
 }
 

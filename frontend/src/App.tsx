@@ -48,8 +48,8 @@ import {
 import { buildInflectedLookup } from './inflect';
 import {
   PLANS, PLAN_ORDER, PlanId, effectivePlan, isFounder as isFounderProfile,
-  canUseAi, canAccessAllContent, isExamQuestionLocked, isLessonLocked,
-  FREE_QUESTIONS_PER_SECTION, applyPromoDiscount, type BillingInterval,
+  canUseAi, canAccessAllContent, canInteract, isExamQuestionLocked, isLessonLocked,
+  isFreeUnitLocked, FREE_QUESTIONS_PER_SECTION, applyPromoDiscount, type BillingInterval,
 } from './plans';
 import OnboardingWizard from './OnboardingWizard';
 import PlacementTest from './PlacementTest';
@@ -65,6 +65,7 @@ import QuizNav from './components/QuizNav';
 import { BillingCard } from './components/BillingCard';
 import { ProfileTab } from './tabs/ProfileTab';
 import { audioBlobToWavBase64, audioBlobToWavBlob } from './utils/audioUtils';
+import { playTts, pauseTts, resumeTts, stopTts } from './utils/tts';
 import { formatMnt } from './utils/paymentUtils';
 
 // Union of all exam item types — they all share `topic`, `title`, `titleMn`.
@@ -512,15 +513,41 @@ function LearnerApp() {
     return lockedItemIds(levelUnits, new Set(completedActivityIds));
   }, [currentUser?.targetLevel, completedActivityIds]);
 
+  // Plan lock for the "small taste" free tier: only A1 unit 1 is open, so every
+  // A1 activity in a later unit is paywalled (A2–C2 is covered by isLessonLocked).
+  // Empty for Pro/Max/founder. Independent of targetLevel/progression — this is
+  // the plan gate, layered on top of the progression lock above.
+  const freeLockedActivityIds = useMemo(() => {
+    const empty = { read: new Set<number>(), listen: new Set<number>(), speak: new Set<number>(), write: new Set<number>() };
+    if (canAccessAllContent(currentUser)) return empty;
+    const a1Units = buildUnitsForLevel('A1' as Level);
+    const locked = { read: new Set<number>(), listen: new Set<number>(), speak: new Set<number>(), write: new Set<number>() };
+    a1Units.forEach((unit, idx) => {
+      if (!isFreeUnitLocked(currentUser, 'A1', idx)) return;
+      unit.activities.forEach((a) => locked[a.tab].add(a.itemId));
+    });
+    return locked;
+    // Key on the derived access state too: a trial/paid period lapses by the
+    // wall clock (currentPeriodEnd < now) with no billing-field change, so this
+    // ensures the A1 lock recomputes on the next render after the trial ends.
+  }, [canAccessAllContent(currentUser), currentUser?.billing?.plan, currentUser?.billing?.status, currentUser?.billing?.currentPeriodEnd, currentUser?.email]);
+
+  // Authoritative lesson lock: paywalled by level (A2+) OR by the free unit-1
+  // taste (later A1 units). Distinct from the progression lock (complete the
+  // previous unit), which only applies at the learner's target level.
+  const lessonPlanLocked = (level: string, itemId: number, tab: 'read' | 'listen' | 'speak' | 'write'): boolean =>
+    isLessonLocked(currentUser, level) || freeLockedActivityIds[tab].has(itemId);
+
   const dueCount = useMemo(() => {
     return countDueWords(TRAINER_WORDS, currentUser?.srsByWord ?? {});
   }, [currentUser?.srsByWord, TRAINER_WORDS]);
 
   // Audio player variables for Listening (Screen 2)
   const [audioSpeed, setAudioSpeed] = useState<'0.8' | '1.0'>('1.0');
-  // Real TTS playback state for the listening player (pause / resume / replay)
+  // Real TTS playback state for the listening player (pause / resume / replay).
+  // The actual audio handles live in ./utils/tts (a shared neural-TTS player);
+  // this state only mirrors idle/playing/paused for the player UI.
   const [listenState, setListenState] = useState<'idle' | 'playing' | 'paused'>('idle');
-  const listenUtterRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Draggable-type Word Chips for Listening (Screen 2)
   const [listeningPool, setListeningPool] = useState<string[]>([]);
@@ -768,6 +795,10 @@ function LearnerApp() {
   } | null>(null);
 
 
+  // Guest interaction prompt: visitors may browse the free-tier surface but any
+  // action (answering, audio, placement, drills) opens this sign-up nudge.
+  const [guestPromptOpen, setGuestPromptOpen] = useState(false);
+
   // CEFR level-based exams (A1–C2) — test tab
   const [examLevelSel, setExamLevelSel] = useState<ExamLevel | null>(null);
   // Бүрэн TestDaF загвар шалгалтын симуляци (бүрэн дэлгэц overlay).
@@ -878,9 +909,12 @@ function LearnerApp() {
         localStorage.removeItem('pendingPromoCode');
       } catch { return; }
 
-      // 1. Шинэ бүртгэлд 3 өдрийн Pro туршилтын эрх олгох (idempotent)
+      // 1. Шинэ бүртгэлд 3 өдрийн Pro туршилтын эрх олгох (idempotent). Profile
+      // нэг удаагийн getDoc-оор уншигддаг тул олгосон billing-ийг шууд merge
+      // хийж, туршилтыг reload-гүйгээр идэвхжүүлнэ.
       try {
-        await ensureSignupTrial();
+        const trial = await ensureSignupTrial();
+        if (trial?.granted && trial.billing) applyBillingUpdate(trial.billing);
       } catch (err) {
         console.error('ensureSignupTrial error:', err);
       }
@@ -931,10 +965,14 @@ function LearnerApp() {
 
   // Reset the per-test sub-state when switching section or test. Also clears the
   // shared speaking judge so a report never carries over to a different prompt.
+  // stopTts() so a listening clip never keeps playing after the learner moves
+  // on — they're often done answering before the audio finishes.
   const selectExamSection = (sec: 'reading' | 'listening' | 'writing' | 'speaking') => {
+    stopTts();
     setExamSec(sec); setExamItemIdx(0); setExamItemAns(null); setExamItemReveal(false); setExamItemWrite(''); resetSpeakingJudge(); resetWritingFeedback();
   };
   const selectExamItem = (idx: number) => {
+    stopTts();
     setExamItemIdx(idx); setExamItemAns(null); setExamItemReveal(false); setExamItemWrite(''); resetSpeakingJudge(); resetWritingFeedback();
   };
   const [translationError, setTranslationError] = useState<string | null>(null);
@@ -1042,60 +1080,23 @@ function LearnerApp() {
     };
   }, [recordedAudioUrl]);
 
-  // Text-To-Speech Play helper (German voice standard audio synthesis)
+  // Text-To-Speech Play helper (German neural voice, robotic-fallback inside).
+  // One-shot: used for word glosses and the exam listening/speaking "play"
+  // buttons. Routes through the shared neural player so it sounds human.
   const speakGerman = (text: string, speedMultiplier = 1.0) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'de-DE';
-      utterance.rate = speedMultiplier;
-      window.speechSynthesis.speak(utterance);
-    } else {
-      alert('Таны төхөөрөмж дээр дуут уншигч (TTS) дэмжигдээгүй байна.');
-    }
+    playTts(text, { lang: 'de-DE', rate: speedMultiplier });
   };
 
-  // --- Listening player controls (pause / resume / replay over Web Speech TTS) ---
-  // TTS has no seekable timeline, so "replay" restarts from the top; pause/resume
-  // map to the native speechSynthesis pause()/resume().
+  // --- Listening player controls (pause / resume / replay) ---
+  // These drive the listen-tab player UI via setListenState. The neural path
+  // uses a real <audio> element (so pause/resume keep position); the fallback
+  // maps to speechSynthesis pause()/resume() (replay-from-top there).
   const playListening = (text: string, rate: number) => {
-    if (!('speechSynthesis' in window)) {
-      alert('Таны төхөөрөмж дээр дуут уншигч (TTS) дэмжигдээгүй байна.');
-      return;
-    }
-    // Detach the previous utterance's handlers BEFORE cancelling — cancel() fires
-    // its onend, which would otherwise clobber the new 'playing' state to 'idle'.
-    if (listenUtterRef.current) {
-      listenUtterRef.current.onend = null;
-      listenUtterRef.current.onerror = null;
-    }
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'de-DE';
-    u.rate = rate;
-    u.onend = () => setListenState('idle');
-    u.onerror = () => setListenState('idle');
-    listenUtterRef.current = u;
-    setListenState('playing');
-    window.speechSynthesis.speak(u);
+    playTts(text, { lang: 'de-DE', rate, onState: setListenState });
   };
-  const pauseListening = () => {
-    if ('speechSynthesis' in window) window.speechSynthesis.pause();
-    setListenState('paused');
-  };
-  const resumeListening = () => {
-    if ('speechSynthesis' in window) window.speechSynthesis.resume();
-    setListenState('playing');
-  };
-  const stopListening = () => {
-    if (listenUtterRef.current) {
-      listenUtterRef.current.onend = null;
-      listenUtterRef.current.onerror = null;
-    }
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    listenUtterRef.current = null;
-    setListenState('idle');
-  };
+  const pauseListening = () => pauseTts();
+  const resumeListening = () => resumeTts();
+  const stopListening = () => stopTts();
 
   // Fast lookup built once: lowercased German headword -> dictionary entry.
   // Powers the library vocabulary tooltips so every passage gets the same kind
@@ -1150,13 +1151,14 @@ function LearnerApp() {
   useEffect(() => {
     stopListening();
   }, [libListenId]);
-  useEffect(() => () => { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); }, []);
+  useEffect(() => () => stopTts(), []);
 
 
   // Evaluation trigger: Speaking (TEXT path) — used by the type-to-test box and
   // as a fallback when real audio recording isn't available.
   const evaluateSpeechText = async (text: string, target: string = speakTargetRef.current) => {
     if (!text.trim()) return;
+    if (!requireAccount()) return; // visitors can't submit a speaking answer
     setSpeakingLoading(true);
     try {
       const response = await fetch('/api/evaluate-speaking', {
@@ -1297,6 +1299,7 @@ function LearnerApp() {
   // Toggle Microphone recording (real-audio voice-AI pipeline). `target` is the
   // German model sentence the AI judge grades the recording against.
   const toggleMic = (target: string = speakTargetRef.current) => {
+    if (!isRecording && !requireAccount()) return; // visitors can't record/submit
     if (isRecording) {
       stopAudioRecording();
     } else {
@@ -1331,6 +1334,7 @@ function LearnerApp() {
     ctx: { prompt: string; points: string[]; modelAnswer: string; level: string },
   ) => {
     if (!text.trim()) return;
+    if (!requireAccount()) return; // visitors can't submit a writing answer
     setWriteFeedbackLoading(true);
     setWriteFeedbackText(text);
     setWriteFeedback(null);
@@ -1367,6 +1371,7 @@ function LearnerApp() {
 
   // Vocabulary list card selections
   const handleVocabAction = (knows: boolean) => {
+    if (!requireAccount()) return;
     setVocabFlipped(false);
     if (vocabList.length === 0) return;
     const word = vocabList[currentVocabIndex];
@@ -1528,9 +1533,21 @@ function LearnerApp() {
   // signup screen.
   const exitGuestToSignup = () => {
     if (!isTest) track('signup_click');
+    setGuestPromptOpen(false);
     currentUserRef.current = null;
     setCurrentUser(null);
     setShowAuth(true);
+  };
+
+  // Gate every interactive action behind a real account: a guest can view the
+  // free-tier surface but cannot interact with it. Returns true if the caller
+  // may proceed; otherwise opens the sign-up nudge and returns false.
+  const requireAccount = (): boolean => {
+    if (!canInteract(currentUser)) {
+      setGuestPromptOpen(true);
+      return false;
+    }
+    return true;
   };
 
   const logoutUser = () => {
@@ -2014,7 +2031,7 @@ function LearnerApp() {
         {/* Actions */}
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => speakGerman(target)}
+            onClick={() => { if (!requireAccount()) return; speakGerman(target); }}
             className="px-4 py-2 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold text-paper hover:bg-ink-raise transition-colors font-serif flex items-center gap-2 block-shadow cursor-pointer"
           >
             <Volume2 className="w-4 h-4" /> Загвар дуудлага сонсох
@@ -2288,6 +2305,35 @@ function LearnerApp() {
             >
               Бүртгүүлэх
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Зочин интеракц хийх гэж оролдоход гарах бүртгүүлэх цонх */}
+      {guestPromptOpen && (
+        <div className="fixed inset-0 z-[140] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 animate-fade-in"
+          onClick={() => setGuestPromptOpen(false)}>
+          <div className="bg-ink-raise border border-ink-line/30 rounded-2xl p-6 max-w-sm w-full space-y-4 animate-scale-up text-paper shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center gap-3">
+              <span className="w-14 h-14 rounded-2xl bg-ink-raise border border-ink-line flex items-center justify-center text-paper-2">
+                <Lock className="w-7 h-7" />
+              </span>
+              <h3 className="text-lg font-serif font-light text-paper">Бүртгүүлж үнэгүй эхлээрэй</h3>
+              <p className="text-sm text-paper-2 font-medium">
+                Зочин горимд та зөвхөн үзэж болно. Дасгал, шалгалт, түвшин тогтоох тестийг ажиллуулахын тулд үнэгүй бүртгүүлнэ үү — бүртгүүлэхэд 3 өдрийн бүх эрх нээгдэнэ.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button onClick={exitGuestToSignup}
+                className="w-full px-4 py-2.5 rounded-xl bg-paper text-ink text-sm font-bold cursor-pointer hover:bg-white transition-colors">
+                Бүртгүүлэх
+              </button>
+              <button onClick={() => setGuestPromptOpen(false)}
+                className="w-full px-4 py-2.5 rounded-xl bg-ink-raise text-paper-2 border border-ink-line text-sm font-bold cursor-pointer hover:bg-ink-2 transition-colors">
+                Үзсээр байх
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -3027,7 +3073,7 @@ function LearnerApp() {
                       </div>
                       <div className="nested-scroll flex flex-col gap-2 max-h-[55vh] max-lg:h-[45vh] max-lg:max-h-[45vh] pr-1">
                         {filtered.map(r => {
-                          const isLocked = (lockedActivityIds.read.has(r.id) && r.level === currentUser?.targetLevel) || isLessonLocked(currentUser, r.level);
+                          const isLocked = (lockedActivityIds.read.has(r.id) && r.level === currentUser?.targetLevel) || lessonPlanLocked(r.level, r.id, 'read');
                           return (
                             <button key={r.id} onClick={() => openReadItem(r)}
                               className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libReadId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
@@ -3047,7 +3093,7 @@ function LearnerApp() {
 
                     {/* Reader */}
                     <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
-                      {isLessonLocked(currentUser, item.level) ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', item.level + ' түвшний хичээлүүд үнэгүй эрхэд хаалттай. Үнэгүй эрхээр A1 түвшний бүх хичээл, үгийн сан нээлттэй.', 'pro') : lockedActivityIds.read.has(item.id) && item.level === currentUser?.targetLevel ? (
+                      {lessonPlanLocked(item.level, item.id, 'read') ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', 'Үнэгүй эрхээр зөвхөн A1 түвшний эхний хичээл болон үгийн сан нээлттэй. Бусад хичээлүүд Pro багцад нээгдэнэ.', 'pro') : lockedActivityIds.read.has(item.id) && item.level === currentUser?.targetLevel ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
                           <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
                             <Shield className="w-8 h-8" />
@@ -3103,6 +3149,7 @@ function LearnerApp() {
                               selectedAnswer={qAnswer}
                               feedbackText={q.explanation}
                               onSelect={(index) => {
+                                if (!requireAccount()) return;
                                 const nextAnswers = { ...libReadAnswers, [qIdx]: index };
                                 setLibReadAnswers(nextAnswers);
                                 const actId = activityKey('library:read', item.id);
@@ -3210,7 +3257,7 @@ function LearnerApp() {
                       </div>
                       <div className="nested-scroll flex flex-col gap-2 max-h-[55vh] max-lg:h-[45vh] max-lg:max-h-[45vh] pr-1">
                         {filtered.map(r => {
-                          const isLocked = (lockedActivityIds.listen.has(r.id) && r.level === currentUser?.targetLevel) || isLessonLocked(currentUser, r.level);
+                          const isLocked = (lockedActivityIds.listen.has(r.id) && r.level === currentUser?.targetLevel) || lessonPlanLocked(r.level, r.id, 'listen');
                           return (
                             <button key={r.id} onClick={() => openListenItem(r)}
                               className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libListenId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
@@ -3229,7 +3276,7 @@ function LearnerApp() {
                     </aside>
 
                     <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
-                      {isLessonLocked(currentUser, item.level) ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', item.level + ' түвшний хичээлүүд үнэгүй эрхэд хаалттай. Үнэгүй эрхээр A1 түвшний бүх хичээл, үгийн сан нээлттэй.', 'pro') : lockedActivityIds.listen.has(item.id) && item.level === currentUser?.targetLevel ? (
+                      {lessonPlanLocked(item.level, item.id, 'listen') ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', 'Үнэгүй эрхээр зөвхөн A1 түвшний эхний хичээл болон үгийн сан нээлттэй. Бусад хичээлүүд Pro багцад нээгдэнэ.', 'pro') : lockedActivityIds.listen.has(item.id) && item.level === currentUser?.targetLevel ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
                           <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
                             <Shield className="w-8 h-8" />
@@ -3262,13 +3309,14 @@ function LearnerApp() {
                           <div className="flex flex-col items-center gap-3 py-6 bg-ink-raise border-2 border-ink-line rounded-xl mb-5">
                             <div className="flex items-center gap-4">
                               {/* Replay from start */}
-                              <button onClick={() => playListening(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0)}
+                              <button onClick={() => { if (!requireAccount()) return; playListening(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0); }}
                                 title="Эхнээс дахин тоглуулах"
                                 className="w-11 h-11 rounded-full bg-ink-raise text-paper border-2 border-ink-line flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
                                 <RotateCcw className="w-5 h-5" />
                               </button>
                               {/* Play / Pause / Resume toggle */}
                               <button onClick={() => {
+                                  if (!requireAccount()) return;
                                   if (listenState === 'playing') pauseListening();
                                   else if (listenState === 'paused') resumeListening();
                                   else playListening(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0);
@@ -3316,6 +3364,7 @@ function LearnerApp() {
                               selectedAnswer={qAnswer}
                               feedbackText={q.explanation}
                               onSelect={(index) => {
+                                if (!requireAccount()) return;
                                 const nextAnswers = { ...libListenAnswers, [qIdx]: index };
                                 setLibListenAnswers(nextAnswers);
                                 const actId = activityKey('library:listen', item.id);
@@ -3418,7 +3467,7 @@ function LearnerApp() {
                       </div>
                       <div className="nested-scroll flex flex-col gap-2 max-h-[55vh] max-lg:h-[45vh] max-lg:max-h-[45vh] pr-1">
                         {filtered.map(r => {
-                          const isLocked = (lockedActivityIds.speak.has(r.id) && r.level === currentUser?.targetLevel) || isLessonLocked(currentUser, r.level);
+                          const isLocked = (lockedActivityIds.speak.has(r.id) && r.level === currentUser?.targetLevel) || lessonPlanLocked(r.level, r.id, 'speak');
                           return (
                             <button key={r.id} onClick={() => openSpeakItem(r)}
                               className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libSpeakId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
@@ -3437,7 +3486,7 @@ function LearnerApp() {
                     </aside>
 
                     <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
-                      {isLessonLocked(currentUser, item.level) ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', item.level + ' түвшний хичээлүүд үнэгүй эрхэд хаалттай. Үнэгүй эрхээр A1 түвшний бүх хичээл, үгийн сан нээлттэй.', 'pro') : lockedActivityIds.speak.has(item.id) && item.level === currentUser?.targetLevel ? (
+                      {lessonPlanLocked(item.level, item.id, 'speak') ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', 'Үнэгүй эрхээр зөвхөн A1 түвшний эхний хичээл болон үгийн сан нээлттэй. Бусад хичээлүүд Pro багцад нээгдэнэ.', 'pro') : lockedActivityIds.speak.has(item.id) && item.level === currentUser?.targetLevel ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
                           <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
                             <Shield className="w-8 h-8" />
@@ -3466,7 +3515,7 @@ function LearnerApp() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 mb-5">
-                        <button onClick={() => speakGerman(item.modelAnswer, 1.0)}
+                        <button onClick={() => { if (!requireAccount()) return; speakGerman(item.modelAnswer, 1.0); }}
                           className="flex items-center gap-2 px-4 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform">
                           <Volume2 className="w-4 h-4" /> Загварыг сонсох
                         </button>
@@ -3554,7 +3603,7 @@ function LearnerApp() {
                       </div>
                       <div className="nested-scroll flex flex-col gap-2 max-h-[55vh] max-lg:h-[45vh] max-lg:max-h-[45vh] pr-1">
                         {filtered.map(r => {
-                          const isLocked = (lockedActivityIds.write.has(r.id) && r.level === currentUser?.targetLevel) || isLessonLocked(currentUser, r.level);
+                          const isLocked = (lockedActivityIds.write.has(r.id) && r.level === currentUser?.targetLevel) || lessonPlanLocked(r.level, r.id, 'write');
                           return (
                             <button key={r.id} onClick={() => openWriteItem(r)}
                               className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libWriteId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
@@ -3573,7 +3622,7 @@ function LearnerApp() {
                     </aside>
 
                     <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
-                      {isLessonLocked(currentUser, item.level) ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', item.level + ' түвшний хичээлүүд үнэгүй эрхэд хаалттай. Үнэгүй эрхээр A1 түвшний бүх хичээл, үгийн сан нээлттэй.', 'pro') : lockedActivityIds.write.has(item.id) && item.level === currentUser?.targetLevel ? (
+                      {lessonPlanLocked(item.level, item.id, 'write') ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', 'Үнэгүй эрхээр зөвхөн A1 түвшний эхний хичээл болон үгийн сан нээлттэй. Бусад хичээлүүд Pro багцад нээгдэнэ.', 'pro') : lockedActivityIds.write.has(item.id) && item.level === currentUser?.targetLevel ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
                           <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
                             <Shield className="w-8 h-8" />
@@ -4382,7 +4431,7 @@ function LearnerApp() {
               {examLevelSel === null && (
                 <>
                   {/* Түвшин тогтоох үнэлгээний тест — 4 ур чадвар, CEFR түвшин */}
-                  <button onClick={() => setPlacementOpen(true)}
+                  <button onClick={() => { if (!requireAccount()) return; setPlacementOpen(true); }}
                     className="w-full text-left mb-4 bg-gradient-to-br from-ink-raise to-ink-2 border-2 border-ink-line rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-xl bg-ink-raise border-2 border-ink-line flex items-center justify-center shrink-0">
@@ -4476,7 +4525,7 @@ function LearnerApp() {
                   <div className="font-sans">
                     {/* Back + level title */}
                     <div className="flex items-center gap-3 mb-4">
-                      <button onClick={() => setExamLevelSel(null)}
+                      <button onClick={() => { stopTts(); setExamLevelSel(null); }}
                         className="px-3 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-xl font-bold text-xs cursor-pointer block-shadow hover:bg-ink-2 transition-colors flex items-center gap-1">
                         <ArrowLeft className="w-4 h-4" /> Түвшнүүд
                       </button>
@@ -4522,7 +4571,7 @@ function LearnerApp() {
                         {(examSec === 'reading' || examSec === 'listening') && (
                           <div className="flex gap-2">
                             {examSec === 'reading' && (
-                              <button onClick={() => speakGerman((item as typeof exam.reading[number]).text, audioSpeed === '0.8' ? 0.8 : 1.0)} title="Сонсох"
+                              <button onClick={() => { if (!requireAccount()) return; speakGerman((item as typeof exam.reading[number]).text, audioSpeed === '0.8' ? 0.8 : 1.0); }} title="Сонсох"
                                 className="p-2 border-2 border-ink-line rounded-full bg-ink-raise hover:scale-105 transition-transform text-paper block-shadow cursor-pointer">
                                 <Volume2 className="w-5 h-5" />
                               </button>
@@ -4554,6 +4603,7 @@ function LearnerApp() {
                                 correctIndex={sq.correctIndex}
                                 selectedAnswer={examItemAns}
                                 onSelect={(index) => {
+                                if (!requireAccount()) return;
                                   setExamItemAns(index);
                                   if (index === sq.correctIndex) recordStudyActivity(activityKey(`exam:${exam.level}:reading`, r.id));
                                 }}
@@ -4570,7 +4620,7 @@ function LearnerApp() {
                         return (
                           <>
                             <div className="flex flex-col items-center gap-3 py-6 bg-ink-raise border-2 border-ink-line rounded-xl mb-5">
-                              <button onClick={() => speakGerman(l.audioText, audioSpeed === '0.8' ? 0.8 : 1.0)}
+                              <button onClick={() => { if (!requireAccount()) return; speakGerman(l.audioText, audioSpeed === '0.8' ? 0.8 : 1.0); }}
                                 className="w-16 h-16 rounded-full bg-paper text-ink border-2 border-ink-line flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
                                 <Volume2 className="w-7 h-7" />
                               </button>
@@ -4590,6 +4640,8 @@ function LearnerApp() {
                                 correctIndex={sq.correctIndex}
                                 selectedAnswer={examItemAns}
                                 onSelect={(index) => {
+                                if (!requireAccount()) return;
+                                  stopTts(); // done answering — stop the clip if it's still playing
                                   setExamItemAns(index);
                                   if (index === sq.correctIndex) recordStudyActivity(activityKey(`exam:${exam.level}:listening`, l.id));
                                 }}
@@ -4643,7 +4695,7 @@ function LearnerApp() {
                               <p className="text-base font-bold text-paper">{sp.prompt}</p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2 mb-5">
-                              <button onClick={() => speakGerman(sp.modelAnswer, 1.0)}
+                              <button onClick={() => { if (!requireAccount()) return; speakGerman(sp.modelAnswer, 1.0); }}
                                 className="flex items-center gap-2 px-4 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform">
                                 <Volume2 className="w-4 h-4" /> Загварыг сонсох
                               </button>

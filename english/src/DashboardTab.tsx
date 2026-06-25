@@ -42,7 +42,7 @@ const SKILL_LABEL: Record<EnSkill, string> = {
 
 export default function DashboardTab({ onNavigate }: { onNavigate?: (dest: DashDest) => void }) {
   const {
-    profile, streak, enabled, openSettings, logout,
+    profile, streak, enabled, openSettings, logout, requireAccount,
     setEnglishLevel, saveEnglishPlacement, skipEnglishPlacement, applyProfile,
   } = useEnglishStats();
 
@@ -322,7 +322,7 @@ export default function DashboardTab({ onNavigate }: { onNavigate?: (dest: DashD
                           {unit.activities.map((act, aIdx) => {
                             const done = completedSet.has(act.activityId);
                             return (
-                              <button key={aIdx} onClick={() => onNavigate?.(act.skill)} className={`flex items-center justify-between text-left p-3 rounded-xl border text-xs font-bold transition-colors ${done ? 'bg-ink-2 border-ink-line-2 text-paper-2' : 'bg-ink-raise border-ink-line text-paper hover:border-ink-line-2'}`}>
+                              <button key={aIdx} onClick={() => { if (!requireAccount()) return; onNavigate?.(act.skill); }} className={`flex items-center justify-between text-left p-3 rounded-xl border text-xs font-bold transition-colors ${done ? 'bg-ink-2 border-ink-line-2 text-paper-2' : 'bg-ink-raise border-ink-line text-paper hover:border-ink-line-2'}`}>
                                 <div className="flex items-center gap-2 overflow-hidden mr-2">
                                   <span className={`p-1.5 rounded-lg shrink-0 ${done ? 'bg-paper text-ink' : 'bg-ink-2 text-paper-2'}`}>{SKILL_ICON[act.skill]}</span>
                                   <div className="overflow-hidden">
@@ -369,7 +369,7 @@ export default function DashboardTab({ onNavigate }: { onNavigate?: (dest: DashD
                   <button key={lvl} onClick={() => setEnglishLevel(lvl)} className={`py-2 rounded-lg text-xs font-black border transition-all ${targetLevel === lvl ? 'bg-paper text-ink border-paper' : 'bg-ink-raise border-ink-line text-paper hover:border-paper/60'}`}>{lvl}</button>
                 ))}
               </div>
-              <button onClick={() => setShowPlacement(true)} className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-ink-line hover:border-paper/60 text-paper-2 hover:text-paper px-4 py-2.5 text-xs font-medium uppercase tracking-[0.15em]">
+              <button onClick={() => { if (!requireAccount()) return; setShowPlacement(true); }} className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-ink-line hover:border-paper/60 text-paper-2 hover:text-paper px-4 py-2.5 text-xs font-medium uppercase tracking-[0.15em]">
                 <TrendingUp className="w-4 h-4" /> Түвшин тогтоох тест өгөх
               </button>
               {profile?.placementEn && (

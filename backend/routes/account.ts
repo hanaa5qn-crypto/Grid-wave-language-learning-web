@@ -38,21 +38,25 @@ export function registerAccountRoute(app: Express) {
           return { granted: false as const };
         }
         const trialEnd = new Date(Date.now() + SIGNUP_TRIAL_DAYS * 24 * 3600 * 1000).toISOString();
-        tx.set(userRef, {
-          billing: {
-            plan: SIGNUP_TRIAL_PLAN,
-            status: 'trialing',
-            interval: 'month',
-            provider: 'signup',
-            currentPeriodEnd: trialEnd,
-          },
-        }, { merge: true });
-        return { granted: true as const, trialEnd };
+        const grantedBilling = {
+          plan: SIGNUP_TRIAL_PLAN,
+          status: 'trialing',
+          interval: 'month',
+          provider: 'signup',
+          currentPeriodEnd: trialEnd,
+        };
+        tx.set(userRef, { billing: grantedBilling }, { merge: true });
+        return { granted: true as const, trialEnd, billing: grantedBilling };
       });
 
+      // Return the granted billing so the client can merge it into the live
+      // profile immediately — the profile read is a one-shot getDoc, so without
+      // this the trial wouldn't unlock anything until the next reload.
       return res.json({
         granted: outcome.granted,
-        ...(outcome.granted ? { plan: SIGNUP_TRIAL_PLAN, trialDays: SIGNUP_TRIAL_DAYS, trialEnd: outcome.trialEnd } : {}),
+        ...(outcome.granted
+          ? { plan: SIGNUP_TRIAL_PLAN, trialDays: SIGNUP_TRIAL_DAYS, trialEnd: outcome.trialEnd, billing: outcome.billing }
+          : {}),
       });
     } catch (err) {
       console.error('ensure-trial failed:', err);

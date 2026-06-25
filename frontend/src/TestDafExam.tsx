@@ -14,6 +14,7 @@ import {
   TESTDAF_EXAM, TdReadingTask, TdListeningTask, TdSpeakingTask,
   TD_READING_COUNT, TD_LISTENING_COUNT, tdnFromScore,
 } from './testdaf';
+import { playTts, stopTts } from './utils/tts';
 
 // --- AI хариултын хэлбэрүүд (App.tsx-тэй ижил) --------------------------------
 interface WritingCorrection { original: string; suggestion: string; type: string; explanation: string; }
@@ -64,12 +65,9 @@ async function audioBlobToWavBase64(blob: Blob): Promise<string> {
 
 // TTS-д уншихаас өмнө "Sprecher:" гэх мэт ярианы шошгыг цэвэрлэх.
 const cleanForTts = (t: string) => t.replace(/^[A-Za-zÄÖÜäöüß. ]{2,20}:\s*/gm, '');
+// Неорал хоолой (Azure) — тохируулагдаагүй бол speechSynthesis руу буцна.
 const speakDe = (text: string, rate = 1) => {
-  if (!('speechSynthesis' in window)) { alert('Таны төхөөрөмж дуут уншигч (TTS) дэмжээгүй байна.'); return; }
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(cleanForTts(text));
-  u.lang = 'de-DE'; u.rate = rate;
-  window.speechSynthesis.speak(u);
+  playTts(cleanForTts(text), { lang: 'de-DE', rate });
 };
 
 const fmt = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -155,10 +153,10 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
   }, [phase]);
 
   const goReading = () => setPhase('reading');
-  const goListening = () => { window.speechSynthesis?.cancel(); setPhase('listening'); };
-  const goWriting = () => { window.speechSynthesis?.cancel(); setPhase('writing'); };
-  const goSpeaking = () => { window.speechSynthesis?.cancel(); setPhase('speaking'); };
-  const goResults = () => { window.speechSynthesis?.cancel(); stopRecording(); setPhase('results'); };
+  const goListening = () => { stopTts(); setPhase('listening'); };
+  const goWriting = () => { stopTts(); setPhase('writing'); };
+  const goSpeaking = () => { stopTts(); setPhase('speaking'); };
+  const goResults = () => { stopTts(); stopRecording(); setPhase('results'); };
   expireRef.current = phase === 'reading' ? goListening : phase === 'listening' ? goWriting : phase === 'writing' ? goSpeaking : phase === 'speaking' ? goResults : () => {};
 
   // --- Ярих дэд урсгал --------------------------------------------------------
@@ -216,11 +214,11 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
     return () => clearTimeout(id);
   }, [spkMode, spkLeft]);
 
-  const beginPrep = () => { window.speechSynthesis?.cancel(); setSpkMode('prep'); setSpkLeft(curTask.prepSeconds); };
+  const beginPrep = () => { stopTts(); setSpkMode('prep'); setSpkLeft(curTask.prepSeconds); };
   const skipToSpeak = () => { setSpkLeft(0); if (spkMode === 'prep') startRecording(curTask); else if (spkMode === 'idle') startRecording(curTask); };
   const switchTask = (i: number) => {
     if (spkMode === 'record' || spkMode === 'prep') return; // бичиж байх үед солихгүй
-    window.speechSynthesis?.cancel();
+    stopTts();
     setSpkIdx(i); setSpkMode(recBlobRef.current[exam.speaking[i].no] ? 'done' : 'idle'); setSpkLeft(0);
   };
 
@@ -268,7 +266,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
   }
 
   // Цэвэрлэгээ
-  useEffect(() => () => { window.speechSynthesis?.cancel(); stopRecording(); stopTracks(); }, []);
+  useEffect(() => () => { stopTts(); stopRecording(); stopTracks(); }, []);
 
   // --- Дүгнэлт ----------------------------------------------------------------
   const gradeReading = () => exam.reading.reduce((acc, t) => acc + t.questions.filter((q) => readAns[q.id] === q.correctIndex).length, 0);
@@ -384,7 +382,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
                     <p className="text-xs text-paper-2">
                       {used >= task.plays ? 'Сонсох эрх дууссан' : `Тоглуулах (${task.plays - used} удаа үлдсэн)`}
                     </p>
-                    <button onClick={() => window.speechSynthesis?.cancel()} className="text-[11px] text-paper-3 hover:text-paper underline cursor-pointer">Зогсоох</button>
+                    <button onClick={() => stopTts()} className="text-[11px] text-paper-3 hover:text-paper underline cursor-pointer">Зогсоох</button>
                   </div>
                   <div className="space-y-3">
                     {task.questions.map((q, i) => (

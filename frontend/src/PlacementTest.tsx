@@ -9,6 +9,7 @@ import {
   advanceDifficulty, pickQuestion, scorePlacement,
 } from './placement';
 import { getAuthInstance } from './firebase';
+import { playTts, stopTts } from './utils/tts';
 
 interface PlacementTestProps {
   isFounder: boolean;
@@ -28,17 +29,11 @@ const SKILL_META: Record<PlacementSkill, { label: string; icon: React.ReactNode 
   speak: { label: 'Ярих', icon: <Mic className="w-4 h-4" /> },
 };
 
-// Сонсох асуултын герман бичвэрийг TTS-ээр уншуулна (бичвэрийг харуулахгүй).
+// Сонсох асуултын герман бичвэрийг неорал хоолойгоор уншуулна (бичвэрийг
+// харуулахгүй). Azure хоолой тохируулагдаагүй бол speechSynthesis руу автоматаар
+// шилжинэ — TTS байхгүй орчинд асуулт алгасагдахгүй, зөвхөн дуугүй үлдэнэ.
 function speakGerman(text: string) {
-  try {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'de-DE';
-    utterance.rate = 0.9;
-    window.speechSynthesis.speak(utterance);
-  } catch {
-    // TTS байхгүй орчинд асуулт алгасагдахгүй — зөвхөн дуугүй үлдэнэ.
-  }
+  playTts(text, { lang: 'de-DE', rate: 0.9 });
 }
 
 interface BylInvoice {
@@ -126,6 +121,9 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
     return () => clearInterval(timer);
   }, [phase, startedAt]);
   const elapsedLabel = `${String(Math.floor(elapsedSeconds / 60)).padStart(2, '0')}:${String(elapsedSeconds % 60).padStart(2, '0')}`;
+
+  // Гарах / unmount хийхэд сонсголын бичлэг үлдэж тоглохгүй байх.
+  useEffect(() => () => stopTts(), []);
 
   // Төлбөрийн төлөв (paywall шат)
   const [invoice, setInvoice] = useState<BylInvoice | null>(null);
@@ -223,17 +221,15 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
 
   // Гарахын өмнө баталгаажуулсан: явц localStorage-д үлдсэн тул дараа үргэлжлүүлж болно.
   const quitTest = () => {
-    try {
-      window.speechSynthesis.cancel();
-    } catch {
-      // TTS байхгүй орчин
-    }
+    stopTts();
     setQuitConfirmOpen(false);
     onSkip();
   };
 
   const submitAnswer = () => {
     if (!question || selected === null) return;
+    stopTts(); // хариулж дуусмагц сонсголын бичлэг тоглож байвал зогсооно
+
     const correct = selected === question.correctIndex;
     answersRef.current.push({
       questionId: question.id,

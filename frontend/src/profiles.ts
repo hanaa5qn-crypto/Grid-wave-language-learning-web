@@ -100,6 +100,7 @@ export interface UserProfile {
   billing?: {
     plan?: string;
     status?: string;
+    interval?: string;
     monthlyAmountCents?: number;
     lifetimeValueCents?: number;
     currency?: string;

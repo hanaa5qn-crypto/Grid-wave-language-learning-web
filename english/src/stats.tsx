@@ -19,6 +19,9 @@ import { subscribeToAuthedProfile, saveProfileProgress, logOutUser } from '../..
 import { calculateStreakWithGrace, localDateKey } from '../../frontend/src/learning';
 import type { UserProfile } from '../../frontend/src/profiles';
 import AccountScreen from '../../frontend/src/AccountScreen';
+import { canInteract } from '../../frontend/src/plans';
+import { ensureSignupTrial } from '../../frontend/src/promo';
+import { Lock } from 'lucide-react';
 import {
   addEnglishMistake, clearEnglishMistake, type EnglishPlacementResult,
 } from './englishLearning';
@@ -57,6 +60,14 @@ export interface EnglishStats {
   openSettings: () => void;
   /** Log out (or exit guest mode) — returns to the top-level hero/login. */
   logout: () => void;
+  /** True when the signed-in account may interact (a real, non-guest account). */
+  canInteract: boolean;
+  /**
+   * Gate an interactive action behind a real account. Returns true if the caller
+   * may proceed; otherwise opens the sign-up nudge and returns false. Visitors
+   * (guests) may browse the free surface but cannot answer, start tests, etc.
+   */
+  requireAccount: () => boolean;
 }
 
 const StatsContext = createContext<EnglishStats>({
@@ -72,6 +83,8 @@ const StatsContext = createContext<EnglishStats>({
   applyProfile: () => {},
   openSettings: () => {},
   logout: () => {},
+  canInteract: false,
+  requireAccount: () => false,
 });
 
 // Shared with AuthGate — the localStorage flag that marks a guest session.
@@ -91,6 +104,11 @@ export function EnglishStatsProvider({
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Visitors may browse the free surface but any action opens this sign-up nudge.
+  const [guestPromptOpen, setGuestPromptOpen] = useState(false);
+  // Grant the 3-day signup trial once per session for a real account (matches the
+  // German app). The endpoint is idempotent, so this never double-grants.
+  const signupTrialEnsuredRef = useRef(false);
 
   const profileRef = useRef<UserProfile | null>(null);
   // Mirror settingsOpen into a ref so the study-time interval can pause while the
@@ -111,6 +129,22 @@ export function EnglishStatsProvider({
       profileRef.current = p;
       setProfile(p);
       setLoading(false);
+      // New real account → grant the 3-day Pro trial. The server transaction is
+      // idempotent (skips when billing is already active), so re-attempting on a
+      // remount is harmless. The profile is a one-shot read, so merge the granted
+      // billing into local state to unlock the trial without a reload.
+      if (p && !p.isGuest && !signupTrialEnsuredRef.current) {
+        signupTrialEnsuredRef.current = true;
+        ensureSignupTrial()
+          .then((trial) => {
+            if (trial?.granted && trial.billing && profileRef.current) {
+              const next: UserProfile = { ...profileRef.current, billing: trial.billing };
+              profileRef.current = next;
+              setProfile(next);
+            }
+          })
+          .catch((err) => console.warn('ensureSignupTrial error:', err));
+      }
     });
     return unsub;
   }, []);
@@ -281,6 +315,24 @@ export function EnglishStatsProvider({
 
   const openSettings = useCallback(() => setSettingsOpen(true), []);
 
+  // Gate an interactive action behind a real account. Guests get the sign-up
+  // nudge instead of interacting with the free-tier surface they can see.
+  const requireAccount = useCallback((): boolean => {
+    if (!canInteract(profileRef.current)) {
+      setGuestPromptOpen(true);
+      return false;
+    }
+    return true;
+  }, []);
+
+  // Guest taps "Sign up" → drop the guest flag and reload back to the AuthGate
+  // hero/login where they can create an account.
+  const goSignup = useCallback(() => {
+    setGuestPromptOpen(false);
+    try { localStorage.removeItem(GUEST_KEY); } catch { /* ignore */ }
+    window.location.reload();
+  }, []);
+
   // Mirrors the German logout: a guest (no Firebase session) clears its flag and
   // reloads so the top-level AuthGate returns to the hero/login; a signed-in user
   // signs out and the auth listener tears the session down.
@@ -307,11 +359,42 @@ export function EnglishStatsProvider({
     applyProfile,
     openSettings,
     logout,
+    canInteract: canInteract(profile),
+    requireAccount,
   };
 
   return (
     <StatsContext.Provider value={value}>
       {children}
+
+      {/* Guest interaction → sign-up nudge (visitors can view, not interact). */}
+      {guestPromptOpen && (
+        <div className="fixed inset-0 z-[210] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4"
+          onClick={() => setGuestPromptOpen(false)}>
+          <div className="bg-ink-raise border border-ink-line/40 rounded-2xl p-6 max-w-sm w-full space-y-4 text-paper shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="flex flex-col items-center text-center gap-3">
+              <span className="w-14 h-14 rounded-2xl bg-ink-2 border border-ink-line flex items-center justify-center text-paper-2">
+                <Lock className="w-7 h-7" />
+              </span>
+              <h3 className="text-lg font-serif font-light">Create a free account</h3>
+              <p className="text-sm text-paper-2 font-medium">
+                Guests can look around, but you'll need a free account to answer questions, take tests, or run the placement. Signing up unlocks a 3-day full-access trial.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button onClick={goSignup}
+                className="w-full px-4 py-2.5 rounded-xl bg-paper text-ink text-sm font-bold cursor-pointer hover:bg-white transition-colors">
+                Sign up
+              </button>
+              <button onClick={() => setGuestPromptOpen(false)}
+                className="w-full px-4 py-2.5 rounded-xl bg-ink-2 text-paper-2 border border-ink-line text-sm font-bold cursor-pointer hover:bg-ink-raise transition-colors">
+                Keep looking
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Settings is a true overlay ON TOP of the track, so opening it mid-lesson
           keeps the underlying tab + in-progress lesson state intact. */}
       {settingsOpen && profile && (

@@ -27,7 +27,9 @@ const ALLOWED_VOICES = new Set([
   'en-US-AriaNeural', 'en-US-JennyNeural', 'en-US-GuyNeural',
   'en-GB-SoniaNeural', 'en-GB-RyanNeural', 'en-GB-LibbyNeural',
   'en-AU-NatashaNeural', 'en-AU-WilliamNeural',
-  // German — for the German track's listening / TestDaF.
+  // German — for the German track's listening / TestDaF. The Multilingual
+  // voices are the most natural (least robotic) and are the current default.
+  'de-DE-SeraphinaMultilingualNeural', 'de-DE-FlorianMultilingualNeural',
   'de-DE-KatjaNeural', 'de-DE-ConradNeural', 'de-DE-AmalaNeural',
 ]);
 const DEFAULT_VOICE = 'en-US-AriaNeural';
@@ -38,8 +40,8 @@ const LANG_DEFAULT: Record<string, string> = {
   'en-US': 'en-US-AriaNeural',
   'en-GB': 'en-GB-SoniaNeural',
   'en-AU': 'en-AU-NatashaNeural',
-  'de': 'de-DE-KatjaNeural',
-  'de-DE': 'de-DE-KatjaNeural',
+  'de': 'de-DE-SeraphinaMultilingualNeural',
+  'de-DE': 'de-DE-SeraphinaMultilingualNeural',
 };
 
 const MAX_CHARS = 5000; // Azure caps a single request ~10 min of audio.

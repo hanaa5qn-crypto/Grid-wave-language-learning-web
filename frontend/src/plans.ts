@@ -26,6 +26,13 @@ export const FOUNDER_EMAILS = ['hanaa5qn@gmail.com'];
 // evenly across all four skills instead of being front-loaded onto reading.
 export const FREE_QUESTIONS_PER_SECTION = 2;
 
+// Free "small taste" lesson access: only the first N units of A1 are open
+// (everything past that — later A1 units AND all A2–C2 — is paywalled) on the
+// German track. The English track currently gates practice at the whole-tab
+// level (see PracticeGate); isFreeUnitIndexLocked below is the level-agnostic
+// hook for a future per-unit English taste.
+export const FREE_UNIT_LIMIT = 1;
+
 // Total free exam questions surfaced (4 sections × per-section limit). Display
 // only — the authoritative gate is isExamQuestionLocked below.
 export const FREE_QUESTION_LIMIT = FREE_QUESTIONS_PER_SECTION * 4;
@@ -64,12 +71,13 @@ export const PLANS: Record<PlanId, PlanInfo> = {
     taglineMn: 'Өдөр бүр үнэгүй суралц',
     featuresMn: [
       'Үгийн сан, толь бичиг — бүрэн, хязгааргүй',
-      'A1 түвшний бүх хичээл (унших/сонсох/ярих/бичих)',
+      'A1 түвшний эхний хичээл (танилцах)',
       `Шалгалт бүрийн (унших/сонсох/бичих/ярих) эхний ${FREE_QUESTIONS_PER_SECTION} асуулт`,
       'Сард 2 AI туршилт',
     ],
     missingMn: [
-      'A2–C2 хичээл, шалгалтын сан',
+      'A1 түвшний бусад хичээл, A2–C2 бүх контент',
+      'Шалгалтын бүрэн сан',
       'TestDaF загвар шалгалт',
       'Хязгааргүй AI',
     ],
@@ -155,10 +163,43 @@ export function canAccessAllContent(profile: UserProfile | null): boolean {
   return effectivePlan(profile) !== 'free';
 }
 
-// Skill-library lessons: Free accounts only get A1 content.
+// Visitors (guest sessions) may BROWSE the free-tier surface but cannot interact
+// with it — answering, starting a lesson/test, playing audio, placement, etc.
+// must prompt sign-up instead. A real (non-guest) account interacts within its
+// plan. Use this to gate every interactive handler that a guest could reach.
+export function canInteract(profile: UserProfile | null): boolean {
+  return !!profile && !profile.isGuest;
+}
+
+// Skill-library lessons: Free accounts only get the first unit of A1 (the
+// "small taste"); A2–C2 and later A1 units are paywalled. Pro/Max/founder get
+// everything. Level-only gate kept for callers that don't know the unit index.
 export function isLessonLocked(profile: UserProfile | null, level: string): boolean {
   if (canAccessAllContent(profile)) return false;
   return level !== 'A1';
+}
+
+// Plan gate for a specific unit within a level. Free → only A1 unit indices
+// below FREE_UNIT_LIMIT are open. This is the authoritative lesson lock; the
+// per-level isLessonLocked is the coarse fallback for unit-unaware callers.
+export function isFreeUnitLocked(
+  profile: UserProfile | null,
+  level: string,
+  unitIndex: number,
+): boolean {
+  if (canAccessAllContent(profile)) return false;
+  if (level !== 'A1') return true;
+  return unitIndex >= FREE_UNIT_LIMIT;
+}
+
+// Level-agnostic unit gate for the English track (its units aren't CEFR-tagged):
+// free unlocks only the first FREE_UNIT_LIMIT units; the rest is paywalled.
+export function isFreeUnitIndexLocked(
+  profile: UserProfile | null,
+  unitIndex: number,
+): boolean {
+  if (canAccessAllContent(profile)) return false;
+  return unitIndex >= FREE_UNIT_LIMIT;
 }
 
 // Free accounts get an even sample of the exam bank: the first
