@@ -21,3 +21,6 @@ coverage/
 
 # Ignore all marketing assets and folders
 marketing/
+
+# Service-account credentials (Vertex AI) — never commit
+.secrets/

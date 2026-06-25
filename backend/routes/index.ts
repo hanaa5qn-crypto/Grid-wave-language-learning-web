@@ -9,6 +9,8 @@ import { registerSocialRoute } from './social';
 import { registerPromoRoute } from './promo';
 import { registerAccountRoute } from './account';
 import { registerTrackRoute } from './track';
+import { registerTtsRoute } from './tts';
+import { registerEnglishReviewRoute } from './english-review';
 
 export function registerApiRoutes(app: Express) {
   registerPaymentsRoute(app);
@@ -16,9 +18,11 @@ export function registerApiRoutes(app: Express) {
   registerPromoRoute(app);
   registerAccountRoute(app);
   registerTrackRoute(app);
+  registerTtsRoute(app);
   registerAiQuotaRoute(app);
   registerEvaluateWritingRoute(app);
   registerEvaluateCompositionRoute(app);
   registerTranslateRoute(app);
   registerEvaluateSpeakingRoute(app);
+  registerEnglishReviewRoute(app);
 }

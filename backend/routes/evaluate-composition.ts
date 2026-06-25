@@ -1,7 +1,7 @@
 import { Type } from '@google/genai';
 import type { Express } from 'express';
 import { aiClientWithinBudget, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
-import { generateContentWithRetry } from '../lib/ai';
+import { generateContentWithRetry, getModel } from '../lib/ai';
 import { checkAiAccess } from '../lib/plans';
 
 // Rich free-writing feedback. Unlike /api/evaluate-writing (a constrained
@@ -132,7 +132,7 @@ export function registerEvaluateCompositionRoute(app: Express) {
       consumeBudget();
       try {
         const response = await generateContentWithRetry(ai, {
-          model: 'gemini-2.5-flash',
+          model: getModel(),
           contents: buildPrompt(prompt, points, modelAnswer, level, text),
           config: {
             responseMimeType: 'application/json',

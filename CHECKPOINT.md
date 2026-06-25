@@ -1,31 +1,50 @@
-# CHECKPOINT — Settings profile editing + avatars
+# CHECKPOINT — Native mobile apps (Capacitor) + local React fix
 
-_Last updated: 2026-06-13 ~8pm EDT. For resuming in a fresh Claude/AI session with zero prior context._
+_Last updated: 2026-06-21. For resuming in a fresh Claude/AI session with zero prior context._
 
-## Goal
-Add profile-editing UI to the Settings tab of Vivid Lingua (German-learning app, Mongolian market, React+TS+Firebase). Cute avatars the user can **choose** (grid) or **upload** (own photo). NOT auto-assigned per user's correction.
+## Context
+Vivid Lingua = German-learning web app for the Mongolian market (React 19 + Vite + TS,
+Express backend, Firebase, Gemini AI). Served by `npm run dev` (Express + Vite middleware
+on :3000). Live in production at https://vivid-lingua.vercel.app (Vercel project
+`vivid-lingua`, team `gipfel-s-projects`). Repo `main` is in sync with origin.
 
-## DONE ✅ (built this session, lint clean + 104/104 tests + prod build green)
-- [x] **`frontend/src/profiles.ts`** — avatar helpers (DiceBear v9): `AVATAR_STYLES` (adventurer/fun-emoji/big-smile/lorelei/bottts) + `DEFAULT_AVATAR_STYLE='adventurer'` (the app's beloved old style), `avatarUrlFromSeed(seed,style)`, `avatarOptions(key,page,style)` (12 cute CHOICES/page), `placeholderAvatarFor(name)` (neutral **initials** monogram). **NO auto-assign** (cofounder rejected auto-assigning cute avatars — was the app's prior behavior). `createCustomProfile` sets `avatar: placeholderAvatarFor(name)`; user picks from grid (style switcher, incl. the old adventurer ones) or uploads. (`defaultAvatarFor` removed.)
-- [x] **`frontend/src/App.tsx`** — Settings tab (`activeTab==='settings'`, ~line 5160+) replaced hardcoded account card with real **profile editor**: avatar preview + Camera toggle → picker (12-tile grid, **Шинэчлэх**/re-roll, **Зураг оруулах**/upload), name input (≤30), target level A1–C2 segmented, daily goal 5/10/15/30/60 segmented, learning-goal textarea (≤280), **Хадгалах** save button. Plus **account essentials**: email (read-only), **Нууц үг солих** (sends `sendResetEmail`), **Гарах** (logout).
-  - State: `profileDraft` (seeded once from currentUser, reset on logout — so background study-time saves don't clobber edits), `avatarPage`, `showAvatarPicker`, `profileSaving/Saved`, `resetSent`, `avatarUploading`, `avatarError`, `avatarFileInputRef`.
-  - Handlers: `saveProfileEdits` (merges → `stripServerOwnedFields` → `setCurrentUser` + `saveProfileProgress`), `handleResetPassword`, `handleAvatarUpload` (Firebase Storage `avatars/{uid}/...`, image-only ≤5MB, sets draft avatar to download URL).
-  - Imports added: `stripServerOwnedFields, avatarOptions` (profiles); `sendResetEmail` (auth); `Save, Camera, Shuffle, Upload` (lucide). Reused existing `ref/uploadBytes/getDownloadURL/getStorageInstance/getAuthInstance/isFirebaseConfigured`.
-- [x] **`storage.rules`** — added `avatars/{userId}/**`: public `read`, owner-only `create/update` (raster `image/(png|jpeg|webp|gif)` only — SVG blocked to avoid stored-XSS, <5MB), owner `delete`.
-- [x] **Reviewer (cavecrew-reviewer) findings fixed:** (1) draft re-seeds on account identity change (keyed by `email` via `profileDraftKeyRef`), not just logout; (2) `saveProfileEdits` spreads from `currentUserRef.current` not the stale `currentUser` closure (so background study-time saves aren't clobbered by merge); (3) `role` recomputed from goal on save; (4) SVG upload blocked client+rules; (5) save failure now shows user-facing error. NOT fixed (cost-only, deferred): old avatar objects accumulate in Storage (no cleanup of prior uploads).
+## DONE ✅ this session
 
-## PENDING / NEXT ⏳
-- [x] **DEPLOYED storage.rules** — live in prod via new `scripts/deployStorageRules.ts` (mirrors deployFirestoreRules; Rules REST API, release `firebase.storage/gipfel-german-language-learn.firebasestorage.app`, ruleset 751665fe…). Photo upload now works end-to-end.
-- [ ] Manual smoke test in browser: open Settings → edit name/level/goal → Save persists; pick avatar from grid; upload a photo; password-reset email arrives.
-- [ ] Optional (researcher flagged, NOT built, scope-deferred): delete-account flow w/ re-auth + confirm modal (launch expectation for data rights); nativeLang/uiLang fields (no i18n system to hook into yet).
+### 1. Fixed local React not rendering
+- **Symptom:** blank app, `GET /src/main.tsx` → 404 in browser.
+- **Root cause:** Vite couldn't resolve `@vercel/analytics/react`. The package was listed
+  in `package.json` + lockfile but **missing from local `node_modules`** (install was out of
+  sync with the lockfile). Committed code was always fine — only the local install broke.
+- **Fix:** `npm install @vercel/analytics`. No tracked-file change. Verified: dev server
+  renders the full app, `npm run build` green, `tsc --noEmit` clean.
+- Harmless dev-only console errors remain: Vite HMR websocket + Vercel analytics scripts
+  blocked by the strict CSP in `backend/server.ts`. Only matters in prod if analytics wanted —
+  would need `va.vercel-scripts.com` added to CSP `script-src`/`connect-src`.
 
-## Facts a fresh session needs
-- Settings tab is **dark-themed** Aurora Atelier tokens: `surface-container*` = dark navy, `on-surface` = near-white, `secondary` #66aafd, `on-secondary` #08234e (dark text on light-blue buttons). Use dark-theme reds (`bg-red-950/20 text-red-300`), NOT `red-50/600`.
-- Avatar stored as full URL string in `profile.avatar` (rendered in `<img src>` in 3 places in App.tsx + SocialSection). DiceBear: `https://api.dicebear.com/9.x/fun-emoji/svg?seed=<seed>`.
-- `stripServerOwnedFields` strips `billing/placementCredits/aiUsage` before every client Firestore write (security). New profile fields are all client-safe.
-- Existing Storage upload pattern reference: `App.tsx` ~line 1014 (audio-evaluations upload).
-- Prod/canonical domain `https://www.gridwave.me`. Vercel project `vivid-lingua` id `prj_IalSD4wBcgWAghfsNBR69OjjfUFX`, team `team_EwwuWOkyh2FmUArhiOB8yHlG`.
-- Build/verify: `npm run lint` (tsc), `npm run build`, `npx vitest run --config frontend/vite.config.ts`.
+### 2. Native iOS + Android apps via Capacitor (no rewrite)
+Goal: downloadable apps in Apple App Store + Google Play. Chose **Capacitor** (wraps the
+existing web build) over Expo/React Native (would require full rewrite).
+- Installed `@capacitor/core,cli,ios,android` v8.4.1.
+- **`capacitor.config.ts`** (project root): `appId: com.vividlingua.app` (⚠ PERMANENT once
+  published — change before first store submit if desired), `appName: 'Vivid Lingua'`,
+  `webDir: 'dist'`.
+- **`frontend/src/native.ts`** — app uses relative `fetch('/api/...')` (12 sites) which break
+  inside a native WebView (origin = `capacitor://localhost`, no backend). `setupNativeApi()`
+  patches `window.fetch` only when `Capacitor.isNativePlatform()` to prepend
+  `https://vivid-lingua.vercel.app` to `/api` paths. Wired in `frontend/src/main.tsx`.
+- `npx cap add android` + `npx cap add ios` → created `android/` and `ios/` projects (web
+  assets copied from `dist`). Capacitor 8 iOS uses Swift Package Manager.
+- **Mic permissions** (app records audio for speaking practice):
+  - iOS: `NSMicrophoneUsageDescription` in `ios/App/App/Info.plist`.
+  - Android: `RECORD_AUDIO` + `MODIFY_AUDIO_SETTINGS` in `android/app/src/main/AndroidManifest.xml`.
 
-## Prior checkpoint (payments) — superseded, all shipped
-Byl payments integration complete (commit 2c80f2b+, prod live, `GET /api/payments/methods` → byl ready). See git log if needed.
+## NEXT / TODO
+- [ ] Finish package.json scripts (was mid-edit): `cap:sync`, `cap:android`, `cap:ios`.
+- [ ] `tsc --noEmit` to confirm `native.ts` typechecks.
+- [ ] Install build tooling (NOT present): Java JDK + Android Studio/SDK (Android),
+      Xcode + (CocoaPods or SwiftPM) (iOS).
+- [ ] `npm run cap:android` / `cap:ios` → open IDE, run on simulator/device.
+- [ ] App icons + splash screens (`@capacitor/assets`).
+- [ ] Store publish (USER's accounts/manual): Apple Developer $99/yr, Google Play $25 once,
+      signing certs, store listings.
+- [ ] Decide whether to commit `android/` + `ios/` to git (currently untracked).

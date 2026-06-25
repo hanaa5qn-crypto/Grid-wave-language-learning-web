@@ -2,7 +2,7 @@ import { Type } from '@google/genai';
 import type { Express } from 'express';
 import { cleanText } from '../lib/cleanText';
 import { aiClientWithinBudget, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
-import { generateContentWithRetry } from '../lib/ai';
+import { generateContentWithRetry, getModel } from '../lib/ai';
 import { checkAiAccess } from '../lib/plans';
 
 export function registerEvaluateWritingRoute(app: Express) {
@@ -31,7 +31,7 @@ export function registerEvaluateWritingRoute(app: Express) {
       consumeBudget();
       try {
         const response = await generateContentWithRetry(ai, {
-          model: 'gemini-2.5-flash',
+          model: getModel(),
           contents: `Evaluate this translation for a German language learning course where the target audience is Mongolian.
 Query task: Translate Mongolian sentence "${promptText}" into German.
 Course expected German target sentence: "${targetSentence}"

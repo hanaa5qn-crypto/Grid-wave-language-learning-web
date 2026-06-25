@@ -2,7 +2,7 @@ import { Type } from '@google/genai';
 import type { Express } from 'express';
 import { cleanText } from '../lib/cleanText';
 import { aiClientWithinBudget, audioTooLarge, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
-import { generateContentWithRetry } from '../lib/ai';
+import { generateContentWithRetry, getModel } from '../lib/ai';
 import { checkAiAccess } from '../lib/plans';
 
 // Rich JSON shape returned to the frontend. Every text field is written in
@@ -133,7 +133,7 @@ export function registerEvaluateSpeakingRoute(app: Express) {
         }
 
         const response = await generateContentWithRetry(ai, {
-          model: 'gemini-2.5-flash',
+          model: getModel(),
           contents: [{ role: 'user', parts }],
           config: {
             responseMimeType: 'application/json',

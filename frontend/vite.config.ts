@@ -19,6 +19,9 @@ export default defineConfig(() => {
     },
     server: {
       allowedHosts: true as const,
+      // Allow serving files from the parent dir so the cross-folder English
+      // track import (../../english/src/EnglishApp) works in dev.
+      fs: {allow: [path.resolve(__dirname, '..')]},
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',

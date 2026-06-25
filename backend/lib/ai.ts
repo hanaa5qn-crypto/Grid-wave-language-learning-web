@@ -74,6 +74,15 @@ export function geminiErrorMessage(err: unknown): string {
   return 'Gemini API түр ажиллахгүй байна. Хэсэг хугацааны дараа дахин оролдоно уу.';
 }
 
+// The Gemini model used for every text generation. Centralised + env-driven so
+// the model can be upgraded in one place (.env GEMINI_MODEL). Read lazily so
+// dotenv.config() has already run. Defaults to gemini-3.5-flash (far stronger
+// than 2.5-flash).
+export function getModel(): string {
+  const raw = (process.env.GEMINI_MODEL || '').trim().replace(/^['"]|['"]$/g, '');
+  return raw || 'gemini-3.5-flash';
+}
+
 export function getAIClient() {
   if (!aiClient) {
     aiClient = getVertexClient();

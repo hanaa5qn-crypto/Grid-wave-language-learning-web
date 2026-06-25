@@ -1,7 +1,7 @@
 import { Type } from '@google/genai';
 import type { Express } from 'express';
 import { aiClientWithinBudget, budgetExhausted, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
-import { geminiErrorMessage, generateContentWithRetry, isGeminiConfigured } from '../lib/ai';
+import { geminiErrorMessage, generateContentWithRetry, isGeminiConfigured, getModel } from '../lib/ai';
 import { checkAiAccess } from '../lib/plans';
 
 export function registerTranslateRoute(app: Express) {
@@ -42,7 +42,7 @@ export function registerTranslateRoute(app: Express) {
       consumeBudget();
       try {
         const response = await generateContentWithRetry(ai, {
-          model: 'gemini-2.5-flash',
+          model: getModel(),
           contents: `Translate the following text between German and Mongolian. Auto-detect which language it is in and translate to the other.
 Text: "${text}"
 
