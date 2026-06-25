@@ -1314,7 +1314,7 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-40 ${tc.active ? 'bg-paper' : 'bg-ink-2 border border-ink-line'}`}
                           aria-label={tc.active ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'}
                         >
-                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${tc.active ? 'translate-x-6' : 'translate-x-1'}`} />
+                          <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${tc.active ? 'bg-ink translate-x-6' : 'bg-paper translate-x-1'}`} />
                         </button>
                       </td>
                     </tr>

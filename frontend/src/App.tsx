@@ -2755,7 +2755,7 @@ function LearnerApp() {
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black/50 z-45 md:hidden" onClick={() => setMobileMenuOpen(false)}>
           <div 
-            className="w-[280px] h-full bg-paper py-8 px-4 flex flex-col gap-y-6 text-ink animate-slide-right relative"
+            className="w-[280px] h-full bg-ink py-8 px-4 flex flex-col gap-y-6 text-paper border-r border-ink-line animate-slide-right relative"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center px-2">
@@ -2798,7 +2798,7 @@ function LearnerApp() {
                 <li>
                   <button 
                     onClick={() => selectTab('profile')}
-                    className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'profile' ? 'bg-ink-raise' : 'text-paper'}`}
+                    className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'profile' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
                   >
                     <Target className="w-5 h-5" />
                     <span>Хяналтын самбар</span>
@@ -2808,7 +2808,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('read')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'read' ? 'bg-ink-raise' : 'text-paper'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'read' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
                 >
                   <BookOpen className="w-5 h-5" />
                   <span>Унших</span>
@@ -2817,7 +2817,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('listen')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'listen' ? 'bg-ink-raise' : 'text-paper'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'listen' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
                 >
                   <Headphones className="w-5 h-5" />
                   <span>Сонсох</span>
@@ -2826,7 +2826,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('speak')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'speak' ? 'bg-ink-raise' : 'text-paper'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'speak' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
                 >
                   <Mic className="w-5 h-5" />
                   <span>Ярих</span>
@@ -2835,7 +2835,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('write')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'write' ? 'bg-ink-raise' : 'text-paper'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'write' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
                 >
                   <Edit3 className="w-5 h-5" />
                   <span>Бичих</span>
@@ -2844,7 +2844,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('vocab')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'vocab' ? 'bg-ink-raise' : 'text-paper'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'vocab' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
                 >
                   <Languages className="w-5 h-5" />
                   <span className="flex-grow flex justify-between items-center pr-4">
@@ -2860,7 +2860,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('translate')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'translate' ? 'bg-ink-raise' : 'text-paper'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'translate' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
                 >
                   <Sparkles className="w-5 h-5 text-paper" />
                   <span>Орчуулагч</span>
@@ -2869,7 +2869,7 @@ function LearnerApp() {
               <li>
                 <button 
                   onClick={() => selectTab('exam')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'exam' ? 'bg-ink-raise' : 'text-paper'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'exam' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
                 >
                   <GraduationCap className="w-5 h-5 text-paper" />
                   <span>Шалгалт</span>
@@ -2878,7 +2878,7 @@ function LearnerApp() {
               <li>
                 <button
                   onClick={() => selectTab('friends')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'friends' ? 'bg-ink-raise' : 'text-paper'}`}
+                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'friends' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
                 >
                   <Swords className="w-5 h-5 text-paper" />
                   <span>Найзууд</span>
@@ -4961,16 +4961,16 @@ function LearnerApp() {
           )}
 
           {/* Bottom Interactive Sticky Navbar (Mobile Only) - matches screen specs */}
-          <nav aria-label="Mobile Navigation Drawer" className="md:hidden fixed bottom-0 left-0 w-full bg-paper border-t-2 border-ink-line z-40 pb-safe">
+          <nav aria-label="Mobile Navigation Drawer" className="md:hidden fixed bottom-0 left-0 w-full bg-ink-raise border-t-2 border-ink-line z-40 pb-safe">
             <div className="flex justify-around items-center h-16">
               
               <button 
                 onClick={() => selectTab('read')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'read' ? 'text-paper' : 'text-paper'
+                  activeTab === 'read' ? 'text-paper' : 'text-paper-2'
                 }`}
               >
-                {activeTab === 'read' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
+                {activeTab === 'read' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
                 <BookOpen className="w-5 h-5" />
                 <span className="text-[10px] font-bold font-serif">Унших</span>
               </button>
@@ -4978,10 +4978,10 @@ function LearnerApp() {
               <button 
                 onClick={() => selectTab('listen')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'listen' ? 'text-paper' : 'text-paper'
+                  activeTab === 'listen' ? 'text-paper' : 'text-paper-2'
                 }`}
               >
-                {activeTab === 'listen' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
+                {activeTab === 'listen' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
                 <Headphones className="w-5 h-5" />
                 <span className="text-[10px] font-bold font-serif">Сонсох</span>
               </button>
@@ -4989,10 +4989,10 @@ function LearnerApp() {
               <button 
                 onClick={() => selectTab('speak')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'speak' ? 'text-paper' : 'text-paper'
+                  activeTab === 'speak' ? 'text-paper' : 'text-paper-2'
                 }`}
               >
-                {activeTab === 'speak' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
+                {activeTab === 'speak' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
                 <Mic className="w-5 h-5" />
                 <span className="text-[10px] font-bold font-serif">Ярих</span>
               </button>
@@ -5000,10 +5000,10 @@ function LearnerApp() {
               <button 
                 onClick={() => selectTab('write')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'write' ? 'text-paper' : 'text-paper'
+                  activeTab === 'write' ? 'text-paper' : 'text-paper-2'
                 }`}
               >
-                {activeTab === 'write' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
+                {activeTab === 'write' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
                 <Edit3 className="w-5 h-5" />
                 <span className="text-[10px] font-bold font-serif">Бичих</span>
               </button>
@@ -5011,10 +5011,10 @@ function LearnerApp() {
               <button 
                 onClick={() => selectTab('vocab')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'vocab' ? 'text-paper' : 'text-paper'
+                  activeTab === 'vocab' ? 'text-paper' : 'text-paper-2'
                 }`}
               >
-                {activeTab === 'vocab' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
+                {activeTab === 'vocab' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
                 <Languages className="w-5 h-5" />
                 <span className="text-[10px] font-bold font-serif font-medium">Үгс</span>
               </button>
@@ -5022,7 +5022,7 @@ function LearnerApp() {
               <button 
                 onClick={() => selectTab('translate')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'translate' ? 'text-paper' : 'text-paper'
+                  activeTab === 'translate' ? 'text-paper' : 'text-paper-2'
                 }`}
               >
                 {activeTab === 'translate' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full text-paper"></div>}
@@ -5033,10 +5033,10 @@ function LearnerApp() {
               <button 
                 onClick={() => selectTab('exam')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'exam' ? 'text-paper' : 'text-paper'
+                  activeTab === 'exam' ? 'text-paper' : 'text-paper-2'
                 }`}
               >
-                {activeTab === 'exam' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full text-paper"></div>}
+                {activeTab === 'exam' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full text-paper"></div>}
                 <GraduationCap className="w-5 h-5 text-paper" />
                 <span className="text-[10px] font-bold font-serif">Сорил</span>
               </button>
@@ -5044,10 +5044,10 @@ function LearnerApp() {
               <button
                 onClick={() => selectTab('friends')}
                 className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'friends' ? 'text-paper' : 'text-paper'
+                  activeTab === 'friends' ? 'text-paper' : 'text-paper-2'
                 }`}
               >
-                {activeTab === 'friends' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ink-raise rounded-b-full"></div>}
+                {activeTab === 'friends' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
                 <Swords className="w-5 h-5 text-paper" />
                 <span className="text-[10px] font-bold font-serif">Найз</span>
               </button>
