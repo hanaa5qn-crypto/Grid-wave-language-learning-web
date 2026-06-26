@@ -8,8 +8,9 @@
 // headwords. Conforms exactly to ExamVocab in ../types.
 // =============================================================================
 import { ExamVocab } from '../types';
+import { IELTS_VOCAB_GENERATED } from './ieltsVocabGenerated';
 
-export const IELTS_VOCAB: ExamVocab[] = [
+const IELTS_VOCAB_CURATED: ExamVocab[] = [
   // ----- A2 · everyday academic foundations ---------------------------------
   {
     word: 'improve',
@@ -870,3 +871,7 @@ export const IELTS_VOCAB: ExamVocab[] = [
     category: 'Task 1 data',
   },
 ];
+
+// Curated deck above + the machine-generated, deduped NotebookLM bank.
+// Consumers import IELTS_VOCAB unchanged (now the full merged set).
+export const IELTS_VOCAB: ExamVocab[] = [...IELTS_VOCAB_CURATED, ...IELTS_VOCAB_GENERATED];

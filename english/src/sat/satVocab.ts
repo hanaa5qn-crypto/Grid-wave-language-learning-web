@@ -9,8 +9,9 @@
 // Conforms exactly to ExamVocab in ../types.
 // =============================================================================
 import { ExamVocab } from '../types';
+import { SAT_VOCAB_GENERATED } from './satVocabGenerated';
 
-export const SAT_VOCAB: ExamVocab[] = [
+const SAT_VOCAB_CURATED: ExamVocab[] = [
   // ----- B1 · accessible high-frequency words -------------------------------
   {
     word: 'analyze',
@@ -909,3 +910,7 @@ export const SAT_VOCAB: ExamVocab[] = [
     category: 'Character and tone',
   },
 ];
+
+// Curated deck above + the machine-generated, deduped NotebookLM bank.
+// Consumers import SAT_VOCAB unchanged (now the full merged set).
+export const SAT_VOCAB: ExamVocab[] = [...SAT_VOCAB_CURATED, ...SAT_VOCAB_GENERATED];
