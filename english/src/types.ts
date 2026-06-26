@@ -218,6 +218,8 @@ export type SatDomain =
 export interface SatQuestion {
   id: number;
   domain: SatDomain;
+  /** Relative difficulty, used to order practice easy→hard. Optional; legacy items omit it. */
+  difficulty?: 'Easy' | 'Medium' | 'Hard';
   /** Stimulus passage / context (Reading & Writing) or problem setup (Math). */
   passage?: string;
   question: string;

@@ -12,6 +12,7 @@ import { Sigma } from 'lucide-react';
 import { SAT_TESTS } from '../satTests';
 import { SatQuestion, SatDomain } from '../../types';
 import { SatPracticeCard, DomainFilter, FreePracticeLock, gateFreePractice } from './satQuizKit';
+import { SAT_GEN_MATH } from '../satGenerated';
 
 // The four Math domains, in their official testing order.
 const MATH_DOMAINS: SatDomain[] = [
@@ -178,7 +179,7 @@ export default function SatMathTab({ allContent, onUpgrade }: { allContent: bool
         .filter((s) => s.module === 'Math')
         .flatMap((s) => s.questions),
     );
-    return [...fromTests, ...MATH_DRILLS];
+    return [...fromTests, ...MATH_DRILLS, ...SAT_GEN_MATH];
   }, []);
 
   const visible = useMemo(

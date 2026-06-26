@@ -12,6 +12,7 @@ import { BookOpen } from 'lucide-react';
 import { SAT_TESTS } from '../satTests';
 import { SatQuestion, SatDomain } from '../../types';
 import { SatPracticeCard, DomainFilter, FreePracticeLock, gateFreePractice } from './satQuizKit';
+import { SAT_GEN_RW } from '../satGenerated';
 
 // The four Reading & Writing domains, in their official testing order.
 const RW_DOMAINS: SatDomain[] = [
@@ -235,7 +236,7 @@ export default function SatReadingWritingTab({ allContent, onUpgrade }: { allCon
         .filter((s) => s.module === 'Reading and Writing')
         .flatMap((s) => s.questions),
     );
-    return [...fromTests, ...RW_DRILLS];
+    return [...fromTests, ...RW_DRILLS, ...SAT_GEN_RW];
   }, []);
 
   const visible = useMemo(

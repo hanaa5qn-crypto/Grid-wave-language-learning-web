@@ -99,7 +99,14 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
         <span className="text-paper-2 font-semibold text-sm">
           {index + 1}.
         </span>
-        <span className="text-xs font-medium text-paper-2">{q.domain}</span>
+        <span className="flex items-center gap-2">
+          {q.difficulty && (
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-ink-2 text-paper-2">
+              {q.difficulty}
+            </span>
+          )}
+          <span className="text-xs font-medium text-paper-2">{q.domain}</span>
+        </span>
       </div>
 
       {q.passage && (

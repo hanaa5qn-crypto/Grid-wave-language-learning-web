@@ -14,8 +14,9 @@ import { reviewWriting, AiReview } from '../../api';
 import { AiReviewCard } from './AiReviewCard';
 import { Task1Visual, Task1Chart } from './Task1Visual';
 import { useEnglishStats } from '../../stats';
+import { IELTS_GEN_WRITING } from './ieltsWritingGenerated';
 
-interface IeltsWritingPrompt {
+export interface IeltsWritingPrompt {
   id: string;
   task: 1 | 2;
   label: string;
@@ -29,7 +30,7 @@ interface IeltsWritingPrompt {
   modelAnswer: string;
 }
 
-const PROMPTS: IeltsWritingPrompt[] = [
+const BASE_PROMPTS: IeltsWritingPrompt[] = [
   {
     id: 't1-a',
     task: 1,
@@ -139,6 +140,10 @@ const PROMPTS: IeltsWritingPrompt[] = [
       'As the consequences of climate change become harder to ignore, debate has grown over who should bear responsibility for protecting the environment. While some insist that only coordinated global action can succeed, others argue that change must begin with the individual. In my view, both levels of effort are indispensable, and treating them as alternatives is a mistake.\n\nThose who favour a global approach make a compelling argument. Many of the gravest threats — rising sea levels, deforestation and ocean pollution — cross national borders and dwarf anything a single person could influence. International treaties, such as agreements to cut carbon emissions, can compel powerful industries to change and can mobilise the vast funding that large-scale solutions demand. Without this top-down pressure, voluntary action by individuals risks being too small and too slow.\n\nOn the other hand, the case for personal responsibility is equally persuasive. Governments ultimately respond to the habits and demands of their citizens, so when millions of people reduce waste, conserve energy or choose sustainable products, they reshape markets and send a clear political signal. Grassroots initiatives also foster the public awareness on which ambitious policies depend.\n\nIn my opinion, these two approaches are not in competition but are mutually reinforcing. Global agreements set the framework and tackle problems beyond any individual’s reach, while everyday choices supply the momentum and legitimacy that make such agreements possible. Relying on one alone would be insufficient.\n\nIn conclusion, although international cooperation is essential for confronting environmental challenges on the necessary scale, it can only succeed when supported by responsible individual behaviour. The most effective path forward combines both.',
   },
 ];
+
+// Built-in prompts + the verified NotebookLM-generated bank (Task 1 with charts
+// + Task 2 essays). See ./ieltsWritingGenerated.ts.
+const PROMPTS: IeltsWritingPrompt[] = [...BASE_PROMPTS, ...IELTS_GEN_WRITING];
 
 function countWords(text: string): number {
   const trimmed = text.trim();
