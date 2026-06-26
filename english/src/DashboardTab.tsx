@@ -369,8 +369,8 @@ export default function DashboardTab({ onNavigate }: { onNavigate?: (dest: DashD
                   <button key={lvl} onClick={() => setEnglishLevel(lvl)} className={`py-2 rounded-lg text-xs font-black border transition-all ${targetLevel === lvl ? 'bg-paper text-ink border-paper' : 'bg-ink-raise border-ink-line text-paper hover:border-paper/60'}`}>{lvl}</button>
                 ))}
               </div>
-              <button onClick={() => { if (!requireAccount()) return; setShowPlacement(true); }} className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-ink-line hover:border-paper/60 text-paper-2 hover:text-paper px-4 py-2.5 text-xs font-medium uppercase tracking-[0.15em]">
-                <TrendingUp className="w-4 h-4" /> Түвшин тогтоох тест өгөх
+              <button onClick={() => { if (!requireAccount()) return; setShowPlacement(true); }} className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-on-primary hover:brightness-110 px-5 py-3.5 text-sm font-bold uppercase tracking-[0.12em] shadow-lg shadow-primary/20 transition-all">
+                <TrendingUp className="w-5 h-5" /> Түвшин тогтоох тест дахин өгөх
               </button>
               {profile?.placementEn && (
                 <p className="text-[11px] text-paper-3 flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Сүүлийн тест: {profile.placementEn.level} ({profile.placementEn.totalCorrect}/{profile.placementEn.totalQuestions})</p>

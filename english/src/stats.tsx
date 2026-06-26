@@ -23,7 +23,7 @@ import { canInteract } from '../../frontend/src/plans';
 import { ensureSignupTrial } from '../../frontend/src/promo';
 import { Lock } from 'lucide-react';
 import {
-  addEnglishMistake, clearEnglishMistake, type EnglishPlacementResult,
+  addEnglishMistake, clearEnglishMistake, EN_LEVEL_ORDER, type EnglishPlacementResult,
 } from './englishLearning';
 
 // Mirrors the German app's tracker tuning (App.tsx).
@@ -406,6 +406,9 @@ export function EnglishStatsProvider({
             onLogout={logout}
             onSwitchLanguage={onSwitchLanguage}
             onClose={() => setSettingsOpen(false)}
+            goalLevels={EN_LEVEL_ORDER}
+            goalLevel={profile.targetLevelEn || 'A1'}
+            onGoalLevel={setEnglishLevel}
           />
         </div>
       )}

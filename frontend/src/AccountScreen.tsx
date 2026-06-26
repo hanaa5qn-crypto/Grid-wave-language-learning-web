@@ -47,10 +47,17 @@ interface AccountScreenProps {
   /** settings mode: close the overlay and return to the track. */
   onClose?: () => void;
   mode: 'setup' | 'settings';
+  /** Optional CEFR goal-level picker (English track passes these; German omits). */
+  goalLevels?: string[];
+  /** Currently selected goal level (highlighted). */
+  goalLevel?: string;
+  /** Called when the learner taps a goal level. Persistence is the caller's job. */
+  onGoalLevel?: (level: string) => void;
 }
 
 export default function AccountScreen({
   profile, onSaved, onLogout, onSwitchLanguage, onContinue, onClose, mode,
+  goalLevels, goalLevel, onGoalLevel,
 }: AccountScreenProps) {
   const [name, setName] = useState(profile.name ?? '');
   const [avatar, setAvatar] = useState(profile.avatar ?? '');
@@ -300,6 +307,29 @@ export default function AccountScreen({
               ))}
             </div>
           </div>
+
+          {/* Goal level (CEFR) — only when the track supplies levels (English). */}
+          {goalLevels && goalLevels.length > 0 && (
+            <div>
+              <label className="text-[11px] font-bold uppercase text-paper-3 font-serif flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5" /> Зорилтот түвшин
+              </label>
+              <div className="grid grid-cols-6 gap-1.5 mt-1.5">
+                {goalLevels.map((lvl) => (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => onGoalLevel?.(lvl)}
+                    className={`py-2 rounded-lg text-xs font-bold border cursor-pointer transition-all ${
+                      goalLevel === lvl ? 'bg-paper text-ink border-paper' : 'bg-ink-2 border-ink-line text-paper hover:bg-ink-raise'
+                    }`}
+                  >
+                    {lvl}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Learning goal */}
           <div>
