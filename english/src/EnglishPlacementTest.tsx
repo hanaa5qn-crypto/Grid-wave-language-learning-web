@@ -3,42 +3,64 @@
 // -----------------------------------------------------------------------------
 // Shown to new English learners on first entry (and re-takeable from the
 // dashboard). An adaptive staircase over the study library's graded reading +
-// listening questions estimates the learner's level (A1–C2). The result is
-// free — it simply sets the English target level, which drives the dashboard's
-// Today's Session, lesson path and personalized advice. Mirrors the German
+// listening questions estimates the learner's level (A1–C2). It opens hard (at
+// B1) and moves a full level on every answer, so it homes in on the true level
+// fast. The result is free — it sets the English target level and, on the
+// result screen, auto-suggests level-compatible lessons (locked behind Pro for
+// free accounts, with a free A1 fallback offered). Mirrors the German
 // PlacementTest UX (intro → quiz → result) without the paid reveal.
+//
+// Listening prompts use the shared NEURAL TTS client (../../frontend/src/utils/
+// tts) — human-sounding voices with real pause/resume — instead of the robotic
+// built-in speechSynthesis, and audio is always stopped the moment an answer is
+// submitted (or the test is left) so a clip never keeps playing underneath.
 // =============================================================================
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  BookOpen, Headphones, Volume2, ArrowRight, Sparkles, TrendingUp, X, Clock,
+  BookOpen, Headphones, Play, Pause, RotateCcw, ArrowRight, Sparkles,
+  TrendingUp, X, Clock, Lock, Crown, Edit3, Mic,
 } from 'lucide-react';
 import {
-  EN_PLACEMENT_TOTAL, EN_PLACEMENT_SEQUENCE, pickEnglishPlacementQuestion,
-  advanceDifficulty, scoreEnglishPlacement,
+  EN_PLACEMENT_TOTAL, EN_PLACEMENT_SEQUENCE, EN_PLACEMENT_START_INDEX,
+  pickEnglishPlacementQuestion, advanceEnglishDifficulty, scoreEnglishPlacement,
+  buildEnglishToday,
   type EnPlacementQuestion, type EnPlacementAnswer, type EnglishPlacementResult,
 } from './englishLearning';
+import {
+  playTts, pauseTts, resumeTts, stopTts, type TtsState,
+} from '../../frontend/src/utils/tts';
 
-// Speak a listening prompt aloud (British English), without showing the text.
-function speakEnglish(text: string) {
-  try {
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-GB';
-    u.rate = 0.95;
-    window.speechSynthesis.speak(u);
-  } catch { /* TTS unavailable — question still answerable from the prompt. */ }
-}
+// Lesson destinations the result screen can hand back to the dashboard (a
+// subset of DashboardTab's DashDest — kept local to avoid a circular import).
+export type LessonDest = 'read' | 'listen' | 'write' | 'speak' | 'vocab';
+
+// British neural voice — the most natural fit for IELTS-style listening.
+const LISTEN_OPTS = { lang: 'en-GB', voice: 'en-GB-SoniaNeural', rate: 0.95 } as const;
 
 const SKILL_META = {
   read: { label: 'Reading · Унших', icon: <BookOpen className="w-4 h-4" /> },
   listen: { label: 'Listening · Сонсох', icon: <Headphones className="w-4 h-4" /> },
 } as const;
 
+const LESSON_META: Record<LessonDest, { label: string; icon: React.ReactNode }> = {
+  read: { label: 'Reading', icon: <BookOpen className="w-4 h-4" /> },
+  listen: { label: 'Listening', icon: <Headphones className="w-4 h-4" /> },
+  write: { label: 'Writing', icon: <Edit3 className="w-4 h-4" /> },
+  speak: { label: 'Speaking', icon: <Mic className="w-4 h-4" /> },
+  vocab: { label: 'Vocabulary', icon: <Sparkles className="w-4 h-4" /> },
+};
+
 export default function EnglishPlacementTest({
-  onFinish, onSkip,
+  onFinish, onSkip, hasAllContent = false, onStartLesson, onUpgrade,
 }: {
   onFinish: (result: EnglishPlacementResult) => void;
   onSkip: () => void;
+  /** Pro / Max / founder → suggested lessons are unlocked; free → gated. */
+  hasAllContent?: boolean;
+  /** Jump straight into a suggested lesson (also saves the result + closes). */
+  onStartLesson?: (result: EnglishPlacementResult, dest: LessonDest) => void;
+  /** Open the upgrade / plans view (free accounts unlocking the full path). */
+  onUpgrade?: () => void;
 }) {
   const [phase, setPhase] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [question, setQuestion] = useState<EnPlacementQuestion | null>(null);
@@ -46,11 +68,26 @@ export default function EnglishPlacementTest({
   const [answeredCount, setAnsweredCount] = useState(0);
   const [result, setResult] = useState<EnglishPlacementResult | null>(null);
 
-  // Adaptive staircase state (0 = A1 … 5 = C2).
-  const levelIndexRef = useRef(0);
-  const streakRef = useRef(0);
+  // Adaptive staircase state (0 = A1 … 5 = C2). Starts hard (B1) and climbs or
+  // drops a full level per answer via advanceEnglishDifficulty.
+  const levelIndexRef = useRef(EN_PLACEMENT_START_INDEX);
   const usedIdsRef = useRef<Set<string>>(new Set());
   const answersRef = useRef<EnPlacementAnswer[]>([]);
+
+  // Listening playback state — drives the play/pause/replay control.
+  const [ttsState, setTtsState] = useState<TtsState>('idle');
+  function playListen(text: string) {
+    playTts(text, { ...LISTEN_OPTS, onState: setTtsState });
+  }
+
+  // Never leave audio running when the test unmounts (navigated away / closed).
+  useEffect(() => () => stopTts(), []);
+
+  // Stop audio, then run the parent skip handler.
+  function skip() {
+    stopTts();
+    onSkip();
+  }
 
   // Elapsed timer (mm:ss).
   const [startedAt, setStartedAt] = useState<number | null>(null);
@@ -73,8 +110,7 @@ export default function EnglishPlacementTest({
   }
 
   function startQuiz() {
-    levelIndexRef.current = 0;
-    streakRef.current = 0;
+    levelIndexRef.current = EN_PLACEMENT_START_INDEX;
     usedIdsRef.current = new Set();
     answersRef.current = [];
     setAnsweredCount(0);
@@ -84,18 +120,19 @@ export default function EnglishPlacementTest({
     setStartedAt(Date.now());
     setElapsed(0);
     setPhase('quiz');
-    if (q?.skill === 'listen' && q.transcript) speakEnglish(q.transcript);
+    if (q?.skill === 'listen' && q.transcript) playListen(q.transcript);
   }
 
   function submitAnswer() {
     if (question === null || selected === null) return;
+    // Stop the listening clip the instant the answer is submitted — it must not
+    // keep playing into the next question or the result screen.
+    stopTts();
     const correct = selected === question.correctIndex;
     answersRef.current.push({
       questionId: question.id, skill: question.skill, level: question.level, correct,
     });
-    const next = advanceDifficulty(levelIndexRef.current, streakRef.current, correct);
-    levelIndexRef.current = next.levelIndex;
-    streakRef.current = next.streak;
+    levelIndexRef.current = advanceEnglishDifficulty(levelIndexRef.current, correct);
 
     const count = answeredCount + 1;
     setAnsweredCount(count);
@@ -109,13 +146,13 @@ export default function EnglishPlacementTest({
       return;
     }
     setQuestion(q);
-    if (q.skill === 'listen' && q.transcript) speakEnglish(q.transcript);
+    if (q.skill === 'listen' && q.transcript) playListen(q.transcript);
   }
 
   // ---- Intro --------------------------------------------------------------
   if (phase === 'intro') {
     return (
-      <Shell onSkip={onSkip}>
+      <Shell onSkip={skip}>
         <div className="text-center max-w-xl mx-auto">
           <span className="inline-flex items-center gap-2 rounded-full bg-ink-2 border border-ink-line px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-paper-2">
             <Sparkles className="w-4 h-4" /> Түвшин тогтоох тест
@@ -125,7 +162,8 @@ export default function EnglishPlacementTest({
           </h1>
           <p className="text-paper-2 mt-3 leading-relaxed">
             Унших, сонсох {EN_PLACEMENT_TOTAL} асуултаар таны түвшинг A1-ээс C2 хүртэл тодорхойлно.
-            Зөв хариулах тусам асуулт хүндэрч, бодит түвшинг чинь нарийн олно. Үр дүн нь
+            Тест дунд түвшнээс хүндээр эхэлж, зөв хариулах тутам нэг шатаар хүндэрч, алдвал
+            хөнгөрнө — ингэснээр таны бодит түвшинг хурдан бөгөөд нарийн олно. Үр дүн нь
             үнэгүй — таны хичээлийн замыг тохируулна.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
@@ -136,7 +174,7 @@ export default function EnglishPlacementTest({
               Тест эхлүүлэх <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={onSkip}
+              onClick={skip}
               className="inline-flex items-center justify-center gap-2 rounded-full border border-ink-line text-paper-2 hover:text-paper hover:border-paper/60 px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm"
             >
               Дараа нь · түвшингээ өөрөө сонгох
@@ -151,6 +189,21 @@ export default function EnglishPlacementTest({
   if (phase === 'result' && result) {
     const pct = result.totalQuestions > 0
       ? Math.round((result.totalCorrect / result.totalQuestions) * 100) : 0;
+
+    // Auto-suggested, level-compatible lessons (one per skill at the result
+    // level). Free accounts above A1 see them locked behind Pro, with a free
+    // A1 fallback offered below.
+    const compatible = buildEnglishToday(result.level, []);
+    const lessonItems = ([
+      compatible.reading && { dest: 'read' as const, title: compatible.reading.title },
+      compatible.listening && { dest: 'listen' as const, title: compatible.listening.title },
+      compatible.writing && { dest: 'write' as const, title: compatible.writing.title },
+      compatible.speaking && { dest: 'speak' as const, title: compatible.speaking.title },
+    ].filter(Boolean) as { dest: LessonDest; title: string }[]);
+    const lessonsLocked = !hasAllContent && result.level !== 'A1';
+    const goLesson = (dest: LessonDest) =>
+      onStartLesson ? onStartLesson(result, dest) : onFinish(result);
+
     return (
       <Shell>
         <div className="text-center max-w-xl mx-auto">
@@ -179,6 +232,74 @@ export default function EnglishPlacementTest({
               );
             })}
           </div>
+
+          {/* Auto-suggested, level-compatible lessons */}
+          {lessonItems.length > 0 && (
+            <div className="mt-8 text-left">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4 text-paper-2" />
+                <h3 className="text-xs font-medium uppercase tracking-[0.15em] text-paper-2">
+                  {result.level} түвшинд тохирох хичээлүүд
+                </h3>
+                {lessonsLocked && (
+                  <span className="ml-auto inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.15em] text-paper border border-paper/40 rounded-full px-2 py-0.5">
+                    <Lock className="w-3 h-3" /> Pro
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {lessonItems.map((l) => (
+                  <button
+                    key={l.dest}
+                    disabled={lessonsLocked}
+                    onClick={() => goLesson(l.dest)}
+                    className={`flex items-center gap-3 text-left px-4 py-3 rounded-xl border transition-colors ${
+                      lessonsLocked
+                        ? 'bg-ink border-ink-line opacity-60 cursor-not-allowed'
+                        : 'bg-ink-raise border-ink-line hover:border-paper/50'
+                    }`}
+                  >
+                    <span className="p-2 rounded-lg bg-ink-2 border border-ink-line text-paper-2 shrink-0">
+                      {LESSON_META[l.dest].icon}
+                    </span>
+                    <span className="overflow-hidden">
+                      <span className="block text-[10px] uppercase tracking-[0.18em] text-paper-3">{LESSON_META[l.dest].label}</span>
+                      <span className="block text-sm font-medium text-paper truncate">{l.title}</span>
+                    </span>
+                    {lessonsLocked
+                      ? <Lock className="w-4 h-4 text-paper-3 ml-auto shrink-0" />
+                      : <ArrowRight className="w-4 h-4 text-paper-3 ml-auto shrink-0" />}
+                  </button>
+                ))}
+              </div>
+
+              {lessonsLocked && (
+                <div className="mt-4 rounded-2xl border border-ink-line bg-ink-raise p-4 text-center space-y-3">
+                  <p className="text-sm text-paper-2 leading-relaxed">
+                    Таны {result.level} түвшний бүрэн хичээлийн төлөвлөгөө{' '}
+                    <span className="text-paper font-medium">Pro</span>-д нээлттэй. Үнэгүй эрхээр
+                    A1 түвшний хичээл болон үгийн сангаар эхэлж болно.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2.5 justify-center">
+                    <button
+                      onClick={() => (onUpgrade ? onUpgrade() : onFinish(result))}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 text-sm font-bold hover:bg-white"
+                    >
+                      <Crown className="w-4 h-4" /> Pro-оор бүгдийг нээх
+                    </button>
+                    <button
+                      onClick={() => goLesson('read')}
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-ink-line text-paper-2 hover:text-paper hover:border-paper/60 px-6 py-2.5 text-sm font-medium"
+                    >
+                      Үнэгүй хувилбараар эхлэх
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             onClick={() => onFinish(result)}
             className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-8 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-white mt-8"
@@ -194,7 +315,7 @@ export default function EnglishPlacementTest({
   if (phase === 'quiz' && question) {
     const progress = Math.round((answeredCount / EN_PLACEMENT_TOTAL) * 100);
     return (
-      <Shell onSkip={onSkip}>
+      <Shell onSkip={skip}>
         <div className="max-w-2xl mx-auto">
           {/* Progress + timer */}
           <div className="flex items-center justify-between text-xs text-paper-2 mb-3">
@@ -210,19 +331,36 @@ export default function EnglishPlacementTest({
             <div className="h-full bg-paper rounded-full transition-all" style={{ width: `${progress}%` }} />
           </div>
 
-          {/* Reading passage, or a listen button for listening */}
+          {/* Reading passage, or the listening player for listening */}
           {question.skill === 'read' && question.passage && (
             <div className="rounded-2xl bg-ink-raise border border-ink-line p-5 mb-5 max-h-64 overflow-y-auto">
               <p className="text-paper-2 text-sm leading-relaxed whitespace-pre-line">{question.passage}</p>
             </div>
           )}
           {question.skill === 'listen' && question.transcript && (
-            <button
-              onClick={() => speakEnglish(question.transcript!)}
-              className="inline-flex items-center gap-2 rounded-full bg-ink-2 border border-ink-line text-paper px-5 py-2.5 text-sm font-medium hover:bg-ink-raise mb-5"
-            >
-              <Volume2 className="w-4 h-4" /> Дахин сонсох
-            </button>
+            <div className="flex flex-wrap items-center gap-2 mb-5">
+              {ttsState === 'playing' ? (
+                <button
+                  onClick={pauseTts}
+                  className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-medium hover:bg-white"
+                >
+                  <Pause className="w-4 h-4" /> Түр зогсоох
+                </button>
+              ) : (
+                <button
+                  onClick={() => (ttsState === 'paused' ? resumeTts() : playListen(question.transcript!))}
+                  className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-medium hover:bg-white"
+                >
+                  <Play className="w-4 h-4" /> {ttsState === 'paused' ? 'Үргэлжлүүлэх' : 'Сонсох'}
+                </button>
+              )}
+              <button
+                onClick={() => playListen(question.transcript!)}
+                className="inline-flex items-center gap-2 rounded-full bg-ink-2 border border-ink-line text-paper px-5 py-2.5 text-sm font-medium hover:bg-ink-raise"
+              >
+                <RotateCcw className="w-4 h-4" /> Эхнээс
+              </button>
+            </div>
           )}
 
           <h2 className="text-lg font-medium text-paper mb-4">{question.question}</h2>

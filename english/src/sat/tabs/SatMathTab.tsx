@@ -11,7 +11,7 @@ import React, { useMemo, useState } from 'react';
 import { Sigma } from 'lucide-react';
 import { SAT_TESTS } from '../satTests';
 import { SatQuestion, SatDomain } from '../../types';
-import { SatPracticeCard, DomainFilter } from './satQuizKit';
+import { SatPracticeCard, DomainFilter, FreePracticeLock, gateFreePractice } from './satQuizKit';
 
 // The four Math domains, in their official testing order.
 const MATH_DOMAINS: SatDomain[] = [
@@ -72,7 +72,7 @@ const MATH_DRILLS: SatQuestion[] = [
   },
 ];
 
-export default function SatMathTab() {
+export default function SatMathTab({ allContent, onUpgrade }: { allContent: boolean; onUpgrade: () => void }) {
   const [domain, setDomain] = useState<SatDomain | 'all'>('all');
 
   // Collect all Math questions from the test bank plus the original drills.
@@ -98,6 +98,11 @@ export default function SatMathTab() {
     })).filter((g) => g.questions.length > 0);
   }, [visible]);
 
+  // Free = one taste domain; the rest is Pro. Gated against the full set so the
+  // domain filter can't unlock a paid domain (see gateFreePractice).
+  const { freeDomain, hiddenCount } = gateFreePractice(all, MATH_DOMAINS, allContent);
+  const shownGroups = allContent ? groups : groups.filter((g) => g.domain === freeDomain);
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       <div>
@@ -116,7 +121,7 @@ export default function SatMathTab() {
         <p className="text-paper-2">Энэ домэйнд бодлого алга байна.</p>
       ) : (
         <div className="space-y-8">
-          {groups.map((g) => (
+          {shownGroups.map((g) => (
             <section key={g.domain} className="space-y-4">
               <h3 className="text-lg font-bold text-paper flex items-center gap-2">
                 <span className="h-5 w-1.5 rounded-full bg-paper" />
@@ -132,6 +137,7 @@ export default function SatMathTab() {
               </div>
             </section>
           ))}
+          {hiddenCount > 0 && <FreePracticeLock hiddenCount={hiddenCount} onUpgrade={onUpgrade} />}
         </div>
       )}
     </div>

@@ -7,11 +7,49 @@
 // look-and-feel stays consistent. Pure presentation; no exam data here.
 // =============================================================================
 import React, { useState } from 'react';
-import { CheckCircle2, XCircle, RotateCcw } from 'lucide-react';
+import { CheckCircle2, XCircle, RotateCcw, Lock } from 'lucide-react';
 import { SatQuestion } from '../../types';
 import { useEnglishStats } from '../../stats';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+// Decide the free-tier "taste" for a domain-grouped SAT practice tab. SAT has
+// no CEFR A1 tier, so a free account gets exactly ONE domain — the first (in
+// canonical order) that actually has questions — and everything else is Pro.
+// Computed from the FULL question set, never the current domain filter, so a
+// free user can't reveal a locked domain just by selecting its filter chip.
+export function gateFreePractice<Q extends { domain: string }>(
+  all: Q[],
+  order: readonly string[],
+  allContent: boolean,
+): { freeDomain: string | undefined; hiddenCount: number } {
+  const freeDomain = order.find((d) => all.some((q) => q.domain === d));
+  const hiddenCount = allContent ? 0 : all.filter((q) => q.domain !== freeDomain).length;
+  return { freeDomain, hiddenCount };
+}
+
+// SAT has no CEFR A1 tier, so a free account gets the first practice group as a
+// taste; the rest is replaced by this Pro upsell panel. Keeps the placement
+// result screen's "locked for free" claim truthful on the SAT track too.
+export function FreePracticeLock({ hiddenCount, onUpgrade }: { hiddenCount: number; onUpgrade: () => void }) {
+  return (
+    <div className="rounded-2xl border border-ink-line bg-ink-raise p-6 text-center space-y-3">
+      <span className="inline-flex w-12 h-12 rounded-xl bg-ink-2 border border-ink-line items-center justify-center text-paper-2">
+        <Lock className="w-6 h-6" />
+      </span>
+      <h3 className="text-lg font-serif font-light text-paper">Үлдсэн {hiddenCount} дасгал Pro-д</h3>
+      <p className="text-sm text-paper-2 leading-relaxed max-w-sm mx-auto">
+        Үнэгүй эрхээр эхний хэсгийг туршиж үзээрэй. Бүх домэйны бүрэн дасгалыг Pro болон Max багцаар нээнэ.
+      </p>
+      <button
+        onClick={onUpgrade}
+        className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 text-sm font-bold hover:bg-white"
+      >
+        <Lock className="w-4 h-4" /> Pro-оор нээх
+      </button>
+    </div>
+  );
+}
 
 // A grid-in item is one with no choices array (student-produced response).
 export function isGridIn(q: SatQuestion): boolean {

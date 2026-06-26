@@ -53,8 +53,8 @@ export default function SatApp({
     switch (tab) {
       case 'dashboard': return <DashboardTab onNavigate={(d) => setTab(DASH_TO_SAT[d])} />;
       case 'home': return <SatHomeTab onGo={setTab} />;
-      case 'rw': return <SatReadingWritingTab />;
-      case 'math': return <SatMathTab />;
+      case 'rw': return <SatReadingWritingTab allContent={access.allContent} onUpgrade={onUpgrade} />;
+      case 'math': return <SatMathTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       case 'vocab': return <SatVocabTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       case 'tests': return <SatTestsTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       default: return <SatHomeTab onGo={setTab} />;

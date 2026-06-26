@@ -23,6 +23,12 @@ class MockSpeechRecognition {
     if (this._timer) {
       clearTimeout(this._timer);
     }
+    // Auto-transcription delay. Kept comfortably longer than an async
+    // userEvent.click() flush so onresult/onend can never fire *during* the
+    // click — otherwise a recording-state assertion right after the click
+    // races the timer and flakes under parallel-worker load. Consumers that
+    // assert the post-transcription state wait longer than this (see
+    // mocks.test.tsx).
     this._timer = setTimeout(() => {
       if (this.onresult) {
         this.onresult({
@@ -32,7 +38,7 @@ class MockSpeechRecognition {
       if (this.onend) {
         this.onend();
       }
-    }, 50);
+    }, 300);
   });
 
   stop = vi.fn().mockImplementation(() => {

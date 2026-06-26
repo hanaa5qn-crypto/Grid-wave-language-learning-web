@@ -28,9 +28,10 @@ export const FREE_QUESTIONS_PER_SECTION = 2;
 
 // Free "small taste" lesson access: only the first N units of A1 are open
 // (everything past that — later A1 units AND all A2–C2 — is paywalled) on the
-// German track. The English track currently gates practice at the whole-tab
-// level (see PracticeGate); isFreeUnitIndexLocked below is the level-agnostic
-// hook for a future per-unit English taste.
+// German track. The English track gates practice per-lesson: free accounts get
+// A1 lessons (Reading/Listening) and the first SAT practice group as a taste,
+// while A2–C2 are Pro (see quizKit.isFreeLessonLocked and the SAT tabs).
+// isFreeUnitIndexLocked below is the level-agnostic hook for a per-unit taste.
 export const FREE_UNIT_LIMIT = 1;
 
 // Total free exam questions surfaced (4 sections × per-section limit). Display

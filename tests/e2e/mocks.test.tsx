@@ -139,9 +139,10 @@ test('App UI interaction with Speech Recognition Mock integration', async () => 
   expect(getByText(/Бичиж байна/)).toBeInTheDocument();
   expect(queryByText('Бичихийн тулд дарна уу')).toBeNull();
 
-  // Wait for the mock transcription (50ms timeout in mock) to finish
+  // Wait for the mock transcription (300ms timeout in mock) to finish — wait
+  // longer than that delay so onresult/onend have definitely fired.
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   });
 
   // After the timeout, isRecording should be back to false

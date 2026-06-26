@@ -5,10 +5,28 @@
 // quiz look-and-feel stays consistent. Pure presentation; no exam data here.
 // =============================================================================
 import React from 'react';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Lock } from 'lucide-react';
 import { MCQ, EnglishLevel } from '../../types';
 
-export const IELTS_LEVELS: EnglishLevel[] = ['A2', 'B1', 'B2', 'C1', 'C2'];
+// A1 is included so free accounts have a real, unlocked starter level (the
+// "free version"); the academic A2–C2 set sits above it.
+export const IELTS_LEVELS: EnglishLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+// Free accounts get A1 lessons as a taste; A2+ are Pro. Single source of truth
+// so Reading + Listening lock identically and match what the placement result
+// screen advertises (free = A1 only).
+export function isFreeLessonLocked(allContent: boolean, level: EnglishLevel): boolean {
+  return !allContent && level !== 'A1';
+}
+
+// Small "Pro" lock badge shown on lessons a free account can't open yet.
+export function LockBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-paper/40 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.15em]">
+      <Lock className="w-3 h-3" /> Pro
+    </span>
+  );
+}
 
 // A single multiple-choice question with grade-aware option styling.
 export const McqBlock: React.FC<{

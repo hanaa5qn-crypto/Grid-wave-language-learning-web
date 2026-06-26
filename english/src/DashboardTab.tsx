@@ -19,7 +19,7 @@ import EnglishLeaderboard from './EnglishLeaderboard';
 import EnglishPlacementTest from './EnglishPlacementTest';
 import { BillingCard } from '../../frontend/src/components/BillingCard';
 import { useEnglishPayments } from './useEnglishPayments';
-import { effectivePlan, isFounder, type PlanId } from '../../frontend/src/plans';
+import { canAccessAllContent, effectivePlan, isFounder, type PlanId } from '../../frontend/src/plans';
 import type { UserProfile } from '../../frontend/src/profiles';
 import {
   buildEnglishToday, resolveEnglishMistakes, englishProgressPercent, EN_TRACKABLE_TOTAL,
@@ -100,6 +100,13 @@ export default function DashboardTab({ onNavigate }: { onNavigate?: (dest: DashD
   if (placementOpen) {
     return (
       <EnglishPlacementTest
+        hasAllContent={canAccessAllContent(profile)}
+        onUpgrade={openSettings}
+        onStartLesson={(result, dest) => {
+          saveEnglishPlacement(result);
+          setShowPlacement(false);
+          onNavigate?.(dest);
+        }}
         onFinish={(result) => { saveEnglishPlacement(result); setShowPlacement(false); }}
         onSkip={() => { skipEnglishPlacement(); setShowPlacement(false); }}
       />

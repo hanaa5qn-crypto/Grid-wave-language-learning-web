@@ -237,6 +237,21 @@ export const EN_PLACEMENT_TOTAL = 24;
 export const EN_PLACEMENT_SEQUENCE: ('read' | 'listen')[] =
   ['read', 'listen', 'read', 'listen'];
 
+// The English placement opens at B1 (index 2) instead of A1, and moves a FULL
+// CEFR level on every single answer — one correct climbs, one wrong drops.
+// This makes the very first test genuinely demanding and sharply adaptive: a
+// strong learner is pushed up to C1/C2 within a few questions, while someone
+// struggling falls to their true floor just as fast. (The German 60-question
+// test keeps its gentler 2-in-a-row staircase in placement.ts — this faster
+// curve is English-specific.)
+export const EN_PLACEMENT_START_INDEX = 2; // B1
+
+export function advanceEnglishDifficulty(levelIndex: number, correct: boolean): number {
+  return correct
+    ? Math.min(levelIndex + 1, EN_LEVEL_ORDER.length - 1)
+    : Math.max(levelIndex - 1, 0);
+}
+
 export interface EnPlacementQuestion {
   id: string;
   level: EnglishLevel;

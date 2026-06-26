@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   EN_LEVEL_ORDER, EN_PLACEMENT_POOL, EN_PLACEMENT_TOTAL, EN_PLACEMENT_SEQUENCE,
-  pickEnglishPlacementQuestion, advanceDifficulty, scoreEnglishPlacement,
+  pickEnglishPlacementQuestion, advanceEnglishDifficulty, EN_PLACEMENT_START_INDEX,
+  scoreEnglishPlacement,
   buildEnglishToday, resolveEnglishMistakes, addEnglishMistake, clearEnglishMistake,
   englishProgressPercent, EN_TRACKABLE_TOTAL, buildEnglishUnits, enUnitUnlocked,
   enUnitPassed, buildEnglishCurve, enActivityKey,
@@ -38,8 +39,8 @@ describe('English placement pool', () => {
 // --- Accuracy: a simulated learner of a known "true" level should be placed at
 // that level (±1 band, which is the realistic precision of an adaptive test). --
 function simulatePlacement(trueLevelIndex: number) {
-  let levelIndex = 0;
-  let streak = 0;
+  // Mirror the shipped flow: open at B1 and move a full level per answer.
+  let levelIndex = EN_PLACEMENT_START_INDEX;
   const used = new Set<string>();
   const answers: EnPlacementAnswer[] = [];
 
@@ -52,12 +53,29 @@ function simulatePlacement(trueLevelIndex: number) {
     // The learner answers correctly iff the question is at or below their level.
     const correct = EN_LEVEL_ORDER.indexOf(q.level) <= trueLevelIndex;
     answers.push({ questionId: q.id, skill: q.skill, level: q.level, correct });
-    const next = advanceDifficulty(levelIndex, streak, correct);
-    levelIndex = next.levelIndex;
-    streak = next.streak;
+    levelIndex = advanceEnglishDifficulty(levelIndex, correct);
   }
   return scoreEnglishPlacement(answers);
 }
+
+describe('advanceEnglishDifficulty (hard, sharply adaptive staircase)', () => {
+  it('opens at B1, not A1', () => {
+    expect(EN_LEVEL_ORDER[EN_PLACEMENT_START_INDEX]).toBe('B1');
+  });
+
+  it('climbs one full level on a correct answer', () => {
+    expect(advanceEnglishDifficulty(2, true)).toBe(3); // B1 → B2
+  });
+
+  it('drops one full level on a wrong answer', () => {
+    expect(advanceEnglishDifficulty(2, false)).toBe(1); // B1 → A2
+  });
+
+  it('clamps at the C2 ceiling and the A1 floor', () => {
+    expect(advanceEnglishDifficulty(EN_LEVEL_ORDER.length - 1, true)).toBe(EN_LEVEL_ORDER.length - 1);
+    expect(advanceEnglishDifficulty(0, false)).toBe(0);
+  });
+});
 
 describe('English placement accuracy', () => {
   it('places a true-A1 learner at A1', () => {

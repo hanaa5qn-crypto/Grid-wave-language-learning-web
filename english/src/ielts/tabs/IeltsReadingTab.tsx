@@ -9,13 +9,14 @@ import React, { useMemo, useState } from 'react';
 import { BookOpen, ListChecks, RotateCcw, ChevronLeft } from 'lucide-react';
 import { READING_LIBRARY } from '../../content';
 import { ReadingItem, EnglishLevel } from '../../types';
-import { McqBlock, LevelFilter, ScoreBanner, IELTS_LEVELS } from './quizKit';
+import { McqBlock, LevelFilter, ScoreBanner, IELTS_LEVELS, isFreeLessonLocked, LockBadge } from './quizKit';
 import { useEnglishStats } from '../../stats';
 import { enActivityKey } from '../../englishLearning';
 
-export default function IeltsReadingTab() {
+export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent: boolean; onUpgrade: () => void }) {
   const { recordStudy, recordEnglishActivity } = useEnglishStats();
-  const [level, setLevel] = useState<EnglishLevel | 'all'>('B2');
+  // Free accounts start on the unlocked A1 level; paid users keep the academic default.
+  const [level, setLevel] = useState<EnglishLevel | 'all'>(allContent ? 'B2' : 'A1');
   const [active, setActive] = useState<ReadingItem | null>(null);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -126,24 +127,28 @@ export default function IeltsReadingTab() {
       <LevelFilter levels={IELTS_LEVELS} active={level} onChange={setLevel} />
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {passages.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => open(p)}
-            className="text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold">
-                {p.level}
-              </span>
-              <span className="text-xs text-paper-2">{p.topic}</span>
-            </div>
-            <h3 className="font-bold text-paper">{p.title}</h3>
-            <p className="text-sm text-paper-2 mt-1">
-              {p.questions.length} асуулт
-            </p>
-          </button>
-        ))}
+        {passages.map((p) => {
+          const locked = isFreeLessonLocked(allContent, p.level);
+          return (
+            <button
+              key={p.id}
+              onClick={() => (locked ? onUpgrade() : open(p))}
+              className={`text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors ${locked ? 'opacity-80' : ''}`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold">
+                  {p.level}
+                </span>
+                <span className="text-xs text-paper-2">{p.topic}</span>
+                {locked && <span className="ml-auto"><LockBadge /></span>}
+              </div>
+              <h3 className="font-bold text-paper">{p.title}</h3>
+              <p className="text-sm text-paper-2 mt-1">
+                {locked ? 'Pro-оор нээх' : `${p.questions.length} асуулт`}
+              </p>
+            </button>
+          );
+        })}
       </div>
 
       {passages.length === 0 && (

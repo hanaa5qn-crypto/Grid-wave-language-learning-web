@@ -49,6 +49,12 @@ let stateCb: ((s: TtsState) => void) | null = null;
 // straight to the local fallback for the rest of the session.
 let neuralDisabled = false;
 
+// Set when the user hits Pause while a neural clip is still being fetched (no
+// <audio> element exists yet). The fetch continuation honors it so the freshly
+// created element starts PAUSED instead of overriding the user's pause — and the
+// local fallback honors it too. Cleared by any play/resume/stop.
+let pausePending = false;
+
 function emit(state: TtsState) {
   if (stateCb) stateCb(state);
 }
@@ -78,6 +84,7 @@ function teardown() {
 /** Stop any audio immediately and reset to idle. Safe to call any time. */
 export function stopTts() {
   gen++;
+  pausePending = false;
   teardown();
   emit('idle');
   stateCb = null;
@@ -105,6 +112,12 @@ function fallbackSpeak(text: string, lang: string, rate: number, myGen: number) 
   utter = u;
   emit('playing');
   window.speechSynthesis.speak(u);
+  // The user paused while we were deciding to fall back — honor it.
+  if (pausePending) {
+    pausePending = false;
+    window.speechSynthesis.pause();
+    if (myGen === gen) emit('paused');
+  }
 }
 
 /**
@@ -126,6 +139,7 @@ export async function playTts(text: string, opts: PlayTtsOptions = {}): Promise<
 
   gen++;
   const myGen = gen;
+  pausePending = false; // a fresh play request supersedes any prior pause intent
   teardown();
   stateCb = nextCb;
 
@@ -176,6 +190,13 @@ export async function playTts(text: string, opts: PlayTtsOptions = {}): Promise<
     };
     audioEl = el;
     audioUrl = url;
+    // If the user hit Pause while this was fetching, keep the freshly created
+    // element paused instead of starting playback over their pause.
+    if (pausePending) {
+      pausePending = false;
+      emit('paused');
+      return;
+    }
     emit('playing');
     // play() can reject (autoplay policy, decode error) — fall back to local TTS.
     await el.play().catch(() => {
@@ -193,14 +214,17 @@ export function pauseTts() {
     emit('paused');
     return;
   }
-  if (hasSpeechSynthesis) {
-    window.speechSynthesis.pause();
-    emit('paused');
-  }
+  // No element yet — a neural fetch is still in flight (or we're mid-fallback).
+  // Remember the intent so the in-flight clip starts paused, and pause any
+  // local speech that may already be talking.
+  pausePending = true;
+  if (hasSpeechSynthesis) window.speechSynthesis.pause();
+  emit('paused');
 }
 
 /** Resume playback after pauseTts(). */
 export function resumeTts() {
+  pausePending = false; // user wants sound again; let any in-flight clip play
   if (audioEl) {
     audioEl.play().catch(() => {});
     emit('playing');
