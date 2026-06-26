@@ -6,12 +6,19 @@
 // the catalogue. Mirrors the IELTS tests tab.
 // =============================================================================
 import React, { useState } from 'react';
-import { ClipboardList, BookOpen, Sigma, Layers, ArrowRight } from 'lucide-react';
+import { ClipboardList, BookOpen, Sigma, Layers, ArrowRight, Lock } from 'lucide-react';
 import { SAT_TESTS } from '../satTests';
 import SatTestRunner from '../SatTestRunner';
 import { SatTest } from '../../types';
+import { FREE_TESTS } from '../../access';
 
-export default function SatTestsTab() {
+export default function SatTestsTab({
+  allContent,
+  onUpgrade,
+}: {
+  allContent: boolean;
+  onUpgrade: () => void;
+}) {
   const [selected, setSelected] = useState<SatTest | null>(null);
 
   if (selected) {
@@ -35,21 +42,27 @@ export default function SatTestsTab() {
       </div>
 
       <div className="grid gap-4">
-        {SAT_TESTS.map((t) => {
+        {SAT_TESTS.map((t, i) => {
           const rwSections = t.sections.filter((s) => s.module === 'Reading and Writing');
           const mathSections = t.sections.filter((s) => s.module === 'Math');
           const totalQuestions = t.sections.reduce((n, s) => n + s.questions.length, 0);
+          const locked = !allContent && i >= FREE_TESTS;
           return (
             <button
               key={t.id}
-              onClick={() => setSelected(t)}
-              className="group text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors"
+              onClick={() => (locked ? onUpgrade() : setSelected(t))}
+              className={`group text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors ${locked ? 'opacity-80' : ''}`}
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold">
                   Digital SAT
                 </span>
                 <span className="text-xs text-paper-2">{t.source}</span>
+                {locked && (
+                  <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-ink-2 px-2.5 py-0.5 text-xs font-bold text-paper-2">
+                    <Lock className="w-3 h-3" /> Pro
+                  </span>
+                )}
               </div>
               <h3 className="text-lg font-bold text-paper">{t.title}</h3>
               <div className="flex flex-wrap gap-3 mt-3 text-sm text-paper-2">
@@ -63,9 +76,17 @@ export default function SatTestsTab() {
                   <Layers className="w-4 h-4" /> {totalQuestions} questions
                 </span>
               </div>
-              <span className="mt-4 inline-flex items-center gap-1 text-paper font-semibold">
-                Шалгалт эхлүүлэх
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <span className="mt-4 inline-flex items-center gap-1 text-primary font-semibold">
+                {locked ? (
+                  <>
+                    <Lock className="w-4 h-4" /> Pro-оор нээх
+                  </>
+                ) : (
+                  <>
+                    Шалгалт эхлүүлэх
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </>
+                )}
               </span>
             </button>
           );

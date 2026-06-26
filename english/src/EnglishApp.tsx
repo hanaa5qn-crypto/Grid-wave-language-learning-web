@@ -3,6 +3,8 @@ import { GraduationCap, Globe, BookMarked, Sigma, ArrowRight, LogOut } from 'luc
 import IeltsApp from './ielts/IeltsApp';
 import SatApp from './sat/SatApp';
 import { EnglishStatsProvider, useEnglishStats } from './stats';
+import { useEnglishAccess } from './access';
+import EnglishUpgrade from './EnglishUpgrade';
 
 // Brand mark — matches the German track's logo so the tracks feel like one product.
 function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
@@ -121,16 +123,27 @@ export default function EnglishApp({ onSwitchLanguage }: { onSwitchLanguage?: ()
     setExam(null);
   }
 
+  const access = useEnglishAccess();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const onUpgrade = () => setUpgradeOpen(true);
+
+  let content;
+  if (exam === 'ielts') {
+    content = <IeltsApp onBack={back} onSwitchLanguage={onSwitchLanguage} access={access} onUpgrade={onUpgrade} />;
+  } else if (exam === 'sat') {
+    content = <SatApp onBack={back} onSwitchLanguage={onSwitchLanguage} access={access} onUpgrade={onUpgrade} />;
+  } else {
+    content = <ExamChooser onPick={pick} onSwitchLanguage={onSwitchLanguage} />;
+  }
+
   // Wrap every English view in the shared stats provider so the streak + study
   // time tracker run the whole time the English track is open (mirrors how the
   // German App tracks study while it is mounted), against the shared profile.
+  // The upgrade modal lives alongside it, opened by the content-level paywalls.
   return (
     <EnglishStatsProvider onSwitchLanguage={onSwitchLanguage}>
-      {exam === 'ielts'
-        ? <IeltsApp onBack={back} onSwitchLanguage={onSwitchLanguage} />
-        : exam === 'sat'
-          ? <SatApp onBack={back} onSwitchLanguage={onSwitchLanguage} />
-          : <ExamChooser onPick={pick} onSwitchLanguage={onSwitchLanguage} />}
+      {content}
+      <EnglishUpgrade open={upgradeOpen} onClose={() => setUpgradeOpen(false)} currentPlan={access.plan} />
     </EnglishStatsProvider>
   );
 }

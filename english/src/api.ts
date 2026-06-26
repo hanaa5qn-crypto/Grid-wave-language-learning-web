@@ -25,8 +25,12 @@ export interface SpeakingReviewRequest {
   part: string;
   /** The question / cue card. */
   prompt: string;
-  /** A transcript of what the learner said (typed or speech-recognised). */
-  transcript: string;
+  /** Base64-encoded audio of the learner speaking (no data: prefix). Primary input. */
+  audio?: string;
+  /** MIME type of `audio`, e.g. 'audio/webm'. */
+  mimeType?: string;
+  /** Typed fallback transcript when audio recording isn't available. */
+  transcript?: string;
 }
 
 // Shared shape for both reviews. Numeric estimate is a band (IELTS, 0–9) or a
@@ -36,6 +40,12 @@ export interface AiReview {
   feedbackMessage: string;
   /** Estimated band/score, e.g. "6.5" (IELTS) — optional. */
   estimate?: string;
+  /** Speaking only: what the AI heard, transcribed (English). */
+  transcript?: string;
+  /** Speaking only: pronunciation feedback heard from the audio — IN MONGOLIAN. */
+  pronunciation?: string;
+  /** Speaking only: fluency feedback — IN MONGOLIAN. */
+  fluency?: string;
   /** Improved/model version of the learner's answer (English). */
   improved: string;
   /** Detailed explanation of strengths & errors — IN MONGOLIAN. */

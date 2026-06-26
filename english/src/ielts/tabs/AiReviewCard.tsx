@@ -7,7 +7,7 @@
 // and Speaking tabs so the feedback layout is identical.
 // =============================================================================
 import React from 'react';
-import { Award, Sparkles, ThumbsUp, Wrench, Info } from 'lucide-react';
+import { Award, Sparkles, ThumbsUp, Wrench, Info, Volume2, Gauge, Quote } from 'lucide-react';
 import { AiReview } from '../../api';
 
 export function AiReviewCard({ review }: { review: AiReview }) {
@@ -29,6 +29,36 @@ export function AiReviewCard({ review }: { review: AiReview }) {
         <p className="text-xs text-paper-2 inline-flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5" /> Энэ үнэлгээг локал жишгээр гаргалаа (AI тохируулаагүй).
         </p>
+      )}
+
+      {(review.pronunciation || review.fluency) && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {review.pronunciation && (
+            <div className="rounded-xl bg-ink-2 p-4">
+              <h4 className="font-bold mb-2 flex items-center gap-2 text-paper">
+                <Volume2 className="w-4 h-4 text-paper" /> Дуудлага
+              </h4>
+              <p className="text-sm leading-relaxed text-paper">{review.pronunciation}</p>
+            </div>
+          )}
+          {review.fluency && (
+            <div className="rounded-xl bg-ink-2 p-4">
+              <h4 className="font-bold mb-2 flex items-center gap-2 text-paper">
+                <Gauge className="w-4 h-4 text-paper" /> Чөлөөт яриа
+              </h4>
+              <p className="text-sm leading-relaxed text-paper">{review.fluency}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {review.transcript && (
+        <div>
+          <h4 className="text-sm font-bold text-paper-2 uppercase tracking-wide mb-2 flex items-center gap-2">
+            <Quote className="w-3.5 h-3.5" /> AI-н сонссон бичвэр
+          </h4>
+          <p className="rounded-xl bg-ink-2 p-4 leading-relaxed text-paper italic">{review.transcript}</p>
+        </div>
       )}
 
       {review.improved && (

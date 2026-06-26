@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { reviewWriting, AiReview } from '../../api';
 import { AiReviewCard } from './AiReviewCard';
+import { Task1Visual, Task1Chart } from './Task1Visual';
 import { useEnglishStats } from '../../stats';
 
 interface IeltsWritingPrompt {
@@ -20,7 +21,10 @@ interface IeltsWritingPrompt {
   label: string;
   title: string;
   prompt: string;
+  /** Short text caption of the graphic (also sent to the AI grader). */
   visual?: string;
+  /** Structured data for the Task 1 chart/diagram the prompt refers to. */
+  chart?: Task1Chart;
   minWords: number;
   modelAnswer: string;
 }
@@ -35,6 +39,17 @@ const PROMPTS: IeltsWritingPrompt[] = [
       'The bar chart below shows the average household electricity consumption (in kWh per month) of four countries in 2005 and 2020. Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.',
     visual:
       'Bar chart — four countries (Norway, Canada, Japan, Brazil). In 2005 Norway was highest at about 1,200 kWh; Brazil lowest at about 250 kWh. By 2020 every country fell except Brazil, which rose to about 400 kWh; Norway dropped to roughly 950 kWh.',
+    chart: {
+      kind: 'bar',
+      unit: 'kWh per month',
+      years: ['2005', '2020'],
+      series: [
+        { name: 'Norway', values: [1200, 950] },
+        { name: 'Canada', values: [900, 750] },
+        { name: 'Japan', values: [600, 500] },
+        { name: 'Brazil', values: [250, 400] },
+      ],
+    },
     minWords: 150,
     modelAnswer:
       'The bar chart compares the average monthly household electricity use, measured in kilowatt-hours, across four countries in 2005 and 2020.\n\nOverall, consumption fell in three of the four nations over the period, with Norway remaining the heaviest user throughout, while Brazil was the only country to record an increase.\n\nIn 2005, Norwegian households consumed by far the most electricity, at around 1,200 kWh per month, followed by Canada at roughly 900 kWh. Japanese homes used about 600 kWh, whereas Brazilian households used the least, at approximately 250 kWh.\n\nBy 2020, the figures for Norway and Canada had declined to about 950 and 750 kWh respectively, and Japan had also fallen, to around 500 kWh. Brazil, in contrast, bucked this trend, climbing to roughly 400 kWh. Despite this rise, Brazil still consumed considerably less than the other three countries, and the overall gap between the highest and lowest users narrowed slightly.',
@@ -48,6 +63,18 @@ const PROMPTS: IeltsWritingPrompt[] = [
       'The diagram below shows the stages in the commercial production of instant coffee. Summarise the information by selecting and reporting the main features. Write at least 150 words.',
     visual:
       'Process diagram with seven stages: harvesting cherries → drying and hulling beans → roasting → grinding → brewing a concentrate → freeze-drying into granules → packaging and distribution.',
+    chart: {
+      kind: 'process',
+      stages: [
+        'Harvesting cherries',
+        'Drying & hulling beans',
+        'Roasting',
+        'Grinding',
+        'Brewing a concentrate',
+        'Freeze-drying into granules',
+        'Packaging & distribution',
+      ],
+    },
     minWords: 150,
     modelAnswer:
       'The diagram illustrates the process by which instant coffee is manufactured commercially, from the picking of the raw fruit through to the packaging of the finished product.\n\nOverall, there are seven distinct stages, beginning with a natural agricultural step and ending with an industrial one; the process is linear, with the output of each stage feeding directly into the next.\n\nTo begin with, ripe coffee cherries are harvested from the plant and then dried and hulled to remove the outer layers and expose the green beans. These beans are subsequently roasted at high temperature, which develops their flavour and colour, before being ground into a fine powder.\n\nIn the following stage, the ground coffee is brewed with hot water to create a concentrated liquid. This concentrate is then freeze-dried, a step that removes the moisture and leaves behind solid granules. Finally, the granules are sealed into jars and packaged, after which they are ready for distribution to shops.',
@@ -113,7 +140,8 @@ export default function IeltsWritingTab() {
       const res = await reviewWriting({
         exam: 'ielts',
         task: `IELTS ${prompt.label}`,
-        prompt: prompt.prompt,
+        // Include the chart description so the examiner can judge data accuracy.
+        prompt: prompt.visual ? `${prompt.prompt}\n\n[Chart/diagram data: ${prompt.visual}]` : prompt.prompt,
         answer: answer.trim(),
       });
       setReview(res);
@@ -166,6 +194,7 @@ export default function IeltsWritingTab() {
           <span className="text-xs text-paper-2">Хамгийн багадаа {prompt.minWords} үг</span>
         </div>
         <p className="leading-relaxed text-paper">{prompt.prompt}</p>
+        {prompt.chart && <Task1Visual chart={prompt.chart} />}
         {prompt.visual && (
           <div className="rounded-xl bg-ink-2 p-4 text-sm text-paper flex gap-2">
             <BarChart3 className="w-4 h-4 text-paper shrink-0 mt-0.5" />

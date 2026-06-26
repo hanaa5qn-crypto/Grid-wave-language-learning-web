@@ -16,7 +16,7 @@ import SatMathTab from './tabs/SatMathTab';
 import SatVocabTab from './tabs/SatVocabTab';
 import SatTestsTab from './tabs/SatTestsTab';
 import DashboardTab, { type DashDest } from '../DashboardTab';
-import PracticeGate from '../PracticeGate';
+import type { EnglishAccess } from '../access';
 
 // Tab keys the shell and home cards share (mirrors IELTS's IeltsTabKey).
 export type SatTabKey = 'dashboard' | 'home' | 'rw' | 'math' | 'vocab' | 'tests';
@@ -39,9 +39,13 @@ const TABS: ShellTab[] = [
 export default function SatApp({
   onBack,
   onSwitchLanguage,
+  access,
+  onUpgrade,
 }: {
   onBack: () => void;
   onSwitchLanguage?: () => void;
+  access: EnglishAccess;
+  onUpgrade: () => void;
 }) {
   const [tab, setTab] = useState<SatTabKey>('dashboard');
 
@@ -49,10 +53,10 @@ export default function SatApp({
     switch (tab) {
       case 'dashboard': return <DashboardTab onNavigate={(d) => setTab(DASH_TO_SAT[d])} />;
       case 'home': return <SatHomeTab onGo={setTab} />;
-      case 'rw': return <PracticeGate><SatReadingWritingTab /></PracticeGate>;
-      case 'math': return <PracticeGate><SatMathTab /></PracticeGate>;
-      case 'vocab': return <SatVocabTab />;
-      case 'tests': return <PracticeGate><SatTestsTab /></PracticeGate>;
+      case 'rw': return <SatReadingWritingTab />;
+      case 'math': return <SatMathTab />;
+      case 'vocab': return <SatVocabTab allContent={access.allContent} onUpgrade={onUpgrade} />;
+      case 'tests': return <SatTestsTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       default: return <SatHomeTab onGo={setTab} />;
     }
   }

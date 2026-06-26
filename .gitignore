@@ -6,6 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+# Secret env files that don't start with ".env" (e.g. Azure TTS keys)
+*-tts.env
+azure-tts.env
 
 # Firebase CLI cache (deploy logs / hosting cache)
 .firebase/

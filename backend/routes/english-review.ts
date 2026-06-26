@@ -10,7 +10,7 @@
 // =============================================================================
 import { Type } from '@google/genai';
 import type { Express } from 'express';
-import { aiClientWithinBudget, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
+import { aiClientWithinBudget, audioTooLarge, clampText, clientIp, consumeBudget, rateLimited } from '../lib/aiGuard';
 import { generateContentWithRetry, isGeminiConfigured, getModel } from '../lib/ai';
 
 type ExamKind = 'ielts' | 'sat';
@@ -23,6 +23,25 @@ const REVIEW_SCHEMA = {
   properties: {
     feedbackMessage: { type: Type.STRING },
     estimate: { type: Type.STRING },
+    improved: { type: Type.STRING },
+    explanation: { type: Type.STRING },
+    strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+    improvements: { type: Type.ARRAY, items: { type: Type.STRING } },
+  },
+  required: ['feedbackMessage', 'improved', 'explanation', 'strengths', 'improvements'],
+};
+
+// Speaking review adds audio-only fields: a transcript Gemini hears from the
+// recording, plus dedicated pronunciation & fluency feedback (both criteria are
+// graded directly from the voice, not inferred from text).
+const SPEAKING_REVIEW_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    feedbackMessage: { type: Type.STRING },
+    estimate: { type: Type.STRING },
+    transcript: { type: Type.STRING },
+    pronunciation: { type: Type.STRING },
+    fluency: { type: Type.STRING },
     improved: { type: Type.STRING },
     explanation: { type: Type.STRING },
     strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
@@ -96,7 +115,21 @@ ${estimateGuidance(exam)}
 Keep every Mongolian field natural and concise. The "improved" field MUST be in English; all other text fields MUST be in Mongolian.`;
 }
 
-function buildSpeakingPrompt(exam: ExamKind, part: string, prompt: string, transcript: string): string {
+function buildSpeakingPrompt(
+  exam: ExamKind,
+  part: string,
+  prompt: string,
+  transcript: string,
+  hasAudio: boolean,
+): string {
+  const source = hasAudio
+    ? `You are given an AUDIO RECORDING of the learner speaking. LISTEN to the actual audio and grade what you HEAR: real pronunciation of individual sounds, word stress, sentence intonation, rhythm, pace, pauses and hesitation, and the audible accent of a Mongolian speaker (e.g. consonant clusters, "th", "w/v", final consonants, vowel length). Transcribe exactly what you hear into English for the "transcript" field — do not assume the learner said anything other than what is on the recording.`
+    : `No audio is available — you are given only a TEXT TRANSCRIPT of what the learner said (in English):
+"""
+${transcript}
+"""
+Judge pronunciation only at the level the text allows and infer likely sound difficulties for a Mongolian speaker; put this text in the "transcript" field.`;
+
   return `You are an experienced ${examName(exam)} examiner. The learner is a native Mongolian speaker preparing for the ${examName(exam)} exam.
 
 Speaking part / task: "${part}"
@@ -105,25 +138,25 @@ The question / cue card the learner responded to:
 ${prompt}
 """
 
-A transcript of what the learner said (in English):
-"""
-${transcript}
-"""
+${source}
 
-Assess this spoken response the way a real ${examName(exam)} examiner would: fluency and coherence, lexical resource, grammatical range and accuracy, and (as far as a transcript allows) pronunciation/word-choice tendencies for a Mongolian speaker. Reference the learner's ACTUAL words — quote or paraphrase concrete phrases — and name specific issues. Be concrete, not generic. Be a strict, calibrated examiner — do not inflate; reserve top marks for genuinely strong responses.
-The band/score belongs ONLY in the "estimate" field — do NOT state any specific band number anywhere in feedbackMessage, explanation, strengths, or improvements.
+Assess this spoken response the way a real ${examName(exam)} examiner would across ALL four criteria: fluency and coherence, lexical resource, grammatical range and accuracy, and PRONUNCIATION. Reference the learner's ACTUAL words and sounds — quote or paraphrase concrete phrases and name the specific sounds/words that were strong or wrong. Be concrete, not generic. Be a strict, calibrated examiner — do not inflate; reserve top marks for genuinely strong responses.
+The band/score belongs ONLY in the "estimate" field — do NOT state any specific band number anywhere in the other fields.
 
 Return ONLY JSON matching this structure:
 {
   "feedbackMessage": "A short, encouraging title in MONGOLIAN (e.g. 'Сайн ярьжээ!' or 'Сайжруулах зүйл бий').",
   "estimate": "${exam === 'sat' ? 'A short SAT-appropriate quality label for the response.' : 'An estimated IELTS Speaking band 0-9, e.g. 6.5.'}",
+  "transcript": "Exactly what the learner said, written in English.",
+  "pronunciation": "2-3 sentences IN MONGOLIAN on pronunciation${hasAudio ? ' you actually heard' : ''}: which sounds/words were clear, which were off (specific sounds), plus intonation/word-stress notes for a Mongolian speaker.",
+  "fluency": "1-2 sentences IN MONGOLIAN on fluency: pace, pauses/hesitation, and how smoothly ideas were linked.",
   "improved": "An improved, model version of the learner's spoken answer, IN ENGLISH, at a high band level while staying on the same prompt.",
   "explanation": "A DETAILED explanation IN MONGOLIAN covering grammar, task/response, coherence, and lexical resource — referencing the learner's actual words.",
   "strengths": ["2-4 short MONGOLIAN bullet points naming concrete strengths"],
   "improvements": ["2-4 short, concrete MONGOLIAN bullet points on what to practice next, with specific examples"]
 }
 ${exam === 'ielts' ? 'In "estimate", give an estimated IELTS Speaking band from 0 to 9 (half bands allowed).' : 'In "estimate", give a short SAT-appropriate quality label.'}
-Keep every Mongolian field natural and concise. The "improved" field MUST be in English; all other text fields MUST be in Mongolian.`;
+Keep every Mongolian field natural and concise. The "improved" field MUST be in English; all other text fields (including pronunciation and fluency) MUST be in Mongolian. The "transcript" field MUST be in English.`;
 }
 
 // Graceful fallback (HTTP 200) so the UI still works when AI is unavailable.
@@ -156,6 +189,9 @@ function speakingFallback(exam: ExamKind, part: string, transcript: string) {
     fallback: true,
     feedbackMessage: 'AI үнэлгээ түр боломжгүй байна',
     estimate: '',
+    transcript,
+    pronunciation: 'Дуудлагын автомат шинжилгээ AI идэвхжсэн үед боломжтой.',
+    fluency: 'Чөлөөт ярианы автомат шинжилгээ AI идэвхжсэн үед боломжтой.',
     improved: transcript,
     explanation: checklist,
     strengths: [] as string[],
@@ -235,8 +271,22 @@ export function registerEnglishReviewRoute(app: Express) {
     const prompt = clampText(req.body?.prompt);
     const transcript = clampText(req.body?.transcript);
 
-    if (!transcript) {
-      return res.status(400).json({ error: 'Ярианы бичвэр хоосон байна.' });
+    // Audio is the primary input: Gemini listens to the recording and grades the
+    // real voice (pronunciation, fluency, intonation). The transcript is only a
+    // fallback for browsers/devices that cannot record.
+    const ALLOWED_MIME_TYPES = ['audio/wav', 'audio/mpeg', 'audio/mp4', 'audio/ogg', 'audio/webm', 'audio/aac', 'audio/x-m4a'];
+    const rawMimeType = typeof req.body?.mimeType === 'string' ? req.body.mimeType.split(';')[0].trim() : 'audio/webm';
+    const mimeType = ALLOWED_MIME_TYPES.includes(rawMimeType) ? rawMimeType : 'audio/webm';
+    const audioData = typeof req.body?.audio === 'string' ? req.body.audio : undefined;
+
+    if (audioTooLarge(audioData)) {
+      return res.status(413).json({ error: 'Дуу бичлэг хэт том байна. Богино бичлэг (1-2 минут) оруулна уу.' });
+    }
+
+    const hasAudio = typeof audioData === 'string' && audioData.length > 0;
+
+    if (!hasAudio && !transcript) {
+      return res.status(400).json({ error: 'Дуу бичлэг хийх эсвэл ярианы бичвэрээ оруулна уу.' });
     }
 
     const ai = isGeminiConfigured() ? aiClientWithinBudget() : null;
@@ -244,14 +294,19 @@ export function registerEnglishReviewRoute(app: Express) {
     if (ai) {
       consumeBudget();
       try {
+        const parts: any[] = [{ text: buildSpeakingPrompt(exam, part, prompt, transcript, hasAudio) }];
+        if (hasAudio) {
+          parts.push({ inlineData: { mimeType, data: audioData } });
+        }
+
         const response = await generateContentWithRetry(ai, {
           model: getModel(),
-          contents: buildSpeakingPrompt(exam, part, prompt, transcript),
+          contents: [{ role: 'user', parts }],
           config: {
             // Low temperature → calibrated, repeatable band estimates.
             temperature: 0.2,
             responseMimeType: 'application/json',
-            responseSchema: REVIEW_SCHEMA,
+            responseSchema: SPEAKING_REVIEW_SCHEMA,
           },
         });
 

@@ -1,14 +1,16 @@
 // =============================================================================
 // IELTS — Speaking practice tab.
 // -----------------------------------------------------------------------------
-// Original Speaking Parts 1–3 (interview, cue card, discussion). The learner can
-// capture a transcript by speech recognition (when available) or by typing, then
-// call reviewSpeaking (exam: 'ielts') for Mongolian AI feedback rendered via the
-// shared card. A "Hear a model answer" button uses the British neural voice.
+// Speaking Parts 1–3 (interview, cue card, discussion). The learner RECORDS
+// their actual voice (MediaRecorder), and the recording itself is sent to the
+// AI, which LISTENS and grades the real voice — pronunciation, fluency and
+// intonation included — then returns Mongolian feedback via the shared card.
+// (Older browsers with no MediaRecorder fall back to typing a transcript.)
+// A "Hear a model answer" button uses the British neural voice.
 // =============================================================================
 import React, { useMemo, useRef, useState } from 'react';
 import {
-  Mic, Square, Volume2, Sparkles, Loader2, AlertCircle, MessageSquare, Quote,
+  Mic, Square, Volume2, Sparkles, Loader2, AlertCircle, MessageSquare,
 } from 'lucide-react';
 import { reviewSpeaking, AiReview } from '../../api';
 import { speak, stopSpeaking } from '../../audio';
@@ -73,78 +75,127 @@ const PROMPTS: SpeakingPrompt[] = [
   },
 ];
 
-// Minimal local shape for the speech-recognition window globals (tsc-friendly).
-type SpeechRecognitionLike = {
-  lang: string;
-  continuous: boolean;
-  interimResults: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onend: (() => void) | null;
-  onerror: (() => void) | null;
-};
+function recorderSupported(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    !!navigator.mediaDevices?.getUserMedia &&
+    typeof MediaRecorder !== 'undefined'
+  );
+}
 
-function getRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
-  const w = window as any;
-  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+/** FileReader → base64 without the `data:...;base64,` prefix. */
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result).split(',')[1] || '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+function formatTime(s: number): string {
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${r.toString().padStart(2, '0')}`;
 }
 
 export default function IeltsSpeakingTab() {
   const { recordStudy } = useEnglishStats();
   const [selectedId, setSelectedId] = useState<string>(PROMPTS[0].id);
-  const [transcript, setTranscript] = useState('');
   const [recording, setRecording] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [loading, setLoading] = useState(false);
   const [review, setReview] = useState<AiReview | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const baseTranscriptRef = useRef('');
+  // Fallback only: typed transcript when the browser can't record audio.
+  const [typedTranscript, setTypedTranscript] = useState('');
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const blobRef = useRef<Blob | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const prompt = useMemo(
     () => PROMPTS.find((p) => p.id === selectedId) ?? PROMPTS[0],
     [selectedId],
   );
-  const recognitionAvailable = getRecognitionCtor() !== null;
+  const canRecord = recorderSupported();
+
+  function clearTimer() {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }
+
+  function resetRecording() {
+    clearTimer();
+    try { mediaRecorderRef.current?.stop(); } catch { /* already stopped */ }
+    mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+    mediaStreamRef.current = null;
+    mediaRecorderRef.current = null;
+    chunksRef.current = [];
+    blobRef.current = null;
+    setRecording(false);
+    setSeconds(0);
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    setAudioUrl(null);
+  }
 
   function selectPrompt(id: string) {
-    stopRecording();
+    resetRecording();
     stopSpeaking();
     setSelectedId(id);
-    setTranscript('');
     setReview(null);
     setError(null);
+    setTypedTranscript('');
     setSpeaking(false);
   }
 
-  function startRecording() {
-    const Ctor = getRecognitionCtor();
-    if (!Ctor) return;
-    const rec = new Ctor();
-    rec.lang = 'en-US';
-    rec.continuous = true;
-    rec.interimResults = true;
-    baseTranscriptRef.current = transcript ? `${transcript.trim()} ` : '';
-    rec.onresult = (event) => {
-      let assembled = '';
-      for (let i = 0; i < event.results.length; i += 1) {
-        assembled += event.results[i][0].transcript;
-      }
-      setTranscript(`${baseTranscriptRef.current}${assembled}`.trimStart());
-    };
-    rec.onend = () => setRecording(false);
-    rec.onerror = () => setRecording(false);
-    recognitionRef.current = rec;
-    setRecording(true);
-    rec.start();
+  async function startRecording() {
+    setError(null);
+    setReview(null);
+    if (audioUrl) { URL.revokeObjectURL(audioUrl); setAudioUrl(null); }
+    blobRef.current = null;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      // Pick a mime the browser supports (Chrome: webm, Safari: mp4).
+      const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
+      const mime = candidates.find((t) => MediaRecorder.isTypeSupported?.(t)) || '';
+      const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      chunksRef.current = [];
+
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        if (blob.size > 0) {
+          blobRef.current = blob;
+          setAudioUrl(URL.createObjectURL(blob));
+        }
+      };
+
+      recorder.start();
+      setRecording(true);
+      setSeconds(0);
+      timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
+    } catch (e) {
+      console.error('Microphone access failed:', e);
+      setError('Микрофон руу хандах боломжгүй байна. Зөвшөөрлөө шалгаарай.');
+      setRecording(false);
+    }
   }
 
   function stopRecording() {
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch { /* already stopped */ }
-      recognitionRef.current = null;
-    }
+    clearTimer();
+    try { mediaRecorderRef.current?.stop(); } catch { /* already stopped */ }
     setRecording(false);
   }
 
@@ -165,12 +216,19 @@ export default function IeltsSpeakingTab() {
     setError(null);
     setReview(null);
     try {
-      const res = await reviewSpeaking({
-        exam: 'ielts',
+      const blob = blobRef.current;
+      const base = {
+        exam: 'ielts' as const,
         part: `IELTS Speaking ${prompt.label}`,
         prompt: prompt.questions.join('\n'),
-        transcript: transcript.trim(),
-      });
+      };
+      const res = blob
+        ? await reviewSpeaking({
+            ...base,
+            audio: await blobToBase64(blob),
+            mimeType: (blob.type || 'audio/webm').split(';')[0],
+          })
+        : await reviewSpeaking({ ...base, transcript: typedTranscript.trim() });
       setReview(res);
       recordStudy();
     } catch (e) {
@@ -182,6 +240,9 @@ export default function IeltsSpeakingTab() {
     }
   }
 
+  const hasAudio = !!audioUrl;
+  const canSubmit = hasAudio || (!canRecord && typedTranscript.trim() !== '');
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       <div>
@@ -189,7 +250,8 @@ export default function IeltsSpeakingTab() {
           <Mic className="w-6 h-6 text-paper" /> Speaking practice
         </h2>
         <p className="text-paper-2 mt-1">
-          Part 1–3-ыг ярьж бичүүлээд, эсвэл бичээд AI-аас Монгол хэлээр үнэлгээ аваарай.
+          Part 1–3-ыг чангаар ярьж бичүүлээрэй. AI таны дуу хоолойг сонсож, дуудлага, чөлөөт яриаг
+          Монгол хэлээр үнэлнэ.
         </p>
       </div>
 
@@ -234,46 +296,63 @@ export default function IeltsSpeakingTab() {
         </button>
       </div>
 
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm font-bold text-paper">
-          <MessageSquare className="w-4 h-4 text-paper" /> Таны хариулт (transcript)
-        </label>
-        <textarea
-          value={transcript}
-          onChange={(e) => setTranscript(e.target.value)}
-          rows={8}
-          placeholder="Ярьж бичүүлэх эсвэл шууд бичнэ үү…"
-          className="w-full rounded-2xl bg-ink-raise border border-ink-line p-4 text-paper placeholder:text-paper-2 focus:outline-none focus:border-paper leading-relaxed resize-y"
-        />
-        <div className="flex flex-wrap gap-3">
-          {recognitionAvailable ? (
+      {/* --- Recorder ---------------------------------------------------------- */}
+      {canRecord ? (
+        <div className="rounded-2xl bg-ink-raise p-5 space-y-4">
+          <div className="flex flex-wrap items-center gap-4">
             <button
               onClick={recording ? stopRecording : startRecording}
               className={[
-                'inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-semibold transition-colors',
+                'inline-flex items-center gap-2 rounded-full px-6 py-3 font-bold transition-colors',
                 recording
-                  ? 'bg-ink-2 text-paper-2'
+                  ? 'bg-paper text-ink'
                   : 'bg-ink-2 text-paper hover:bg-ink-raise',
               ].join(' ')}
             >
               {recording ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-              {recording ? 'Бичлэг зогсоох' : 'Record'}
+              {recording ? 'Бичлэг зогсоох' : hasAudio ? 'Дахин бичих' : 'Дуу хоолой бичих'}
             </button>
-          ) : (
-            <span className="text-xs text-paper-2 inline-flex items-center gap-1.5">
-              <Quote className="w-3.5 h-3.5" /> Энэ хөтөч дуу таних дэмждэггүй тул бичээрэй.
-            </span>
+            {recording && (
+              <span className="inline-flex items-center gap-2 text-paper">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+                {formatTime(seconds)}
+              </span>
+            )}
+          </div>
+
+          {hasAudio && !recording && (
+            <div className="space-y-1">
+              <span className="text-xs text-paper-2">Таны бичлэг — сонсож шалгаарай:</span>
+              <audio src={audioUrl!} controls className="w-full" />
+            </div>
           )}
+
+          <p className="text-xs text-paper-2">
+            Зөвлөмж: тайван орчинд, бүрэн өгүүлбэрээр 1–2 минут ярина уу.
+          </p>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-bold text-paper">
+            <MessageSquare className="w-4 h-4 text-paper" /> Энэ хөтөч дуу бичлэг дэмждэггүй — бичвэрээ оруулна уу
+          </label>
+          <textarea
+            value={typedTranscript}
+            onChange={(e) => setTypedTranscript(e.target.value)}
+            rows={8}
+            placeholder="Хэлэх байсан зүйлээ энд бичнэ үү…"
+            className="w-full rounded-2xl bg-ink-raise border border-ink-line p-4 text-paper placeholder:text-paper-2 focus:outline-none focus:border-paper leading-relaxed resize-y"
+          />
+        </div>
+      )}
 
       <button
         onClick={getFeedback}
-        disabled={loading || transcript.trim() === ''}
+        disabled={loading || !canSubmit}
         className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold disabled:opacity-40"
       >
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-        {loading ? 'Үнэлж байна…' : 'Get AI feedback / AI үнэлгээ авах'}
+        {loading ? 'Дуу хоолойг сонсож байна…' : 'Get AI feedback / AI үнэлгээ авах'}
       </button>
 
       {error && (

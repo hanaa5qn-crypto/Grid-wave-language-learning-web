@@ -7,24 +7,37 @@
 // =============================================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  BookA, Volume2, ChevronLeft, ChevronRight, Eye, EyeOff, Shuffle,
+  BookA, Volume2, ChevronLeft, ChevronRight, Eye, EyeOff, Shuffle, Lock,
 } from 'lucide-react';
 import { IELTS_VOCAB } from '../ieltsVocab';
 import { speak } from '../../audio';
 import { EnglishLevel } from '../../types';
 import { LevelFilter, IELTS_LEVELS } from './quizKit';
 import { useEnglishStats } from '../../stats';
+import { FREE_VOCAB_WORDS } from '../../access';
 
-export default function IeltsVocabTab() {
+export default function IeltsVocabTab({
+  allContent,
+  onUpgrade,
+}: {
+  allContent: boolean;
+  onUpgrade: () => void;
+}) {
   const { recordStudy } = useEnglishStats();
   const [level, setLevel] = useState<EnglishLevel | 'all'>('all');
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
 
-  const deck = useMemo(
+  const fullDeck = useMemo(
     () => (level === 'all' ? IELTS_VOCAB : IELTS_VOCAB.filter((w) => w.level === level)),
     [level],
   );
+  // Free tier only sees the first FREE_VOCAB_WORDS cards of each deck.
+  const deck = useMemo(
+    () => (allContent ? fullDeck : fullDeck.slice(0, FREE_VOCAB_WORDS)),
+    [fullDeck, allContent],
+  );
+  const lockedCount = fullDeck.length - deck.length;
 
   // Keep the index valid whenever the filtered deck changes.
   useEffect(() => {
@@ -60,6 +73,22 @@ export default function IeltsVocabTab() {
       </div>
 
       <LevelFilter levels={IELTS_LEVELS} active={level} onChange={setLevel} />
+
+      {lockedCount > 0 && (
+        <button
+          onClick={onUpgrade}
+          className="w-full text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-4 transition-colors flex items-center gap-3"
+        >
+          <span className="rounded-full bg-ink-2 p-2 text-paper-2">
+            <Lock className="w-4 h-4" />
+          </span>
+          <span className="flex-1">
+            <span className="block font-bold text-paper">Үнэгүй {FREE_VOCAB_WORDS} үг харагдаж байна</span>
+            <span className="block text-sm text-paper-2">Бүх {fullDeck.length} үгийг Pro-оор нээ (+{lockedCount} үг)</span>
+          </span>
+          <span className="shrink-0 rounded-full bg-primary text-on-primary px-4 py-2 text-sm font-bold">Pro авах</span>
+        </button>
+      )}
 
       {deck.length === 0 || !card ? (
         <p className="text-paper-2">Энэ түвшинд үг алга байна.</p>
