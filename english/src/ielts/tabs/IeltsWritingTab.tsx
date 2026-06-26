@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { reviewWriting, AiReview } from '../../api';
 import { AiReviewCard } from './AiReviewCard';
+import { ProLockedTab } from './quizKit';
 import { Task1Visual, Task1Chart } from './Task1Visual';
 import { useEnglishStats } from '../../stats';
 import { IELTS_GEN_WRITING } from './ieltsWritingGenerated';
@@ -142,15 +143,26 @@ const BASE_PROMPTS: IeltsWritingPrompt[] = [
 ];
 
 // Built-in prompts + the verified NotebookLM-generated bank (Task 1 with charts
-// + Task 2 essays). See ./ieltsWritingGenerated.ts.
-const PROMPTS: IeltsWritingPrompt[] = [...BASE_PROMPTS, ...IELTS_GEN_WRITING];
+// + Task 2 essays). See ./ieltsWritingGenerated.ts. Sorted so every Task 1
+// prompt is grouped ahead of every Task 2 (stable within each task), matching
+// the order a learner works through the exam paper. Array.sort is stable, so the
+// built-in prompts keep their lead over the generated bank inside each task.
+const PROMPTS: IeltsWritingPrompt[] = [...BASE_PROMPTS, ...IELTS_GEN_WRITING].sort(
+  (a, b) => a.task - b.task,
+);
 
 function countWords(text: string): number {
   const trimmed = text.trim();
   return trimmed === '' ? 0 : trimmed.split(/\s+/).length;
 }
 
-export default function IeltsWritingTab() {
+export default function IeltsWritingTab({
+  allContent,
+  onUpgrade,
+}: {
+  allContent: boolean;
+  onUpgrade: () => void;
+}) {
   const { recordStudy } = useEnglishStats();
   const [selectedId, setSelectedId] = useState<string>(PROMPTS[0].id);
   const [answer, setAnswer] = useState('');
@@ -195,6 +207,18 @@ export default function IeltsWritingTab() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Writing is AI-graded — Pro/Max only. Free accounts see the upsell instead.
+  if (!allContent) {
+    return (
+      <ProLockedTab
+        icon={Edit3}
+        title="Writing practice"
+        blurb="Бүх Writing даалгавар (Task 1 ба Task 2), Band 9 жишээ хариулт болон AI-ийн Монгол үнэлгээ Pro болон Max багцад нээгдэнэ."
+        onUpgrade={onUpgrade}
+      />
+    );
   }
 
   return (

@@ -15,6 +15,7 @@ import {
 import { reviewSpeaking, AiReview } from '../../api';
 import { speak, stopSpeaking } from '../../audio';
 import { AiReviewCard } from './AiReviewCard';
+import { ProLockedTab } from './quizKit';
 import { useEnglishStats } from '../../stats';
 
 const IELTS_VOICE = 'en-GB-SoniaNeural';
@@ -29,7 +30,7 @@ interface SpeakingPrompt {
   modelAnswer: string;
 }
 
-const PROMPTS: SpeakingPrompt[] = [
+const BASE_PROMPTS: SpeakingPrompt[] = [
   {
     id: 'p1',
     part: 1,
@@ -119,6 +120,10 @@ const PROMPTS: SpeakingPrompt[] = [
   },
 ];
 
+// Grouped by part (1 → 2 → 3) so the pills read in exam order. Array.sort is
+// stable, so prompts keep their original order within each part.
+const PROMPTS: SpeakingPrompt[] = [...BASE_PROMPTS].sort((a, b) => a.part - b.part);
+
 function recorderSupported(): boolean {
   return (
     typeof navigator !== 'undefined' &&
@@ -143,7 +148,13 @@ function formatTime(s: number): string {
   return `${m}:${r.toString().padStart(2, '0')}`;
 }
 
-export default function IeltsSpeakingTab() {
+export default function IeltsSpeakingTab({
+  allContent,
+  onUpgrade,
+}: {
+  allContent: boolean;
+  onUpgrade: () => void;
+}) {
   const { recordStudy } = useEnglishStats();
   const [selectedId, setSelectedId] = useState<string>(PROMPTS[0].id);
   const [recording, setRecording] = useState(false);
@@ -286,6 +297,18 @@ export default function IeltsSpeakingTab() {
 
   const hasAudio = !!audioUrl;
   const canSubmit = hasAudio || (!canRecord && typedTranscript.trim() !== '');
+
+  // Speaking is AI-graded — Pro/Max only. Free accounts see the upsell instead.
+  if (!allContent) {
+    return (
+      <ProLockedTab
+        icon={Mic}
+        title="Speaking practice"
+        blurb="Бүх Speaking даалгавар (Part 1–3), дуу хоолойн бичлэг болон AI-ийн дуудлага, чөлөөт ярианы Монгол үнэлгээ Pro болон Max багцад нээгдэнэ."
+        onUpgrade={onUpgrade}
+      />
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">

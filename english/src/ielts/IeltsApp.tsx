@@ -56,8 +56,8 @@ export default function IeltsApp({
       case 'home': return <IeltsHomeTab onGo={setTab} />;
       case 'reading': return <IeltsReadingTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       case 'listening': return <IeltsListeningTab allContent={access.allContent} onUpgrade={onUpgrade} />;
-      case 'writing': return <IeltsWritingTab />;
-      case 'speaking': return <IeltsSpeakingTab />;
+      case 'writing': return <IeltsWritingTab allContent={access.allContent} onUpgrade={onUpgrade} />;
+      case 'speaking': return <IeltsSpeakingTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       case 'vocab': return <IeltsVocabTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       case 'tests': return <IeltsTestsTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       default: return <IeltsHomeTab onGo={setTab} />;

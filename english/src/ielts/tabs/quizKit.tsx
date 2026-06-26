@@ -137,3 +137,41 @@ export function ScoreBanner({ correct, total }: { correct: number; total: number
     </div>
   );
 }
+
+// Full-tab Pro paywall. Speaking and Writing are the AI-graded skills (every
+// submission hits the Gemini grader), so unlike the local-MCQ tabs they give no
+// free taste — a free account sees this upsell instead of the practice content.
+// onUpgrade opens the shared EnglishUpgrade modal.
+export function ProLockedTab({
+  icon: Icon,
+  title,
+  blurb,
+  onUpgrade,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  blurb: string;
+  onUpgrade: () => void;
+}) {
+  return (
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      <div className="rounded-3xl border border-ink-line bg-ink-raise p-8 sm:p-10 text-center space-y-4">
+        <span className="inline-flex w-14 h-14 rounded-2xl bg-ink-2 border border-ink-line items-center justify-center text-paper">
+          <Icon className="w-7 h-7" />
+        </span>
+        <div className="flex items-center justify-center gap-1.5">
+          <Lock className="w-3.5 h-3.5 text-paper-2" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-paper-2">Pro</span>
+        </div>
+        <h2 className="text-2xl font-serif font-light tracking-tight text-paper">{title}</h2>
+        <p className="text-paper-2 leading-relaxed max-w-md mx-auto">{blurb}</p>
+        <button
+          onClick={onUpgrade}
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold hover:bg-white"
+        >
+          <Lock className="w-4 h-4" /> Pro-оор нээх
+        </button>
+      </div>
+    </div>
+  );
+}
