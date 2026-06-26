@@ -7,7 +7,24 @@
 // learners — mirroring the German track's evaluate-writing/speaking feedback.
 // =============================================================================
 
+import { getAuthInstance, isFirebaseConfigured } from '../../frontend/src/firebase';
+
 export type ExamKind = 'ielts' | 'sat';
+
+// The review endpoints are gated server-side by checkAiAccess (verified Firebase
+// user + metered quota), so every call must carry the signed-in user's ID token —
+// mirrors the German track's aiAuthHeaders. Returns {} when signed out so the
+// server replies 401 (AUTH_REQUIRED) rather than silently running paid AI.
+async function authHeader(): Promise<Record<string, string>> {
+  try {
+    if (!isFirebaseConfigured) return {};
+    const user = getAuthInstance().currentUser;
+    if (!user) return {};
+    return { Authorization: `Bearer ${await user.getIdToken()}` };
+  } catch {
+    return {};
+  }
+}
 
 export interface WritingReviewRequest {
   exam: ExamKind;
@@ -61,7 +78,7 @@ export interface AiReview {
 async function postReview(path: string, body: unknown): Promise<AiReview> {
   const res = await fetch(path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
