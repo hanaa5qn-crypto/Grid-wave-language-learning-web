@@ -70,6 +70,102 @@ const MATH_DRILLS: SatQuestion[] = [
     explanation:
       'By the Pythagorean theorem, hypotenuse = √(6² + 8²) = √(36 + 64) = √100 = 10.',
   },
+  // --- Practice Test 1 — Math module (imported) ---------------------------
+  {
+    id: 91006,
+    domain: 'Algebra',
+    question:
+      'A fitness center charges a $50 one-time initiation fee plus $30 per month for a membership. If Alex has spent a total of $260 on his membership, how many months has he been a member?',
+    choices: ['5', '6', '7', '8'],
+    correctIndex: 2,
+    explanation:
+      'Subtract the $50 fee from $260 to get $210, then divide by $30 per month: 210 / 30 = 7 months.',
+  },
+  {
+    id: 91007,
+    domain: 'Algebra',
+    question:
+      'If 2x + y = 10 and x − y = 2, what is the value of x? (Grid-in)',
+    gridInAnswer: '4',
+    explanation:
+      'Add the two equations: (2x + x) + (y − y) = 10 + 2, giving 3x = 12, so x = 4.',
+  },
+  {
+    id: 91008,
+    domain: 'Advanced Math',
+    question: 'Which of the following expressions is equivalent to x² − 10x + 24?',
+    choices: ['(x − 4)(x + 6)', '(x − 6)(x − 4)', '(x + 6)(x + 4)', '(x − 12)(x + 2)'],
+    correctIndex: 1,
+    explanation:
+      'The numbers −6 and −4 multiply to +24 and add to −10, so x² − 10x + 24 = (x − 6)(x − 4).',
+  },
+  {
+    id: 91009,
+    domain: 'Advanced Math',
+    question:
+      'A population of 200 rabbits doubles every 4 years. According to this exponential growth model, how many rabbits will there be after 12 years? (Grid-in)',
+    gridInAnswer: '1600',
+    explanation:
+      'The population doubles 3 times in 12 years (12 / 4 = 3): 200 × 2³ = 200 × 8 = 1600.',
+  },
+  {
+    id: 91010,
+    domain: 'Advanced Math',
+    question:
+      'What is the y-intercept of the graph of the equation y = 3x² − 5x + 7 in the xy-plane?',
+    choices: ['(0, 7)', '(7, 0)', '(0, −5)', '(−5, 7)'],
+    correctIndex: 0,
+    explanation:
+      'The y-intercept occurs where x = 0; substituting gives y = 7, so the point is (0, 7).',
+  },
+  {
+    id: 91011,
+    domain: 'Problem-Solving and Data Analysis',
+    question:
+      'A winter jacket is on sale for 25% off its original price. If the sale price is $60, what was the original price of the jacket?',
+    choices: ['$75', '$80', '$85', '$100'],
+    correctIndex: 1,
+    explanation:
+      'The sale price is 75% of the original (0.75x = 60); dividing 60 by 0.75 gives $80.',
+  },
+  {
+    id: 91012,
+    domain: 'Problem-Solving and Data Analysis',
+    question:
+      'A bag contains 5 red marbles, 3 blue marbles, and 2 green marbles. If one marble is drawn at random, what is the probability that it is blue? (Grid-in, as a decimal)',
+    gridInAnswer: '0.3',
+    explanation:
+      'There are 3 blue marbles out of 10 total: 3 / 10 = 0.3.',
+  },
+  {
+    id: 91013,
+    domain: 'Geometry and Trigonometry',
+    question:
+      'In right triangle ABC, the right angle is at vertex B. If sin(A) = 3/5, what is the value of cos(C)?',
+    choices: ['3/5', '4/5', '3/4', '5/3'],
+    correctIndex: 0,
+    explanation:
+      'Angles A and C are complementary (A + C = 90°), and the sine of an angle equals the cosine of its complement, so cos(C) = sin(A) = 3/5.',
+  },
+  {
+    id: 91014,
+    domain: 'Geometry and Trigonometry',
+    question:
+      'A right circular cylinder has a radius of 4 inches and a height of 5 inches. The volume can be expressed as kπ cubic inches. What is the value of k? (Grid-in)',
+    gridInAnswer: '80',
+    explanation:
+      'Volume = πr²h = π × 4² × 5 = π × 16 × 5 = 80π, so k = 80.',
+  },
+  {
+    id: 91015,
+    domain: 'Geometry and Trigonometry',
+    question:
+      'Lines l and m are parallel and are intersected by a transversal t. If one of the acute angles formed measures 40°, what is the measure of one of the obtuse angles formed?',
+    choices: ['40°', '50°', '140°', '180°'],
+    correctIndex: 2,
+    explanation:
+      'An acute and an obtuse angle formed here are supplementary, so 180° − 40° = 140°.',
+  },
 ];
 
 export default function SatMathTab({ allContent, onUpgrade }: { allContent: boolean; onUpgrade: () => void }) {

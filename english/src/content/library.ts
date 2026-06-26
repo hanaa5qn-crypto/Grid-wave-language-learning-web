@@ -588,6 +588,109 @@ export const READING_LIBRARY: ReadingItem[] = [
       },
     ],
   },
+  // --- IELTS Practice Test 1 — Reading (imported) ------------------------
+  {
+    id: 21,
+    level: 'C1',
+    topic: 'Environment',
+    title: 'The Impact of Urban Green Spaces',
+    text:
+      'A. In recent decades, city planners have increasingly recognised the necessity of integrating green spaces into urban environments. Parks, public gardens, and tree-lined streets are no longer viewed merely as aesthetic additions but as critical infrastructure that supports public health. Research indicates that regular access to nature significantly lowers stress hormones and mitigates the risk of cardiovascular disease among city dwellers.\n\nB. Beyond human health, urban greenery plays a pivotal role in environmental regulation. Trees act as natural air filters, absorbing pollutants such as nitrogen dioxide and particulate matter. Furthermore, green spaces combat the "urban heat island" effect, a phenomenon where concrete and asphalt absorb and trap heat, making cities noticeably warmer than surrounding rural areas. By providing shade and releasing moisture, parks can lower local temperatures by several degrees.\n\nC. Despite these clear benefits, the equitable distribution of green spaces remains a significant challenge. In many rapidly expanding cities, parks are disproportionately located in affluent neighbourhoods, while lower-income areas face a severe deficit of accessible nature. Urban sociologists argue that this disparity exacerbates existing health inequalities, making the democratisation of urban nature a pressing priority for future city development.',
+    questions: [
+      {
+        id: 1,
+        question: 'Matching headings — which heading best fits Paragraph A?',
+        choices: [
+          'The environmental functions of city greenery',
+          'The economic costs of building new parks',
+          'The health benefits of urban nature',
+          'Unequal access to green spaces',
+        ],
+        correctIndex: 2,
+        explanation:
+          'Paragraph A focuses on how access to nature lowers stress hormones and cardiovascular risk — the health benefits.',
+      },
+      {
+        id: 2,
+        question: 'Matching headings — which heading best fits Paragraph B?',
+        choices: [
+          'The environmental functions of city greenery',
+          'The economic costs of building new parks',
+          'The health benefits of urban nature',
+          'Unequal access to green spaces',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Paragraph B describes how greenery filters air and cools temperatures — its environmental functions.',
+      },
+      {
+        id: 3,
+        question: 'Matching headings — which heading best fits Paragraph C?',
+        choices: [
+          'The environmental functions of city greenery',
+          'The economic costs of building new parks',
+          'The health benefits of urban nature',
+          'Unequal access to green spaces',
+        ],
+        correctIndex: 3,
+        explanation:
+          'Paragraph C discusses parks being concentrated in affluent areas — the unequal distribution of green spaces.',
+      },
+      {
+        id: 4,
+        question:
+          'True / False / Not Given: Urban green spaces are primarily constructed to make cities look more beautiful.',
+        choices: ['True', 'False', 'Not Given'],
+        correctIndex: 1,
+        explanation:
+          'Paragraph A states parks are "no longer viewed merely as aesthetic additions", which contradicts the statement — so FALSE.',
+      },
+      {
+        id: 5,
+        question:
+          'True / False / Not Given: The "urban heat island" effect causes cities to have higher temperatures than nearby rural regions.',
+        choices: ['True', 'False', 'Not Given'],
+        correctIndex: 0,
+        explanation:
+          'Paragraph B says the effect makes "cities noticeably warmer than surrounding rural areas" — so TRUE.',
+      },
+      {
+        id: 6,
+        question:
+          'True / False / Not Given: The government has pledged increased funding to build parks in lower-income areas.',
+        choices: ['True', 'False', 'Not Given'],
+        correctIndex: 2,
+        explanation:
+          'The passage calls the disparity a priority but never mentions any government funding pledge — so NOT GIVEN.',
+      },
+      {
+        id: 7,
+        question: 'According to Paragraph B, trees help the environment by:',
+        choices: [
+          'producing nitrogen dioxide.',
+          'cleaning the air of pollutants.',
+          'absorbing concrete and asphalt.',
+          'warming the surrounding rural areas.',
+        ],
+        correctIndex: 1,
+        explanation:
+          '"Trees act as natural air filters, absorbing pollutants such as nitrogen dioxide and particulate matter."',
+      },
+      {
+        id: 8,
+        question: 'What is the main problem identified in Paragraph C?',
+        choices: [
+          'Green spaces are too expensive to maintain.',
+          'Sociologists do not understand the benefits of parks.',
+          'Parks are mostly concentrated in wealthier neighbourhoods.',
+          'Lower-income areas have too many trees.',
+        ],
+        correctIndex: 2,
+        explanation:
+          '"Parks are disproportionately located in affluent neighbourhoods, while lower-income areas face a severe deficit."',
+      },
+    ],
+  },
 ];
 
 // ----- Listening ------------------------------------------------------------
@@ -1091,6 +1194,73 @@ export const LISTENING_LIBRARY: ListeningItem[] = [
         choices: ['The room is small', 'Sarah from design will join', 'The printer is broken', 'It starts late'],
         correctIndex: 1,
         explanation: '"Sarah from the design team will join us... so we might run a bit longer."',
+      },
+    ],
+  },
+  // --- IELTS Practice Test 1 — Listening (imported) ---------------------
+  {
+    id: 19,
+    level: 'B2',
+    topic: 'Housing',
+    title: 'Renting an Apartment',
+    transcript:
+      'Good morning, City Housing Agency. How can I help you? Hello, I’m calling to ask about renting an apartment near the university. Certainly. Are you looking for a single or a shared apartment? A shared one, please — I’d like to share with one other person. Okay. We have a nice two-bedroom apartment available on Station Road. The rent is 650 dollars per month, which includes water, but electricity is extra. That sounds good. Is it furnished? Yes, it comes with basic furniture, a fridge, and a newly installed microwave. However, you will need to bring your own bed-linen. Great. Is there a bus stop nearby? Yes, the bus stop is just a five-minute walk away, right next to the local supermarket. Perfect. When can I view it? I can show it to you on Thursday afternoon at three o’clock. That works for me. My name is David Smith. Thank you, David. See you on Thursday.',
+    questions: [
+      {
+        id: 1,
+        question: 'What type of apartment does the caller want?',
+        choices: ['A single apartment', 'A shared apartment', 'A studio apartment', 'A family house'],
+        correctIndex: 1,
+        explanation: '"A shared one, please — I’d like to share with one other person."',
+      },
+      {
+        id: 2,
+        question: 'On which road is the apartment located?',
+        choices: ['Station Road', 'Green Road', 'Park Road', 'Main Road'],
+        correctIndex: 0,
+        explanation: '"We have a nice two-bedroom apartment available on Station Road."',
+      },
+      {
+        id: 3,
+        question: 'How much is the monthly rent?',
+        choices: ['$560', '$650', '$615', '$660'],
+        correctIndex: 1,
+        explanation: '"The rent is 650 dollars per month, which includes water."',
+      },
+      {
+        id: 4,
+        question: 'Which appliance was recently installed?',
+        choices: ['A dishwasher', 'A microwave', 'An oven', 'A washing machine'],
+        correctIndex: 1,
+        explanation: '"a fridge, and a newly installed microwave."',
+      },
+      {
+        id: 5,
+        question: 'What must the tenant provide themselves?',
+        choices: ['Furniture', 'A fridge', 'Bed-linen', 'A microwave'],
+        correctIndex: 2,
+        explanation: '"you will need to bring your own bed-linen."',
+      },
+      {
+        id: 6,
+        question: 'Which utility is included in the rent?',
+        choices: ['Electricity', 'Water', 'Internet'],
+        correctIndex: 1,
+        explanation: '"which includes water, but electricity is extra."',
+      },
+      {
+        id: 7,
+        question: 'What is located right next to the bus stop?',
+        choices: ['The university', 'The apartment building', 'A supermarket'],
+        correctIndex: 2,
+        explanation: '"the bus stop is just a five-minute walk away, right next to the local supermarket."',
+      },
+      {
+        id: 8,
+        question: 'When is the apartment viewing scheduled?',
+        choices: ['Tuesday afternoon', 'Thursday afternoon', 'Friday afternoon'],
+        correctIndex: 1,
+        explanation: '"I can show it to you on Thursday afternoon at three o’clock."',
       },
     ],
   },

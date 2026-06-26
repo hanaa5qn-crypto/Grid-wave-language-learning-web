@@ -101,6 +101,43 @@ const PROMPTS: IeltsWritingPrompt[] = [
     modelAnswer:
       'Whether higher education should be funded by the state or paid for by students is a question that divides opinion in many countries. Although free university has obvious appeal, I largely disagree that it should be free for everyone, and instead favour a system that targets support where it is most needed.\n\nThose who argue for free education make a powerful case. Removing tuition fees would open universities to talented students from poorer families, who might otherwise be deterred by the prospect of heavy debt. A more educated population, they add, benefits the whole of society through higher productivity and a stronger economy, so the cost is really an investment.\n\nHowever, there are serious problems with making education free for all. The expense would fall on taxpayers, many of whom never attend university and may resent subsidising those who go on to earn high salaries. Moreover, when something is free, it is often valued less; some students might enrol without commitment, wasting public resources. Universities themselves could also suffer if government funding fails to keep pace with rising costs.\n\nA fairer solution, in my opinion, is a means-tested system. Students from low-income backgrounds could study without charge, while wealthier families contribute, perhaps through income-linked repayments that only begin once graduates earn a decent wage. This approach preserves access for the disadvantaged without placing an unsustainable burden on the state.\n\nIn conclusion, while free education promotes equality, charging according to ability to pay is more sustainable and fair. Targeted support, rather than blanket funding, strikes the best balance.',
   },
+  // --- Practice Test 1 — Writing (imported) ------------------------------
+  {
+    id: 't1-c',
+    task: 1,
+    label: 'Academic Task 1',
+    title: 'Recycling plastic bottles',
+    prompt:
+      'The diagram below shows the process of recycling plastic bottles. Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.',
+    visual:
+      'Process flowchart with seven stages: used bottles are collected → transported to a recycling facility → sorted by colour → washed → crushed into small flakes → melted and formed into pellets → manufactured into new products such as clothing and pens.',
+    chart: {
+      kind: 'process',
+      stages: [
+        'Collecting used bottles',
+        'Transporting to a facility',
+        'Sorting by colour',
+        'Washing',
+        'Crushing into flakes',
+        'Melting into pellets',
+        'Manufacturing new products',
+      ],
+    },
+    minWords: 150,
+    modelAnswer:
+      'The diagram illustrates how discarded plastic bottles are recycled and turned into new goods, from initial collection through to the manufacture of finished products.\n\nOverall, the process is linear and consists of seven distinct stages, beginning with the gathering of waste bottles and ending with the production of entirely new items; each stage feeds directly into the next, and human handling gradually gives way to industrial processing.\n\nAt the first stage, used plastic bottles are collected and then transported to a dedicated recycling facility. Once they arrive, the bottles are sorted by colour and thoroughly washed to remove any labels and residue. After cleaning, the bottles are crushed into small flakes, which makes the material far easier to process.\n\nIn the subsequent stages, these flakes are melted down and reformed into solid pellets, a versatile raw material. Finally, the pellets are used to manufacture a range of new products, such as clothing and pens, after which the recycled material re-enters everyday use and the cycle can begin again.',
+  },
+  {
+    id: 't2-c',
+    task: 2,
+    label: 'Task 2 essay',
+    title: 'Environment: global vs individual action',
+    prompt:
+      'Some people think that environmental problems should be solved on a global scale, while others believe it is the responsibility of individuals to take action. Discuss both views and give your own opinion. Write at least 250 words.',
+    minWords: 250,
+    modelAnswer:
+      'As the consequences of climate change become harder to ignore, debate has grown over who should bear responsibility for protecting the environment. While some insist that only coordinated global action can succeed, others argue that change must begin with the individual. In my view, both levels of effort are indispensable, and treating them as alternatives is a mistake.\n\nThose who favour a global approach make a compelling argument. Many of the gravest threats — rising sea levels, deforestation and ocean pollution — cross national borders and dwarf anything a single person could influence. International treaties, such as agreements to cut carbon emissions, can compel powerful industries to change and can mobilise the vast funding that large-scale solutions demand. Without this top-down pressure, voluntary action by individuals risks being too small and too slow.\n\nOn the other hand, the case for personal responsibility is equally persuasive. Governments ultimately respond to the habits and demands of their citizens, so when millions of people reduce waste, conserve energy or choose sustainable products, they reshape markets and send a clear political signal. Grassroots initiatives also foster the public awareness on which ambitious policies depend.\n\nIn my opinion, these two approaches are not in competition but are mutually reinforcing. Global agreements set the framework and tackle problems beyond any individual’s reach, while everyday choices supply the momentum and legitimacy that make such agreements possible. Relying on one alone would be insufficient.\n\nIn conclusion, although international cooperation is essential for confronting environmental challenges on the necessary scale, it can only succeed when supported by responsible individual behaviour. The most effective path forward combines both.',
+  },
 ];
 
 function countWords(text: string): number {

@@ -73,6 +73,50 @@ const PROMPTS: SpeakingPrompt[] = [
     modelAnswer:
       'On the whole, I would say people can learn new skills far more easily nowadays, largely because of the internet. In the past, you often needed access to a specific teacher or institution, whereas today an enormous amount of high-quality material is available for free online. That said, learning online does have its drawbacks — it requires a great deal of self-discipline, and some people miss the structure and feedback that a real classroom provides. As for governments, I firmly believe they should do more, perhaps by funding free retraining programmes, because economies change so quickly that adults frequently need to update their skills to stay employable. Looking ahead, I suspect learning will become increasingly personalised, with artificial intelligence tailoring lessons to each individual’s pace and weaknesses, which could make the whole process much more efficient.',
   },
+  // --- Practice Test 1 — Speaking (imported) -----------------------------
+  {
+    id: 'p4',
+    part: 1,
+    label: 'Part 1 · Famous people',
+    title: 'Hometown & reading',
+    questions: [
+      'Let’s talk about your hometown. Where are you from?',
+      'What is the most interesting part of your hometown?',
+      'Has your hometown changed much since you were a child?',
+      'Let’s move on to reading. Do you enjoy reading books in your free time?',
+    ],
+    modelAnswer:
+      'I’m from Ulaanbaatar, the capital of Mongolia, which is by far the largest city in the country. For me, the most interesting part is the contrast you find there: traditional ger districts sit right alongside modern glass towers, so the old and the new are constantly side by side. It has actually changed enormously since I was a child — when I was young there were far fewer cars and high-rise buildings, whereas now the centre is busy and quite international. As for reading, yes, I genuinely enjoy it; I try to read for half an hour before bed, mostly novels in English at the moment, partly for pleasure and partly because it’s a painless way to pick up new vocabulary.',
+  },
+  {
+    id: 'p5',
+    part: 2,
+    label: 'Part 2 (cue card) · A person you admire',
+    title: 'Describe a well-known person you admire',
+    questions: [
+      'Describe a well-known person you like or admire. You should say:',
+      '• who this person is',
+      '• what they have done',
+      '• why they are well-known',
+      '• and explain why you admire this person.',
+    ],
+    modelAnswer:
+      'The well-known person I’d like to talk about is Sir David Attenborough, the British broadcaster and naturalist. He’s spent more than sixty years making documentaries about the natural world, and his voice and films are recognised almost everywhere. What he has done, essentially, is bring the planet’s most remote wildlife into ordinary people’s living rooms, and in recent years he has used that fame to warn the public about climate change and the loss of biodiversity. He’s well-known partly because of the sheer quality of his programmes, but also because he comes across as calm, curious and completely sincere. The reason I admire him so much is that he has used his influence for something far bigger than himself: rather than simply entertaining, he has changed the way millions of people think about the environment, and he’s done it gently, through knowledge rather than fear. I find that combination of expertise and genuine purpose truly inspiring.',
+  },
+  {
+    id: 'p6',
+    part: 3,
+    label: 'Part 3 · Celebrity culture',
+    title: 'Fame & the media — discussion',
+    questions: [
+      'In your country, what kind of people become famous nowadays?',
+      'Do you think the media reports on famous people fairly?',
+      'What are the negative impacts of celebrity culture on young people?',
+      'Do you think famous people have a moral responsibility to act as good role models?',
+    ],
+    modelAnswer:
+      'These days, I’d say the people who become famous in my country are increasingly those who are active on social media — influencers, singers and athletes — rather than, say, scientists or writers, simply because online platforms reward visibility. As for whether the media report on them fairly, I’m fairly sceptical; coverage often exaggerates scandals because controversy attracts more clicks, so the picture the public receives can be quite distorted. The negative impact on young people worries me the most: constant exposure to carefully edited, glamorous lives can damage teenagers’ self-esteem and create unrealistic expectations about wealth and appearance. On the question of responsibility, I do believe famous people have at least some moral obligation to behave well, because whether they like it or not, young fans imitate them. That said, I don’t think it’s entirely fair to expect them to be flawless; the real solution is to teach young people to view celebrity culture critically rather than to place the whole burden on the celebrities themselves.',
+  },
 ];
 
 function recorderSupported(): boolean {
