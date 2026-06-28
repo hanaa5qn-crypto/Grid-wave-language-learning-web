@@ -274,10 +274,13 @@ export function registerPromoRoute(app: Express) {
         if (existing.firstPaymentDone) {
           return { ok: false as const, reason: 'used' };
         }
-        tx.set(userRef, { promo: FieldValue.delete() }, { merge: true });
-        // redeemCount-ийг буцаан тооцно (доош нь 0-ээс хэтрүүлэхгүй).
+        // Firestore транзакцид БҮХ read нь write-аас өмнө байх ёстой — тийм тул
+        // teacherCode-г эхлээд уншина, дараа нь л write-уудаа хийнэ.
         const codeRef = admin.db.collection('teacherCodes').doc(existing.code);
         const codeSnap = await tx.get(codeRef);
+
+        tx.set(userRef, { promo: FieldValue.delete() }, { merge: true });
+        // redeemCount-ийг буцаан тооцно (доош нь 0-ээс хэтрүүлэхгүй).
         if (codeSnap.exists) {
           const current = Number(codeSnap.data()?.redeemCount ?? 0);
           tx.set(codeRef, { redeemCount: Math.max(0, current - 1) }, { merge: true });
