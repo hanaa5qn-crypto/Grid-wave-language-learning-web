@@ -1,18 +1,21 @@
 // =============================================================================
 // IELTS — Writing practice tab.
 // -----------------------------------------------------------------------------
-// Original IELTS-style Writing prompts: Academic Task 1 (describe a visual) and
-// Task 2 (essay). A textarea with a live word counter (min 150 / 250), a model
-// answer reveal, and an AI feedback button that calls reviewWriting (exam:
-// 'ielts') and renders the Mongolian AiReview via the shared card.
+// Sorted like Reading/Listening: the learner opens a TEST CARD, which steps them
+// through Task 1 (describe a visual) → Task 2 (essay) in exam order via a "next
+// part" button — exactly the shape of a real IELTS Writing paper. Each part has a
+// textarea with a live word counter (min 150 / 250), a model-answer reveal, and
+// an AI feedback button that calls reviewWriting (exam: 'ielts') and renders the
+// Mongolian AiReview via the shared card.
 // =============================================================================
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Edit3, Eye, EyeOff, Sparkles, Loader2, AlertCircle, BarChart3, PenLine,
+  ChevronLeft, ArrowRight, ArrowLeft, Check,
 } from 'lucide-react';
 import { reviewWriting, AiReview } from '../../api';
 import { AiReviewCard } from './AiReviewCard';
-import { ProLockedTab } from './quizKit';
+import { ProLockedTab, PartProgress } from './quizKit';
 import { Task1Visual, Task1Chart } from './Task1Visual';
 import { useEnglishStats } from '../../stats';
 import { IELTS_GEN_WRITING } from './ieltsWritingGenerated';
@@ -29,6 +32,13 @@ export interface IeltsWritingPrompt {
   chart?: Task1Chart;
   minWords: number;
   modelAnswer: string;
+}
+
+/** One full writing test: Task 1 (visual) then Task 2 (essay), in exam order. */
+export interface WritingTest {
+  id: string;
+  title: string;
+  parts: IeltsWritingPrompt[];
 }
 
 const BASE_PROMPTS: IeltsWritingPrompt[] = [
@@ -142,14 +152,41 @@ const BASE_PROMPTS: IeltsWritingPrompt[] = [
   },
 ];
 
-// Built-in prompts + the verified NotebookLM-generated bank (Task 1 with charts
-// + Task 2 essays). See ./ieltsWritingGenerated.ts. Sorted so every Task 1
-// prompt is grouped ahead of every Task 2 (stable within each task), matching
-// the order a learner works through the exam paper. Array.sort is stable, so the
-// built-in prompts keep their lead over the generated bank inside each task.
-const PROMPTS: IeltsWritingPrompt[] = [...BASE_PROMPTS, ...IELTS_GEN_WRITING].sort(
-  (a, b) => a.task - b.task,
-);
+// Lookup over every prompt (built-in + NotebookLM-generated bank in
+// ./ieltsWritingGenerated.ts) so the tests below can reference prompts by id.
+const ALL_PROMPTS: IeltsWritingPrompt[] = [...BASE_PROMPTS, ...IELTS_GEN_WRITING];
+const PROMPT_BY_ID = new Map(ALL_PROMPTS.map((p) => [p.id, p] as const));
+
+// Curated Task 1 + Task 2 pairings — each becomes one test card the learner works
+// through in order, exactly like a real IELTS Writing paper. Every prompt in the
+// bank is used; because there are two more Task 2 essays than Task 1 visuals, two
+// generic Task 1 charts (gen-t1-4, gen-t1-5) intentionally reappear in a final
+// pair so no essay is left without a home.
+const TEST_PAIRS: { title: string; task1: string; task2: string }[] = [
+  { title: 'Household energy & remote work', task1: 't1-a', task2: 't2-a' },
+  { title: 'Instant coffee & free university', task1: 't1-b', task2: 't2-b' },
+  { title: 'Recycling & the environment', task1: 't1-c', task2: 't2-c' },
+  { title: 'Teenage leisure & online learning', task1: 'gen-t1-1', task2: 'gen-t2-5' },
+  { title: 'Commuter transport & a cashless society', task1: 'gen-t1-2', task2: 'gen-t2-4' },
+  { title: 'Social media & advertising to children', task1: 'gen-t1-3', task2: 'gen-t2-8' },
+  { title: 'Electricity generation & responsibility', task1: 'gen-t1-4', task2: 'gen-t2-2' },
+  { title: 'Tourist arrivals & international tourism', task1: 'gen-t1-5', task2: 'gen-t2-9' },
+  { title: 'Household spending & online shopping', task1: 'gen-t1-6', task2: 'gen-t2-12' },
+  { title: 'Plastic recycling & zoos', task1: 'gen-t1-7', task2: 'gen-t2-11' },
+  { title: 'Olive oil & an ageing population', task1: 'gen-t1-8', task2: 'gen-t2-7' },
+  { title: 'Chocolate production & language learning', task1: 'gen-t1-9', task2: 'gen-t2-10' },
+  { title: 'Glass manufacturing & automation', task1: 'gen-t1-10', task2: 'gen-t2-3' },
+  { title: 'Energy mix & space exploration', task1: 'gen-t1-4', task2: 'gen-t2-1' },
+  { title: 'Tourism trends & museum funding', task1: 'gen-t1-5', task2: 'gen-t2-6' },
+];
+
+const WRITING_TESTS: WritingTest[] = TEST_PAIRS.flatMap((pair, i) => {
+  const t1 = PROMPT_BY_ID.get(pair.task1);
+  const t2 = PROMPT_BY_ID.get(pair.task2);
+  // Skip silently rather than crash if a referenced id is ever removed.
+  if (!t1 || !t2) return [];
+  return [{ id: `wt-${i + 1}`, title: pair.title, parts: [t1, t2] }];
+});
 
 function countWords(text: string): number {
   const trimmed = text.trim();
@@ -164,29 +201,50 @@ export default function IeltsWritingTab({
   onUpgrade: () => void;
 }) {
   const { recordStudy } = useEnglishStats();
-  const [selectedId, setSelectedId] = useState<string>(PROMPTS[0].id);
+  // Two-level navigation: a null active test shows the test-card grid; otherwise
+  // we're inside a test, stepping through its parts (Task 1 → Task 2).
+  const [activeTest, setActiveTest] = useState<WritingTest | null>(null);
+  const [partIndex, setPartIndex] = useState(0);
+
   const [answer, setAnswer] = useState('');
   const [showModel, setShowModel] = useState(false);
   const [loading, setLoading] = useState(false);
   const [review, setReview] = useState<AiReview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const prompt = useMemo(
-    () => PROMPTS.find((p) => p.id === selectedId) ?? PROMPTS[0],
-    [selectedId],
-  );
+  const prompt = activeTest ? activeTest.parts[partIndex] : null;
   const words = countWords(answer);
-  const meetsMin = words >= prompt.minWords;
+  const meetsMin = prompt ? words >= prompt.minWords : false;
 
-  function selectPrompt(id: string) {
-    setSelectedId(id);
+  // Clear the per-part draft whenever the active part changes (new part, new
+  // test, or back to the grid).
+  function resetForNewPart() {
     setAnswer('');
     setShowModel(false);
     setReview(null);
     setError(null);
   }
 
+  function openTest(test: WritingTest) {
+    resetForNewPart();
+    setActiveTest(test);
+    setPartIndex(0);
+  }
+
+  function goToPart(i: number) {
+    if (!activeTest || i < 0 || i >= activeTest.parts.length) return;
+    resetForNewPart();
+    setPartIndex(i);
+  }
+
+  function backToTests() {
+    resetForNewPart();
+    setActiveTest(null);
+    setPartIndex(0);
+  }
+
   async function getFeedback() {
+    if (!prompt) return;
     setLoading(true);
     setError(null);
     setReview(null);
@@ -215,56 +273,95 @@ export default function IeltsWritingTab({
       <ProLockedTab
         icon={Edit3}
         title="Writing practice"
-        blurb="Бүх Writing даалгавар (Task 1 ба Task 2), Band 9 жишээ хариулт болон AI-ийн Монгол үнэлгээ Pro болон Max багцад нээгдэнэ."
+        blurb="Бүх Writing тест (Task 1 ба Task 2), Band 9 жишээ хариулт болон AI-ийн Монгол үнэлгээ Pro болон Max багцад нээгдэнэ."
         onUpgrade={onUpgrade}
       />
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Test picker — a grid of cards, mirroring the Reading/Listening tabs.
+  // ---------------------------------------------------------------------------
+  if (!activeTest) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+        <div>
+          <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
+            <Edit3 className="w-6 h-6 text-paper" /> Writing practice
+          </h2>
+          <p className="text-paper-2 mt-1">
+            Тест сонгоод Task 1 → Task 2-ыг дараалан бичиж, AI-аас Монгол хэлээр үнэлгээ аваарай.
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {WRITING_TESTS.map((test, i) => (
+            <button
+              key={test.id}
+              onClick={() => openTest(test)}
+              className="text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold">
+                  Тест {i + 1}
+                </span>
+                <span className="text-xs text-paper-2">{test.parts.length} хэсэг</span>
+              </div>
+              <h3 className="font-bold text-paper">{test.title}</h3>
+              <ul className="mt-2 space-y-1 text-sm text-paper-2">
+                {test.parts.map((part) => (
+                  <li key={part.id}>
+                    <span className="font-semibold text-paper">Task {part.task}:</span> {part.title}
+                  </li>
+                ))}
+              </ul>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Test runner — one task at a time, advancing Task 1 → Task 2.
+  // ---------------------------------------------------------------------------
+  const parts = activeTest.parts;
+  const isLast = partIndex >= parts.length - 1;
+  const nextPart = isLast ? null : parts[partIndex + 1];
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
-          <Edit3 className="w-6 h-6 text-paper" /> Writing practice
-        </h2>
-        <p className="text-paper-2 mt-1">
-          Task 1 ба Task 2-ыг бичээд AI-аас Монгол хэлээр үнэлгээ аваарай.
-        </p>
-      </div>
+      <button
+        onClick={backToTests}
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-paper-2 hover:text-paper"
+      >
+        <ChevronLeft className="w-4 h-4" /> Бүх тест рүү буцах
+      </button>
 
-      <div className="flex flex-wrap gap-2">
-        {PROMPTS.map((p) => {
-          const on = p.id === selectedId;
-          return (
-            <button
-              key={p.id}
-              onClick={() => selectPrompt(p.id)}
-              className={[
-                'rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
-                on
-                  ? 'bg-paper text-ink'
-                  : 'bg-ink-2 text-paper-2 hover:text-paper',
-              ].join(' ')}
-            >
-              {p.label}: {p.title}
-            </button>
-          );
-        })}
+      <div className="space-y-3">
+        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
+          <Edit3 className="w-6 h-6 text-paper" /> {activeTest.title}
+        </h2>
+        <PartProgress
+          steps={parts.map((part) => `Task ${part.task}`)}
+          current={partIndex}
+          onJump={goToPart}
+        />
       </div>
 
       <div className="rounded-2xl bg-ink-raise p-5 space-y-3">
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold">
-            {prompt.label}
+            {prompt!.label}
           </span>
-          <span className="text-xs text-paper-2">Хамгийн багадаа {prompt.minWords} үг</span>
+          <span className="text-xs text-paper-2">Хамгийн багадаа {prompt!.minWords} үг</span>
         </div>
-        <p className="leading-relaxed text-paper">{prompt.prompt}</p>
-        {prompt.chart && <Task1Visual chart={prompt.chart} />}
-        {prompt.visual && (
+        <p className="leading-relaxed text-paper">{prompt!.prompt}</p>
+        {prompt!.chart && <Task1Visual chart={prompt!.chart} />}
+        {prompt!.visual && (
           <div className="rounded-xl bg-ink-2 p-4 text-sm text-paper flex gap-2">
             <BarChart3 className="w-4 h-4 text-paper shrink-0 mt-0.5" />
-            <span><span className="font-semibold">Visual: </span>{prompt.visual}</span>
+            <span><span className="font-semibold">Visual: </span>{prompt!.visual}</span>
           </div>
         )}
       </div>
@@ -281,9 +378,9 @@ export default function IeltsWritingTab({
           className="w-full rounded-2xl bg-ink-raise border border-ink-line p-4 text-paper placeholder:text-paper-2 focus:outline-none focus:border-paper leading-relaxed resize-y"
         />
         <div className="flex items-center justify-between text-sm">
-          <span className={meetsMin ? 'text-paper-2' : 'text-paper-2'}>
-            <span className={`font-bold ${meetsMin ? 'text-paper' : 'text-paper'}`}>{words}</span>
-            {' '}/ {prompt.minWords} үг
+          <span className="text-paper-2">
+            <span className="font-bold text-paper">{words}</span>
+            {' '}/ {prompt!.minWords} үг
           </span>
           {!meetsMin && words > 0 && (
             <span className="text-paper-2">Цөөн байна — үргэлжлүүлээрэй.</span>
@@ -324,10 +421,39 @@ export default function IeltsWritingTab({
             Band 9 жишээ хариулт
           </h3>
           <article className="leading-relaxed whitespace-pre-line text-paper">
-            {prompt.modelAnswer}
+            {prompt!.modelAnswer}
           </article>
         </div>
       )}
+
+      {/* --- Part navigation --------------------------------------------------- */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-line pt-5">
+        {partIndex > 0 ? (
+          <button
+            onClick={() => goToPart(partIndex - 1)}
+            className="inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"
+          >
+            <ArrowLeft className="w-4 h-4" /> Өмнөх хэсэг
+          </button>
+        ) : (
+          <span />
+        )}
+        {nextPart ? (
+          <button
+            onClick={() => goToPart(partIndex + 1)}
+            className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold"
+          >
+            Дараагийн хэсэг — Task {nextPart.task} <ArrowRight className="w-4 h-4" />
+          </button>
+        ) : (
+          <button
+            onClick={backToTests}
+            className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold"
+          >
+            <Check className="w-4 h-4" /> Тест дуусгах
+          </button>
+        )}
+      </div>
     </div>
   );
 }

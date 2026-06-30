@@ -5,7 +5,7 @@
 // quiz look-and-feel stays consistent. Pure presentation; no exam data here.
 // =============================================================================
 import React from 'react';
-import { CheckCircle2, XCircle, Lock } from 'lucide-react';
+import { CheckCircle2, XCircle, Lock, Check } from 'lucide-react';
 import { MCQ, EnglishLevel } from '../../types';
 
 // A1 is included so free accounts have a real, unlocked starter level (the
@@ -119,6 +119,57 @@ export function LevelFilter({
           >
             {opt === 'all' ? 'Бүгд' : opt}
           </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// Step bar for the multi-part Writing/Speaking tests: shows "Part X of N" as a
+// row of numbered chips (done = check, current = filled). When onJump is given,
+// already-visited steps are tappable so a learner can flip back to an earlier
+// part; future parts stay disabled until reached. Shared so Writing (Task 1→2)
+// and Speaking (Part 1→2→3) read identically.
+export function PartProgress({
+  steps,
+  current,
+  onJump,
+}: {
+  steps: string[];
+  current: number;
+  onJump?: (i: number) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2">
+      {steps.map((label, i) => {
+        const done = i < current;
+        const active = i === current;
+        const tappable = !!onJump && i <= current;
+        return (
+          <React.Fragment key={i}>
+            <button
+              type="button"
+              disabled={!tappable}
+              onClick={tappable ? () => onJump!(i) : undefined}
+              aria-current={active ? 'step' : undefined}
+              className={[
+                'inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold transition-colors',
+                active ? 'bg-paper text-ink' : done ? 'bg-ink-2 text-paper' : 'bg-ink-2 text-paper-2',
+                tappable ? 'cursor-pointer hover:opacity-90' : 'cursor-default',
+              ].join(' ')}
+            >
+              <span
+                className={[
+                  'inline-flex w-5 h-5 items-center justify-center rounded-full text-[10px]',
+                  active ? 'bg-ink text-paper' : done ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2',
+                ].join(' ')}
+              >
+                {done ? <Check className="w-3 h-3" /> : i + 1}
+              </span>
+              {label}
+            </button>
+            {i < steps.length - 1 && <span className="h-px w-3 bg-ink-line shrink-0" />}
+          </React.Fragment>
         );
       })}
     </div>

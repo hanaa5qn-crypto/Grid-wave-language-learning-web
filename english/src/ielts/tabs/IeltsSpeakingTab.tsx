@@ -1,26 +1,31 @@
 // =============================================================================
 // IELTS — Speaking practice tab.
 // -----------------------------------------------------------------------------
-// Speaking Parts 1–3 (interview, cue card, discussion). The learner RECORDS
-// their actual voice (MediaRecorder), and the recording itself is sent to the
-// AI, which LISTENS and grades the real voice — pronunciation, fluency and
-// intonation included — then returns Mongolian feedback via the shared card.
-// (Older browsers with no MediaRecorder fall back to typing a transcript.)
-// A "Hear a model answer" button uses the British neural voice.
+// Sorted like Reading/Listening: the learner opens a TEST CARD, which steps them
+// through Part 1 (interview) → Part 2 (cue card) → Part 3 (discussion) in exam
+// order via a "next part" button. Within each part the learner RECORDS their
+// actual voice (MediaRecorder), and the recording itself is sent to the AI, which
+// LISTENS and grades the real voice — pronunciation, fluency and intonation
+// included — then returns Mongolian feedback via the shared card. (Older browsers
+// with no MediaRecorder fall back to typing a transcript.) A "Hear a model
+// answer" button uses the British neural voice. The test bank lives in
+// ./ieltsSpeakingGenerated.ts.
 // =============================================================================
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Mic, Square, Volume2, Sparkles, Loader2, AlertCircle, MessageSquare,
+  ChevronLeft, ArrowRight, ArrowLeft, Check,
 } from 'lucide-react';
 import { reviewSpeaking, AiReview } from '../../api';
 import { speak, stopSpeaking } from '../../audio';
 import { AiReviewCard } from './AiReviewCard';
-import { ProLockedTab } from './quizKit';
+import { ProLockedTab, PartProgress } from './quizKit';
 import { useEnglishStats } from '../../stats';
+import { IELTS_SPEAKING_TESTS } from './ieltsSpeakingGenerated';
 
 const IELTS_VOICE = 'en-GB-SoniaNeural';
 
-interface SpeakingPrompt {
+export interface SpeakingPrompt {
   id: string;
   part: 1 | 2 | 3;
   label: string;
@@ -30,99 +35,14 @@ interface SpeakingPrompt {
   modelAnswer: string;
 }
 
-const BASE_PROMPTS: SpeakingPrompt[] = [
-  {
-    id: 'p1',
-    part: 1,
-    label: 'Part 1',
-    title: 'Hometown & daily life',
-    questions: [
-      'Where is your hometown, and what is it like?',
-      'Do you prefer living in a city or in the countryside? Why?',
-      'How do you usually spend your weekends?',
-      'Has your daily routine changed much in recent years?',
-    ],
-    modelAnswer:
-      'I am originally from Ulaanbaatar, the capital of Mongolia. It is a busy, fast-growing city, so there is always something happening, though it can get quite crowded. Personally, I prefer city life because everything I need — work, friends, cafés — is close by, and I enjoy the energy of it. At weekends, I usually catch up with friends or go hiking in the hills just outside the city to get some fresh air. My routine has actually changed a fair bit lately, since I now study English in the evenings, which keeps me much busier than before.',
-  },
-  {
-    id: 'p2',
-    part: 2,
-    label: 'Part 2 (cue card)',
-    title: 'Describe a skill you would like to learn',
-    questions: [
-      'Describe a skill you would like to learn. You should say:',
-      '• what the skill is',
-      '• why you want to learn it',
-      '• how you would learn it',
-      '• and explain how this skill would change your life.',
-    ],
-    modelAnswer:
-      'The skill I would most like to learn is how to play the piano. I have always been drawn to music, but I never had the chance to take lessons as a child, so it feels like something I missed out on. I want to learn it mainly because I find playing an instrument incredibly relaxing, and I think it would be a wonderful way to unwind after a stressful day at work. To learn it, I would probably start with online tutorials to grasp the basics, and then, once I could afford it, hire a private teacher to correct my technique and keep me motivated. I believe this skill would change my life in a small but meaningful way: it would give me a creative outlet that has nothing to do with my job, and I imagine that being able to play for my family and friends would bring me a great deal of joy.',
-  },
-  {
-    id: 'p3',
-    part: 3,
-    label: 'Part 3',
-    title: 'Learning & technology — discussion',
-    questions: [
-      'Do you think people learn new skills more easily today than in the past? Why?',
-      'What are the advantages and disadvantages of learning online?',
-      'Should governments do more to help adults learn new skills?',
-      'How might the way we learn change in the future?',
-    ],
-    modelAnswer:
-      'On the whole, I would say people can learn new skills far more easily nowadays, largely because of the internet. In the past, you often needed access to a specific teacher or institution, whereas today an enormous amount of high-quality material is available for free online. That said, learning online does have its drawbacks — it requires a great deal of self-discipline, and some people miss the structure and feedback that a real classroom provides. As for governments, I firmly believe they should do more, perhaps by funding free retraining programmes, because economies change so quickly that adults frequently need to update their skills to stay employable. Looking ahead, I suspect learning will become increasingly personalised, with artificial intelligence tailoring lessons to each individual’s pace and weaknesses, which could make the whole process much more efficient.',
-  },
-  // --- Practice Test 1 — Speaking (imported) -----------------------------
-  {
-    id: 'p4',
-    part: 1,
-    label: 'Part 1 · Famous people',
-    title: 'Hometown & reading',
-    questions: [
-      'Let’s talk about your hometown. Where are you from?',
-      'What is the most interesting part of your hometown?',
-      'Has your hometown changed much since you were a child?',
-      'Let’s move on to reading. Do you enjoy reading books in your free time?',
-    ],
-    modelAnswer:
-      'I’m from Ulaanbaatar, the capital of Mongolia, which is by far the largest city in the country. For me, the most interesting part is the contrast you find there: traditional ger districts sit right alongside modern glass towers, so the old and the new are constantly side by side. It has actually changed enormously since I was a child — when I was young there were far fewer cars and high-rise buildings, whereas now the centre is busy and quite international. As for reading, yes, I genuinely enjoy it; I try to read for half an hour before bed, mostly novels in English at the moment, partly for pleasure and partly because it’s a painless way to pick up new vocabulary.',
-  },
-  {
-    id: 'p5',
-    part: 2,
-    label: 'Part 2 (cue card) · A person you admire',
-    title: 'Describe a well-known person you admire',
-    questions: [
-      'Describe a well-known person you like or admire. You should say:',
-      '• who this person is',
-      '• what they have done',
-      '• why they are well-known',
-      '• and explain why you admire this person.',
-    ],
-    modelAnswer:
-      'The well-known person I’d like to talk about is Sir David Attenborough, the British broadcaster and naturalist. He’s spent more than sixty years making documentaries about the natural world, and his voice and films are recognised almost everywhere. What he has done, essentially, is bring the planet’s most remote wildlife into ordinary people’s living rooms, and in recent years he has used that fame to warn the public about climate change and the loss of biodiversity. He’s well-known partly because of the sheer quality of his programmes, but also because he comes across as calm, curious and completely sincere. The reason I admire him so much is that he has used his influence for something far bigger than himself: rather than simply entertaining, he has changed the way millions of people think about the environment, and he’s done it gently, through knowledge rather than fear. I find that combination of expertise and genuine purpose truly inspiring.',
-  },
-  {
-    id: 'p6',
-    part: 3,
-    label: 'Part 3 · Celebrity culture',
-    title: 'Fame & the media — discussion',
-    questions: [
-      'In your country, what kind of people become famous nowadays?',
-      'Do you think the media reports on famous people fairly?',
-      'What are the negative impacts of celebrity culture on young people?',
-      'Do you think famous people have a moral responsibility to act as good role models?',
-    ],
-    modelAnswer:
-      'These days, I’d say the people who become famous in my country are increasingly those who are active on social media — influencers, singers and athletes — rather than, say, scientists or writers, simply because online platforms reward visibility. As for whether the media report on them fairly, I’m fairly sceptical; coverage often exaggerates scandals because controversy attracts more clicks, so the picture the public receives can be quite distorted. The negative impact on young people worries me the most: constant exposure to carefully edited, glamorous lives can damage teenagers’ self-esteem and create unrealistic expectations about wealth and appearance. On the question of responsibility, I do believe famous people have at least some moral obligation to behave well, because whether they like it or not, young fans imitate them. That said, I don’t think it’s entirely fair to expect them to be flawless; the real solution is to teach young people to view celebrity culture critically rather than to place the whole burden on the celebrities themselves.',
-  },
-];
+/** One full speaking test: Part 1 → Part 2 → Part 3, worked through in order. */
+export interface SpeakingTest {
+  id: string;
+  title: string;
+  parts: SpeakingPrompt[];
+}
 
-// Grouped by part (1 → 2 → 3) so the pills read in exam order. Array.sort is
-// stable, so prompts keep their original order within each part.
-const PROMPTS: SpeakingPrompt[] = [...BASE_PROMPTS].sort((a, b) => a.part - b.part);
+const TESTS: SpeakingTest[] = IELTS_SPEAKING_TESTS;
 
 function recorderSupported(): boolean {
   return (
@@ -156,7 +76,11 @@ export default function IeltsSpeakingTab({
   onUpgrade: () => void;
 }) {
   const { recordStudy } = useEnglishStats();
-  const [selectedId, setSelectedId] = useState<string>(PROMPTS[0].id);
+  // Two-level navigation: a null active test shows the test-card grid; otherwise
+  // we're inside a test, stepping through its parts via partIndex.
+  const [activeTest, setActiveTest] = useState<SpeakingTest | null>(null);
+  const [partIndex, setPartIndex] = useState(0);
+
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -173,10 +97,7 @@ export default function IeltsSpeakingTab({
   const blobRef = useRef<Blob | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const prompt = useMemo(
-    () => PROMPTS.find((p) => p.id === selectedId) ?? PROMPTS[0],
-    [selectedId],
-  );
+  const prompt = activeTest ? activeTest.parts[partIndex] : null;
   const canRecord = recorderSupported();
 
   function clearTimer() {
@@ -200,14 +121,33 @@ export default function IeltsSpeakingTab({
     setAudioUrl(null);
   }
 
-  function selectPrompt(id: string) {
+  // Shared cleanup whenever the active part changes (new part, new test, or back
+  // to the grid): kill any recording/playback and clear the per-part answer.
+  function resetForNewPart() {
     resetRecording();
     stopSpeaking();
-    setSelectedId(id);
     setReview(null);
     setError(null);
     setTypedTranscript('');
     setSpeaking(false);
+  }
+
+  function openTest(test: SpeakingTest) {
+    resetForNewPart();
+    setActiveTest(test);
+    setPartIndex(0);
+  }
+
+  function goToPart(i: number) {
+    if (!activeTest || i < 0 || i >= activeTest.parts.length) return;
+    resetForNewPart();
+    setPartIndex(i);
+  }
+
+  function backToTests() {
+    resetForNewPart();
+    setActiveTest(null);
+    setPartIndex(0);
   }
 
   async function startRecording() {
@@ -255,6 +195,7 @@ export default function IeltsSpeakingTab({
   }
 
   function hearModel() {
+    if (!prompt) return;
     if (speaking) {
       stopSpeaking();
       setSpeaking(false);
@@ -267,6 +208,7 @@ export default function IeltsSpeakingTab({
   }
 
   async function getFeedback() {
+    if (!prompt) return;
     setLoading(true);
     setError(null);
     setReview(null);
@@ -304,53 +246,92 @@ export default function IeltsSpeakingTab({
       <ProLockedTab
         icon={Mic}
         title="Speaking practice"
-        blurb="Бүх Speaking даалгавар (Part 1–3), дуу хоолойн бичлэг болон AI-ийн дуудлага, чөлөөт ярианы Монгол үнэлгээ Pro болон Max багцад нээгдэнэ."
+        blurb="Бүх Speaking тест (Part 1–3), дуу хоолойн бичлэг болон AI-ийн дуудлага, чөлөөт ярианы Монгол үнэлгээ Pro болон Max багцад нээгдэнэ."
         onUpgrade={onUpgrade}
       />
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Test picker — a grid of cards, mirroring the Reading/Listening tabs.
+  // ---------------------------------------------------------------------------
+  if (!activeTest) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+        <div>
+          <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
+            <Mic className="w-6 h-6 text-paper" /> Speaking practice
+          </h2>
+          <p className="text-paper-2 mt-1">
+            Тест сонгоод Part 1 → 2 → 3-ыг дараалан ярина. AI таны дуу хоолойг сонсож, дуудлага,
+            чөлөөт яриаг Монгол хэлээр үнэлнэ.
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {TESTS.map((test, i) => (
+            <button
+              key={test.id}
+              onClick={() => openTest(test)}
+              className="text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold">
+                  Тест {i + 1}
+                </span>
+                <span className="text-xs text-paper-2">{test.parts.length} хэсэг</span>
+              </div>
+              <h3 className="font-bold text-paper">{test.title}</h3>
+              <ul className="mt-2 space-y-1 text-sm text-paper-2">
+                {test.parts.map((part) => (
+                  <li key={part.id}>
+                    <span className="font-semibold text-paper">{part.label}:</span> {part.title}
+                  </li>
+                ))}
+              </ul>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Test runner — one part at a time, advancing Part 1 → 2 → 3.
+  // ---------------------------------------------------------------------------
+  const parts = activeTest.parts;
+  const isLast = partIndex >= parts.length - 1;
+  const nextPart = isLast ? null : parts[partIndex + 1];
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
-          <Mic className="w-6 h-6 text-paper" /> Speaking practice
-        </h2>
-        <p className="text-paper-2 mt-1">
-          Part 1–3-ыг чангаар ярьж бичүүлээрэй. AI таны дуу хоолойг сонсож, дуудлага, чөлөөт яриаг
-          Монгол хэлээр үнэлнэ.
-        </p>
-      </div>
+      <button
+        onClick={backToTests}
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-paper-2 hover:text-paper"
+      >
+        <ChevronLeft className="w-4 h-4" /> Бүх тест рүү буцах
+      </button>
 
-      <div className="flex flex-wrap gap-2">
-        {PROMPTS.map((p) => {
-          const on = p.id === selectedId;
-          return (
-            <button
-              key={p.id}
-              onClick={() => selectPrompt(p.id)}
-              className={[
-                'rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
-                on
-                  ? 'bg-paper text-ink'
-                  : 'bg-ink-2 text-paper-2 hover:text-paper',
-              ].join(' ')}
-            >
-              {p.label}
-            </button>
-          );
-        })}
+      <div className="space-y-3">
+        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
+          <Mic className="w-6 h-6 text-paper" /> {activeTest.title}
+        </h2>
+        <PartProgress
+          steps={parts.map((part) => part.label)}
+          current={partIndex}
+          onJump={goToPart}
+        />
       </div>
 
       <div className="rounded-2xl bg-ink-raise p-5 space-y-3">
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold">
-            {prompt.label}
+            {prompt!.label}
           </span>
-          <span className="text-sm font-bold text-paper">{prompt.title}</span>
+          <span className="text-sm font-bold text-paper">{prompt!.title}</span>
         </div>
         <ul className="space-y-1.5 text-paper leading-relaxed">
-          {prompt.questions.map((q, i) => (
+          {prompt!.questions.map((q, i) => (
             <li key={i}>{q}</li>
           ))}
         </ul>
@@ -430,6 +411,35 @@ export default function IeltsSpeakingTab({
       )}
 
       {review && <AiReviewCard review={review} />}
+
+      {/* --- Part navigation --------------------------------------------------- */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-line pt-5">
+        {partIndex > 0 ? (
+          <button
+            onClick={() => goToPart(partIndex - 1)}
+            className="inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"
+          >
+            <ArrowLeft className="w-4 h-4" /> Өмнөх хэсэг
+          </button>
+        ) : (
+          <span />
+        )}
+        {nextPart ? (
+          <button
+            onClick={() => goToPart(partIndex + 1)}
+            className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold"
+          >
+            Дараагийн хэсэг — {nextPart.label} <ArrowRight className="w-4 h-4" />
+          </button>
+        ) : (
+          <button
+            onClick={backToTests}
+            className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold"
+          >
+            <Check className="w-4 h-4" /> Тест дуусгах
+          </button>
+        )}
+      </div>
     </div>
   );
 }
