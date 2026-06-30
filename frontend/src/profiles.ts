@@ -92,6 +92,11 @@ export interface UserProfile {
     commissionPercent: number;
     firstPaymentDone: boolean;
   };
+  // Багшийн promo кодуудын түүх (server-owned): хэрэглэгчийн АШИГЛАЖ ДУУССАН
+  // (төлбөр төлж хямдрал авсан) кодуудын багц. Нэг кодыг зөвхөн нэг удаа —
+  // redeem-д дахин оруулахаас сэргийлнэ. Зөвхөн payments backend arrayUnion-оор
+  // нэмнэ; клиент засвал хямдралаа дахин авах байсан тул server-owned.
+  redeemedCodes?: string[];
   // Which learning track the account belongs to: 'de' = German, 'en' = English
   // (IELTS/SAT). The track is currently a client-side choice (localStorage), so
   // this isn't written yet — it's the hook the admin English/German views filter
@@ -113,7 +118,7 @@ export interface UserProfile {
 // entitlements and metered usage. Firestore rules reject client writes to
 // these; the client must also strip them before saving its own profile so a
 // stale value can never fail an otherwise-valid progress write.
-export const SERVER_OWNED_PROFILE_FIELDS = ['billing', 'placementCredits', 'aiUsage', 'promo'] as const;
+export const SERVER_OWNED_PROFILE_FIELDS = ['billing', 'placementCredits', 'aiUsage', 'promo', 'redeemedCodes'] as const;
 
 export function stripServerOwnedFields(profile: UserProfile): UserProfile {
   const copy = { ...(profile as unknown as Record<string, unknown>) };

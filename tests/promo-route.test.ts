@@ -43,11 +43,28 @@ function makeDb(seed: Record<string, Record<string, unknown>>) {
   const store = new Map<string, Record<string, unknown>>(
     Object.entries(seed).map(([k, v]) => [k, { ...v }]),
   );
-  const ref = (col: string, id: string) => ({ __key: `${col}/${id}` });
   const snap = (key: string) => ({
     exists: store.has(key),
     data: () => store.get(key),
   });
+  // Doc refs carry their store key plus a non-transactional .get() (the redeem
+  // route reads the teacherCode doc outside the transaction to validate it).
+  const ref = (col: string, id: string) => ({
+    __key: `${col}/${id}`,
+    get: async () => snap(`${col}/${id}`),
+  });
+  // Apply a write payload onto a stored doc, honouring the DELETE sentinel and
+  // the FieldValue.increment({__increment}) marker the route uses for counters.
+  const applyWrite = (key: string, data: Record<string, unknown>) => {
+    const cur = { ...(store.get(key) ?? {}) };
+    for (const [field, value] of Object.entries(data)) {
+      if (value === h.DELETE) delete cur[field];
+      else if (value && typeof value === 'object' && '__increment' in (value as Record<string, unknown>)) {
+        cur[field] = Number(cur[field] ?? 0) + Number((value as { __increment: number }).__increment);
+      } else cur[field] = value;
+    }
+    store.set(key, cur);
+  };
   return {
     store,
     collection: (col: string) => ({ doc: (id: string) => ref(col, id) }),
@@ -65,12 +82,7 @@ function makeDb(seed: Record<string, Record<string, unknown>>) {
         },
         set(r: { __key: string }, data: Record<string, unknown>, _opts?: unknown) {
           wrote = true;
-          const cur = { ...(store.get(r.__key) ?? {}) };
-          for (const [field, value] of Object.entries(data)) {
-            if (value === h.DELETE) delete cur[field];
-            else cur[field] = value;
-          }
-          store.set(r.__key, cur);
+          applyWrite(r.__key, data);
         },
       };
       return fn(tx);
@@ -123,10 +135,11 @@ describe('DELETE /api/promo/me — detach unused promo code', () => {
     expect(db.store.get('teacherCodes/ABC')).toEqual({ redeemCount: 0 });
   });
 
-  it('refuses to detach a promo whose first payment is already done (409)', async () => {
+  it('clears a USED promo cosmetically — keeps redeemCount and the used-code ledger', async () => {
     const db = makeDb({
       'users/u1': {
         promo: { code: 'ABC', teacherName: 'Bat', discountPercent: 20, firstPaymentDone: true },
+        redeemedCodes: ['ABC'],
       },
       'teacherCodes/ABC': { redeemCount: 1 },
     });
@@ -134,9 +147,12 @@ describe('DELETE /api/promo/me — detach unused promo code', () => {
 
     const res = await request(buildApp()).delete('/api/promo/me');
 
-    expect(res.status).toBe(409);
-    // Promo stays attached; redeemCount untouched.
-    expect((db.store.get('users/u1') as any).promo).toBeTruthy();
+    // A spent code can be dismissed from view, but stays "used": redeemCount and
+    // redeemedCodes are untouched, so it can never be re-applied for a discount.
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ removed: true });
+    expect((db.store.get('users/u1') as any).promo).toBeUndefined();
+    expect((db.store.get('users/u1') as any).redeemedCodes).toEqual(['ABC']);
     expect(db.store.get('teacherCodes/ABC')).toEqual({ redeemCount: 1 });
   });
 
@@ -157,5 +173,129 @@ describe('DELETE /api/promo/me — detach unused promo code', () => {
     const res = await request(buildApp()).delete('/api/promo/me');
 
     expect(res.status).toBe(401);
+  });
+});
+
+// =============================================================================
+// POST /api/promo/redeem — the new model: a person may use many DIFFERENT codes
+// (each discounts the next order), but the SAME code only once (blocked after it
+// has reached a paid conversion, tracked in users/{uid}.redeemedCodes).
+// =============================================================================
+describe('POST /api/promo/redeem — apply a teacher code', () => {
+  beforeEach(() => {
+    h.state.user = { uid: 'u1', email: 'learner@example.com' };
+  });
+
+  const activeCode = (extra: Record<string, unknown> = {}) => ({
+    teacherName: 'Bat', discountPercent: 20, commissionPercent: 10, active: true, redeemCount: 0, ...extra,
+  });
+
+  it('attaches a fresh code when the user has no promo', async () => {
+    const db = makeDb({
+      'users/u1': {},
+      'teacherCodes/ABC': activeCode({ redeemCount: 4 }),
+    });
+    h.state.db = db;
+
+    const res = await request(buildApp()).post('/api/promo/redeem').send({ code: 'ABC' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ redeemed: true, discountPercent: 20, teacherName: 'Bat' });
+    expect((db.store.get('users/u1') as any).promo).toMatchObject({ code: 'ABC', firstPaymentDone: false });
+    expect(db.store.get('teacherCodes/ABC')).toMatchObject({ redeemCount: 5 });
+  });
+
+  it('swaps an UNUSED active code for a different one (old redeemCount restored)', async () => {
+    const db = makeDb({
+      'users/u1': { promo: { code: 'ABC', teacherName: 'Bat', discountPercent: 20, commissionPercent: 10, firstPaymentDone: false } },
+      'teacherCodes/ABC': { redeemCount: 3 },
+      'teacherCodes/XYZ': activeCode({ teacherName: 'Sara', discountPercent: 30, commissionPercent: 15, redeemCount: 1 }),
+    });
+    h.state.db = db;
+
+    const res = await request(buildApp()).post('/api/promo/redeem').send({ code: 'XYZ' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ redeemed: true, discountPercent: 30 });
+    expect((db.store.get('users/u1') as any).promo).toMatchObject({ code: 'XYZ', firstPaymentDone: false });
+    expect(db.store.get('teacherCodes/XYZ')).toMatchObject({ redeemCount: 2 }); // +1
+    expect(db.store.get('teacherCodes/ABC')).toMatchObject({ redeemCount: 2 }); // -1, swapped out
+  });
+
+  it('does NOT decrement an already-USED code when applying a different one', async () => {
+    const db = makeDb({
+      'users/u1': {
+        promo: { code: 'ABC', teacherName: 'Bat', discountPercent: 20, commissionPercent: 10, firstPaymentDone: true },
+        redeemedCodes: ['ABC'],
+      },
+      'teacherCodes/ABC': { redeemCount: 5 },
+      'teacherCodes/XYZ': activeCode({ teacherName: 'Sara', discountPercent: 30, commissionPercent: 15, redeemCount: 0 }),
+    });
+    h.state.db = db;
+
+    const res = await request(buildApp()).post('/api/promo/redeem').send({ code: 'XYZ' });
+
+    expect(res.status).toBe(200);
+    expect((db.store.get('users/u1') as any).promo).toMatchObject({ code: 'XYZ', firstPaymentDone: false });
+    expect(db.store.get('teacherCodes/XYZ')).toMatchObject({ redeemCount: 1 });
+    expect(db.store.get('teacherCodes/ABC')).toMatchObject({ redeemCount: 5 }); // untouched (real conversion)
+  });
+
+  it('blocks re-applying a code already used on a paid order (409)', async () => {
+    const db = makeDb({
+      'users/u1': {
+        promo: { code: 'XYZ', teacherName: 'Sara', discountPercent: 30, commissionPercent: 15, firstPaymentDone: false },
+        redeemedCodes: ['ABC'],
+      },
+      'teacherCodes/ABC': activeCode({ redeemCount: 5 }),
+    });
+    h.state.db = db;
+
+    const res = await request(buildApp()).post('/api/promo/redeem').send({ code: 'ABC' });
+
+    expect(res.status).toBe(409);
+    expect((db.store.get('users/u1') as any).promo).toMatchObject({ code: 'XYZ' }); // unchanged
+    expect(db.store.get('teacherCodes/ABC')).toMatchObject({ redeemCount: 5 });
+  });
+
+  it('is idempotent when re-entering the currently active code', async () => {
+    const db = makeDb({
+      'users/u1': { promo: { code: 'ABC', teacherName: 'Bat', discountPercent: 20, commissionPercent: 10, firstPaymentDone: false } },
+      'teacherCodes/ABC': activeCode({ redeemCount: 3 }),
+    });
+    h.state.db = db;
+
+    const res = await request(buildApp()).post('/api/promo/redeem').send({ code: 'ABC' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ redeemed: false, already: true });
+    expect(db.store.get('teacherCodes/ABC')).toMatchObject({ redeemCount: 3 }); // no double-count
+  });
+
+  it('blocks a friend-referred user from applying a teacher promo (409)', async () => {
+    const db = makeDb({
+      'users/u1': { referredBy: 'friendUid' },
+      'teacherCodes/ABC': activeCode(),
+    });
+    h.state.db = db;
+
+    const res = await request(buildApp()).post('/api/promo/redeem').send({ code: 'ABC' });
+
+    expect(res.status).toBe(409);
+    expect((db.store.get('users/u1') as any).promo).toBeUndefined();
+  });
+
+  it('404s for an unknown code and 400s for an inactive one', async () => {
+    const db = makeDb({
+      'users/u1': {},
+      'teacherCodes/OFF': activeCode({ active: false }),
+    });
+    h.state.db = db;
+
+    const unknown = await request(buildApp()).post('/api/promo/redeem').send({ code: 'NOPE' });
+    expect(unknown.status).toBe(404);
+
+    const inactive = await request(buildApp()).post('/api/promo/redeem').send({ code: 'OFF' });
+    expect(inactive.status).toBe(400);
   });
 });

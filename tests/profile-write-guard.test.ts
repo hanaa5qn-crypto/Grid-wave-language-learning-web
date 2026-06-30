@@ -17,6 +17,8 @@ function fullProfile(): UserProfile & { aiUsage?: unknown } {
     billing: { plan: 'max', status: 'active', currentPeriodEnd: '2099-01-01T00:00:00.000Z' },
     placementCredits: 3,
     aiUsage: { month: '2026-06', count: 1 },
+    promo: { code: 'ABC', teacherName: 'Bat', discountPercent: 20, commissionPercent: 10, firstPaymentDone: true },
+    redeemedCodes: ['ABC'],
   } as UserProfile & { aiUsage?: unknown };
 }
 
@@ -31,6 +33,14 @@ describe('stripServerOwnedFields — clients cannot persist entitlement fields',
 
   it('removes aiUsage so a client cannot reset its AI teaser counter', () => {
     expect('aiUsage' in stripServerOwnedFields(fullProfile())).toBe(false);
+  });
+
+  it('removes promo so a client cannot self-grant a discount/commission code', () => {
+    expect('promo' in stripServerOwnedFields(fullProfile())).toBe(false);
+  });
+
+  it('removes redeemedCodes so a client cannot wipe its used-code ledger and re-discount', () => {
+    expect('redeemedCodes' in stripServerOwnedFields(fullProfile())).toBe(false);
   });
 
   it('keeps ordinary progress fields intact', () => {

@@ -365,10 +365,13 @@ export function BillingCard({
             </div>
           ) : null}
 
-          {/* Promo code entry */}
+          {/* Promo code: attached status (if any) + a remove control + an
+              always-open entry form. A person may apply many DIFFERENT codes
+              (each replaces the previous and discounts the next order); the same
+              code can't be re-used once it has been spent on a paid order. */}
           <div className="bg-ink-raise border border-ink-line rounded-2xl p-5 space-y-3">
             <p className="text-xs text-paper-3 font-medium uppercase tracking-[0.18em] font-sans">Урамшууллын код / Promo Code</p>
-            {myPromo ? (
+            {myPromo && (
               <div className="bg-ink-raise border border-ink-line rounded-xl p-3.5 space-y-3">
                 <div className="flex items-center justify-between gap-4">
                   <div>
@@ -385,48 +388,46 @@ export function BillingCard({
                     {myPromo.firstPaymentDone ? 'АШИГЛАСАН' : 'ИДЭВХТЭЙ'}
                   </span>
                 </div>
-                {!myPromo.firstPaymentDone && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveMyPromo}
-                    disabled={manualPromoLoading}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-paper-3 hover:text-red-400 transition-colors disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    {manualPromoLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-                    Кодыг салгаж, өөр код холбох
-                  </button>
-                )}
-                {manualPromoError && (
-                  <p className="text-[11px] text-paper-2 bg-ink-raise border border-ink-line rounded-lg px-2 py-1 font-medium">
-                    {manualPromoError}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <form onSubmit={handleRedeemManualPromo} className="flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    placeholder="Код оруулах"
-                    value={manualPromoCode}
-                    onChange={(e) => setManualPromoCode(e.target.value.toUpperCase())}
-                    disabled={manualPromoLoading}
-                    className="w-full bg-ink-raise border border-ink-line focus:border-paper/60 focus:outline-none rounded-xl px-4 py-2 text-xs text-paper font-medium uppercase tracking-[0.1em] placeholder:normal-case placeholder:tracking-normal font-sans placeholder:text-paper-3"
-                  />
-                  {manualPromoError && (
-                    <p className="text-[11px] text-paper-2 bg-ink-raise border border-ink-line rounded-lg px-2 py-1 mt-1 font-medium">
-                      {manualPromoError}
-                    </p>
-                  )}
-                </div>
+                {/* Remove is always offered now — an unused code is released (its
+                    teacher count restored); an already-used code is just cleared
+                    from view (it stays spent, so it can't be re-used). */}
                 <button
-                  type="submit"
-                  disabled={manualPromoLoading || !manualPromoCode.trim()}
-                  className="bg-paper hover:bg-white disabled:bg-ink-raise disabled:text-paper-3 text-ink px-5 py-2 rounded-xl text-xs font-medium uppercase tracking-[0.15em] cursor-pointer disabled:cursor-not-allowed transition-colors border border-paper disabled:border-ink-line shrink-0 h-[38px] flex items-center justify-center"
+                  type="button"
+                  onClick={handleRemoveMyPromo}
+                  disabled={manualPromoLoading}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-paper-3 hover:text-red-400 transition-colors disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                 >
-                  {manualPromoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Холбох'}
+                  {manualPromoLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                  Кодыг устгах
                 </button>
-              </form>
+              </div>
+            )}
+            <form onSubmit={handleRedeemManualPromo} className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder={myPromo ? 'Өөр код холбох' : 'Код оруулах'}
+                  value={manualPromoCode}
+                  onChange={(e) => setManualPromoCode(e.target.value.toUpperCase())}
+                  disabled={manualPromoLoading}
+                  className="w-full bg-ink-raise border border-ink-line focus:border-paper/60 focus:outline-none rounded-xl px-4 py-2 text-xs text-paper font-medium uppercase tracking-[0.1em] placeholder:normal-case placeholder:tracking-normal font-sans placeholder:text-paper-3"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={manualPromoLoading || !manualPromoCode.trim()}
+                className="bg-paper hover:bg-white disabled:bg-ink-raise disabled:text-paper-3 text-ink px-5 py-2 rounded-xl text-xs font-medium uppercase tracking-[0.15em] cursor-pointer disabled:cursor-not-allowed transition-colors border border-paper disabled:border-ink-line shrink-0 h-[38px] flex items-center justify-center"
+              >
+                {manualPromoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Холбох'}
+              </button>
+            </form>
+            {myPromo && !myPromo.firstPaymentDone && (
+              <p className="text-[11px] text-paper-3 font-medium">Өөр код холбовол одоогийн кодыг солино.</p>
+            )}
+            {manualPromoError && (
+              <p className="text-[11px] text-paper-2 bg-ink-raise border border-ink-line rounded-lg px-2 py-1 font-medium">
+                {manualPromoError}
+              </p>
             )}
           </div>
         </div>

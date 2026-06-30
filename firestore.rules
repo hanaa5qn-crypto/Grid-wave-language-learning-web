@@ -29,8 +29,11 @@ service cloud.firestore {
     // `promo` carries a teacher code's discount + commission rate. If a client
     // could write it, anyone could grant themselves a 100%-off code. It is set
     // ONLY by the promo backend (/api/promo/redeem) via the Admin SDK.
+    // `redeemedCodes` is the per-person "already used" ledger that enforces one
+    // discount per code: a client that could clear it would re-apply a spent
+    // code and re-trigger its discount. Set ONLY by the payments backend.
     function serverOwnedFields() {
-      return ['billing', 'placementCredits', 'aiUsage', 'promo'];
+      return ['billing', 'placementCredits', 'aiUsage', 'promo', 'redeemedCodes'];
     }
     function createOmitsServerFields() {
       return !request.resource.data.keys().hasAny(serverOwnedFields());

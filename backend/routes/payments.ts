@@ -261,7 +261,15 @@ async function activatePaidInvoice(
           createdAt: now.toISOString(),
           paymentId,
         }, { merge: true });
-        tx.set(userRef, { promo: { ...existingPromo, firstPaymentDone: true } }, { merge: true });
+        // Flip firstPaymentDone AND record the code in the user's permanent
+        // redeemedCodes set: a code may only ever discount once per person, so a
+        // code that has reached a paid conversion can never be re-applied (the
+        // redeem route checks this set). Applying a DIFFERENT code afterwards is
+        // allowed and discounts that next order.
+        tx.set(userRef, {
+          promo: { ...existingPromo, firstPaymentDone: true },
+          redeemedCodes: FieldValue.arrayUnion(String(invoice.promoCode)),
+        }, { merge: true });
         tx.set(admin.db.collection('teacherCodes').doc(String(invoice.promoCode)), {
           paidConversions: FieldValue.increment(1),
           commissionAccruedCents: FieldValue.increment(commCents),

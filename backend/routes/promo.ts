@@ -172,7 +172,13 @@ export function registerPromoRoute(app: Express) {
     return res.json({ deleted: true, code });
   });
 
-  // --- Сурагч: багшийн кодоо холбох (нэг л удаа, давхцахгүй) --------------------
+  // --- Сурагч: багшийн кодоо холбох --------------------------------------------
+  // Нэг хүн ОЛОН ӨӨР promo код ашиглаж болно. Гэхдээ НЭГ кодыг зөвхөн нэг удаа:
+  // тухайн кодоор төлбөр төлж хямдрал авсны дараа уг кодыг дахин холбож болохгүй
+  // (redeemedCodes багц цээжилнэ). Идэвхтэй боловч ХЭРЭГЛЭЭГҮЙ (firstPaymentDone=
+  // false) код байвал шинэ кодоор шууд солино — энэ нь дараагийн төлбөрт хямдрал
+  // өгнө. Найзын урилгаар (referredBy) бүртгүүлсэн бол багшийн promo нэмэхгүй
+  // (хуучин дүрэм хэвээр).
   app.post('/api/promo/redeem', async (req: Request, res: Response) => {
     const ctx = await requireUserCtx(req, res);
     if (!ctx) return;
@@ -192,14 +198,33 @@ export function registerPromoRoute(app: Express) {
         const userSnap = await tx.get(userRef);
         const me = userSnap.exists ? (userSnap.data() as Record<string, unknown>) : {};
 
-        // Давхцахгүй: аль хэдийн promo эсвэл referral авсан бол шинийг олгохгүй.
-        if (me.promo && typeof me.promo === 'object') {
-          const existing = me.promo as UserPromo;
-          return { ok: false as const, reason: existing.code === code ? 'already-this' : 'has-promo' };
-        }
+        // Найзын урилгаар бүртгүүлсэн бол багшийн promo нэмэхгүй (хуучин дүрэм).
         if (typeof me.referredBy === 'string' && me.referredBy) {
-          return { ok: false as const, reason: 'has-referral' };
+          return { ok: false as const, reason: 'has-referral' as const };
         }
+
+        const active = me.promo && typeof me.promo === 'object' ? (me.promo as UserPromo) : null;
+        const redeemed = Array.isArray(me.redeemedCodes)
+          ? (me.redeemedCodes as unknown[]).map(String)
+          : [];
+
+        // Энэ кодыг аль хэдийн ашиглаж дуусгасан (төлбөр төлсөн) бол дахин болохгүй.
+        if (redeemed.includes(code)) {
+          return { ok: false as const, reason: 'already-used' as const };
+        }
+        // Яг одоо холбоотой байгаа кодыг дахин оруулбал — өөрчлөлтгүй (idempotent).
+        if (active && active.code === code) {
+          return { ok: false as const, reason: 'already-active' as const };
+        }
+
+        // Идэвхтэй БОЛОВЧ хэрэглээгүй өөр код байвал түүнийг солих тул redeemCount-
+        // ийг нь буцаана. (Хэрэглэсэн код бол бодит conversion тул бууруулахгүй.)
+        const swapOutCode = active && active.firstPaymentDone === false ? active.code : null;
+        // Firestore: бүх read нь write-ээс ӨМНӨ байх ёстой — солих кодын баримтыг
+        // эхэнд уншина, дараа нь л write-уудаа хийнэ.
+        const swapSnap = swapOutCode
+          ? await tx.get(admin.db.collection('teacherCodes').doc(swapOutCode))
+          : null;
 
         const promo: UserPromo = {
           code,
@@ -212,15 +237,26 @@ export function registerPromoRoute(app: Express) {
         tx.set(admin.db.collection('teacherCodes').doc(code), {
           redeemCount: FieldValue.increment(1),
         }, { merge: true });
+        if (swapOutCode && swapSnap?.exists) {
+          const current = Number(swapSnap.data()?.redeemCount ?? 0);
+          tx.set(admin.db.collection('teacherCodes').doc(swapOutCode), {
+            redeemCount: Math.max(0, current - 1),
+          }, { merge: true });
+        }
         return { ok: true as const, promo };
       });
 
       if (!outcome.ok) {
-        if (outcome.reason === 'already-this') {
+        // Холбоотой кодоо дахин оруулсан — алдаа биш, зүгээр өөрчлөлтгүй.
+        if (outcome.reason === 'already-active') {
           return res.json({ redeemed: false, already: true });
         }
+        if (outcome.reason === 'already-used') {
+          return res.status(409).json({ error: 'Та энэ promo кодыг аль хэдийн ашигласан байна.' });
+        }
+        // has-referral
         return res.status(409).json({
-          error: 'Та аль хэдийн нэг promo/урилга ашигласан байна. Давхар хэрэглэх боломжгүй.',
+          error: 'Та найзын урилгаар бүртгүүлсэн тул багшийн promo код нэмж ашиглах боломжгүй.',
         });
       }
       return res.json({
@@ -254,9 +290,12 @@ export function registerPromoRoute(app: Express) {
     });
   });
 
-  // --- Сурагч: холбосон promo-гоо салгах (өөр код холбохын тулд) ----------------
-  // Зөвхөн ХЭРЭГЛЭЭГҮЙ (firstPaymentDone=false) код салгана — аль хэдийн хямдрал
-  // авсан кодыг буцаахгүй. Салгасны дараа дахин өөр код холбож болно.
+  // --- Сурагч: холбосон promo-гоо салгах ---------------------------------------
+  // ХЭРЭГЛЭЭГҮЙ (firstPaymentDone=false) код бол багшийн redeemCount-ийг буцаан
+  // салгана. ХЭРЭГЛЭСЭН (төлбөр төлж хямдрал авсан) код бол зөвхөн харагдацаас
+  // цэвэрлэнэ — redeemCount/conversion хэвээр үлдэж, redeemedCodes-д хадгалагдсан
+  // тул уг кодыг дахин ашиглах боломжгүй. Аль ч тохиолдолд дараа нь өөр код
+  // холбож болно.
   app.delete('/api/promo/me', async (req: Request, res: Response) => {
     const ctx = await requireUserCtx(req, res);
     if (!ctx) return;
@@ -268,20 +307,18 @@ export function registerPromoRoute(app: Express) {
         const userSnap = await tx.get(userRef);
         const me = userSnap.exists ? (userSnap.data() as Record<string, unknown>) : {};
         if (!me.promo || typeof me.promo !== 'object') {
-          return { ok: false as const, reason: 'none' };
+          return { ok: false as const, reason: 'none' as const };
         }
         const existing = me.promo as UserPromo;
-        if (existing.firstPaymentDone) {
-          return { ok: false as const, reason: 'used' };
-        }
-        // Firestore транзакцид БҮХ read нь write-аас өмнө байх ёстой — тийм тул
-        // teacherCode-г эхлээд уншина, дараа нь л write-уудаа хийнэ.
+        // Зөвхөн хэрэглээгүй кодын redeemCount-ийг буцаана (хэрэглэсэн код бол
+        // бодит conversion тул хөдөлгөхгүй).
+        const releaseCount = existing.firstPaymentDone === false;
+        // Firestore: БҮХ read нь write-аас өмнө — teacherCode-г эхэнд уншина.
         const codeRef = admin.db.collection('teacherCodes').doc(existing.code);
-        const codeSnap = await tx.get(codeRef);
+        const codeSnap = releaseCount ? await tx.get(codeRef) : null;
 
         tx.set(userRef, { promo: FieldValue.delete() }, { merge: true });
-        // redeemCount-ийг буцаан тооцно (доош нь 0-ээс хэтрүүлэхгүй).
-        if (codeSnap.exists) {
+        if (releaseCount && codeSnap?.exists) {
           const current = Number(codeSnap.data()?.redeemCount ?? 0);
           tx.set(codeRef, { redeemCount: Math.max(0, current - 1) }, { merge: true });
         }
@@ -289,8 +326,8 @@ export function registerPromoRoute(app: Express) {
       });
 
       if (!outcome.ok) {
-        if (outcome.reason === 'none') return res.json({ removed: false, already: true });
-        return res.status(409).json({ error: 'Аль хэдийн ашигласан кодыг салгах боломжгүй.' });
+        // reason === 'none' — салгах код алга (idempotent).
+        return res.json({ removed: false, already: true });
       }
       return res.json({ removed: true });
     } catch (err) {
