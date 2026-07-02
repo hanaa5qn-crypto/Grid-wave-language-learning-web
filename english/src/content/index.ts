@@ -17,13 +17,24 @@ import {
 } from './library';
 import { IELTS_READING_BANK } from './ieltsReadingBank';
 import { IELTS_GEN_READING, IELTS_GEN_LISTENING, IELTS_GEN_SPEAKING } from './ieltsGenerated';
+import { IELTS_EXP_LISTENING_A } from './listeningExpansionA';
+import { IELTS_EXP_LISTENING_B } from './listeningExpansionB';
+import { IELTS_EXP_LISTENING_C } from './listeningExpansionC';
 
 export const READING_LIBRARY: ReadingItem[] = [
   ...CORE_READING_LIBRARY,
   ...IELTS_READING_BANK,
   ...IELTS_GEN_READING,
 ];
-export const LISTENING_LIBRARY: ListeningItem[] = [...BASE_LISTENING, ...IELTS_GEN_LISTENING];
+// The listening expansion brings every CEFR level to 20+ exercises
+// (ids 101–217; base set uses 1–19, the NotebookLM set 20–25 — no collisions).
+export const LISTENING_LIBRARY: ListeningItem[] = [
+  ...BASE_LISTENING,
+  ...IELTS_GEN_LISTENING,
+  ...IELTS_EXP_LISTENING_A,
+  ...IELTS_EXP_LISTENING_B,
+  ...IELTS_EXP_LISTENING_C,
+];
 export const SPEAKING_LIBRARY: SpeakingItem[] = [...BASE_SPEAKING, ...IELTS_GEN_SPEAKING];
 export { WRITING_LIBRARY };
 export { VOCAB } from './vocabulary';
