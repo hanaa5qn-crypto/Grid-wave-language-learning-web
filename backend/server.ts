@@ -13,15 +13,16 @@ export const app = express();
 // Trust the first proxy hop (ngrok / Cloud Run) so req.ip is the real client IP,
 // which the per-IP AI rate limiter relies on.
 app.set('trust proxy', 1);
-// Larger limit so base64-encoded audio recordings from the speaking section fit.
 // `verify` keeps the raw body around so the Byl webhook can check its
 // HMAC-SHA256 Byl-Signature header against the exact bytes Byl signed.
-app.use(express.json({
-  limit: '25mb',
-  verify: (req, _res, buf) => {
-    (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
-  },
-}));
+const keepRawBody = (req: express.Request, _res: express.Response, buf: Buffer) => {
+  (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
+};
+// Only the speaking routes carry base64 audio and need a large body limit.
+// Everything else gets a small default so cheap/unauthenticated endpoints
+// can't be fed 25 MB payloads (memory/CPU DoS surface).
+app.use(['/api/evaluate-speaking', '/api/english/review-speaking'], express.json({ limit: '25mb', verify: keepRawBody }));
+app.use(express.json({ limit: '1mb', verify: keepRawBody }));
 
 // Security headers — applied to every response.
 app.use((_req, res, next) => {

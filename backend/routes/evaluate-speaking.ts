@@ -65,7 +65,7 @@ Be honest but encouraging. Keep every Mongolian field natural and concise.`;
 
 export function registerEvaluateSpeakingRoute(app: Express) {
   app.post('/api/evaluate-speaking', async (req, res) => {
-    if (rateLimited(clientIp(req))) {
+    if (await rateLimited(clientIp(req))) {
       res.setHeader('Retry-After', '60');
       return res.status(429).json({ error: 'Хэт олон хүсэлт. Хэсэг хүлээгээд дахин оролдоно уу.' });
     }
@@ -122,10 +122,10 @@ export function registerEvaluateSpeakingRoute(app: Express) {
       return res.status(400).json({ error: 'Provide either an audio recording or spoken text.' });
     }
 
-    const ai = aiClientWithinBudget();
+    const ai = await aiClientWithinBudget();
 
     if (ai) {
-      consumeBudget();
+      await consumeBudget();
       try {
         const parts: any[] = [{ text: buildPrompt(sentence, spokenText, hasAudio) }];
         if (hasAudio) {

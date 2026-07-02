@@ -237,9 +237,18 @@ export function useEnglishPayments(
 
   // Auto-confirm: while a Byl checkout is open, poll every few seconds so paying
   // on the hosted page flips the plan without the user clicking "check".
+  // Stops after 15 minutes (same cap as the German App.tsx poll loop) — the
+  // hosted checkout has long expired by then; the manual "check" button still works.
   useEffect(() => {
     if (!bylCheckout) return;
-    const t = setInterval(() => { pollBylInvoice(true); }, 4000);
+    const startedAt = Date.now();
+    const t = setInterval(() => {
+      if (Date.now() - startedAt > 15 * 60 * 1000) {
+        clearInterval(t);
+        return;
+      }
+      pollBylInvoice(true);
+    }, 4000);
     return () => clearInterval(t);
   }, [bylCheckout, pollBylInvoice]);
 

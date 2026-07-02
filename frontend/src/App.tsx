@@ -605,12 +605,15 @@ function LearnerApp() {
   const [trainerLevel, setTrainerLevel] = useState<CEFRLevel | 'all'>('all');
   const trainerLevelInitRef = useRef(false);
   // Placement-based suggestion — only once the result is unlocked, so the
-  // trainer never leaks a level the learner hasn't paid to reveal.
+  // trainer never leaks a level the learner hasn't paid to reveal. Trust only
+  // the SERVER-owned placementUnlock flag (or founder), never the
+  // client-writable placement.unlocked display field.
   const placementSuggestedLevel = useMemo(() => {
     const placement = currentUser?.placement;
-    if (!placement?.unlocked) return null;
+    const unlocked = currentUser?.placementUnlock?.unlocked || founderAccess;
+    if (!placement || !unlocked) return null;
     return suggestedWordLevel(placement.level);
-  }, [currentUser?.placement?.level, currentUser?.placement?.unlocked]);
+  }, [currentUser?.placement?.level, currentUser?.placementUnlock?.unlocked, founderAccess]);
 
   // Rebuild the trainer queue: filter by level, then SRS order (due → new → scheduled).
   const rebuildTrainerQueue = (level: CEFRLevel | 'all') => {

@@ -212,7 +212,7 @@ function parseExam(value: unknown): ExamKind {
 export function registerEnglishReviewRoute(app: Express) {
   // --- POST /api/english/review-writing -------------------------------------
   app.post('/api/english/review-writing', async (req, res) => {
-    if (rateLimited(clientIp(req))) {
+    if (await rateLimited(clientIp(req))) {
       res.setHeader('Retry-After', '60');
       return res.status(429).json({ error: 'Хэт олон хүсэлт. Хэсэг хүлээгээд дахин оролдоно уу.' });
     }
@@ -233,10 +233,10 @@ export function registerEnglishReviewRoute(app: Express) {
       return res.status(400).json({ error: 'Бичсэн хариулт хоосон байна.' });
     }
 
-    const ai = isGeminiConfigured() ? aiClientWithinBudget() : null;
+    const ai = isGeminiConfigured() ? await aiClientWithinBudget() : null;
 
     if (ai) {
-      consumeBudget();
+      await consumeBudget();
       try {
         const response = await generateContentWithRetry(ai, {
           model: getModel(),
@@ -270,7 +270,7 @@ export function registerEnglishReviewRoute(app: Express) {
 
   // --- POST /api/english/review-speaking ------------------------------------
   app.post('/api/english/review-speaking', async (req, res) => {
-    if (rateLimited(clientIp(req))) {
+    if (await rateLimited(clientIp(req))) {
       res.setHeader('Retry-After', '60');
       return res.status(429).json({ error: 'Хэт олон хүсэлт. Хэсэг хүлээгээд дахин оролдоно уу.' });
     }
@@ -305,10 +305,10 @@ export function registerEnglishReviewRoute(app: Express) {
       return res.status(400).json({ error: 'Дуу бичлэг хийх эсвэл ярианы бичвэрээ оруулна уу.' });
     }
 
-    const ai = isGeminiConfigured() ? aiClientWithinBudget() : null;
+    const ai = isGeminiConfigured() ? await aiClientWithinBudget() : null;
 
     if (ai) {
-      consumeBudget();
+      await consumeBudget();
       try {
         const parts: any[] = [{ text: buildSpeakingPrompt(exam, part, prompt, transcript, hasAudio) }];
         if (hasAudio) {

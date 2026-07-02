@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from 'express';
 import crypto from 'crypto';
+import { clientIp, ttsRateLimited } from '../lib/aiGuard';
 
 // =============================================================================
 // Neural Text-to-Speech proxy (Azure AI Speech).
@@ -109,6 +110,15 @@ export function registerTtsRoute(app: Express) {
       res.setHeader('Cache-Control', 'public, max-age=86400');
       res.setHeader('X-TTS-Cache', 'hit');
       return res.send(cached);
+    }
+
+    // Rate-limit CACHE MISSES only — every miss costs paid Azure characters,
+    // so an unthrottled loop of unique texts could burn the whole Speech
+    // quota. Guests may use TTS, so this stays unauthenticated but throttled;
+    // replays of already-synthesized passages (hits above) stay unmetered.
+    if (await ttsRateLimited(clientIp(req))) {
+      res.setHeader('Retry-After', '60');
+      return res.status(429).json({ error: 'too_many_requests' });
     }
 
     const ssml =

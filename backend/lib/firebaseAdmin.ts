@@ -69,7 +69,14 @@ export async function verifyFirebaseBearer(req: Request): Promise<DecodedIdToken
   const admin = getFirebaseAdmin();
   if (!admin) return null;
 
-  return admin.auth.verifyIdToken(match[1]);
+  // verifyIdToken rejects on expired/malformed tokens — a routine event since
+  // ID tokens expire hourly. Return null so every caller's existing null-check
+  // turns it into a clean 401 instead of an unhandled rejection / hung request.
+  try {
+    return await admin.auth.verifyIdToken(match[1]);
+  } catch {
+    return null;
+  }
 }
 
 // Verifies the bearer AND that the caller carries the `admin` custom claim.

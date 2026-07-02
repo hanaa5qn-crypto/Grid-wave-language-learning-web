@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import type { Express, Request, Response } from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
 import {
@@ -104,7 +105,7 @@ function sanitizeDocId(value: string): string {
 }
 
 function senderInvoiceNoFor(uid: string): string {
-  const suffix = Math.random().toString(36).slice(2, 8);
+  const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
   return `vl_${Date.now()}_${uid.slice(0, 12)}_${suffix}`.slice(0, 45);
 }
 
@@ -119,8 +120,14 @@ function appBaseUrl(req: Request): string {
 }
 
 function addMonths(date: Date, months: number): Date {
+  // Clamp to the last day of the target month: a Jan 31 monthly purchase must
+  // end Feb 28/29, not roll over to Mar 2/3 (setMonth alone overflows).
   const next = new Date(date);
+  const day = next.getDate();
+  next.setDate(1);
   next.setMonth(next.getMonth() + months);
+  const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+  next.setDate(Math.min(day, lastDay));
   return next;
 }
 
@@ -201,7 +208,10 @@ async function activatePaidInvoice(
     if (isPlacement) {
       // One-off purchase: unlock the placement result without touching the
       // subscription plan/status. Revenue still counts toward lifetime value.
+      // placementUnlock is the server-owned entitlement flag (rules reject
+      // client writes); placement.unlocked is kept for older clients' display.
       tx.set(userRef, {
+        placementUnlock: { unlocked: true, by: invoice.provider, at: now.toISOString() },
         placement: { unlocked: true, unlockedBy: invoice.provider },
         billing: {
           lifetimeValueCents: FieldValue.increment(revenueCents),
@@ -501,7 +511,8 @@ export function registerPaymentsRoute(app: Express) {
       });
 
       if (!checkout.id || !checkout.url) {
-        return res.status(502).json({ error: 'Byl did not return a checkout id/url.', checkout });
+        console.error('Byl returned a checkout without id/url:', checkout);
+        return res.status(502).json({ error: 'Byl did not return a checkout id/url.' });
       }
 
       const amountCents = amountMntToCents(amountMnt);
@@ -594,6 +605,7 @@ export function registerPaymentsRoute(app: Express) {
         if (!hasPlacementCredit(credits)) return { ok: false as const };
         tx.set(userRef, {
           placementCredits: FieldValue.increment(-1),
+          placementUnlock: { unlocked: true, by: 'subscription', at: new Date().toISOString() },
           placement: { unlocked: true, unlockedBy: 'subscription' },
         }, { merge: true });
         return { ok: true as const, remainingCredits: credits - 1 };
@@ -619,6 +631,14 @@ export function registerPaymentsRoute(app: Express) {
     if (verified === false) {
       return res.status(401).json({ error: 'Invalid Byl webhook signature.' });
     }
+    // Fail closed in production when BYL_WEBHOOK_SECRET is not configured
+    // (verified === null). A forged body still can't activate anything —
+    // activation re-checks Byl's API — but unsigned requests would let anyone
+    // trigger Byl API calls and invoice lookups at will.
+    if (verified === null && process.env.NODE_ENV === 'production') {
+      console.error('Byl webhook rejected: BYL_WEBHOOK_SECRET is not configured.');
+      return res.status(503).json({ error: 'Webhook signature verification is not configured.' });
+    }
 
     const admin = getFirebaseAdmin();
     if (!admin) return res.status(503).json({ error: firebaseAdminMissingMessage() });
@@ -627,8 +647,17 @@ export function registerPaymentsRoute(app: Express) {
     const object = event.data?.object ?? {};
     const clientReferenceId = String(object.client_reference_id ?? '');
     const objectId = String(object.id ?? '');
+    const eventId = event.id != null && event.id !== '' ? sanitizeDocId(`byl_${event.id}`) : '';
+    const eventRef = eventId ? admin.db.collection('webhookEvents').doc(eventId) : null;
 
     try {
+      // Replay guard: acknowledge already-processed event ids without hitting
+      // Byl's API again. The marker is written only AFTER successful processing
+      // (below), so a delivery that failed mid-way is still retried by Byl.
+      if (eventRef && (await eventRef.get()).exists) {
+        return res.json({ received: true, duplicate: true });
+      }
+
       let invoiceRef = clientReferenceId
         ? admin.db.collection('paymentInvoices').doc(sanitizeDocId(clientReferenceId))
         : null;
@@ -648,11 +677,21 @@ export function registerPaymentsRoute(app: Express) {
       }
 
       const invoice = invoiceSnap.data() as PendingInvoice;
-      const result = invoice.status === 'paid'
-        ? publicInvoicePayload(invoice)
-        : await checkAndMaybeActivate(invoiceRef, invoice);
+      if (invoice.status !== 'paid') {
+        await checkAndMaybeActivate(invoiceRef, invoice);
+      }
 
-      return res.json(result);
+      if (eventRef) {
+        await eventRef.set({
+          type: event.type ?? '',
+          senderInvoiceNo: invoice.senderInvoiceNo ?? '',
+          processedAt: FieldValue.serverTimestamp(),
+        }).catch((err) => console.warn('webhook replay-marker write failed:', err));
+      }
+
+      // The webhook caller is Byl's server, not the buyer — never echo invoice
+      // details back to an unauthenticated caller.
+      return res.json({ received: true });
     } catch (err) {
       console.error('Byl webhook failed:', err);
       return res.status(502).json({ error: 'Byl webhook processing failed.' });

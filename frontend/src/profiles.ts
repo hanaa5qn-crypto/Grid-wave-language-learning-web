@@ -71,6 +71,14 @@ export interface UserProfile {
   // Free placement-test reveals from subscription purchases (1 granted each).
   // Spent server-side via /api/payments/placement/redeem-credit.
   placementCredits?: number;
+  // SERVER-OWNED paid unlock of the placement result. Written only by the
+  // payments backend (one-off purchase or credit redeem); the client-writable
+  // placement.unlocked above is display state and must not gate entitlement.
+  placementUnlock?: {
+    unlocked: boolean;
+    by?: string;
+    at?: string;
+  };
   // --- Нийгмийн өсөлтийн боломжууд (урилга, тулаан, найзууд) ---
   // Миний хуваалцах урилгын код (сервер үүсгэнэ).
   referralCode?: string;
@@ -118,7 +126,7 @@ export interface UserProfile {
 // entitlements and metered usage. Firestore rules reject client writes to
 // these; the client must also strip them before saving its own profile so a
 // stale value can never fail an otherwise-valid progress write.
-export const SERVER_OWNED_PROFILE_FIELDS = ['billing', 'placementCredits', 'aiUsage', 'promo', 'redeemedCodes'] as const;
+export const SERVER_OWNED_PROFILE_FIELDS = ['billing', 'placementCredits', 'aiUsage', 'promo', 'redeemedCodes', 'placementUnlock'] as const;
 
 export function stripServerOwnedFields(profile: UserProfile): UserProfile {
   const copy = { ...(profile as unknown as Record<string, unknown>) };

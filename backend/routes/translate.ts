@@ -6,7 +6,7 @@ import { checkAiAccess } from '../lib/plans';
 
 export function registerTranslateRoute(app: Express) {
   app.post('/api/translate', async (req, res) => {
-    if (rateLimited(clientIp(req))) {
+    if (await rateLimited(clientIp(req))) {
       res.setHeader('Retry-After', '60');
       return res.status(429).json({ error: 'Хэт олон хүсэлт. Хэсэг хүлээгээд дахин оролдоно уу.' });
     }
@@ -29,17 +29,17 @@ export function registerTranslateRoute(app: Express) {
       });
     }
 
-    if (budgetExhausted()) {
+    if (await budgetExhausted()) {
       return res.status(503).json({
         error: 'Өнөөдрийн AI дуудлагын хязгаар дүүрсэн. Маргааш дахин оролдоно уу.',
         code: 'AI_DAILY_BUDGET',
       });
     }
 
-    const ai = aiClientWithinBudget();
+    const ai = await aiClientWithinBudget();
 
     if (ai) {
-      consumeBudget();
+      await consumeBudget();
       try {
         const response = await generateContentWithRetry(ai, {
           model: getModel(),
