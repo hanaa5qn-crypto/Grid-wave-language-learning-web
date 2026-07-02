@@ -20,7 +20,6 @@ import {
   QuizQuestion, getReadingQuestions, getListeningQuestions, shuffleQuiz,
 } from './library';
 import { resourcesFor, SkillTab } from './externalResources';
-import { EXAMS, EXAM_LEVEL_ORDER, ExamLevel } from './exams';
 import TestDafExam from './TestDafExam';
 import AdminDashboard from './AdminDashboard';
 import TermsPage from './pages/TermsPage';
@@ -39,7 +38,6 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   SrsMap, reviewSrs, srsWordKey, orderTrainerWords, countDueWords, isDue,
   compareWordsByLevel, suggestedWordLevel,
-  calculateStreakWithGrace, StreakResult,
   buildUnitsForLevel, unitProgress, isUnitPassed, isUnitUnlocked, lockedItemIds, Unit, UnitActivity, UNIT_PASS_RATIO,
   addMistake, clearMistake, resolveMistakes, MistakeRef,
   buildTodaySession, TodaySession,
@@ -48,8 +46,8 @@ import {
 import { buildInflectedLookup } from './inflect';
 import {
   PLANS, PLAN_ORDER, PlanId, effectivePlan, isFounder as isFounderProfile,
-  canUseAi, canAccessAllContent, canInteract, isExamQuestionLocked, isLessonLocked,
-  isFreeUnitLocked, FREE_QUESTIONS_PER_SECTION, applyPromoDiscount, type BillingInterval,
+  canUseAi, canAccessAllContent, canInteract, isLessonLocked,
+  isFreeUnitLocked, applyPromoDiscount, type BillingInterval,
 } from './plans';
 import OnboardingWizard from './OnboardingWizard';
 import PlacementTest from './PlacementTest';
@@ -63,29 +61,20 @@ import MCQBlock from './components/MCQBlock';
 import ExternalResourcesPanel from './components/ExternalResourcesPanel';
 import QuizNav from './components/QuizNav';
 import { BillingCard } from './components/BillingCard';
+import { BrandLogo } from './components/BrandLogo';
 import { ProfileTab } from './tabs/ProfileTab';
+import { TranslateTab } from './tabs/TranslateTab';
+import { ExamTab } from './tabs/ExamTab';
+import {
+  localDateKey, activityKey, normalizeProfileMetrics, TRACKABLE_ACTIVITY_TOTAL,
+} from './utils/profileMetrics';
 import { audioBlobToWavBase64, audioBlobToWavBlob } from './utils/audioUtils';
 import { playTts, pauseTts, resumeTts, stopTts } from './utils/tts';
 import { formatMnt } from './utils/paymentUtils';
 
-// Union of all exam item types — they all share `topic`, `title`, `titleMn`.
-type ExamItem = ReadingItem | ListeningItem | WritingItem | SpeakingItem;
-
-const WEEKDAY_LABELS = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
 const STUDY_TABS: TabType[] = ['read', 'listen', 'speak', 'write', 'vocab', 'translate', 'exam'];
 const ACTIVE_IDLE_LIMIT_MS = 2 * 60 * 1000;
 const STUDY_SAVE_THRESHOLD_SECONDS = 120;
-const TRACKABLE_ACTIVITY_TOTAL =
-  4 + // core quick lesson + detailed reading/listening/writing lessons
-  DICTIONARY.filter((w) => w.mongolian.trim().length > 0).length +
-  READING_LIBRARY.length +
-  LISTENING_LIBRARY.length +
-  SPEAKING_LIBRARY.length +
-  WRITING_LIBRARY.length +
-  Object.values(EXAMS).reduce(
-    (sum, exam) => sum + exam.reading.length + exam.listening.length + exam.speaking.length + exam.writing.length,
-    0,
-  );
 
 // Trainer deck, easiest first (A1 → C2) so beginners meet beginner words.
 const TRAINER_WORDS = DICTIONARY.filter((w) => w.mongolian.trim().length > 0).sort(compareWordsByLevel);
@@ -93,81 +82,6 @@ const TRAINER_WORDS = DICTIONARY.filter((w) => w.mongolian.trim().length > 0).so
 // How many cards a "Дахин давтах" (don't know) word waits before reappearing
 // in the same session.
 const VOCAB_REQUEUE_GAP = 5;
-
-function localDateKey(date = new Date()): string {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function dateFromLocalKey(key: string): Date {
-  const [year, month, day] = key.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function buildLearningCurve(studySecondsByDate: Record<string, number> = {}): UserProfile['learningCurve'] {
-  const today = new Date();
-  return Array.from({ length: 7 }).map((_, index) => {
-    const date = addDays(today, index - 6);
-    const key = localDateKey(date);
-    const seconds = Math.max(0, studySecondsByDate[key] ?? 0);
-    return {
-      day: WEEKDAY_LABELS[date.getDay()],
-      hours: Number((seconds / 3600).toFixed(1)),
-    };
-  });
-}
-
-function calculateStreak(studyDays: string[] = [], today = new Date()): number {
-  return calculateStreakWithGrace(studyDays, today).streak;
-}
-
-function calculateProgress(completedActivityIds: string[] = []): number {
-  if (TRACKABLE_ACTIVITY_TOTAL <= 0) return 0;
-  const uniqueCompleted = new Set(completedActivityIds).size;
-  return Math.min(100, Math.round((uniqueCompleted / TRACKABLE_ACTIVITY_TOTAL) * 100));
-}
-
-function activityKey(prefix: string, value: string | number): string {
-  return `${prefix}:${String(value).trim().toLowerCase().replace(/\s+/g, '-').slice(0, 96)}`;
-}
-
-function normalizeProfileMetrics(profile: UserProfile): UserProfile {
-  const completedActivityIds = Array.from(new Set(profile.completedActivityIds ?? []));
-  const studyDays = Array.from(new Set(profile.studyDays ?? [])).sort();
-  const studySecondsByDate = profile.studySecondsByDate ?? {};
-  
-  // Calculate streak with grace using learning.ts engine
-  const streakRes = calculateStreakWithGrace(studyDays);
-  const streak = streakRes.streak;
-  
-  const progress = calculateProgress(completedActivityIds);
-  return {
-    ...profile,
-    completedActivityIds,
-    studyDays,
-    studySecondsByDate,
-    streak,
-    progress,
-    completedLessons: completedActivityIds.length,
-    learningCurve: buildLearningCurve(studySecondsByDate),
-    // Ensure all custom profile fields are present
-    srsByWord: profile.srsByWord ?? {},
-    mistakeIds: profile.mistakeIds ?? [],
-    onboardingDone: profile.onboardingDone ?? false,
-    dailyGoalMinutes: profile.dailyGoalMinutes ?? 15,
-    streakFreezeCount: profile.streakFreezeCount ?? 1,
-  };
-}
-
-
 
 // Level filter chips shared by every skill-library browser.
 const LIB_LEVELS: (Level | 'all')[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -196,21 +110,6 @@ const WORD_CLASS_MN: Record<string, string> = {
   conjunction: 'Холбоос үг', interjection: 'Аялга үг', article: 'Артикль', phrase: 'Хэллэг',
 };
 const LEVEL_OPTIONS: (CEFRLevel | 'all')[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-
-function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
-      <defs>
-        <linearGradient id="brand-logo-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ededeb" />
-          <stop offset="1" stopColor="#9b9893" />
-        </linearGradient>
-      </defs>
-      <circle cx="13" cy="19" r="9" fill="url(#brand-logo-grad)" />
-      <line x1="43" y1="16" x2="30" y2="48" stroke="url(#brand-logo-grad)" strokeWidth="18" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export default function App() {
   const path = window.location.pathname;
@@ -801,34 +700,10 @@ function LearnerApp() {
     };
   }, [isTest]);
 
-  // Dedicated Professional Translator states
-  const [translationInput, setTranslationInput] = useState('');
-  const [translationLoading, setTranslationLoading] = useState(false);
-  const [translationResult, setTranslationResult] = useState<{
-    translation: string;
-    detectedLanguage: string;
-    pronunciation: string;
-    grammarExplanation: string;
-    words: Array<{
-      word: string;
-      baseForm: string;
-      partOfSpeech: string;
-      translation: string;
-      explanation: string;
-    }>;
-    examples: Array<{
-      german: string;
-      mongolian: string;
-    }>;
-  } | null>(null);
-
-
   // Guest interaction prompt: visitors may browse the free-tier surface but any
   // action (answering, audio, placement, drills) opens this sign-up nudge.
   const [guestPromptOpen, setGuestPromptOpen] = useState(false);
 
-  // CEFR level-based exams (A1–C2) — test tab
-  const [examLevelSel, setExamLevelSel] = useState<ExamLevel | null>(null);
   // Бүрэн TestDaF загвар шалгалтын симуляци (бүрэн дэлгэц overlay).
   const [testdafOpen, setTestdafOpen] = useState(false);
   // Түвшин тогтоох тест: шинэ хэрэглэгчид onboarding-ийн дараа автоматаар,
@@ -984,28 +859,6 @@ function LearnerApp() {
     const id = setInterval(() => { void checkIncomingDuels(); }, 60000);
     return () => clearInterval(id);
   }, [currentUser, checkIncomingDuels]);
-  const [examSec, setExamSec] = useState<'reading' | 'listening' | 'writing' | 'speaking'>('reading');
-  const [examItemIdx, setExamItemIdx] = useState(0);
-  const [examItemAns, setExamItemAns] = useState<number | null>(null);
-  const [examItemReveal, setExamItemReveal] = useState(false);
-  const [examItemWrite, setExamItemWrite] = useState('');
-  const [examItemTrans, setExamItemTrans] = useState(false);
-
-  // Reset the per-test sub-state when switching section or test. Also clears the
-  // shared speaking judge so a report never carries over to a different prompt.
-  // stopTts() so a listening clip never keeps playing after the learner moves
-  // on — they're often done answering before the audio finishes.
-  const selectExamSection = (sec: 'reading' | 'listening' | 'writing' | 'speaking') => {
-    stopTts();
-    setExamSec(sec); setExamItemIdx(0); setExamItemAns(null); setExamItemReveal(false); setExamItemWrite(''); resetSpeakingJudge(); resetWritingFeedback();
-  };
-  const selectExamItem = (idx: number) => {
-    stopTts();
-    setExamItemIdx(idx); setExamItemAns(null); setExamItemReveal(false); setExamItemWrite(''); resetSpeakingJudge(); resetWritingFeedback();
-  };
-  const [translationError, setTranslationError] = useState<string | null>(null);
-
-
   // Bearer token for the AI endpoints — the server only serves AI features to
   // Max/founder accounts, so every AI call has to prove who is asking.
   const aiAuthHeaders = async (): Promise<Record<string, string>> => {
@@ -1030,36 +883,6 @@ function LearnerApp() {
       if (typeof data?.used === 'number') setAiQuota(data);
     } catch {
       // Non-fatal: the counter just stays stale until the next AI call.
-    }
-  };
-
-  const translateText = async (textToTranslate?: string) => {
-    const targetText = textToTranslate !== undefined ? textToTranslate : translationInput;
-    if (!targetText.trim()) return;
-
-    setTranslationLoading(true);
-    setTranslationError(null);
-    try {
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(await aiAuthHeaders()) },
-        body: JSON.stringify({ text: targetText })
-      });
-
-      if (!response.ok) {
-        const errBody = await response.json().catch(() => ({}));
-        if (errBody?.quota) setAiQuota(errBody.quota);
-        throw new Error(errBody?.error || 'Орчуулгын серверээс алдаа ирлээ.');
-      }
-
-      const data = await response.json();
-      setTranslationResult(data);
-    } catch (err: any) {
-      console.error(err);
-      setTranslationError(err?.message || 'Орчуулга түр амжилтгүй боллоо. Сүлжээгээ шалгаад хэсэг хугацааны дараа дахин оролдоно уу.');
-    } finally {
-      setTranslationLoading(false);
-      refreshAiQuota();
     }
   };
 
@@ -4040,586 +3863,38 @@ function LearnerApp() {
           )}
 
           {/* Tab: Орчуулагч (Professional Translation & Lingua Helper) */}
-          {/* AI translator: Free/Pro spend monthly teaser uses, Max is unlimited.
-              Once the teaser runs out the upgrade card replaces the workspace. */}
-          {activeTab === 'translate' && !aiUsable && (
-            <div className="max-w-2xl mx-auto w-full pb-24 animate-fade-in">
-              {renderPlanLockCard(
-                'AI Орчуулагч',
-                aiLockDesc('Дүрмийн задаргаатай ухаалаг орчуулагч'),
-                'max',
-              )}
-            </div>
-          )}
-          {activeTab === 'translate' && aiUsable && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-24 animate-fade-in font-sans">
-              <div className="lg:col-span-12">{renderAiTeaserBanner()}</div>
-              
-              {/* Left Side: Translation Workspace */}
-              <div className="lg:col-span-12 xl:col-span-7 flex flex-col gap-6">
-                <div className="rounded-xl p-6 md:p-8 border-2 border-ink-line block-shadow relative">
-                  
-                  {/* Neon top accent */}
-                  <div className="absolute top-0 left-0 w-full h-[5px] bg-paper rounded-t-xl"></div>
-                  
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-paper fill-paper-2 animate-pulse" />
-                      <h2 className="text-2xl font-light text-paper font-serif">
-                        Орчуулагч
-                      </h2>
-                    </div>
-                    <span className="text-[11px] font-serif font-extrabold bg-ink-raise text-paper-2 px-3 py-1 rounded-full border border-ink-line uppercase tracking-widest">
-                      PRO
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-paper-2 mb-4 leading-relaxed font-sans">
-                    Энгийн орчуулгын системүүд шиг шууд холбож орчуулахгүй, энэхүү ухаалаг систем нь өгүүлбэрийн зүй, үгс тус бүрийн хувирал, дуудлагыг дүрмийн тайлбартай хамт гаргаж заах сургалтын зориулалттай.
-                  </p>
-
-                  <div className="relative">
-                    <textarea 
-                      value={translationInput}
-                      onChange={(e) => setTranslationInput(e.target.value)}
-                      placeholder="Орчуулах герман эсвэл монгол өгүүлбэрээ энд бичнэ үү..."
-                      className="w-full min-h-[120px] bg-ink-raise border-2 border-ink-line font-bold rounded-xl p-4 text-md text-paper focus:border-ink-line outline-none transition-all placeholder:text-paper-3 resize-none shadow-inner"
-                    />
-                    {translationInput && (
-                      <button 
-                        onClick={() => setTranslationInput('')}
-                        className="absolute right-3 top-3 text-[12px] text-paper-3 font-bold border border-ink-line bg-ink-raise hover:bg-ink-2 px-2.5 py-1 rounded-md transition-all cursor-pointer"
-                        title="Арилгах"
-                      >
-                        Цэвэрлэх
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Sample Phrases cards */}
-                  <div className="mt-4">
-                    <p className="text-xs font-bold text-paper-3 font-serif mb-2 uppercase">Туршиж үзэх жишээ өгүүлбэрүүд:</p>
-                    <div className="flex flex-col gap-2">
-                      <button 
-                        onClick={() => {
-                          setTranslationInput('Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche.');
-                          translateText('Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche.');
-                        }}
-                        className="text-left py-2 px-3 bg-ink-raise border border-ink-line rounded-lg hover:border-ink-line text-xs font-semibold hover:bg-ink-2 text-paper-2 transition-all flex justify-between items-center group cursor-pointer"
-                      >
-                        <span>🇩🇪 "Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche."</span>
-                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-paper" />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setTranslationInput('Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална.');
-                          translateText('Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална.');
-                        }}
-                        className="text-left py-2 px-3 bg-ink-raise border border-ink-line rounded-lg hover:border-ink-line text-xs font-semibold hover:bg-ink-2 text-paper-2 transition-all flex justify-between items-center group cursor-pointer"
-                      >
-                        <span>🇲🇳 "Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална."</span>
-                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-paper" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex justify-end gap-3">
-                    <button 
-                      onClick={() => translateText()}
-                      disabled={translationLoading || !translationInput.trim()}
-                      className="px-6 py-3 border-2 border-ink-line text-sm font-bold bg-ink-raise text-paper-2 rounded-xl hover:bg-ink-raise transition-all cursor-pointer block-shadow flex items-center gap-2 border-ink-line disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {translationLoading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-ink-line border-t-transparent rounded-full animate-spin"></div>
-                          Орчуулж байна...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 fill-current text-paper" />
-                          Нэгдсэн Орчуулга Хийх
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {translationError && (
-                    <div className="mt-4 p-4 border border-ink-line bg-ink-raise rounded-xl text-paper-2 text-xs font-bold leading-relaxed flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-paper shrink-0" />
-                      <span>{translationError}</span>
-                    </div>
-                  )}
-
-                </div>
-              </div>
-
-              {/* Right Side: Translation Details & Deep Linguistic breakdown */}
-              <div className="lg:col-span-12 xl:col-span-5 flex flex-col gap-6">
-                
-                {translationLoading ? (
-                  <div className="rounded-xl border-2 border-ink-line p-8 block-shadow h-[400px] flex flex-col items-center justify-center text-center">
-                    <div className="relative mb-6">
-                      <div className="w-16 h-16 border-4 border-ink-line border-t-amber-500 rounded-full animate-spin"></div>
-                      <Sparkles className="w-6 h-6 text-paper absolute inset-0 m-auto animate-pulse" />
-                    </div>
-                    <h3 className="text-lg font-bold text-paper font-serif mb-2">Герман Хэлний Үйлчилгээ</h3>
-                    <p className="text-xs text-paper-2 max-w-xs leading-normal">
-                      Өгүүлбэрийг орчуулж, үгс бүрийн үндсэн хэлбэрийг олох болон хэл зүйн бүтцийг судалж байна.
-                    </p>
-                  </div>
-                ) : translationResult ? (
-                  <div className="flex flex-col gap-6 animate-scale-up">
-                    
-                    {/* Translation Core Card */}
-                    <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                      <div className="flex justify-between items-center pb-3 border-b border-ink-line mb-4">
-                        <span className="text-xs font-medium uppercase tracking-widest text-paper-2 bg-ink-raise px-2.5 py-1 rounded-md border border-ink-line">
-                          Илэрсэн хэл: {translationResult.detectedLanguage === 'German' ? '🇩🇪 Герман' : '🇲🇳 Монгол'}
-                        </span>
-                        <div className="flex gap-2">
-                          {translationResult.detectedLanguage === 'German' || translationResult.detectedLanguage === 'german' ? (
-                            <button 
-                              onClick={() => speakGerman(translationInput)}
-                              className="w-8 h-8 rounded-full bg-ink-raise border border-ink-line hover:bg-ink-2 flex items-center justify-center text-paper-2 cursor-pointer"
-                              title="Германаар уншуулах"
-                            >
-                              <Volume2 className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={() => speakGerman(translationResult.translation)}
-                              className="w-8 h-8 rounded-full bg-ink-raise border border-ink-line hover:bg-ink-2 flex items-center justify-center text-paper-2 cursor-pointer"
-                              title="Орчуулгыг германаар уншуулах"
-                            >
-                              <Volume2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mb-4">
-                        <p className="text-[10px] uppercase font-bold text-paper-3 font-serif tracking-wide mb-1">Гүйцэтгэсэн Орчуулга:</p>
-                        <p className="text-lg font-black text-paper leading-snug">
-                          {translationResult.translation}
-                        </p>
-                      </div>
-
-                      {translationResult.pronunciation && (
-                        <div className="mb-1 p-3 bg-ink-raise border border-ink-line rounded-lg">
-                          <p className="text-[10px] uppercase font-bold text-paper-3 font-serif tracking-wide mb-0.5">Унших удирдамж:</p>
-                          <code className="text-xs font-mono font-bold text-paper-2 bg-ink-raise px-1.5 py-0.5 rounded border border-ink-line">
-                            {translationResult.pronunciation}
-                          </code>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Linguistic Grammar Explanation Card */}
-                    <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                      <h3 className="text-sm font-medium text-paper-2 font-serif mb-3 flex items-center gap-2">
-                        <Lightbulb className="w-4 h-4 text-paper fill-paper-2 animate-pulse" />
-                        БҮТЭЦ & ДҮРМИЙН ТАЙЛБАР:
-                      </h3>
-                      <p className="text-xs leading-relaxed text-paper-2 font-sans">
-                        {translationResult.grammarExplanation}
-                      </p>
-                    </div>
-
-                    {/* Vocabulary Parsing List */}
-                    <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                      <h3 className="text-sm font-medium text-paper-2 font-serif mb-4 pb-2 border-b border-ink-line uppercase tracking-wider">
-                        Үгсийн бүтэц (Дэлгэрэнгүй):
-                      </h3>
-                      <div className="flex flex-col gap-3">
-                        {translationResult.words && translationResult.words.map((w, index) => (
-                          <div key={index} className="flex flex-col gap-1 p-2.5 bg-ink-raise border border-ink-line rounded-lg text-xs hover:border-ink-line transition-all">
-                            <div className="flex justify-between items-center">
-                              <span className="font-extrabold text-paper">{w.word}</span>
-                              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-ink-raise text-paper-2">
-                                {w.partOfSpeech}
-                              </span>
-                            </div>
-                            <div className="text-[11px] text-paper-2 flex justify-between mt-1">
-                              <span>Толь бичгийн хэлбэр: <strong className="text-paper-2">{w.baseForm}</strong></span>
-                              <span>= <strong className="text-paper">{w.translation}</strong></span>
-                            </div>
-                            <p className="text-[10.5px] text-paper-3 leading-normal mt-1 border-t border-dashed border-ink-line pt-1">
-                              {w.explanation}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Context Examples */}
-                    {translationResult.examples && translationResult.examples.length > 0 && (
-                      <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                        <h3 className="text-sm font-medium text-paper font-serif mb-3 uppercase tracking-wider">
-                          Холбогдох Жишээнүүд:
-                        </h3>
-                        <div className="space-y-3">
-                          {translationResult.examples.map((ex, idx) => (
-                            <div key={idx} className="p-3 bg-ink-raise rounded-xl border border-ink-line">
-                              <p className="text-xs font-bold text-paper-2">🇩🇪 {ex.german}</p>
-                              <p className="text-xs text-paper-2 mt-1">🇲🇳 {ex.mongolian}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                  </div>
-                ) : (
-                  <div className="rounded-xl border-2 border-ink-line p-8 block-shadow h-[320px] flex flex-col items-center justify-center text-center relative overflow-hidden group">
-                    <div className="w-16 h-16 rounded-full bg-ink-raise border border-ink-line flex items-center justify-center text-paper-2 mb-4 transition-all group-hover:scale-110">
-                      <Languages className="w-8 h-8 text-paper" />
-                    </div>
-                    <h3 className="text-lg font-bold text-paper font-serif mb-2">Үгийн Шинжилгээ Ба Орчуулга</h3>
-                    <p className="text-xs text-paper-2 max-w-xs leading-normal font-sans">
-                      Зүүн талбар дахь өгүүлбэрийг орчуулсны дараа энд дэлгэрэнгүй толь бичиг, дуудлагын зөвлөмжүүд болон дүрэм харагдах болно.
-                    </p>
-                  </div>
-                )}
-
-              </div>
-
-            </div>
+          {activeTab === 'translate' && (
+            <TranslateTab
+              aiUsable={aiUsable}
+              renderPlanLockCard={renderPlanLockCard}
+              aiLockDesc={aiLockDesc}
+              renderAiTeaserBanner={renderAiTeaserBanner}
+              aiAuthHeaders={aiAuthHeaders}
+              refreshAiQuota={refreshAiQuota}
+              setAiQuota={setAiQuota}
+              speakGerman={speakGerman}
+            />
           )}
 
           {/* Tab 8: Шалгалт — CEFR түвшний шалгалтууд (A1–C2) */}
           {activeTab === 'exam' && (
-            <div className="w-full pb-24 animate-fade-in">
-
-              {/* Header */}
-              <div className="flex items-center gap-3 pb-4 border-b border-ink-line mb-6 text-paper">
-                <GraduationCap className="w-8 h-8 text-paper" />
-                <div>
-                  <h2 className="text-2xl font-extrabold font-serif text-paper">Шалгалт</h2>
-                  <p className="text-xs text-paper-2 font-mono">CEFR түвшин (A1–C2) · Унших · Сонсох · Бичих · Ярих</p>
-                </div>
-              </div>
-
-              {/* LEVEL SELECTOR */}
-              {examLevelSel === null && (
-                <>
-                  {/* Түвшин тогтоох үнэлгээний тест — 4 ур чадвар, CEFR түвшин */}
-                  <button onClick={() => { if (!requireAccount()) return; setPlacementOpen(true); }}
-                    className="w-full text-left mb-4 bg-gradient-to-br from-ink-raise to-ink-2 border-2 border-ink-line rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-ink-raise border-2 border-ink-line flex items-center justify-center shrink-0">
-                        <Sparkles className="w-7 h-7 text-paper-2" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-lg md:text-xl font-light font-serif text-paper">Түвшин тогтоох тест</h3>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-paper text-ink">Einstufungstest</span>
-                        </div>
-                        <p className="text-xs text-paper leading-relaxed mt-1">Дөрвөн ур чадварыг бүгдийг шалгаад <b className="text-paper">CEFR түвшнээ</b> (A1–C2) тогтоолгоно. Асуултууд таны түвшинд автоматаар тохирно. 10–15 минут.</p>
-                        <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-paper bg-ink-raise border border-ink-line px-3 py-1 rounded-full">Тест эхлүүлэх <ArrowRight className="w-3.5 h-3.5" /></span>
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* TestDaF бүрэн загвар шалгалтын симуляци — Pro ба түүнээс дээш багцад. */}
-                  <button onClick={() => fullContent ? setTestdafOpen(true) : setActiveTab('profile')}
-                    className="w-full text-left mb-6 bg-gradient-to-br from-ink-raise to-ink-2 border-2 border-ink-line rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-ink-raise border-2 border-ink-line flex items-center justify-center shrink-0">
-                        <GraduationCap className="w-7 h-7 text-paper-2" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-lg md:text-xl font-light font-serif text-paper">TestDaF — Бүрэн загвар шалгалт</h3>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-paper text-ink">Prüfungssimulation</span>
-                        </div>
-                        <p className="text-xs text-paper leading-relaxed mt-1">Жинхэнэ шалгалтын бүтэц: <b className="text-paper">Унших</b> 60′/30, <b className="text-paper">Сонсох</b> 40′/25, <b className="text-paper">Бичих</b> 60′/график-эссэ, <b className="text-paper">Ярих</b> 35′/7 ситуаци. Цаг хэмжсэн, дараалсан, AI үнэлгээтэй.</p>
-                        <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-paper bg-ink-raise border border-ink-line px-3 py-1 rounded-full">
-                          {fullContent ? <>Симуляци эхлүүлэх <ArrowRight className="w-3.5 h-3.5" /></> : <><Lock className="w-3.5 h-3.5" /> Pro багцаар нээгдэнэ</>}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-
-                  <p className="text-sm text-paper-2 mb-5 max-w-2xl">Эсвэл <b className="text-paper">CEFR түвшнээ</b> сонгоно уу. Түвшин бүр <b className="text-paper">Унших, Сонсох, Бичих, Ярих</b> гэсэн дөрвөн хэсэгтэй бөгөөд хэсэг бүрт 5+ тест байна. Доош нь A1 хамгийн хялбар, C2 хамгийн хүнд.</p>
-
-                  {/* Free tier: only the first N questions of the bank are open. */}
-                  {!fullContent && (
-                    <div className="flex items-start gap-3 mb-5 p-4 bg-ink-raise/60 border-2 border-ink-line rounded-xl block-shadow max-w-2xl">
-                      <Lock className="w-5 h-5 text-paper shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-extrabold text-paper">Үнэгүй эрхээр A1 шалгалт бүрийн (унших/сонсох/бичих/ярих) эхний {FREE_QUESTIONS_PER_SECTION} асуулт нээлттэй.</p>
-                        <p className="text-xs text-paper-2 mt-1">
-                          Бүх түвшний {EXAM_LEVEL_ORDER.reduce((n, lv) => n + EXAMS[lv].reading.length + EXAMS[lv].listening.length + EXAMS[lv].writing.length + EXAMS[lv].speaking.length, 0)} тестийг бүрэн нээхийн тулд{' '}
-                          <button onClick={() => setActiveTab('profile')} className="font-bold text-paper-2 underline cursor-pointer">Pro эсвэл Max багц</button> аваарай.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {EXAM_LEVEL_ORDER.map((lv) => {
-                      const ex = EXAMS[lv];
-                      const total = ex.reading.length + ex.listening.length + ex.writing.length + ex.speaking.length;
-                      return (
-                        <button key={lv} onClick={() => { setExamLevelSel(lv); selectExamSection('reading'); }}
-                          className="text-left border-2 border-ink-line rounded-xl p-5 block-shadow hover:scale-[1.02] active:scale-95 transition-transform cursor-pointer">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-3xl font-light font-serif text-paper">{lv}</span>
-                            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-paper text-ink">{total} тест</span>
-                          </div>
-                          <p className="text-sm font-extrabold text-paper-2 mb-1">{ex.titleMn}</p>
-                          <p className="text-xs text-paper-2 leading-relaxed">{ex.descriptionMn}</p>
-                          <div className="flex items-center gap-2 mt-3 text-paper-2">
-                            <BookOpen className="w-4 h-4" /><Headphones className="w-4 h-4" /><Edit3 className="w-4 h-4" /><Mic className="w-4 h-4" />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-
-              {/* LEVEL EXAM (4 sections, each with 5+ tests) */}
-              {examLevelSel !== null && (() => {
-                const exam = EXAMS[examLevelSel];
-                const items = exam[examSec];
-                const item = items[Math.min(examItemIdx, items.length - 1)];
-                const answered = examItemAns !== null;
-                // Free plan: only the first FREE_QUESTIONS_PER_SECTION questions
-                // of each A1 section (reading/listening/writing/speaking).
-                const itemLocked = isExamQuestionLocked(currentUser, examLevelSel, examSec, Math.min(examItemIdx, items.length - 1));
-                const sections = [
-                  { key: 'reading' as const, icon: BookOpen, mn: 'Унших' },
-                  { key: 'listening' as const, icon: Headphones, mn: 'Сонсох' },
-                  { key: 'writing' as const, icon: Edit3, mn: 'Бичих' },
-                  { key: 'speaking' as const, icon: Mic, mn: 'Ярих' },
-                ];
-                return (
-                  <div className="font-sans">
-                    {/* Back + level title */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <button onClick={() => { stopTts(); setExamLevelSel(null); }}
-                        className="px-3 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-xl font-bold text-xs cursor-pointer block-shadow hover:bg-ink-2 transition-colors flex items-center gap-1">
-                        <ArrowLeft className="w-4 h-4" /> Түвшнүүд
-                      </button>
-                      <span className="text-lg font-light font-serif text-paper">{examLevelSel} · {exam.titleMn}</span>
-                    </div>
-
-                    {/* Section tabs */}
-                    <div className="grid grid-cols-4 gap-2 mb-5">
-                      {sections.map((s) => {
-                        const Icon = s.icon; const active = examSec === s.key;
-                        return (
-                          <button key={s.key} onClick={() => selectExamSection(s.key)}
-                            className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${active ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2 hover:bg-ink-2'}`}>
-                            <Icon className="w-4 h-4" />
-                            <span className="text-[10px] font-bold font-serif">{s.mn} ({exam[s.key].length})</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Test selector chips — a lock marks questions beyond the free limit. */}
-                    <div className="flex flex-wrap gap-2 mb-5">
-                      {items.map((_, i) => {
-                        const locked = isExamQuestionLocked(currentUser, examLevelSel, examSec, i);
-                        return (
-                          <button key={i} onClick={() => selectExamItem(i)}
-                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${examItemIdx === i ? 'bg-ink-raise text-paper' : locked ? 'bg-ink-raise text-paper-2 opacity-60 hover:opacity-80' : 'bg-ink-raise text-paper-2 hover:bg-ink-2'}`}>
-                            {locked && <Lock className="w-3 h-3" />} Тест {i + 1}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Detail card */}
-                    <div className="border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow">
-                      {itemLocked ? renderPlanLockCard(
-                        `Тест ${examItemIdx + 1} түгжээтэй`,
-                        `Үнэгүй эрхээр A1 шалгалт бүрийн эхний ${FREE_QUESTIONS_PER_SECTION} асуулт нээлттэй. Энэ тестийг нээхийн тулд Pro эсвэл Max багц аваарай.`,
-                        'pro',
-                      ) : (<>
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{examLevelSel} · {(item as ExamItem).topic}</span>
-                        {(examSec === 'reading' || examSec === 'listening') && (
-                          <div className="flex gap-2">
-                            {examSec === 'reading' && (
-                              <button onClick={() => { if (!requireAccount()) return; speakGerman((item as typeof exam.reading[number]).text, audioSpeed === '0.8' ? 0.8 : 1.0); }} title="Сонсох"
-                                className="p-2 border-2 border-ink-line rounded-full bg-ink-raise hover:scale-105 transition-transform text-paper block-shadow cursor-pointer">
-                                <Volume2 className="w-5 h-5" />
-                              </button>
-                            )}
-                            <button onClick={() => setExamItemTrans(v => !v)}
-                              className={`px-3 py-1 border-2 border-ink-line rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${examItemTrans ? 'bg-paper text-ink' : 'bg-ink-raise text-paper'}`}>
-                              <Languages className="w-4 h-4" /> {examItemTrans ? 'Нуух' : (examSec === 'reading' ? 'Орчуулга' : 'Текст')}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      <h3 className="text-xl md:text-2xl font-extrabold text-paper mb-1">{(item as ExamItem).titleMn}</h3>
-                      <p className="text-xs text-paper-2 mb-5">{(item as ExamItem).title}</p>
-
-                      {/* READING */}
-                      {examSec === 'reading' && (() => {
-                        const r = item as typeof exam.reading[number];
-                        const sq = shuffleQuiz(`exam:${exam.level}:reading:${r.id}`, { question: r.question, choices: r.choices, correctIndex: r.correctIndex });
-                        return (
-                          <>
-                            <p className="text-lg leading-relaxed text-paper whitespace-pre-line font-medium">{r.text}</p>
-                            {examItemTrans && <p className="text-sm leading-relaxed text-paper-2 whitespace-pre-line mt-4 pt-4 border-t border-ink-line/50 italic">{r.translation}</p>}
-                            <div className="mt-6 pt-5 border-t border-ink-line">
-                              <p className="text-xs font-serif font-bold uppercase text-paper mb-2">Ойлголт шалгах:</p>
-                              <p className="text-base font-bold text-paper mb-3">{r.question}</p>
-                              <MCQBlock
-                                choices={sq.choices}
-                                correctIndex={sq.correctIndex}
-                                selectedAnswer={examItemAns}
-                                onSelect={(index) => {
-                                if (!requireAccount()) return;
-                                  setExamItemAns(index);
-                                  if (index === sq.correctIndex) recordStudyActivity(activityKey(`exam:${exam.level}:reading`, r.id));
-                                }}
-                              />
-                            </div>
-                          </>
-                        );
-                      })()}
-
-                      {/* LISTENING */}
-                      {examSec === 'listening' && (() => {
-                        const l = item as typeof exam.listening[number];
-                        const sq = shuffleQuiz(`exam:${exam.level}:listening:${l.id}`, { question: l.question, choices: l.choices, correctIndex: l.correctIndex });
-                        return (
-                          <>
-                            <div className="flex flex-col items-center gap-3 py-6 bg-ink-raise border-2 border-ink-line rounded-xl mb-5">
-                              <button onClick={() => { if (!requireAccount()) return; speakGerman(l.audioText, audioSpeed === '0.8' ? 0.8 : 1.0); }}
-                                className="w-16 h-16 rounded-full bg-paper text-ink border-2 border-ink-line flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
-                                <Volume2 className="w-7 h-7" />
-                              </button>
-                              <p className="text-xs text-paper-2">Бичлэгийг сонсохын тулд дарна уу (2 удаа)</p>
-                            </div>
-                            {examItemTrans && (
-                              <div className="bg-ink-raise border-l-4 border-ink-line rounded-lg p-3 mb-5">
-                                <p className="text-sm text-paper font-medium">{l.audioText}</p>
-                                <p className="text-xs text-paper-2 mt-2 pt-2 border-t border-ink-line/50 italic">{l.transcriptMn}</p>
-                              </div>
-                            )}
-                            <div className="pt-5 border-t border-ink-line">
-                              <p className="text-xs font-serif font-bold uppercase text-paper mb-2">Ойлголт шалгах:</p>
-                              <p className="text-base font-bold text-paper mb-3">{l.question}</p>
-                              <MCQBlock
-                                choices={sq.choices}
-                                correctIndex={sq.correctIndex}
-                                selectedAnswer={examItemAns}
-                                onSelect={(index) => {
-                                if (!requireAccount()) return;
-                                  stopTts(); // done answering — stop the clip if it's still playing
-                                  setExamItemAns(index);
-                                  if (index === sq.correctIndex) recordStudyActivity(activityKey(`exam:${exam.level}:listening`, l.id));
-                                }}
-                              />
-                            </div>
-                          </>
-                        );
-                      })()}
-
-                      {/* WRITING */}
-                      {examSec === 'writing' && (() => {
-                        const w = item as typeof exam.writing[number];
-                        const words = examItemWrite.trim() ? examItemWrite.trim().split(/\s+/).length : 0;
-                        return (
-                          <>
-                            <div className="bg-ink-raise rounded-lg p-4 mb-4">
-                              <p className="text-xs font-serif font-bold uppercase text-paper mb-1">Даалгавар:</p>
-                              <p className="text-sm font-bold text-paper mb-2">{w.prompt}</p>
-                              <ul className="text-xs text-paper-2 space-y-1 list-disc list-inside">{w.points.map((p, i) => <li key={i}>{p}</li>)}</ul>
-                            </div>
-                            <textarea value={examItemWrite} onChange={(e) => setExamItemWrite(e.target.value)} placeholder="Энд герман хэлээр бичнэ үү..." rows={6} maxLength={2000}
-                              className="w-full px-3 py-2 text-sm border-2 border-ink-line rounded-lg bg-ink-raise text-paper placeholder:text-paper-3 outline-none focus:border-ink-line resize-y" />
-                            <div className="flex items-center justify-between mt-3">
-                              <span className="text-[11px] text-paper-2">{words} үг</span>
-                              <button onClick={() => setExamItemReveal(v => !v)}
-                                className="px-4 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-xs cursor-pointer block-shadow hover:scale-[1.02] transition-transform flex items-center gap-1">
-                                <Lightbulb className="w-3.5 h-3.5 text-paper fill-current" /> {examItemReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
-                              </button>
-                            </div>
-                            {examItemReveal && (
-                              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-lg p-4 mt-4">
-                                <p className="text-[10px] font-bold uppercase text-paper-2 mb-1">Загвар хариулт:</p>
-                                <p className="text-sm text-paper whitespace-pre-line leading-relaxed font-medium">{w.modelAnswer}</p>
-                                <p className="text-xs text-paper-2 whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-ink-line/30 italic">{w.modelMn}</p>
-                              </div>
-                            )}
-
-                            {/* AI writing check for the exam writing task. */}
-                            {renderWritingChecker(examItemWrite, { prompt: w.prompt, points: w.points, modelAnswer: w.modelAnswer, level: w.level })}
-                          </>
-                        );
-                      })()}
-
-                      {/* SPEAKING */}
-                      {examSec === 'speaking' && (() => {
-                        const sp = item as typeof exam.speaking[number];
-                        return (
-                          <>
-                            <div className="bg-ink-raise border-l-4 border-ink-line rounded-lg p-4 mb-5">
-                              <p className="text-xs font-serif font-bold uppercase text-paper mb-1">Даалгавар:</p>
-                              <p className="text-base font-bold text-paper">{sp.prompt}</p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 mb-5">
-                              <button onClick={() => { if (!requireAccount()) return; speakGerman(sp.modelAnswer, 1.0); }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform">
-                                <Volume2 className="w-4 h-4" /> Загварыг сонсох
-                              </button>
-                              <button onClick={() => setExamItemReveal(v => !v)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                                <Lightbulb className="w-4 h-4 text-paper fill-current" /> {examItemReveal ? 'Нуух' : 'Загвар хариулт харах'}
-                              </button>
-                            </div>
-                            <div className="mb-2">
-                              <p className="text-[11px] font-serif font-bold uppercase text-paper-2 mb-2">Хэрэгтэй хэллэг:</p>
-                              <div className="flex flex-col gap-1.5">{sp.tips.map((t, i) => <div key={i} className="flex items-start gap-2 text-xs text-paper"><span className="text-paper-2 font-black">›</span>{t}</div>)}</div>
-                            </div>
-                            {examItemReveal && (
-                              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-lg p-4 mt-4">
-                                <p className="text-[10px] font-bold uppercase text-paper-2 mb-1">Загвар хариулт:</p>
-                                <p className="text-base text-paper font-medium leading-relaxed">{sp.modelAnswer}</p>
-                                <p className="text-xs text-paper-2 mt-2 italic leading-relaxed">{sp.modelMn}</p>
-                              </div>
-                            )}
-                            <p className="text-[11px] text-paper-2 mt-4 italic">Зөвлөмж: эхлээд өөрөө чангаар хэлж үзээд, дараа нь загвартай харьцуулаарай.</p>
-
-                            {/* AI judge for exam speaking — graded against this item's model answer. */}
-                            {renderSpeakingJudge(sp.modelAnswer)}
-                            {renderSpeakingReport(sp.modelAnswer)}
-                          </>
-                        );
-                      })()}
-                      </>)}
-                    </div>
-
-                    {/* Prev / Next navigation */}
-                    <div className="flex justify-between items-center mt-6 pt-4 border-t border-ink-line/50">
-                      <button
-                        onClick={() => selectExamItem(examItemIdx - 1)}
-                        disabled={examItemIdx === 0}
-                        className={`flex items-center gap-1 px-4 py-2.5 border-2 border-ink-line rounded-xl font-bold text-xs block-shadow transition-colors ${examItemIdx === 0 ? 'opacity-40 cursor-not-allowed bg-ink-raise text-paper-2' : 'bg-ink-raise text-paper cursor-pointer hover:bg-ink-2'}`}
-                      >
-                        <ArrowLeft className="w-4 h-4" /> Өмнөх
-                      </button>
-                      <span className="text-xs text-paper-2 font-serif font-bold">{examItemIdx + 1} / {items.length}</span>
-                      <button
-                        onClick={() => selectExamItem(examItemIdx + 1)}
-                        disabled={examItemIdx >= items.length - 1}
-                        className={`flex items-center gap-1 px-4 py-2.5 border-2 border-ink-line rounded-xl font-bold text-xs block-shadow transition-colors ${examItemIdx >= items.length - 1 ? 'opacity-40 cursor-not-allowed bg-ink-raise text-paper-2' : 'bg-paper text-ink cursor-pointer hover:scale-[1.02]'}`}
-                      >
-                        Дараах <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
+            <ExamTab
+              currentUser={currentUser}
+              fullContent={fullContent}
+              audioSpeed={audioSpeed}
+              requireAccount={requireAccount}
+              setActiveTab={setActiveTab}
+              setTestdafOpen={setTestdafOpen}
+              setPlacementOpen={setPlacementOpen}
+              recordStudyActivity={recordStudyActivity}
+              speakGerman={speakGerman}
+              renderPlanLockCard={renderPlanLockCard}
+              renderWritingChecker={renderWritingChecker}
+              renderSpeakingJudge={renderSpeakingJudge}
+              renderSpeakingReport={renderSpeakingReport}
+              resetSpeakingJudge={resetSpeakingJudge}
+              resetWritingFeedback={resetWritingFeedback}
+            />
           )}
 
           {/* Legacy A1 model-test panel — superseded by the level-based exams above. */}
