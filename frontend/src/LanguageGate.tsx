@@ -1,10 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import App from './App';
-import EnglishApp from '../../english/src/EnglishApp';
 import AccountScreen from './AccountScreen';
 import { saveTrackChoice, subscribeToAuthedProfile, logOutUser } from './auth';
 import { UserProfile } from './profiles';
+
+// Each track is its own chunk: picking German must not download the English
+// exams (and their megabyte-scale vocab data), and vice versa.
+const App = lazy(() => import('./App'));
+const EnglishApp = lazy(() => import('../../english/src/EnglishApp'));
+
+function GateLoader() {
+  return (
+    <div className="min-h-screen bg-ink text-paper font-sans flex items-center justify-center">
+      <Loader2 className="w-7 h-7 text-paper-2 animate-spin" />
+    </div>
+  );
+}
 
 // localStorage key shared by both tracks. 'de' => German app, 'en' => English app.
 const TRACK_KEY = 'vivid-lingua-track';
@@ -153,11 +164,7 @@ export default function LanguageGate() {
   // language. Guests (no account) and resolved-null profiles fall through.
   if (!track && !setupDone) {
     if (!profileResolved) {
-      return (
-        <div className="min-h-screen bg-ink text-paper font-sans flex items-center justify-center">
-          <Loader2 className="w-7 h-7 text-paper-2 animate-spin" />
-        </div>
-      );
+      return <GateLoader />;
     }
     if (profile && !profile.isGuest) {
       return (
@@ -178,7 +185,7 @@ export default function LanguageGate() {
     // clear of the German app's fixed bars: below the mobile top header, above
     // the desktop content, and off the mobile bottom nav / desktop left sidebar.
     return (
-      <>
+      <Suspense fallback={<GateLoader />}>
         <App />
         <button
           onClick={reset}
@@ -188,9 +195,15 @@ export default function LanguageGate() {
         >
           <span aria-hidden="true">🌐</span> Хэл солих
         </button>
-      </>
+      </Suspense>
     );
   }
-  if (track === 'en') return <EnglishApp onSwitchLanguage={reset} />;
+  if (track === 'en') {
+    return (
+      <Suspense fallback={<GateLoader />}>
+        <EnglishApp onSwitchLanguage={reset} />
+      </Suspense>
+    );
+  }
   return <Chooser onPick={pick} />;
 }

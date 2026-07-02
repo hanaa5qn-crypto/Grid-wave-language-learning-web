@@ -1,14 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { getAuthInstance, isFirebaseConfigured } from './firebase';
-import LanguageGate from './LanguageGate';
 import LoginScreen from './LoginScreen';
 import HeroPage from './HeroPage';
-import AdminDashboard from './AdminDashboard';
-import TermsPage from './pages/TermsPage';
-import PrivacyPage from './pages/PrivacyPage';
-import ContactPage from './pages/ContactPage';
+
+// Code-split at the routing seam: a signed-out visitor on the hero page must
+// not download the learner tracks, the admin dashboard, or the legal pages.
+// Each lazy() below becomes its own chunk fetched on first render.
+const LanguageGate = lazy(() => import('./LanguageGate'));
+const AdminDashboard = lazy(() => import('./AdminDashboard'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
 
 // Login comes first — before the user picks a language. Once they're signed in
 // (or chose to continue as a guest), we hand off to LanguageGate, which renders
@@ -45,16 +49,20 @@ function BrandLoader() {
 // screen. The admin dashboard carries its own Firebase admin login.
 export default function AuthGate() {
   const path = window.location.pathname;
+  let node: React.ReactNode = <AuthFlow />;
   if (path.startsWith('/admin')) {
     const track = path.startsWith('/admin/english') ? 'en'
       : path.startsWith('/admin/german') ? 'de'
       : undefined;
-    return <AdminDashboard track={track} />;
+    node = <AdminDashboard track={track} />;
+  } else if (path.startsWith('/terms')) {
+    node = <TermsPage />;
+  } else if (path.startsWith('/privacy')) {
+    node = <PrivacyPage />;
+  } else if (path.startsWith('/contact')) {
+    node = <ContactPage />;
   }
-  if (path.startsWith('/terms')) return <TermsPage />;
-  if (path.startsWith('/privacy')) return <PrivacyPage />;
-  if (path.startsWith('/contact')) return <ContactPage />;
-  return <AuthFlow />;
+  return <Suspense fallback={<BrandLoader />}>{node}</Suspense>;
 }
 
 function AuthFlow() {

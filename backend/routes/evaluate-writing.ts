@@ -7,7 +7,7 @@ import { checkAiAccess } from '../lib/plans';
 
 export function registerEvaluateWritingRoute(app: Express) {
   app.post('/api/evaluate-writing', async (req, res) => {
-    if (rateLimited(clientIp(req))) {
+    if (await rateLimited(clientIp(req))) {
       res.setHeader('Retry-After', '60');
       return res.status(429).json({ error: 'Хэт олон хүсэлт. Хэсэг хүлээгээд дахин оролдоно уу.' });
     }
@@ -25,10 +25,10 @@ export function registerEvaluateWritingRoute(app: Express) {
       return res.status(400).json({ error: 'Translation path is empty' });
     }
 
-    const ai = aiClientWithinBudget();
+    const ai = await aiClientWithinBudget();
 
     if (ai) {
-      consumeBudget();
+      await consumeBudget();
       try {
         const response = await generateContentWithRetry(ai, {
           model: getModel(),

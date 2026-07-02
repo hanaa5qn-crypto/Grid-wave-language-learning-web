@@ -32,8 +32,12 @@ service cloud.firestore {
     // `redeemedCodes` is the per-person "already used" ledger that enforces one
     // discount per code: a client that could clear it would re-apply a spent
     // code and re-trigger its discount. Set ONLY by the payments backend.
+    // `placementUnlock` marks the PAID placement-result reveal (one-off fee or
+    // subscription credit). Written only by the payments backend; the legacy
+    // client-writable `placement.unlocked` display flag must never be trusted
+    // for entitlement.
     function serverOwnedFields() {
-      return ['billing', 'placementCredits', 'aiUsage', 'promo', 'redeemedCodes'];
+      return ['billing', 'placementCredits', 'aiUsage', 'promo', 'redeemedCodes', 'placementUnlock'];
     }
     function createOmitsServerFields() {
       return !request.resource.data.keys().hasAny(serverOwnedFields());
