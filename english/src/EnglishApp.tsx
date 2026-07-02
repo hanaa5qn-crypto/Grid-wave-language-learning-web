@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { GraduationCap, Globe, BookMarked, Sigma, ArrowRight, LogOut } from 'lucide-react';
+import { GraduationCap, Globe, BookMarked, Sigma, ArrowRight, LogOut, Sparkles, Lock } from 'lucide-react';
 import IeltsApp from './ielts/IeltsApp';
 import SatApp from './sat/SatApp';
 import { EnglishStatsProvider, useEnglishStats } from './stats';
@@ -93,6 +93,22 @@ function ExamChooser({ onPick, onSwitchLanguage }: { onPick: (e: Exam) => void; 
                 Start SAT <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </span>
             </button>
+
+            <div
+              aria-disabled="true"
+              className="relative text-left rounded-3xl bg-ink-raise/60 border-2 border-dashed border-ink-line p-7 opacity-80 cursor-not-allowed sm:col-span-2"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <span className="rounded-2xl bg-ink-2 text-paper p-3"><Sparkles className="w-7 h-7" /></span>
+                <span className="text-2xl font-bold text-paper-2">Шинэ ном</span>
+                <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-ink-2 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-paper-3">
+                  <Lock className="w-3 h-3" /> Coming soon
+                </span>
+              </div>
+              <p className="text-paper-2 text-left">
+                Бэлэн болоход энд нэмэгдэнэ. Удахгүй.
+              </p>
+            </div>
           </div>
 
           <p className="mt-8 text-xs text-paper-2 inline-flex items-center gap-2">
