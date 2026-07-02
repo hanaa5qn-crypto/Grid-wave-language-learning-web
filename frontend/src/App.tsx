@@ -3,13 +3,13 @@ import {
   Volume2, Play, Pause, CheckCircle, X, XCircle, AlertCircle,
   BookOpen, Headphones, Mic, Edit3, Languages, Settings, LogOut,
   Check, RotateCcw, Lightbulb, Flame, Award, ArrowRight, ArrowLeft,
-  ChevronRight, Sparkles, HelpCircle, GraduationCap, ExternalLink, Search, Library,
+  Sparkles, GraduationCap, ExternalLink,
   Square, AudioLines, Gauge, SpellCheck, MessageSquareText, ThumbsUp, Target,
-  Mail, Lock, Loader2, QrCode, CreditCard, Shield, Calendar, Clock, Zap,
-  ListChecks, BarChart3, Crown, Swords, Save, Camera, Shuffle, Upload
+  Lock, Loader2, QrCode, CreditCard, Shield, Calendar, Clock, Zap,
+  ListChecks, BarChart3, Crown, Swords
 } from 'lucide-react';
 import {
-  TabType, VocabularyWord, WordClass, CEFRLevel,
+  TabType,
   SpeakingEvaluation, WritingFeedback, WritingCorrection,
 } from './types';
 import { useBylCheckout } from './useBylCheckout';
@@ -24,18 +24,18 @@ import AdminDashboard from './AdminDashboard';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import ContactPage from './pages/ContactPage';
-import { UserProfile, DEFAULT_PROFILES, createGuestProfile, stripServerOwnedFields, avatarOptions, AVATAR_STYLES, DEFAULT_AVATAR_STYLE } from './profiles';
+import { UserProfile, DEFAULT_PROFILES, createGuestProfile } from './profiles';
 import { getMyPromo, redeemPromoCode, removeMyPromo, ensureSignupTrial, type MyPromo } from './promo';
 import LoginScreen from './LoginScreen';
 import LandingPage from './LandingPage';
 import { track, trackVisitOncePerDay } from './analytics';
 import {
-  subscribeToAuthedProfile, logOutUser, updateProfileFields, sendResetEmail,
+  subscribeToAuthedProfile, logOutUser, updateProfileFields,
 } from './auth';
 import { isFirebaseConfigured, getStorageInstance, getAuthInstance } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
-  SrsMap, reviewSrs, srsWordKey, orderTrainerWords, countDueWords, isDue,
+  countDueWords,
   compareWordsByLevel, suggestedWordLevel,
   buildUnitsForLevel, unitProgress, isUnitPassed, isUnitUnlocked, lockedItemIds, Unit, UnitActivity, UNIT_PASS_RATIO,
   addMistake, clearMistake, resolveMistakes, MistakeRef,
@@ -68,6 +68,9 @@ import { ReadTab } from './tabs/ReadTab';
 import { ListenTab } from './tabs/ListenTab';
 import { SpeakTab } from './tabs/SpeakTab';
 import { WriteTab } from './tabs/WriteTab';
+import { VocabTab } from './tabs/VocabTab';
+import { SettingsTab } from './tabs/SettingsTab';
+import { AppSidebar, MobileNav } from './components/AppNav';
 import {
   localDateKey, activityKey, normalizeProfileMetrics, TRACKABLE_ACTIVITY_TOTAL,
 } from './utils/profileMetrics';
@@ -82,26 +85,6 @@ const STUDY_SAVE_THRESHOLD_SECONDS = 120;
 // Trainer deck, easiest first (A1 → C2) so beginners meet beginner words.
 const TRAINER_WORDS = DICTIONARY.filter((w) => w.mongolian.trim().length > 0).sort(compareWordsByLevel);
 
-// How many cards a "Дахин давтах" (don't know) word waits before reappearing
-// in the same session.
-const VOCAB_REQUEUE_GAP = 5;
-
-// Mongolian labels for dictionary word-class filter chips.
-const WORD_CLASS_LABELS: { value: WordClass | 'all'; label: string }[] = [
-  { value: 'all', label: 'Бүгд' },
-  { value: 'noun', label: 'Нэр үг' },
-  { value: 'verb', label: 'Үйл үг' },
-  { value: 'adjective', label: 'Тэмдэг нэр' },
-  { value: 'adverb', label: 'Дайвар үг' },
-  { value: 'preposition', label: 'Угтвар үг' },
-  { value: 'pronoun', label: 'Төлөөний үг' },
-  { value: 'numeral', label: 'Тооны нэр' },
-  { value: 'conjunction', label: 'Холбоос үг' },
-  { value: 'interjection', label: 'Аялга үг' },
-  { value: 'article', label: 'Артикль' },
-  { value: 'phrase', label: 'Хэллэг' },
-];
-
 // Short Mongolian part-of-speech labels shown inside the library vocabulary
 // tooltips (the dictionary-backed hover popups on each German passage).
 const WORD_CLASS_MN: Record<string, string> = {
@@ -109,7 +92,6 @@ const WORD_CLASS_MN: Record<string, string> = {
   preposition: 'Угтвар үг', pronoun: 'Төлөөний үг', numeral: 'Тооны нэр',
   conjunction: 'Холбоос үг', interjection: 'Аялга үг', article: 'Артикль', phrase: 'Хэллэг',
 };
-const LEVEL_OPTIONS: (CEFRLevel | 'all')[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 export default function App() {
   const path = window.location.pathname;
@@ -189,129 +171,8 @@ function LearnerApp() {
     currentUserRef.current = currentUser;
   }, [currentUser]);
 
-  // --- Profile editor (Settings tab) -------------------------------------
-  // A local draft holds in-progress edits so background progress saves (study
-  // time) can keep updating `currentUser` without clobbering what the learner
-  // is typing. Seeded once from the signed-in profile; reset on sign-out.
-  type ProfileDraft = { name: string; avatar: string; targetLevel: string; dailyGoalMinutes: number; learningGoal: string };
-  const [profileDraft, setProfileDraft] = useState<ProfileDraft | null>(null);
-  const profileDraftKeyRef = useRef<string | null>(null);
-  const [avatarPage, setAvatarPage] = useState(0);
-  const [avatarStyle, setAvatarStyle] = useState<string>(DEFAULT_AVATAR_STYLE);
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileSaved, setProfileSaved] = useState(false);
-  const [profileSaveError, setProfileSaveError] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-
-  // Seed the draft when the signed-in *identity* changes (login / account
-  // switch / logout) — keyed by email, NOT on every currentUser update, so a
-  // background study-time save can't reset what the learner is typing.
-  useEffect(() => {
-    if (!currentUser) { setProfileDraft(null); profileDraftKeyRef.current = null; return; }
-    if (profileDraftKeyRef.current !== currentUser.email) {
-      profileDraftKeyRef.current = currentUser.email;
-      setProfileDraft({
-        name: currentUser.name,
-        avatar: currentUser.avatar,
-        targetLevel: currentUser.targetLevel,
-        dailyGoalMinutes: currentUser.dailyGoalMinutes ?? 15,
-        learningGoal: currentUser.learningGoal ?? '',
-      });
-    }
-  }, [currentUser]);
-
-  const saveProfileEdits = async () => {
-    if (!currentUser || !profileDraft) return;
-    const name = profileDraft.name.trim().slice(0, 30);
-    if (!name) return;
-    setProfileSaving(true);
-    setProfileSaved(false);
-    setProfileSaveError(false);
-    const learningGoal = profileDraft.learningGoal.trim().slice(0, 280);
-    // Keep `role` consistent with the goal (mirrors createCustomProfile).
-    const goalClean = learningGoal.toLowerCase();
-    const role = goalClean.includes('сургууль') ? 'Оюутан' : goalClean.includes('ажил') ? 'Мэргэжилтэн' : 'Суралцагч';
-    // Spread from the ref so a background study-time save that landed since
-    // this render isn't clobbered (the Firestore write below only patches the
-    // edited fields anyway).
-    const base = currentUserRef.current ?? currentUser;
-    const next = stripServerOwnedFields({
-      ...base,
-      name,
-      avatar: profileDraft.avatar,
-      targetLevel: profileDraft.targetLevel,
-      dailyGoalMinutes: profileDraft.dailyGoalMinutes,
-      learningGoal,
-      role,
-    });
-    currentUserRef.current = next;
-    setCurrentUser(next);
-    try {
-      await updateProfileFields({
-        name,
-        avatar: profileDraft.avatar,
-        targetLevel: profileDraft.targetLevel,
-        dailyGoalMinutes: profileDraft.dailyGoalMinutes,
-        learningGoal,
-        role,
-      });
-      setProfileSaved(true);
-      setTimeout(() => setProfileSaved(false), 2500);
-    } catch (err) {
-      console.warn('Could not save profile edits:', err);
-      setProfileSaveError(true);
-      setTimeout(() => setProfileSaveError(false), 4000);
-    } finally {
-      setProfileSaving(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!currentUser?.email) return;
-    try {
-      await sendResetEmail(currentUser.email);
-      setResetSent(true);
-      setTimeout(() => setResetSent(false), 4000);
-    } catch (err) {
-      console.warn('Password reset email failed:', err);
-    }
-  };
-
-  // Upload a custom profile picture to Firebase Storage and point the draft
-  // avatar at its public download URL. Owner-only path; images ≤5MB.
-  const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarError, setAvatarError] = useState<string | null>(null);
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // let the user re-pick the same file later
-    if (!file) return;
-    // Raster only — exclude SVG (stored on a public-read bucket, an SVG could
-    // carry script and become a stored-XSS vector if ever opened directly).
-    const ALLOWED_AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
-    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) { setAvatarError('PNG, JPG, WEBP, GIF зураг оруулна уу.'); return; }
-    if (file.size > 5 * 1024 * 1024) { setAvatarError('Зураг 5MB-аас бага байх ёстой.'); return; }
-    if (!isFirebaseConfigured) { setAvatarError('Зураг оруулах боломжгүй байна.'); return; }
-    setAvatarError(null);
-    setAvatarUploading(true);
-    try {
-      const storage = getStorageInstance();
-      const userId = getAuthInstance().currentUser?.uid;
-      if (!userId) throw new Error('Not signed in');
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-      const fileRef = ref(storage, `avatars/${userId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`);
-      await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
-      setProfileDraft((d) => d && { ...d, avatar: url });
-    } catch (err) {
-      console.warn('Avatar upload failed:', err);
-      setAvatarError('Зураг оруулж чадсангүй. Дахин оролдоно уу.');
-    } finally {
-      setAvatarUploading(false);
-    }
-  };
+  // The profile editor (draft, avatar picker/upload, password reset) lives in
+  // tabs/SettingsTab.tsx.
 
   useEffect(() => {
     activeTabRef.current = activeTab;
@@ -480,18 +341,8 @@ function LearnerApp() {
   const [writeFeedbackLoading, setWriteFeedbackLoading] = useState(false);
   const [writeFeedbackText, setWriteFeedbackText] = useState('');
 
-  // Flashcards state for Vocabulary Trainer (Screen 5) — draws from the dictionary
-  // entries that already have a Mongolian translation, so the trainer stays polished.
-  // (The Browse dictionary below shows the full set incl. words still awaiting Mongolian.)
-  const [currentVocabIndex, setCurrentVocabIndex] = useState(0);
-  const [vocabList, setVocabList] = useState<VocabularyWord[]>([...TRAINER_WORDS]);
-  const [vocabFlipped, setVocabFlipped] = useState(false);
-  const [vocabMemorizedCount, setVocabMemorizedCount] = useState(0);
-  const vocabTotalCount = vocabList.length;
-  // Trainer CEFR filter. Defaults to the learner's placement-test level the
-  // first time they open the trainer (see selectTab); they can switch freely after.
-  const [trainerLevel, setTrainerLevel] = useState<CEFRLevel | 'all'>('all');
-  const trainerLevelInitRef = useRef(false);
+  // The vocabulary trainer/dictionary state (flashcards, SRS queue, browse
+  // search) lives in tabs/VocabTab.tsx.
   // Placement-based suggestion — only once the result is unlocked, so the
   // trainer never leaks a level the learner hasn't paid to reveal. Trust only
   // the SERVER-owned placementUnlock flag (or founder), never the
@@ -502,47 +353,6 @@ function LearnerApp() {
     if (!placement || !unlocked) return null;
     return suggestedWordLevel(placement.level);
   }, [currentUser?.placement?.level, currentUser?.placementUnlock?.unlocked, founderAccess]);
-
-  // Rebuild the trainer queue: filter by level, then SRS order (due → new → scheduled).
-  const rebuildTrainerQueue = (level: CEFRLevel | 'all') => {
-    const words = level === 'all' ? TRAINER_WORDS : TRAINER_WORDS.filter((w) => w.level === level);
-    setVocabList(orderTrainerWords(words, currentUserRef.current?.srsByWord ?? {}));
-    setCurrentVocabIndex(0);
-    setVocabFlipped(false);
-    setVocabMemorizedCount(0);
-  };
-
-  const selectTrainerLevel = (level: CEFRLevel | 'all') => {
-    setTrainerLevel(level);
-    rebuildTrainerQueue(level);
-  };
-
-  // Dictionary (Browse) state — vocabeo-style searchable/filterable word list
-  const [vocabView, setVocabView] = useState<'trainer' | 'browse'>('trainer');
-  const [dictSearch, setDictSearch] = useState('');
-  const [dictClass, setDictClass] = useState<WordClass | 'all'>('all');
-  const [dictLevel, setDictLevel] = useState<CEFRLevel | 'all'>('all');
-  const [dictVisible, setDictVisible] = useState(24); // how many results to render (load-more paging)
-
-  const filteredDictionary = useMemo(() => {
-    const q = dictSearch.trim().toLowerCase();
-    return DICTIONARY.filter((w) => {
-      if (dictClass !== 'all' && w.wordClass !== dictClass) return false;
-      if (dictLevel !== 'all' && w.level !== dictLevel) return false;
-      if (!q) return true;
-      return (
-        w.german.toLowerCase().includes(q) ||
-        w.mongolian.toLowerCase().includes(q) ||
-        (w.english ? w.english.toLowerCase().includes(q) : false) ||
-        (w.article ? `${w.article} ${w.german}`.toLowerCase().includes(q) : false)
-      );
-    }).sort(compareWordsByLevel); // easiest first: A1 → C2
-  }, [dictSearch, dictClass, dictLevel]);
-
-  // Reset paging whenever the filters change so the list starts from the top.
-  useEffect(() => {
-    setDictVisible(24);
-  }, [dictSearch, dictClass, dictLevel]);
 
   const applyMetricProfile = (profile: UserProfile, save = true) => {
     const prev = currentUserRef.current;
@@ -1191,71 +1001,6 @@ function LearnerApp() {
   };
 
 
-  // Vocabulary list card selections
-  const handleVocabAction = (knows: boolean) => {
-    if (!requireAccount()) return;
-    setVocabFlipped(false);
-    if (vocabList.length === 0) return;
-    const word = vocabList[currentVocabIndex];
-    const key = srsWordKey(word);
-    
-    const profile = currentUserRef.current;
-    if (profile) {
-      const currentSrsByWord = profile.srsByWord ?? {};
-      const prevEntry = currentSrsByWord[key];
-      const nextEntry = reviewSrs(prevEntry, knows);
-      
-      const nextSrs = {
-        ...currentSrsByWord,
-        [key]: nextEntry
-      };
-      
-      const actId = activityKey('vocab', word.rank ?? `${word.german}-${word.mongolian}`);
-      const nextCompleted = knows
-        ? Array.from(new Set([...(profile.completedActivityIds ?? []), actId]))
-        : (profile.completedActivityIds ?? []);
-      // A correct vocab review marks today as studied like every other activity;
-      // otherwise vocab-only days never reach studyDays and the streak breaks.
-      const nextStudyDays = knows
-        ? Array.from(new Set([...(profile.studyDays ?? []), localDateKey()])).sort()
-        : (profile.studyDays ?? []);
-
-      applyMetricProfile({
-        ...profile,
-        srsByWord: nextSrs,
-        completedActivityIds: nextCompleted,
-        studyDays: nextStudyDays,
-        lastActiveAt: new Date().toISOString(),
-      });
-    }
-
-    if (knows) {
-      setVocabMemorizedCount(prev => Math.min(prev + 1, vocabTotalCount));
-    }
-
-    // Advance after the flip-back animation. A known word just moves on; an
-    // unknown word is pulled out and reinserted a few cards ahead so it comes
-    // back around in this same session.
-    setTimeout(() => {
-      if (knows) {
-        setCurrentVocabIndex(prev => (prev + 1) % vocabList.length);
-        return;
-      }
-      const idx = currentVocabIndex;
-      setVocabList(prev => {
-        const next = [...prev];
-        const [again] = next.splice(idx, 1);
-        next.splice(Math.min(idx + VOCAB_REQUEUE_GAP, next.length), 0, again);
-        return next;
-      });
-      // Removing the current card shifts the next one into this index — except
-      // on the last card, where the reinsert lands back on itself; wrap then.
-      if (idx >= vocabList.length - 1) {
-        setCurrentVocabIndex(0);
-      }
-    }, 200);
-  };
-
   // Trigger main quick core quiz options (Screen 1 mock-flow helper)
   const submitCoreLessonAnswer = (optionIndex: number) => {
     setCoreLessonAnswer(optionIndex);
@@ -1313,19 +1058,6 @@ function LearnerApp() {
     setMobileMenuOpen(false);
     resetSpeakingJudge();
     resetWritingFeedback();
-    
-    if (tab === 'vocab') {
-      // First visit: preselect the level the placement test suggested.
-      let level = trainerLevel;
-      if (!trainerLevelInitRef.current) {
-        trainerLevelInitRef.current = true;
-        if (placementSuggestedLevel) {
-          level = placementSuggestedLevel;
-          setTrainerLevel(level);
-        }
-      }
-      rebuildTrainerQueue(level);
-    }
   };
 
   // Count each browser once per day so the admin dashboard sees real traffic,
@@ -2233,207 +1965,14 @@ function LearnerApp() {
       )}
 
       {/* Shared Sidebar - Visible on Desktop only */}
-      <nav aria-label="Desktop menu" className="hidden md:flex flex-col h-screen py-8 px-4 gap-y-6 bg-ink w-[280px] fixed left-0 top-0 text-paper border-r border-ink-line select-none z-30 shadow-[4px_0_24px_rgba(0,0,0,0.6)]">
-        <div>
-          <h1 className="text-2xl font-light tracking-tight font-serif flex items-center gap-2">
-            <BrandLogo className="w-8 h-8" />
-            <span><span className="text-paper">Vivid</span> <span className="text-paper-2">Lingua</span></span>
-          </h1>
-        </div>
-
-        {/* User Context Avatar Panel */}
-        {currentUser ? (
-          <div className="flex items-center gap-3 bg-ink-raise p-3 rounded-xl border border-ink-line cursor-pointer hover:bg-ink-raise transition-colors" onClick={() => selectTab('profile')}>
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-ink-line">
-              <img 
-                alt="Profile" 
-                className="w-full h-full object-cover bg-ink-2" 
-                src={currentUser.avatar}
-              />
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-[10px] font-black uppercase text-paper tracking-wider flex items-center gap-1">
-                <Target className="w-2.5 h-2.5" /> {currentUser.targetLevel} ТҮВШИН
-              </p>
-              <h2 className="text-[15px] font-extrabold truncate text-paper leading-tight">{currentUser.name}</h2>
-              <p className="text-[11px] text-paper-2 truncate leading-none mt-0.5">{currentUser.role}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 bg-ink-raise p-3 rounded-xl border border-ink-line">
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-ink-line flex items-center justify-center bg-ink-raise text-paper-2">
-              <span className="material-symbols-outlined">account_circle</span>
-            </div>
-            <div>
-              <p className="text-xs text-paper-2">Сайн байна уу?</p>
-              <h2 className="text-[16px] font-bold">Нэвтрээгүй</h2>
-            </div>
-          </div>
-        )}
-
-        {/* Dynamic Streak Badge Card */}
-        <div>
-          <div className="bg-ink-raise text-paper text-[14px] font-bold rounded-xl px-4 py-3 flex items-center justify-between border border-ink-line">
-            <span className="flex items-center gap-2 text-paper-2">
-              <Flame className="w-5 h-5 text-paper fill-paper-2 animate-pulse" />
-              Streak: {streak} өдөр
-            </span>
-            <span className="text-[11px] font-serif bg-paper text-ink px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wide">AUTO</span>
-          </div>
-        </div>
-
-        {/* Tabs Lists layout */}
-        <ul className="flex flex-col gap-2 flex-grow mt-2 overflow-y-auto pr-1">
-          {currentUser && (
-            <li>
-              <button 
-                onClick={() => selectTab('profile')}
-                className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                  activeTab === 'profile' 
-                    ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                    : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-                }`}
-              >
-                <Target className={`w-5 h-5 ${activeTab === 'profile' ? 'text-paper' : ''}`} />
-                <span className="text-[14px] font-bold">Хяналтын самбар</span>
-              </button>
-            </li>
-          )}
-          <li>
-            <button 
-              onClick={() => selectTab('read')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'read' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <BookOpen className={`w-5 h-5 ${activeTab === 'read' ? 'text-paper' : ''}`} />
-              <span className="text-[14px] font-bold">Унших</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('listen')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'listen' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Headphones className={`w-5 h-5 ${activeTab === 'listen' ? 'text-paper' : ''}`} />
-              <span className="text-[14px] font-bold">Сонсох</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('speak')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'speak' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Mic className={`w-5 h-5 ${activeTab === 'speak' ? 'text-paper' : ''}`} />
-              <span className="text-[14px] font-bold">Ярих</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('write')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'write' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Edit3 className={`w-5 h-5 ${activeTab === 'write' ? 'text-paper' : ''}`} />
-              <span className="text-[14px] font-bold">Бичих</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('vocab')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'vocab' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Languages className={`w-5 h-5 ${activeTab === 'vocab' ? 'text-paper' : ''}`} />
-              <span className="text-[14px] font-bold flex-grow flex justify-between items-center pr-4">
-                <span>Үгсийн сан</span>
-                {dueCount > 0 && (
-                  <span className="bg-paper text-ink text-[10px] font-bold font-serif px-2 py-0.5 rounded-full">
-                    {dueCount}
-                  </span>
-                )}
-              </span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('translate')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'translate' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Sparkles className={`w-5 h-5 ${activeTab === 'translate' ? 'text-paper text-paper' : ''}`} />
-              <span className="text-[14px] font-bold">Орчуулагч</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('exam')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'exam' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <GraduationCap className={`w-5 h-5 ${activeTab === 'exam' ? 'text-paper' : ''} text-paper`} />
-              <span className="text-[14px] font-bold">Шалгалт</span>
-            </button>
-          </li>
-          <li>
-            <button
-              onClick={() => selectTab('friends')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'friends'
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise'
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Swords className={`w-5 h-5 ${activeTab === 'friends' ? 'text-paper' : ''} text-paper`} />
-              <span className="text-[14px] font-bold">Найзууд</span>
-            </button>
-          </li>
-        </ul>
-
-        {/* Sidebar Settings Footer */}
-        <div className="border-t border-ink-line pt-4 flex flex-col gap-1">
-          <button 
-            onClick={() => selectTab('settings')}
-            className={`flex items-center gap-3 py-2 px-4 rounded-lg font-bold text-left transition-colors cursor-pointer ${
-              activeTab === 'settings' ? 'text-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-            }`}
-          >
-            <Settings className="w-4 h-4 text-paper-3" />
-            <span className="text-sm">Тохиргоо</span>
-          </button>
-          {currentUser && (
-            <button 
-              onClick={logoutUser}
-              className="flex items-center gap-3 py-2 px-4 rounded-lg font-bold text-left text-paper hover:text-paper-2 hover:bg-ink-raise transition-colors cursor-pointer w-full"
-            >
-              <LogOut className="w-4 h-4 text-paper-3" />
-              <span className="text-sm">Гарах</span>
-            </button>
-          )}
-        </div>
-      </nav>
+      <AppSidebar
+        currentUser={currentUser}
+        activeTab={activeTab}
+        selectTab={selectTab}
+        streak={streak}
+        dueCount={dueCount}
+        logoutUser={logoutUser}
+      />
 
       {/* Shared TopAppBar - Mobile Only */}
       <header className="md:hidden flex justify-between items-center w-full px-4 h-16 bg-ink-raise border-b-2 border-ink-line fixed top-0 left-0 z-40 shrink-0">
@@ -2790,467 +2329,14 @@ function LearnerApp() {
 
           {/* Tab 5: Үгсийн сан (Vocabulary) — Trainer (flashcards) + Dictionary (browse) */}
           {activeTab === 'vocab' && (
-          <div className="mt-4 animate-fade-in">
-
-            {/* Sub-view toggle: flashcard Trainer vs in-app Dictionary */}
-            <div className="flex w-full sm:w-auto sm:inline-flex p-1.5 bg-ink-raise border-2 border-ink-line rounded-2xl block-shadow mb-6">
-              <button
-                onClick={() => setVocabView('trainer')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-serif text-sm transition-all cursor-pointer ${
-                  vocabView === 'trainer' ? 'bg-paper text-ink border-2 border-ink-line block-shadow-green' : 'text-paper-2 hover:bg-ink-raise'
-                }`}
-              >
-                <RotateCcw className="w-4 h-4" />
-                Дасгал
-              </button>
-              <button
-                onClick={() => setVocabView('browse')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-serif text-sm transition-all cursor-pointer ${
-                  vocabView === 'browse' ? 'bg-paper text-ink border-2 border-ink-line block-shadow-green' : 'text-paper-2 hover:bg-ink-raise'
-                }`}
-              >
-                <Library className="w-4 h-4" />
-                Толь бичиг
-              </button>
-            </div>
-
-            {vocabView === 'trainer' && (
-            <>
-            {/* Trainer level filter (A1 → C2) + placement-based suggestion */}
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="text-xs font-serif font-bold text-paper-3 uppercase tracking-wider mr-1">Түвшин:</span>
-              {LEVEL_OPTIONS.map((lvl) => (
-                <button
-                  key={lvl}
-                  onClick={() => selectTrainerLevel(lvl)}
-                  className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                    trainerLevel === lvl ? 'bg-paper text-ink' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
-                  }`}
-                >
-                  {lvl === 'all' ? 'Бүгд' : lvl}
-                  {lvl !== 'all' && lvl === placementSuggestedLevel && (
-                    <span className="ml-1.5 text-[10px] uppercase opacity-80">★</span>
-                  )}
-                </button>
-              ))}
-              {placementSuggestedLevel && (
-                <span className="text-xs font-bold text-paper-2 font-sans ml-1">
-                  ★ Түвшин тогтоох шалгалтын дүнгээр танд {placementSuggestedLevel} түвшний үгсийг санал болгож байна
-                </span>
-              )}
-            </div>
-
-            {vocabList.length === 0 ? (
-              <div className="rounded-2xl border-2 border-ink-line p-10 block-shadow text-center">
-                <p className="font-bold text-paper-2 font-sans">
-                  Энэ түвшинд дасгал хийх үг алга. Өөр түвшин сонгоно уу.
-                </p>
-              </div>
-            ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-              {/* Central carousel card element block */}
-              <div className="lg:col-span-8 flex flex-col items-center justify-center min-h-[500px]">
-                
-                {/* Visual tactile card flip display wrapper */}
-                <div 
-                  onClick={() => setVocabFlipped(prev => !prev)}
-                  className="w-full max-w-2xl aspect-[4/3] sm:aspect-video perspective-1000 cursor-pointer"
-                >
-                  <div className="relative w-full h-full transform-style-3d border-2 border-ink-line rounded-2xl block-shadow">
-                    
-                    {/* FRONT of the card (displays German word) - Backface hidden layout */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-ink-2 text-paper rounded-2xl flex flex-col items-center justify-between p-8 transition-transform duration-500 transform-style-3d ${
-                      vocabFlipped ? '[transform:rotateY(-180deg)]' : '[transform:rotateY(0deg)]'
-                    }`}>
-                      <span className="text-xs font-serif font-bold text-paper-2 uppercase tracking-wider px-3 py-1 bg-ink-raise border border-ink-line rounded-full">
-                        Шинэ үг
-                      </span>
-                      
-                      <div className="flex flex-col items-center gap-4">
-                        {vocabList[currentVocabIndex].article && (
-                          <span className={`text-base font-black lowercase tracking-widest px-4 py-1 rounded-full border-2 border-ink-line block-shadow ${
-                            vocabList[currentVocabIndex].article === 'der' ? 'bg-ink-raise text-paper-2' :
-                            vocabList[currentVocabIndex].article === 'die' ? 'bg-ink-raise text-paper-2' :
-                            'bg-ink-raise text-paper-2'
-                          }`}>
-                            {vocabList[currentVocabIndex].article}
-                          </span>
-                        )}
-                        <h2 className="text-4xl sm:text-5xl font-black text-paper text-center font-sans tracking-tight">
-                          {vocabList[currentVocabIndex].german}
-                        </h2>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const w = vocabList[currentVocabIndex];
-                            speakGerman(w.article ? `${w.article} ${w.german}` : w.german);
-                          }}
-                          className="p-4 rounded-full bg-ink-raise hover:bg-ink-2 border-2 border-ink-line hover:scale-110 text-paper-2 transition-all block-shadow cursor-pointer flex items-center justify-center"
-                        >
-                          <Volume2 className="w-8 h-8 font-black stroke-[2.5px]" />
-                        </button>
-                      </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setVocabFlipped(true);
-                        }}
-                        className="mb-2 px-6 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
-                      >
-                        Хариултыг харах ↺
-                      </button>
-                    </div>
-
-                    {/* BACK of the card (displays Mongolian definitions & explanations) */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-ink-2 text-paper rounded-2xl flex flex-col items-center justify-between p-8 border-2 border-ink-line shadow-black/40 transition-transform duration-500 transform-style-3d ${
-                      vocabFlipped ? '[transform:rotateY(0deg)]' : '[transform:rotateY(180deg)]'
-                    }`}>
-                      <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise px-3 py-1 border border-ink-line rounded-full uppercase tracking-wider">
-                        {vocabList[currentVocabIndex].category}
-                      </span>
-
-                      <div className="flex flex-col items-center gap-6 w-full max-w-md">
-                        <h2 className="text-3xl font-extrabold text-paper text-center font-sans tracking-tight">
-                          {vocabList[currentVocabIndex].mongolian}
-                        </h2>
-                        
-                        <div className="w-full bg-ink-raise p-4 rounded-xl border-2 border-ink-line block-shadow text-center">
-                          <p className="text-sm leading-normal text-paper-2 italic mb-2 font-sans font-bold">
-                            "{vocabList[currentVocabIndex].exampleGerman}"
-                          </p>
-                          <p className="text-sm font-bold text-paper-2 leading-normal font-sans">
-                            {vocabList[currentVocabIndex].exampleMongolian}
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setVocabFlipped(false);
-                        }}
-                        className="mb-2 px-6 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
-                      >
-                        Үгийг харах ↺
-                      </button>
-                    </div>
-
-                  </div>
-                </div>
-
-                {/* Display tactile repeat-repeat actions buttons on flipped cards */}
-                <div className={`flex flex-col sm:flex-row gap-4 mt-8 w-full max-w-2xl transition-opacity duration-300 ${
-                  vocabFlipped ? 'opacity-100 pointer-events-auto' : 'opacity-30 pointer-events-none'
-                }`}>
-                  <button
-                    onClick={() => handleVocabAction(false)}
-                    className="flex-1 basis-0 flex items-center justify-center gap-2 border-2 border-ink-line text-paper hover:bg-ink-raise0 hover:text-paper py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-orange cursor-pointer transition-all active:scale-95"
-                  >
-                    <RotateCcw className="w-5 h-5 font-black" />
-                    Дахин давтах
-                  </button>
-                  <button
-                    onClick={() => handleVocabAction(true)}
-                    className="flex-1 basis-0 flex items-center justify-center gap-2 bg-paper border-2 border-ink-line text-ink hover:bg-white py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-green cursor-pointer transition-all active:scale-95"
-                  >
-                    <CheckCircle className="w-5 h-5 font-black fill-current" />
-                    Мэднэ
-                  </button>
-                </div>
-
-              </div>
-
-              {/* Right Sidebar: Progression Circular SVG & upcoming word panels */}
-              <aside className="lg:col-span-4 flex flex-col gap-6">
-                {/* SVGs Progress tracking ring list items */}
-                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow flex flex-col items-center">
-                  <h3 className="text-lg font-bold text-paper mb-6 w-full font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
-                    Өнөөдрийн явц
-                  </h3>
-                  
-                  <div className="relative w-40 h-40 mb-4 flex items-center justify-center select-none">
-                    {/* SVG circular calculation */}
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle 
-                        className="text-paper-2 stroke-current" 
-                        cx="80" 
-                        cy="80" 
-                        fill="transparent" 
-                        r="60" 
-                        strokeWidth="10"                      ></circle>
-                      <circle 
-                        className="text-paper-2 stroke-current progress-ring__circle transition-all duration-500" 
-                        cx="80" 
-                        cy="80" 
-                        fill="transparent" 
-                        r="60" 
-                        strokeWidth="10"
-                        strokeDasharray={376.8}
-                        strokeDashoffset={376.8 - (376.8 * vocabMemorizedCount) / vocabTotalCount}
-                        strokeLinecap="round"                      ></circle>
-                    </svg>
-                    
-                    {/* Central counter summary text */}
-                    <div className="absolute flex flex-col items-center justify-center text-center">
-                      <span className="text-3xl font-extrabold text-paper font-serif">
-                        {vocabMemorizedCount}/{vocabTotalCount}
-                      </span>
-                      <span className="text-xs font-bold text-paper-3 uppercase font-serif">Цээжилсэн үг</span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between w-full mt-4 text-xs font-serif font-bold border-t border-ink-line pt-4">
-                    <div className="flex items-center gap-2 text-paper-2">
-                      <div className="w-3 h-3 rounded-full bg-paper"></div>
-                      <span>Мэдэхгүй</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-paper-2">
-                      <div className="w-3 h-3 rounded-full bg-ink-raise"></div>
-                      <span>Цээжилсэн</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Carousel Upcoming Cards lists previews */}
-                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                  <h3 className="text-lg font-bold text-paper mb-4 font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
-                    Дараагийн үгс
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {/* Show the current word + a short upcoming window (the dictionary has 200+ words) */}
-                    {Array.from({ length: Math.min(12, vocabList.length) }).map((_, i) => {
-                      const idx = (currentVocabIndex + i) % vocabList.length;
-                      const item = vocabList[idx];
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setVocabFlipped(false);
-                            setCurrentVocabIndex(idx);
-                          }}
-                          className={`px-3 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                            idx === currentVocabIndex
-                              ? 'bg-ink-raise text-paper border-ink-line'
-                              : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
-                          }`}
-                        >
-                          {item.german}
-                        </button>
-                      );
-                    })}
-                    <span className="px-3 py-1.5 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold text-paper-2 blur-[0.5px] opacity-70">
-                      ...
-                    </span>
-                  </div>
-                </div>
-
-                {/* Resource card — opens the in-app dictionary (Browse) */}
-                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                  <h3 className="text-lg font-bold text-paper mb-2 font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
-                    Нэмэлт эх сурвалж
-                  </h3>
-                  <p className="text-xs text-paper-2 mb-4 leading-normal font-sans">
-                    Илүү олон герман үг, жишээ өгүүлбэрийг апп дотроос шууд хайж, түвшингээр шүүж үзээрэй.
-                  </p>
-                  <button
-                    onClick={() => setVocabView('browse')}
-                    className="w-full flex items-center justify-center gap-2 bg-paper text-ink border-2 border-ink-line py-3 px-4 rounded-xl font-bold font-sans text-sm block-shadow-green cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
-                  >
-                    <Library className="w-4 h-4" />
-                    Толь бичиг нээх ({DICTIONARY.length})
-                  </button>
-                </div>
-              </aside>
-
-            </div>
-            )}
-            </>
-            )}
-
-            {/* Dictionary (Browse) — searchable, filterable German→Mongolian word list */}
-            {vocabView === 'browse' && (
-            <div className="flex flex-col gap-6 pb-24">
-
-              {/* Header + search + filters */}
-              <div className="rounded-2xl border-2 border-ink-line p-6 block-shadow flex flex-col gap-5">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div>
-                    <h2 className="text-2xl font-light text-paper font-serif flex items-center gap-2">
-                      <Library className="w-6 h-6 text-paper-2" />
-                      Герман–Монгол толь бичиг
-                    </h2>
-                    <p className="text-xs text-paper-2 font-sans mt-1">
-                      Нийт {DICTIONARY.length} үг · хайж, төрөл болон түвшингээр шүүнэ
-                    </p>
-                  </div>
-                </div>
-
-                {/* Search box */}
-                <div className="relative">
-                  <Search className="w-5 h-5 text-paper-3 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={dictSearch}
-                    onChange={(e) => setDictSearch(e.target.value)}
-                    placeholder="Герман эсвэл монгол үгээр хайх..."
-                    className="w-full bg-ink-raise border-2 border-ink-line rounded-xl pl-12 pr-10 py-3 text-md font-bold text-paper focus:border-ink-line outline-none transition-all placeholder:text-paper-3 placeholder:font-normal shadow-inner"
-                  />
-                  {dictSearch && (
-                    <button
-                      onClick={() => setDictSearch('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-paper-3 hover:text-paper cursor-pointer"
-                      title="Цэвэрлэх"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Word-class filter chips */}
-                <div className="flex flex-wrap gap-2">
-                  {WORD_CLASS_LABELS.map((c) => (
-                    <button
-                      key={c.value}
-                      onClick={() => setDictClass(c.value)}
-                      className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                        dictClass === c.value ? 'bg-ink-raise text-paper' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
-                      }`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Level filter chips */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-serif font-bold text-paper-3 uppercase tracking-wider mr-1">Түвшин:</span>
-                  {LEVEL_OPTIONS.map((lvl) => (
-                    <button
-                      key={lvl}
-                      onClick={() => setDictLevel(lvl)}
-                      className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                        dictLevel === lvl ? 'bg-paper text-ink' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
-                      }`}
-                    >
-                      {lvl === 'all' ? 'Бүгд' : lvl}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Results count */}
-              <div className="flex items-center justify-between px-1">
-                <span className="text-sm font-bold text-paper-2 font-serif">
-                  {filteredDictionary.length} үг олдлоо
-                </span>
-              </div>
-
-              {/* Word cards grid */}
-              {filteredDictionary.length === 0 ? (
-                <div className="rounded-2xl border-2 border-ink-line p-12 block-shadow text-center">
-                  <HelpCircle className="w-12 h-12 text-paper-3 mx-auto mb-3" />
-                  <p className="text-paper-2 font-bold font-sans">Тохирох үг олдсонгүй.</p>
-                  <p className="text-xs text-paper-3 mt-1">Хайлт эсвэл шүүлтүүрээ өөрчилж үзнэ үү.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filteredDictionary.slice(0, dictVisible).map((w, idx) => (
-                      <div
-                        key={`${w.german}-${idx}`}
-                        className="rounded-xl border-2 border-ink-line p-5 block-shadow flex flex-col gap-3 hover:-translate-y-0.5 transition-transform"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          {w.article ? (
-                            <span className={`text-sm font-black lowercase tracking-widest px-3 py-0.5 rounded-full border-2 border-ink-line ${
-                              w.article === 'der' ? 'bg-ink-raise text-paper-2' :
-                              w.article === 'die' ? 'bg-ink-raise text-paper-2' :
-                              'bg-ink-raise text-paper-2'
-                            }`}>
-                              {w.article}
-                            </span>
-                          ) : (
-                            <span className="text-[11px] font-serif font-bold text-paper-2 bg-ink-raise px-2.5 py-1 border border-ink-line rounded-full uppercase tracking-wider">
-                              {WORD_CLASS_LABELS.find((c) => c.value === w.wordClass)?.label || ''}
-                            </span>
-                          )}
-                          <span className="text-[11px] font-serif font-extrabold text-paper-2 bg-ink-raise px-2.5 py-1 border border-ink-line rounded-full">
-                            {w.level}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <h3 className="text-2xl font-black text-paper font-sans tracking-tight leading-tight truncate">
-                              {w.german}
-                            </h3>
-                            {w.phonetic && (
-                              <p className="text-xs text-paper-2/70 font-mono mt-0.5">{w.phonetic}</p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => speakGerman(w.article ? `${w.article} ${w.german}` : w.german)}
-                            className="shrink-0 p-2.5 rounded-full bg-ink-raise hover:bg-ink-2 border-2 border-ink-line hover:scale-110 text-paper-2 transition-all cursor-pointer"
-                            title="Дуудлага сонсох"
-                          >
-                            <Volume2 className="w-5 h-5 stroke-[2.5px]" />
-                          </button>
-                        </div>
-
-                        {/* Meaning: Mongolian once translated, otherwise the English gloss. */}
-                        {w.mongolian.trim() ? (
-                          <p className="text-base font-bold text-paper-2 font-sans">{w.mongolian}</p>
-                        ) : (
-                          <p className="text-base font-bold text-paper-2 font-sans">
-                            {w.english}
-                            <span className="ml-1.5 text-[10px] font-serif font-bold text-paper-3 align-middle">EN</span>
-                          </p>
-                        )}
-                        {w.wordClass === 'noun' && w.plural && (
-                          <p className="text-xs text-paper-2/80 font-sans -mt-1">
-                            Олон тоо: <span className="font-bold">die {w.plural}</span>
-                          </p>
-                        )}
-
-                        {w.exampleGerman.trim() && (
-                          <div className="mt-auto bg-ink-raise p-3 rounded-lg border border-ink-line">
-                            <p className="text-xs leading-normal text-paper-2 italic font-sans font-semibold mb-1">
-                              „{w.exampleGerman}“
-                            </p>
-                            <p className="text-xs text-paper-2/80 leading-normal font-sans">
-                              {w.exampleMongolian}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Load more */}
-                  {dictVisible < filteredDictionary.length && (
-                    <div className="flex justify-center mt-2">
-                      <button
-                        onClick={() => setDictVisible((n) => n + 24)}
-                        className="flex items-center gap-2 border-2 border-ink-line text-paper hover:bg-ink-raise py-3 px-8 rounded-xl font-bold font-sans text-sm block-shadow cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
-                      >
-                        <ChevronRight className="w-4 h-4 rotate-90" />
-                        Цааш үзэх ({filteredDictionary.length - dictVisible})
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-
-              <p className="text-center text-[11px] text-paper-3 font-sans mt-2">
-                Vocabeo.com-ийн загвараар бүтээв
-              </p>
-            </div>
-            )}
-
-          </div>
+            <VocabTab
+              TRAINER_WORDS={TRAINER_WORDS}
+              placementSuggestedLevel={placementSuggestedLevel}
+              currentUserRef={currentUserRef}
+              requireAccount={requireAccount}
+              applyMetricProfile={applyMetricProfile}
+              speakGerman={speakGerman}
+            />
           )}
 
           {/* Tab: Орчуулагч (Professional Translation & Lingua Helper) */}
@@ -3292,357 +2378,21 @@ function LearnerApp() {
 
           {/* Special view Module: Settings (Тохиргоо) view panel */}
           {activeTab === 'settings' && (
-            <div className="max-w-xl mx-auto w-full border-2 border-ink-line rounded-xl p-8 block-shadow animate-fade-in pb-24">
-              <div className="flex items-center gap-3 pb-4 border-b border-ink-line mb-6 text-paper">
-                <Settings className="w-6 h-6 outline" />
-                <h2 className="text-2xl font-extrabold font-serif">Тохиргоо ба Хувийн Төлөв</h2>
-              </div>
-
-              <div className="space-y-6 font-sans">
-                {/* 1. Profile editor — avatar, name, level, daily goal, learning goal */}
-                {profileDraft && currentUser && (
-                  <div className="space-y-5 bg-ink-raise p-4 md:p-5 rounded-xl border-2 border-ink-line block-shadow">
-                    <div className="flex items-center gap-2 text-paper">
-                      <Target className="w-5 h-5" />
-                      <h4 className="text-sm font-serif font-bold uppercase tracking-wide">Профайл</h4>
-                    </div>
-
-                    {/* Avatar + name */}
-                    <div className="flex items-center gap-4">
-                      <div className="relative shrink-0">
-                        <div className="w-20 h-20 rounded-full overflow-hidden bg-ink-raise border-2 border-ink-line block-shadow">
-                          <img src={profileDraft.avatar} alt={profileDraft.name} className="w-full h-full object-cover" />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowAvatarPicker((v) => !v)}
-                          className="absolute -bottom-1 -right-1 p-1.5 bg-paper text-ink rounded-full border-2 border-ink-line block-shadow cursor-pointer hover:opacity-90"
-                          aria-label="Зураг солих"
-                        >
-                          <Camera className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Нэр</label>
-                        <input
-                          type="text"
-                          value={profileDraft.name}
-                          maxLength={30}
-                          onChange={(e) => setProfileDraft((d) => d && { ...d, name: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 bg-ink-raise border-2 border-ink-line rounded-xl text-paper font-bold outline-none focus:border-ink-line"
-                          placeholder="Таны нэр"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Avatar picker grid */}
-                    {showAvatarPicker && (
-                      <div className="space-y-3 p-3 bg-ink-raise rounded-xl border border-ink-line">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-[11px] font-bold uppercase text-paper-3 font-serif">Зургаа сонгох эсвэл оруулах</span>
-                          <div className="flex items-center gap-2">
-                            <input
-                              ref={avatarFileInputRef}
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp,image/gif"
-                              onChange={handleAvatarUpload}
-                              className="hidden"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => avatarFileInputRef.current?.click()}
-                              disabled={avatarUploading}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-paper text-ink border-2 border-ink-line rounded-lg text-xs font-bold cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {avatarUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                              Зураг оруулах
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setAvatarPage((p) => p + 1)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold cursor-pointer hover:bg-ink-raise"
-                            >
-                              <Shuffle className="w-3.5 h-3.5" /> Шинэчлэх
-                            </button>
-                          </div>
-                        </div>
-                        {avatarError && <p className="text-[11px] text-paper-2 font-semibold">{avatarError}</p>}
-                        <div className="flex flex-wrap gap-1.5">
-                          {AVATAR_STYLES.map((s) => (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => { setAvatarStyle(s.id); setAvatarPage(0); }}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border-2 cursor-pointer transition-all ${avatarStyle === s.id ? 'bg-paper text-ink border-ink-line' : 'bg-ink-raise border-ink-line text-paper hover:bg-ink-raise'}`}
-                            >
-                              {s.label}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                          {avatarOptions(currentUser.email, avatarPage, avatarStyle).map((url) => {
-                            const selected = profileDraft.avatar === url;
-                            return (
-                              <button
-                                key={url}
-                                type="button"
-                                onClick={() => setProfileDraft((d) => d && { ...d, avatar: url })}
-                                className={`relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${selected ? 'border-ink-line ring-2 ring-paper/30' : 'border-ink-line hover:border-ink-line/60'}`}
-                              >
-                                <img src={url} alt="avatar" className="w-full h-full object-cover bg-ink-raise" />
-                                {selected && (
-                                  <span className="absolute top-0.5 right-0.5 bg-paper text-ink rounded-full p-0.5">
-                                    <Check className="w-3 h-3" />
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Target level */}
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Зорилтот түвшин</label>
-                      <div className="grid grid-cols-6 gap-1.5 mt-1.5">
-                        {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const).map((lvl) => (
-                          <button
-                            key={lvl}
-                            type="button"
-                            onClick={() => setProfileDraft((d) => d && { ...d, targetLevel: lvl })}
-                            className={`py-2 rounded-lg text-sm font-black border-2 cursor-pointer transition-all ${profileDraft.targetLevel === lvl ? 'bg-paper text-ink border-ink-line' : 'bg-ink-raise border-ink-line text-paper hover:bg-ink-raise'}`}
-                          >
-                            {lvl}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Daily goal */}
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Өдрийн зорилго</label>
-                      <div className="grid grid-cols-5 gap-1.5 mt-1.5">
-                        {[5, 10, 15, 30, 60].map((m) => (
-                          <button
-                            key={m}
-                            type="button"
-                            onClick={() => setProfileDraft((d) => d && { ...d, dailyGoalMinutes: m })}
-                            className={`py-2 rounded-lg text-xs font-bold border-2 cursor-pointer transition-all ${profileDraft.dailyGoalMinutes === m ? 'bg-paper text-ink border-ink-line' : 'bg-ink-raise border-ink-line text-paper hover:bg-ink-raise'}`}
-                          >
-                            {m}<span className="text-[9px]">мин</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Learning goal */}
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Суралцах зорилго</label>
-                      <textarea
-                        value={profileDraft.learningGoal}
-                        maxLength={280}
-                        rows={3}
-                        onChange={(e) => setProfileDraft((d) => d && { ...d, learningGoal: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 bg-ink-raise border-2 border-ink-line rounded-xl text-paper text-sm outline-none focus:border-ink-line resize-none"
-                        placeholder="Жишээ: Goethe B1 шалгалт өгөх"
-                      />
-                      <p className="text-right text-[10px] text-paper-3 mt-0.5">{profileDraft.learningGoal.length}/280</p>
-                    </div>
-
-                    {/* Save */}
-                    <div className="space-y-1.5">
-                      <button
-                        type="button"
-                        onClick={saveProfileEdits}
-                        disabled={profileSaving || !profileDraft.name.trim()}
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-paper text-ink font-black rounded-xl border-2 border-ink-line block-shadow cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      >
-                        {profileSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : profileSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                        {profileSaved ? 'Хадгалагдлаа' : 'Хадгалах'}
-                      </button>
-                      {profileSaveError && <p className="text-center text-[11px] text-paper-2 font-semibold">Хадгалж чадсангүй. Дахин оролдоно уу.</p>}
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. Interactive toggles state */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-serif font-bold uppercase text-paper-3">Хичээлийн тохируулга:</h4>
-                  
-                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
-                    <div>
-                      <h5 className="text-sm font-bold">Орчуулга автоматаар харуулах</h5>
-                      <p className="text-[11px] text-paper-3">Унших, сонсох зохиолд орчуулгыг шууд харуулна. Унтраалттай үед эхлээд өөрөө уншиж, гацсан үедээ "Орчуулга" товчоор нээнэ.</p>
-                    </div>
-                    <button
-                      onClick={() => setReadTranslateEnabled(prev => !prev)}
-                      className={`w-12 h-6 rounded-full transition-colors relative border border-ink-line block-shadow cursor-pointer ${
-                        readTranslateEnabled ? 'bg-paper' : 'bg-ink-2'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
-                        readTranslateEnabled ? 'left-6' : 'left-1'
-                      }`}></div>
-                    </button>
-                  </div>
-
-                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
-                    <div>
-                      <h5 className="text-sm font-bold">Удаан хэмнэлтийн сонсох зам</h5>
-                      <p className="text-[11px] text-paper-3">Сонсох СД зам дээр Германы хурдыг 0.8х дээр удирдах тохиргоо.</p>
-                    </div>
-                    <button 
-                      onClick={() => setAudioSpeed(prev => prev === '1.0' ? '0.8' : '1.0')}
-                      className={`w-12 h-6 rounded-full transition-colors relative border border-ink-line block-shadow cursor-pointer ${
-                        audioSpeed === '0.8' ? 'bg-paper' : 'bg-ink-2'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
-                        audioSpeed === '0.8' ? 'left-6' : 'left-1'
-                      }`}></div>
-                    </button>
-                  </div>
-
-                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
-                    <div>
-                      <h5 className="text-sm font-bold">Streak автоматаар тооцох</h5>
-                      <p className="text-[11px] text-paper-3">Зөв дуусгасан дасгалтай өдөр streak-д автоматаар орно.</p>
-                    </div>
-                    <span className="font-bold text-sm bg-ink-raise px-3 py-1 border border-ink-line rounded-lg">{streak} өдөр</span>
-                  </div>
-                </div>
-
-                {/* 3. Account essentials */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-serif font-bold uppercase text-paper-3">Бүртгэл:</h4>
-                  <div className="flex items-center justify-between p-3 border-2 border-ink-line rounded-xl block-shadow">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Mail className="w-4 h-4 text-paper-3 shrink-0" />
-                      <span className="text-sm font-bold text-paper truncate">{currentUser?.email}</span>
-                    </div>
-                    <span className="text-[10px] text-paper-3 font-mono shrink-0 ml-2">Имэйл</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleResetPassword}
-                    className="w-full flex items-center justify-between p-3 border-2 border-ink-line rounded-xl block-shadow cursor-pointer hover:bg-ink-raise transition-colors"
-                  >
-                    <span className="flex items-center gap-2 text-sm font-bold text-paper"><Lock className="w-4 h-4 text-paper-3" /> Нууц үг солих</span>
-                    <span className="text-[11px] text-paper-2 font-bold shrink-0 ml-2">{resetSent ? 'Имэйл илгээлээ ✓' : 'Имэйл авах'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={logoutUser}
-                    className="w-full flex items-center justify-center gap-2 p-3 bg-ink-raise border-2 border-ink-line text-paper-2 font-bold rounded-xl cursor-pointer hover:bg-ink-raise transition-all"
-                  >
-                    <LogOut className="w-4 h-4" /> Гарах
-                  </button>
-                </div>
-
-                {/* Explanations instructions */}
-                <div className="bg-ink-raise border border-ink-line p-4 rounded-xl text-center">
-                  <p className="text-xs text-paper-2 leading-snug">
-                    Vivid Lingua аппликэйшний бүхий л хичээлийн загваруудыг цээжлүүлэн бэлтгэлээ. Та settings цэсийг ашиглан хичээлийн удирдамжийг хялбархан тааруулж болно.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <SettingsTab
+              currentUser={currentUser}
+              currentUserRef={currentUserRef}
+              setCurrentUser={setCurrentUser}
+              readTranslateEnabled={readTranslateEnabled}
+              setReadTranslateEnabled={setReadTranslateEnabled}
+              audioSpeed={audioSpeed}
+              setAudioSpeed={setAudioSpeed}
+              streak={streak}
+              logoutUser={logoutUser}
+            />
           )}
 
           {/* Bottom Interactive Sticky Navbar (Mobile Only) - matches screen specs */}
-          <nav aria-label="Mobile Navigation Drawer" className="md:hidden fixed bottom-0 left-0 w-full bg-ink-raise border-t-2 border-ink-line z-40 pb-safe">
-            <div className="flex justify-around items-center h-16">
-              
-              <button 
-                onClick={() => selectTab('read')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'read' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'read' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <BookOpen className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-serif">Унших</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('listen')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'listen' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'listen' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <Headphones className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-serif">Сонсох</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('speak')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'speak' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'speak' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <Mic className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-serif">Ярих</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('write')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'write' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'write' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <Edit3 className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-serif">Бичих</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('vocab')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'vocab' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'vocab' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <Languages className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-serif font-medium">Үгс</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('translate')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'translate' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'translate' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full text-paper"></div>}
-                <Sparkles className="w-5 h-5 text-paper" />
-                <span className="text-[10px] font-bold font-serif">Орч</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('exam')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'exam' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'exam' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full text-paper"></div>}
-                <GraduationCap className="w-5 h-5 text-paper" />
-                <span className="text-[10px] font-bold font-serif">Сорил</span>
-              </button>
-
-              <button
-                onClick={() => selectTab('friends')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'friends' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'friends' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <Swords className="w-5 h-5 text-paper" />
-                <span className="text-[10px] font-bold font-serif">Найз</span>
-              </button>
-            </div>
-          </nav>
+          <MobileNav activeTab={activeTab} selectTab={selectTab} />
 
         </div>
       </main>
