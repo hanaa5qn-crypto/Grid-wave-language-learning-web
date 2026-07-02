@@ -76,7 +76,7 @@ export function gridInCorrect(q: SatQuestion, value: string): boolean {
 // A single self-grading SAT question (passage + MCQ or grid-in) with a worked
 // explanation shown after answering.
 export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q, index }) => {
-  const { recordStudy } = useEnglishStats();
+  const { recordStudy, requireAccount } = useEnglishStats();
   const gridIn = isGridIn(q);
   const [picked, setPicked] = useState<number | undefined>(undefined);
   const [grid, setGrid] = useState('');
@@ -190,7 +190,7 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
           <button
             type="button"
             disabled={!canSubmit}
-            onClick={() => { setSubmitted(true); recordStudy(); }}
+            onClick={() => { if (!requireAccount()) return; setSubmitted(true); recordStudy(); }}
             className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2 text-sm font-semibold disabled:opacity-40"
           >
             <CheckCircle2 className="w-4 h-4" /> Check answer

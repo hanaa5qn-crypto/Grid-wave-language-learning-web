@@ -5,13 +5,15 @@
 // then verified for answer-accuracy, level-fit, English quality, and
 // no-overlap against the curated base library in ./library.ts.
 // Merged into the public libraries by ./index.ts. The German track is untouched.
-//   ids continue the base library: reading 21+, listening 19+, speaking 13+.
+//   ids continue the base library (reading ends at 21, listening at 19, speaking
+//   at 12) and must never collide with it — a duplicate id makes the merged
+//   libraries share one activity key, so progress can no longer reach 100%.
 // =============================================================================
 import { ReadingItem, ListeningItem, SpeakingItem } from '../types';
 
 export const IELTS_GEN_READING: ReadingItem[] = [
   {
-    "id": 21,
+    "id": 27,
     "level": "A1",
     "topic": "Park Visit",
     "title": "A Sunny Sunday at the Park",
@@ -404,7 +406,7 @@ export const IELTS_GEN_READING: ReadingItem[] = [
 
 export const IELTS_GEN_LISTENING: ListeningItem[] = [
   {
-    "id": 19,
+    "id": 25,
     "level": "A1",
     "topic": "Library Registration",
     "title": "Joining the Local Library",

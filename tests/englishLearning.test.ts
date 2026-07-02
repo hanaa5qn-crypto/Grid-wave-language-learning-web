@@ -134,6 +134,15 @@ describe('scoreEnglishPlacement', () => {
 });
 
 describe('English dashboard engine', () => {
+  it('merged libraries have no duplicate activity keys', () => {
+    // The reading/listening libraries merge several content sources; a shared
+    // id collapses two lessons onto one completion key and caps progress < 100%.
+    for (const [skill, lib] of [['read', READING_LIBRARY], ['listen', LISTENING_LIBRARY]] as const) {
+      const keys = lib.map((i) => enActivityKey(skill, i.id));
+      expect(new Set(keys).size, `${skill} ids`).toBe(keys.length);
+    }
+  });
+
   it('progress percent is bounded and over reading + listening only', () => {
     expect(EN_TRACKABLE_TOTAL).toBe(READING_LIBRARY.length + LISTENING_LIBRARY.length);
     expect(englishProgressPercent([])).toBe(0);

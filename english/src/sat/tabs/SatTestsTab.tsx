@@ -11,6 +11,7 @@ import { SAT_TESTS } from '../satTests';
 import SatTestRunner from '../SatTestRunner';
 import { SatTest } from '../../types';
 import { FREE_TESTS } from '../../access';
+import { useEnglishStats } from '../../stats';
 
 export default function SatTestsTab({
   allContent,
@@ -19,6 +20,7 @@ export default function SatTestsTab({
   allContent: boolean;
   onUpgrade: () => void;
 }) {
+  const { requireAccount } = useEnglishStats();
   const [selected, setSelected] = useState<SatTest | null>(null);
 
   if (selected) {
@@ -50,7 +52,11 @@ export default function SatTestsTab({
           return (
             <button
               key={t.id}
-              onClick={() => (locked ? onUpgrade() : setSelected(t))}
+              onClick={() => {
+                if (locked) { onUpgrade(); return; }
+                if (!requireAccount()) return; // guests browse the catalogue; taking a test needs an account
+                setSelected(t);
+              }}
               className={`group text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors ${locked ? 'opacity-80' : ''}`}
             >
               <div className="flex items-center gap-2 mb-2">

@@ -14,7 +14,7 @@ import { useEnglishStats } from '../../stats';
 import { enActivityKey } from '../../englishLearning';
 
 export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent: boolean; onUpgrade: () => void }) {
-  const { recordStudy, recordEnglishActivity } = useEnglishStats();
+  const { recordStudy, recordEnglishActivity, requireAccount } = useEnglishStats();
   // Free accounts start on the unlocked A1 level; paid users keep the academic default.
   const [level, setLevel] = useState<EnglishLevel | 'all'>(allContent ? 'B2' : 'A1');
   const [active, setActive] = useState<ReadingItem | null>(null);
@@ -95,6 +95,7 @@ export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent:
         ) : (
           <button
             onClick={() => {
+              if (!requireAccount()) return; // guests browse; answering needs an account
               setSubmitted(true);
               recordStudy();
               // Feed the dashboard: completed + (mistake if < 60% correct).
