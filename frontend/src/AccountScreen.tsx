@@ -21,7 +21,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   UserProfile, avatarOptions, AVATAR_STYLES, DEFAULT_AVATAR_STYLE, AvatarStyleId,
 } from './profiles';
-import { saveProfileProgress, sendResetEmail } from './auth';
+import { updateProfileFields, sendResetEmail } from './auth';
 import { getAuthInstance, getStorageInstance, isFirebaseConfigured } from './firebase';
 import { effectivePlan } from './plans';
 
@@ -106,7 +106,14 @@ export default function AccountScreen({
     setSaving(true);
     setSaveError(false);
     try {
-      await saveProfileProgress(next);
+      // Patch only the edited settings fields so a concurrent track write
+      // (e.g. English study seconds) is never clobbered.
+      await updateProfileFields({
+        name: next.name,
+        avatar,
+        dailyGoalMinutes: dailyGoal,
+        learningGoal,
+      });
       onSaved?.(next);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);

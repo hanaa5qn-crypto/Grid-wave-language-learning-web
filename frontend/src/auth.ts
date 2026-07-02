@@ -14,9 +14,9 @@ import {
   onAuthStateChanged,
   type Unsubscribe,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { getAuthInstance, getDb } from './firebase';
-import { UserProfile, createCustomProfile, stripServerOwnedFields } from './profiles';
+import { UserProfile, createCustomProfile, stripServerOwnedFields, SERVER_OWNED_PROFILE_FIELDS } from './profiles';
 
 function profileRef(uid: string) {
   return doc(getDb(), 'users', uid);
@@ -84,6 +84,41 @@ export async function saveProfileProgress(profile: UserProfile): Promise<void> {
   // rejected by Firestore rules. Stripping them also avoids a stale local
   // value (e.g. aiUsage updated server-side meanwhile) failing the whole save.
   await setDoc(profileRef(user.uid), stripServerOwnedFields(profile), { merge: true });
+}
+
+// Field-level profile patch. Unlike saveProfileProgress (which writes the whole
+// profile), this writes ONLY the given fields, so concurrent writers on the same
+// document — the German track vs the English track — can never clobber each
+// other's fields. Keys may be FieldPath-style dotted paths (e.g.
+// `studySecondsByDate.2026-07-02`) to update one nested map entry without
+// replacing its sibling date keys.
+export async function updateProfileFields(
+  patch: Partial<UserProfile> & Record<string, unknown>,
+): Promise<void> {
+  const user = getAuthInstance().currentUser;
+  if (!user) return;
+  // Never write entitlement/usage fields — they are server-owned and rejected
+  // by Firestore rules. A dotted path counts by its first segment.
+  const stripped: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) continue; // Firestore rejects undefined values
+    const root = key.split('.')[0];
+    if ((SERVER_OWNED_PROFILE_FIELDS as readonly string[]).includes(root)) continue;
+    stripped[key] = value;
+  }
+  if (Object.keys(stripped).length === 0) return;
+  try {
+    await updateDoc(profileRef(user.uid), stripped);
+  } catch (err) {
+    // updateDoc fails when the document doesn't exist yet (e.g. the signup
+    // profile write was skipped) — fall back to a merge write so the doc is
+    // created and progress is never lost.
+    if ((err as { code?: string }).code === 'not-found') {
+      await setDoc(profileRef(user.uid), stripped, { merge: true });
+    } else {
+      throw err;
+    }
+  }
 }
 
 // Persist which learning track the signed-in user picked ('de' German / 'en'

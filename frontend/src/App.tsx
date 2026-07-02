@@ -3,43 +3,40 @@ import {
   Volume2, Play, Pause, CheckCircle, X, XCircle, AlertCircle,
   BookOpen, Headphones, Mic, Edit3, Languages, Settings, LogOut,
   Check, RotateCcw, Lightbulb, Flame, Award, ArrowRight, ArrowLeft,
-  ChevronRight, Sparkles, HelpCircle, GraduationCap, ExternalLink, Search, Library,
+  Sparkles, GraduationCap, ExternalLink,
   Square, AudioLines, Gauge, SpellCheck, MessageSquareText, ThumbsUp, Target,
-  Mail, Lock, Loader2, QrCode, CreditCard, Shield, Calendar, Clock, Zap,
-  ListChecks, BarChart3, Crown, Swords, Save, Camera, Shuffle, Upload
+  Lock, Loader2, QrCode, CreditCard, Shield, Calendar, Clock, Zap,
+  ListChecks, BarChart3, Crown, Swords
 } from 'lucide-react';
 import {
-  TabType, VocabularyWord, WordClass, CEFRLevel,
+  TabType,
   SpeakingEvaluation, WritingFeedback, WritingCorrection,
-  PaymentMethodsResponse, DummyCheckoutResponse, BylCheckoutResponse,
 } from './types';
+import { useBylCheckout } from './useBylCheckout';
 import { DICTIONARY } from './data';
 import {
   READING_LIBRARY, LISTENING_LIBRARY, WRITING_LIBRARY, SPEAKING_LIBRARY,
-  Level, ReadingItem, ListeningItem, WritingItem, SpeakingItem,
-  QuizQuestion, getReadingQuestions, getListeningQuestions, shuffleQuiz,
+  Level,
 } from './library';
 import { resourcesFor, SkillTab } from './externalResources';
-import { EXAMS, EXAM_LEVEL_ORDER, ExamLevel } from './exams';
 import TestDafExam from './TestDafExam';
 import AdminDashboard from './AdminDashboard';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import ContactPage from './pages/ContactPage';
-import { UserProfile, DEFAULT_PROFILES, createGuestProfile, stripServerOwnedFields, avatarOptions, AVATAR_STYLES, DEFAULT_AVATAR_STYLE } from './profiles';
+import { UserProfile, DEFAULT_PROFILES, createGuestProfile } from './profiles';
 import { getMyPromo, redeemPromoCode, removeMyPromo, ensureSignupTrial, type MyPromo } from './promo';
 import LoginScreen from './LoginScreen';
 import LandingPage from './LandingPage';
 import { track, trackVisitOncePerDay } from './analytics';
 import {
-  subscribeToAuthedProfile, logOutUser, saveProfileProgress, sendResetEmail,
+  subscribeToAuthedProfile, logOutUser, updateProfileFields,
 } from './auth';
 import { isFirebaseConfigured, getStorageInstance, getAuthInstance } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
-  SrsMap, reviewSrs, srsWordKey, orderTrainerWords, countDueWords, isDue,
+  countDueWords,
   compareWordsByLevel, suggestedWordLevel,
-  calculateStreakWithGrace, StreakResult,
   buildUnitsForLevel, unitProgress, isUnitPassed, isUnitUnlocked, lockedItemIds, Unit, UnitActivity, UNIT_PASS_RATIO,
   addMistake, clearMistake, resolveMistakes, MistakeRef,
   buildTodaySession, TodaySession,
@@ -48,8 +45,8 @@ import {
 import { buildInflectedLookup } from './inflect';
 import {
   PLANS, PLAN_ORDER, PlanId, effectivePlan, isFounder as isFounderProfile,
-  canUseAi, canAccessAllContent, canInteract, isExamQuestionLocked, isLessonLocked,
-  isFreeUnitLocked, FREE_QUESTIONS_PER_SECTION, applyPromoDiscount, type BillingInterval,
+  canUseAi, canAccessAllContent, canInteract, isLessonLocked,
+  isFreeUnitLocked, applyPromoDiscount, type BillingInterval,
 } from './plans';
 import OnboardingWizard from './OnboardingWizard';
 import PlacementTest from './PlacementTest';
@@ -63,130 +60,30 @@ import MCQBlock from './components/MCQBlock';
 import ExternalResourcesPanel from './components/ExternalResourcesPanel';
 import QuizNav from './components/QuizNav';
 import { BillingCard } from './components/BillingCard';
+import { BrandLogo } from './components/BrandLogo';
 import { ProfileTab } from './tabs/ProfileTab';
+import { TranslateTab } from './tabs/TranslateTab';
+import { ExamTab } from './tabs/ExamTab';
+import { ReadTab } from './tabs/ReadTab';
+import { ListenTab } from './tabs/ListenTab';
+import { SpeakTab } from './tabs/SpeakTab';
+import { WriteTab } from './tabs/WriteTab';
+import { VocabTab } from './tabs/VocabTab';
+import { SettingsTab } from './tabs/SettingsTab';
+import { AppSidebar, MobileNav } from './components/AppNav';
+import {
+  localDateKey, activityKey, normalizeProfileMetrics, TRACKABLE_ACTIVITY_TOTAL,
+} from './utils/profileMetrics';
 import { audioBlobToWavBase64, audioBlobToWavBlob } from './utils/audioUtils';
-import { playTts, pauseTts, resumeTts, stopTts } from './utils/tts';
+import { playTts, stopTts } from './utils/tts';
 import { formatMnt } from './utils/paymentUtils';
 
-// Union of all exam item types — they all share `topic`, `title`, `titleMn`.
-type ExamItem = ReadingItem | ListeningItem | WritingItem | SpeakingItem;
-
-const WEEKDAY_LABELS = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
 const STUDY_TABS: TabType[] = ['read', 'listen', 'speak', 'write', 'vocab', 'translate', 'exam'];
 const ACTIVE_IDLE_LIMIT_MS = 2 * 60 * 1000;
 const STUDY_SAVE_THRESHOLD_SECONDS = 120;
-const TRACKABLE_ACTIVITY_TOTAL =
-  4 + // core quick lesson + detailed reading/listening/writing lessons
-  DICTIONARY.filter((w) => w.mongolian.trim().length > 0).length +
-  READING_LIBRARY.length +
-  LISTENING_LIBRARY.length +
-  SPEAKING_LIBRARY.length +
-  WRITING_LIBRARY.length +
-  Object.values(EXAMS).reduce(
-    (sum, exam) => sum + exam.reading.length + exam.listening.length + exam.speaking.length + exam.writing.length,
-    0,
-  );
 
 // Trainer deck, easiest first (A1 → C2) so beginners meet beginner words.
 const TRAINER_WORDS = DICTIONARY.filter((w) => w.mongolian.trim().length > 0).sort(compareWordsByLevel);
-
-// How many cards a "Дахин давтах" (don't know) word waits before reappearing
-// in the same session.
-const VOCAB_REQUEUE_GAP = 5;
-
-function localDateKey(date = new Date()): string {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function dateFromLocalKey(key: string): Date {
-  const [year, month, day] = key.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function buildLearningCurve(studySecondsByDate: Record<string, number> = {}): UserProfile['learningCurve'] {
-  const today = new Date();
-  return Array.from({ length: 7 }).map((_, index) => {
-    const date = addDays(today, index - 6);
-    const key = localDateKey(date);
-    const seconds = Math.max(0, studySecondsByDate[key] ?? 0);
-    return {
-      day: WEEKDAY_LABELS[date.getDay()],
-      hours: Number((seconds / 3600).toFixed(1)),
-    };
-  });
-}
-
-function calculateStreak(studyDays: string[] = [], today = new Date()): number {
-  return calculateStreakWithGrace(studyDays, today).streak;
-}
-
-function calculateProgress(completedActivityIds: string[] = []): number {
-  if (TRACKABLE_ACTIVITY_TOTAL <= 0) return 0;
-  const uniqueCompleted = new Set(completedActivityIds).size;
-  return Math.min(100, Math.round((uniqueCompleted / TRACKABLE_ACTIVITY_TOTAL) * 100));
-}
-
-function activityKey(prefix: string, value: string | number): string {
-  return `${prefix}:${String(value).trim().toLowerCase().replace(/\s+/g, '-').slice(0, 96)}`;
-}
-
-function normalizeProfileMetrics(profile: UserProfile): UserProfile {
-  const completedActivityIds = Array.from(new Set(profile.completedActivityIds ?? []));
-  const studyDays = Array.from(new Set(profile.studyDays ?? [])).sort();
-  const studySecondsByDate = profile.studySecondsByDate ?? {};
-  
-  // Calculate streak with grace using learning.ts engine
-  const streakRes = calculateStreakWithGrace(studyDays);
-  const streak = streakRes.streak;
-  
-  const progress = calculateProgress(completedActivityIds);
-  return {
-    ...profile,
-    completedActivityIds,
-    studyDays,
-    studySecondsByDate,
-    streak,
-    progress,
-    completedLessons: completedActivityIds.length,
-    learningCurve: buildLearningCurve(studySecondsByDate),
-    // Ensure all custom profile fields are present
-    srsByWord: profile.srsByWord ?? {},
-    mistakeIds: profile.mistakeIds ?? [],
-    onboardingDone: profile.onboardingDone ?? false,
-    dailyGoalMinutes: profile.dailyGoalMinutes ?? 15,
-    streakFreezeCount: profile.streakFreezeCount ?? 1,
-  };
-}
-
-
-
-// Level filter chips shared by every skill-library browser.
-const LIB_LEVELS: (Level | 'all')[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-
-// Mongolian labels for dictionary word-class filter chips.
-const WORD_CLASS_LABELS: { value: WordClass | 'all'; label: string }[] = [
-  { value: 'all', label: 'Бүгд' },
-  { value: 'noun', label: 'Нэр үг' },
-  { value: 'verb', label: 'Үйл үг' },
-  { value: 'adjective', label: 'Тэмдэг нэр' },
-  { value: 'adverb', label: 'Дайвар үг' },
-  { value: 'preposition', label: 'Угтвар үг' },
-  { value: 'pronoun', label: 'Төлөөний үг' },
-  { value: 'numeral', label: 'Тооны нэр' },
-  { value: 'conjunction', label: 'Холбоос үг' },
-  { value: 'interjection', label: 'Аялга үг' },
-  { value: 'article', label: 'Артикль' },
-  { value: 'phrase', label: 'Хэллэг' },
-];
 
 // Short Mongolian part-of-speech labels shown inside the library vocabulary
 // tooltips (the dictionary-backed hover popups on each German passage).
@@ -195,22 +92,6 @@ const WORD_CLASS_MN: Record<string, string> = {
   preposition: 'Угтвар үг', pronoun: 'Төлөөний үг', numeral: 'Тооны нэр',
   conjunction: 'Холбоос үг', interjection: 'Аялга үг', article: 'Артикль', phrase: 'Хэллэг',
 };
-const LEVEL_OPTIONS: (CEFRLevel | 'all')[] = ['all', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-
-function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
-      <defs>
-        <linearGradient id="brand-logo-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ededeb" />
-          <stop offset="1" stopColor="#9b9893" />
-        </linearGradient>
-      </defs>
-      <circle cx="13" cy="19" r="9" fill="url(#brand-logo-grad)" />
-      <line x1="43" y1="16" x2="30" y2="48" stroke="url(#brand-logo-grad)" strokeWidth="18" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 export default function App() {
   const path = window.location.pathname;
@@ -244,13 +125,6 @@ function LearnerApp() {
   // Logged-out routing: false → marketing landing page; true → login/signup
   // screen. Visitors can also enter a no-account "guest" session from either.
   const [showAuth, setShowAuth] = useState<boolean>(false);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodsResponse | null>(null);
-  const [paymentMethodsLoading, setPaymentMethodsLoading] = useState(false);
-  const [paymentActionLoading, setPaymentActionLoading] = useState(false);
-  const [paymentStatusLoading, setPaymentStatusLoading] = useState(false);
-  const [paymentMessage, setPaymentMessage] = useState<{ type: 'info' | 'success' | 'error'; text: string } | null>(null);
-  const [bylCheckout, setBylCheckout] = useState<BylCheckoutResponse | null>(null);
-  const [dummyInvoice, setDummyInvoice] = useState<DummyCheckoutResponse | null>(null);
   // Teacher-promo for the signed-in student (null = none). When present and the
   // first paid subscription hasn't happened yet, the paywall shows discounted
   // prices; a 100%-off code unlocks for free on checkout. Display only — the
@@ -297,121 +171,8 @@ function LearnerApp() {
     currentUserRef.current = currentUser;
   }, [currentUser]);
 
-  // --- Profile editor (Settings tab) -------------------------------------
-  // A local draft holds in-progress edits so background progress saves (study
-  // time) can keep updating `currentUser` without clobbering what the learner
-  // is typing. Seeded once from the signed-in profile; reset on sign-out.
-  type ProfileDraft = { name: string; avatar: string; targetLevel: string; dailyGoalMinutes: number; learningGoal: string };
-  const [profileDraft, setProfileDraft] = useState<ProfileDraft | null>(null);
-  const profileDraftKeyRef = useRef<string | null>(null);
-  const [avatarPage, setAvatarPage] = useState(0);
-  const [avatarStyle, setAvatarStyle] = useState<string>(DEFAULT_AVATAR_STYLE);
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileSaved, setProfileSaved] = useState(false);
-  const [profileSaveError, setProfileSaveError] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
-
-  // Seed the draft when the signed-in *identity* changes (login / account
-  // switch / logout) — keyed by email, NOT on every currentUser update, so a
-  // background study-time save can't reset what the learner is typing.
-  useEffect(() => {
-    if (!currentUser) { setProfileDraft(null); profileDraftKeyRef.current = null; return; }
-    if (profileDraftKeyRef.current !== currentUser.email) {
-      profileDraftKeyRef.current = currentUser.email;
-      setProfileDraft({
-        name: currentUser.name,
-        avatar: currentUser.avatar,
-        targetLevel: currentUser.targetLevel,
-        dailyGoalMinutes: currentUser.dailyGoalMinutes ?? 15,
-        learningGoal: currentUser.learningGoal ?? '',
-      });
-    }
-  }, [currentUser]);
-
-  const saveProfileEdits = async () => {
-    if (!currentUser || !profileDraft) return;
-    const name = profileDraft.name.trim().slice(0, 30);
-    if (!name) return;
-    setProfileSaving(true);
-    setProfileSaved(false);
-    setProfileSaveError(false);
-    const learningGoal = profileDraft.learningGoal.trim().slice(0, 280);
-    // Keep `role` consistent with the goal (mirrors createCustomProfile).
-    const goalClean = learningGoal.toLowerCase();
-    const role = goalClean.includes('сургууль') ? 'Оюутан' : goalClean.includes('ажил') ? 'Мэргэжилтэн' : 'Суралцагч';
-    // Spread from the ref so a background study-time save that landed since
-    // this render isn't clobbered (saveProfileProgress merges).
-    const base = currentUserRef.current ?? currentUser;
-    const next = stripServerOwnedFields({
-      ...base,
-      name,
-      avatar: profileDraft.avatar,
-      targetLevel: profileDraft.targetLevel,
-      dailyGoalMinutes: profileDraft.dailyGoalMinutes,
-      learningGoal,
-      role,
-    });
-    currentUserRef.current = next;
-    setCurrentUser(next);
-    try {
-      await saveProfileProgress(next);
-      setProfileSaved(true);
-      setTimeout(() => setProfileSaved(false), 2500);
-    } catch (err) {
-      console.warn('Could not save profile edits:', err);
-      setProfileSaveError(true);
-      setTimeout(() => setProfileSaveError(false), 4000);
-    } finally {
-      setProfileSaving(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!currentUser?.email) return;
-    try {
-      await sendResetEmail(currentUser.email);
-      setResetSent(true);
-      setTimeout(() => setResetSent(false), 4000);
-    } catch (err) {
-      console.warn('Password reset email failed:', err);
-    }
-  };
-
-  // Upload a custom profile picture to Firebase Storage and point the draft
-  // avatar at its public download URL. Owner-only path; images ≤5MB.
-  const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [avatarError, setAvatarError] = useState<string | null>(null);
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // let the user re-pick the same file later
-    if (!file) return;
-    // Raster only — exclude SVG (stored on a public-read bucket, an SVG could
-    // carry script and become a stored-XSS vector if ever opened directly).
-    const ALLOWED_AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
-    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) { setAvatarError('PNG, JPG, WEBP, GIF зураг оруулна уу.'); return; }
-    if (file.size > 5 * 1024 * 1024) { setAvatarError('Зураг 5MB-аас бага байх ёстой.'); return; }
-    if (!isFirebaseConfigured) { setAvatarError('Зураг оруулах боломжгүй байна.'); return; }
-    setAvatarError(null);
-    setAvatarUploading(true);
-    try {
-      const storage = getStorageInstance();
-      const userId = getAuthInstance().currentUser?.uid;
-      if (!userId) throw new Error('Not signed in');
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-      const fileRef = ref(storage, `avatars/${userId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`);
-      await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
-      setProfileDraft((d) => d && { ...d, avatar: url });
-    } catch (err) {
-      console.warn('Avatar upload failed:', err);
-      setAvatarError('Зураг оруулж чадсангүй. Дахин оролдоно уу.');
-    } finally {
-      setAvatarUploading(false);
-    }
-  };
+  // The profile editor (draft, avatar picker/upload, password reset) lives in
+  // tabs/SettingsTab.tsx.
 
   useEffect(() => {
     activeTabRef.current = activeTab;
@@ -436,7 +197,7 @@ function LearnerApp() {
         // (and the leaderboard) stop showing the stale number.
         if ((profile.streak ?? 0) > 0 && normalizedProfile.streak === 0) {
           setBrokenStreakNotice(profile.streak);
-          saveProfileProgress(normalizedProfile).catch((err) => {
+          updateProfileFields({ streak: normalizedProfile.streak }).catch((err) => {
             console.warn('Could not persist streak reset to Firestore:', err);
           });
         }
@@ -481,30 +242,21 @@ function LearnerApp() {
   const [readingQuizAnswer, setReadingQuizAnswer] = useState<number | null>(null);
   const [readingQuizFeedback, setReadingQuizFeedback] = useState<string | null>(null);
 
-  // Resource Library (50+ items per skill) — browse/select state for each tab.
+  // Resource Library (50+ items per skill) — cross-tab selection state. Which
+  // item/level filter is open per skill stays here so startActivity (home tab,
+  // curriculum path, mistake review) can deep-link into a tab; the per-attempt
+  // sub-state (question index, answers, reveals, draft text) lives inside each
+  // tab component in tabs/ReadTab.tsx, ListenTab.tsx, SpeakTab.tsx, WriteTab.tsx.
   const [libReadId, setLibReadId] = useState<number>(READING_LIBRARY[0].id);
-  // Multi-question state: which question is open + the chosen answer per question.
-  const [libReadQIdx, setLibReadQIdx] = useState<number>(0);
-  const [libReadAnswers, setLibReadAnswers] = useState<Record<number, number>>({});
-  // Translation starts hidden so the learner reads/attempts first and only
-  // reveals the Mongolian once stuck. Follows the "auto-show" setting if the
-  // user opts into always-on translations.
-  const [libReadTrans, setLibReadTrans] = useState<boolean>(readTranslateEnabled);
   const [libReadLevel, setLibReadLevel] = useState<Level | 'all'>('all');
 
   const [libListenId, setLibListenId] = useState<number>(LISTENING_LIBRARY[0].id);
-  const [libListenQIdx, setLibListenQIdx] = useState<number>(0);
-  const [libListenAnswers, setLibListenAnswers] = useState<Record<number, number>>({});
-  const [libListenTrans, setLibListenTrans] = useState<boolean>(false);
   const [libListenLevel, setLibListenLevel] = useState<Level | 'all'>('all');
 
   const [libSpeakId, setLibSpeakId] = useState<number>(SPEAKING_LIBRARY[0].id);
-  const [libSpeakReveal, setLibSpeakReveal] = useState<boolean>(false);
   const [libSpeakLevel, setLibSpeakLevel] = useState<Level | 'all'>('all');
 
   const [libWriteId, setLibWriteId] = useState<number>(WRITING_LIBRARY[0].id);
-  const [libWriteText, setLibWriteText] = useState<string>('');
-  const [libWriteReveal, setLibWriteReveal] = useState<boolean>(false);
   const [libWriteLevel, setLibWriteLevel] = useState<Level | 'all'>('all');
 
   const lockedActivityIds = useMemo(() => {
@@ -542,12 +294,9 @@ function LearnerApp() {
     return countDueWords(TRAINER_WORDS, currentUser?.srsByWord ?? {});
   }, [currentUser?.srsByWord, TRAINER_WORDS]);
 
-  // Audio player variables for Listening (Screen 2)
+  // Audio player variables for Listening (Screen 2). The idle/playing/paused
+  // player state itself lives inside tabs/ListenTab.tsx.
   const [audioSpeed, setAudioSpeed] = useState<'0.8' | '1.0'>('1.0');
-  // Real TTS playback state for the listening player (pause / resume / replay).
-  // The actual audio handles live in ./utils/tts (a shared neural-TTS player);
-  // this state only mirrors idle/playing/paused for the player UI.
-  const [listenState, setListenState] = useState<'idle' | 'playing' | 'paused'>('idle');
 
   // Draggable-type Word Chips for Listening (Screen 2)
   const [listeningPool, setListeningPool] = useState<string[]>([]);
@@ -592,18 +341,8 @@ function LearnerApp() {
   const [writeFeedbackLoading, setWriteFeedbackLoading] = useState(false);
   const [writeFeedbackText, setWriteFeedbackText] = useState('');
 
-  // Flashcards state for Vocabulary Trainer (Screen 5) — draws from the dictionary
-  // entries that already have a Mongolian translation, so the trainer stays polished.
-  // (The Browse dictionary below shows the full set incl. words still awaiting Mongolian.)
-  const [currentVocabIndex, setCurrentVocabIndex] = useState(0);
-  const [vocabList, setVocabList] = useState<VocabularyWord[]>([...TRAINER_WORDS]);
-  const [vocabFlipped, setVocabFlipped] = useState(false);
-  const [vocabMemorizedCount, setVocabMemorizedCount] = useState(0);
-  const vocabTotalCount = vocabList.length;
-  // Trainer CEFR filter. Defaults to the learner's placement-test level the
-  // first time they open the trainer (see selectTab); they can switch freely after.
-  const [trainerLevel, setTrainerLevel] = useState<CEFRLevel | 'all'>('all');
-  const trainerLevelInitRef = useRef(false);
+  // The vocabulary trainer/dictionary state (flashcards, SRS queue, browse
+  // search) lives in tabs/VocabTab.tsx.
   // Placement-based suggestion — only once the result is unlocked, so the
   // trainer never leaks a level the learner hasn't paid to reveal. Trust only
   // the SERVER-owned placementUnlock flag (or founder), never the
@@ -615,48 +354,8 @@ function LearnerApp() {
     return suggestedWordLevel(placement.level);
   }, [currentUser?.placement?.level, currentUser?.placementUnlock?.unlocked, founderAccess]);
 
-  // Rebuild the trainer queue: filter by level, then SRS order (due → new → scheduled).
-  const rebuildTrainerQueue = (level: CEFRLevel | 'all') => {
-    const words = level === 'all' ? TRAINER_WORDS : TRAINER_WORDS.filter((w) => w.level === level);
-    setVocabList(orderTrainerWords(words, currentUserRef.current?.srsByWord ?? {}));
-    setCurrentVocabIndex(0);
-    setVocabFlipped(false);
-    setVocabMemorizedCount(0);
-  };
-
-  const selectTrainerLevel = (level: CEFRLevel | 'all') => {
-    setTrainerLevel(level);
-    rebuildTrainerQueue(level);
-  };
-
-  // Dictionary (Browse) state — vocabeo-style searchable/filterable word list
-  const [vocabView, setVocabView] = useState<'trainer' | 'browse'>('trainer');
-  const [dictSearch, setDictSearch] = useState('');
-  const [dictClass, setDictClass] = useState<WordClass | 'all'>('all');
-  const [dictLevel, setDictLevel] = useState<CEFRLevel | 'all'>('all');
-  const [dictVisible, setDictVisible] = useState(24); // how many results to render (load-more paging)
-
-  const filteredDictionary = useMemo(() => {
-    const q = dictSearch.trim().toLowerCase();
-    return DICTIONARY.filter((w) => {
-      if (dictClass !== 'all' && w.wordClass !== dictClass) return false;
-      if (dictLevel !== 'all' && w.level !== dictLevel) return false;
-      if (!q) return true;
-      return (
-        w.german.toLowerCase().includes(q) ||
-        w.mongolian.toLowerCase().includes(q) ||
-        (w.english ? w.english.toLowerCase().includes(q) : false) ||
-        (w.article ? `${w.article} ${w.german}`.toLowerCase().includes(q) : false)
-      );
-    }).sort(compareWordsByLevel); // easiest first: A1 → C2
-  }, [dictSearch, dictClass, dictLevel]);
-
-  // Reset paging whenever the filters change so the list starts from the top.
-  useEffect(() => {
-    setDictVisible(24);
-  }, [dictSearch, dictClass, dictLevel]);
-
   const applyMetricProfile = (profile: UserProfile, save = true) => {
+    const prev = currentUserRef.current;
     const normalizedProfile = normalizeProfileMetrics(profile);
     currentUserRef.current = normalizedProfile;
     studySecondsRef.current = normalizedProfile.studySecondsByDate ?? {};
@@ -668,9 +367,21 @@ function LearnerApp() {
     setStudyDays(normalizedProfile.studyDays ?? []);
     setStudySecondsByDate(normalizedProfile.studySecondsByDate ?? {});
     if (save && !isTest) {
-      saveProfileProgress(normalizedProfile).catch((err) => {
-        console.warn('Could not save progress to Firestore:', err);
-      });
+      // Patch only the fields this action actually changed (vs the previous
+      // in-memory profile) so a German-track write can never clobber the
+      // English-track (`*En`) fields on the shared document.
+      const patch: Partial<UserProfile> & Record<string, unknown> = {};
+      const prevRecord = prev as unknown as Record<string, unknown> | null;
+      for (const [key, value] of Object.entries(normalizedProfile as unknown as Record<string, unknown>)) {
+        if (value === undefined) continue;
+        if (prevRecord && JSON.stringify(prevRecord[key]) === JSON.stringify(value)) continue;
+        patch[key] = value;
+      }
+      if (Object.keys(patch).length > 0) {
+        updateProfileFields(patch).catch((err) => {
+          console.warn('Could not save progress to Firestore:', err);
+        });
+      }
     }
   };
 
@@ -718,7 +429,12 @@ function LearnerApp() {
     pendingStudySaveSecondsRef.current += seconds;
     if (pendingStudySaveSecondsRef.current >= STUDY_SAVE_THRESHOLD_SECONDS && !isTest) {
       pendingStudySaveSecondsRef.current = 0;
-      saveProfileProgress(nextProfile).catch((err) => {
+      // Dotted path patches only today's seconds, never sibling date keys.
+      updateProfileFields({
+        [`studySecondsByDate.${today}`]: nextSeconds[today],
+        learningCurve: nextProfile.learningCurve,
+        lastActiveAt: nextProfile.lastActiveAt,
+      }).catch((err) => {
         console.warn('Could not save study time to Firestore:', err);
       });
     }
@@ -737,7 +453,13 @@ function LearnerApp() {
       const profile = currentUserRef.current;
       if (!profile || pendingStudySaveSecondsRef.current <= 0) return;
       pendingStudySaveSecondsRef.current = 0;
-      saveProfileProgress(profile).catch((err) => {
+      // Whole map (not a dotted path): pending seconds may straddle midnight,
+      // and only the German track writes studySecondsByDate anyway.
+      updateProfileFields({
+        studySecondsByDate: profile.studySecondsByDate ?? {},
+        learningCurve: profile.learningCurve,
+        lastActiveAt: profile.lastActiveAt,
+      }).catch((err) => {
         console.warn('Could not save study time to Firestore:', err);
       });
     };
@@ -776,34 +498,10 @@ function LearnerApp() {
     };
   }, [isTest]);
 
-  // Dedicated Professional Translator states
-  const [translationInput, setTranslationInput] = useState('');
-  const [translationLoading, setTranslationLoading] = useState(false);
-  const [translationResult, setTranslationResult] = useState<{
-    translation: string;
-    detectedLanguage: string;
-    pronunciation: string;
-    grammarExplanation: string;
-    words: Array<{
-      word: string;
-      baseForm: string;
-      partOfSpeech: string;
-      translation: string;
-      explanation: string;
-    }>;
-    examples: Array<{
-      german: string;
-      mongolian: string;
-    }>;
-  } | null>(null);
-
-
   // Guest interaction prompt: visitors may browse the free-tier surface but any
   // action (answering, audio, placement, drills) opens this sign-up nudge.
   const [guestPromptOpen, setGuestPromptOpen] = useState(false);
 
-  // CEFR level-based exams (A1–C2) — test tab
-  const [examLevelSel, setExamLevelSel] = useState<ExamLevel | null>(null);
   // Бүрэн TestDaF загвар шалгалтын симуляци (бүрэн дэлгэц overlay).
   const [testdafOpen, setTestdafOpen] = useState(false);
   // Түвшин тогтоох тест: шинэ хэрэглэгчид onboarding-ийн дараа автоматаар,
@@ -959,28 +657,6 @@ function LearnerApp() {
     const id = setInterval(() => { void checkIncomingDuels(); }, 60000);
     return () => clearInterval(id);
   }, [currentUser, checkIncomingDuels]);
-  const [examSec, setExamSec] = useState<'reading' | 'listening' | 'writing' | 'speaking'>('reading');
-  const [examItemIdx, setExamItemIdx] = useState(0);
-  const [examItemAns, setExamItemAns] = useState<number | null>(null);
-  const [examItemReveal, setExamItemReveal] = useState(false);
-  const [examItemWrite, setExamItemWrite] = useState('');
-  const [examItemTrans, setExamItemTrans] = useState(false);
-
-  // Reset the per-test sub-state when switching section or test. Also clears the
-  // shared speaking judge so a report never carries over to a different prompt.
-  // stopTts() so a listening clip never keeps playing after the learner moves
-  // on — they're often done answering before the audio finishes.
-  const selectExamSection = (sec: 'reading' | 'listening' | 'writing' | 'speaking') => {
-    stopTts();
-    setExamSec(sec); setExamItemIdx(0); setExamItemAns(null); setExamItemReveal(false); setExamItemWrite(''); resetSpeakingJudge(); resetWritingFeedback();
-  };
-  const selectExamItem = (idx: number) => {
-    stopTts();
-    setExamItemIdx(idx); setExamItemAns(null); setExamItemReveal(false); setExamItemWrite(''); resetSpeakingJudge(); resetWritingFeedback();
-  };
-  const [translationError, setTranslationError] = useState<string | null>(null);
-
-
   // Bearer token for the AI endpoints — the server only serves AI features to
   // Max/founder accounts, so every AI call has to prove who is asking.
   const aiAuthHeaders = async (): Promise<Record<string, string>> => {
@@ -1005,36 +681,6 @@ function LearnerApp() {
       if (typeof data?.used === 'number') setAiQuota(data);
     } catch {
       // Non-fatal: the counter just stays stale until the next AI call.
-    }
-  };
-
-  const translateText = async (textToTranslate?: string) => {
-    const targetText = textToTranslate !== undefined ? textToTranslate : translationInput;
-    if (!targetText.trim()) return;
-
-    setTranslationLoading(true);
-    setTranslationError(null);
-    try {
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(await aiAuthHeaders()) },
-        body: JSON.stringify({ text: targetText })
-      });
-
-      if (!response.ok) {
-        const errBody = await response.json().catch(() => ({}));
-        if (errBody?.quota) setAiQuota(errBody.quota);
-        throw new Error(errBody?.error || 'Орчуулгын серверээс алдаа ирлээ.');
-      }
-
-      const data = await response.json();
-      setTranslationResult(data);
-    } catch (err: any) {
-      console.error(err);
-      setTranslationError(err?.message || 'Орчуулга түр амжилтгүй боллоо. Сүлжээгээ шалгаад хэсэг хугацааны дараа дахин оролдоно уу.');
-    } finally {
-      setTranslationLoading(false);
-      refreshAiQuota();
     }
   };
 
@@ -1090,17 +736,6 @@ function LearnerApp() {
     playTts(text, { lang: 'de-DE', rate: speedMultiplier });
   };
 
-  // --- Listening player controls (pause / resume / replay) ---
-  // These drive the listen-tab player UI via setListenState. The neural path
-  // uses a real <audio> element (so pause/resume keep position); the fallback
-  // maps to speechSynthesis pause()/resume() (replay-from-top there).
-  const playListening = (text: string, rate: number) => {
-    playTts(text, { lang: 'de-DE', rate, onState: setListenState });
-  };
-  const pauseListening = () => pauseTts();
-  const resumeListening = () => resumeTts();
-  const stopListening = () => stopTts();
-
   // Fast lookup built once: lowercased German headword -> dictionary entry.
   // Powers the library vocabulary tooltips so every passage gets the same kind
   // of detailed word help the old "Дэлгэрэнгүй хичээл" lesson had — automatically.
@@ -1146,14 +781,8 @@ function LearnerApp() {
       );
     });
 
-  // Listening player: stop speech when leaving the tab or switching clip,
-  // and cancel any in-flight utterance on unmount so it never keeps talking.
-  useEffect(() => {
-    if (activeTab !== 'listen') stopListening();
-  }, [activeTab]);
-  useEffect(() => {
-    stopListening();
-  }, [libListenId]);
+  // Cancel any in-flight utterance on unmount so it never keeps talking.
+  // (Per-clip / per-tab stops live inside tabs/ListenTab.tsx.)
   useEffect(() => () => stopTts(), []);
 
 
@@ -1372,71 +1001,6 @@ function LearnerApp() {
   };
 
 
-  // Vocabulary list card selections
-  const handleVocabAction = (knows: boolean) => {
-    if (!requireAccount()) return;
-    setVocabFlipped(false);
-    if (vocabList.length === 0) return;
-    const word = vocabList[currentVocabIndex];
-    const key = srsWordKey(word);
-    
-    const profile = currentUserRef.current;
-    if (profile) {
-      const currentSrsByWord = profile.srsByWord ?? {};
-      const prevEntry = currentSrsByWord[key];
-      const nextEntry = reviewSrs(prevEntry, knows);
-      
-      const nextSrs = {
-        ...currentSrsByWord,
-        [key]: nextEntry
-      };
-      
-      const actId = activityKey('vocab', word.rank ?? `${word.german}-${word.mongolian}`);
-      const nextCompleted = knows
-        ? Array.from(new Set([...(profile.completedActivityIds ?? []), actId]))
-        : (profile.completedActivityIds ?? []);
-      // A correct vocab review marks today as studied like every other activity;
-      // otherwise vocab-only days never reach studyDays and the streak breaks.
-      const nextStudyDays = knows
-        ? Array.from(new Set([...(profile.studyDays ?? []), localDateKey()])).sort()
-        : (profile.studyDays ?? []);
-
-      applyMetricProfile({
-        ...profile,
-        srsByWord: nextSrs,
-        completedActivityIds: nextCompleted,
-        studyDays: nextStudyDays,
-        lastActiveAt: new Date().toISOString(),
-      });
-    }
-
-    if (knows) {
-      setVocabMemorizedCount(prev => Math.min(prev + 1, vocabTotalCount));
-    }
-
-    // Advance after the flip-back animation. A known word just moves on; an
-    // unknown word is pulled out and reinserted a few cards ahead so it comes
-    // back around in this same session.
-    setTimeout(() => {
-      if (knows) {
-        setCurrentVocabIndex(prev => (prev + 1) % vocabList.length);
-        return;
-      }
-      const idx = currentVocabIndex;
-      setVocabList(prev => {
-        const next = [...prev];
-        const [again] = next.splice(idx, 1);
-        next.splice(Math.min(idx + VOCAB_REQUEUE_GAP, next.length), 0, again);
-        return next;
-      });
-      // Removing the current card shifts the next one into this index — except
-      // on the last card, where the reinsert lands back on itself; wrap then.
-      if (idx >= vocabList.length - 1) {
-        setCurrentVocabIndex(0);
-      }
-    }, 200);
-  };
-
   // Trigger main quick core quiz options (Screen 1 mock-flow helper)
   const submitCoreLessonAnswer = (optionIndex: number) => {
     setCoreLessonAnswer(optionIndex);
@@ -1449,15 +1013,15 @@ function LearnerApp() {
     }
   };
 
-  // Central function to launch activities from suggested sections or unit curriculum path
+  // Central function to launch activities from suggested sections or unit
+  // curriculum path. Only the cross-tab selection (item id + level filter) is
+  // set here; the per-attempt sub-state (question index, answers, reveals,
+  // draft text) lives inside each tab component and starts fresh on mount.
   const startActivity = (tab: 'read' | 'listen' | 'speak' | 'write', itemId: number) => {
     if (tab === 'read') {
       const item = READING_LIBRARY.find((r) => r.id === itemId);
       if (item) {
         setLibReadId(item.id);
-        setLibReadQIdx(0);
-        setLibReadAnswers({});
-        setLibReadTrans(false);
         setLibReadLevel(item.level);
         setActiveTab('read');
       }
@@ -1465,9 +1029,6 @@ function LearnerApp() {
       const item = LISTENING_LIBRARY.find((l) => l.id === itemId);
       if (item) {
         setLibListenId(item.id);
-        setLibListenQIdx(0);
-        setLibListenAnswers({});
-        setLibListenTrans(false);
         setLibListenLevel(item.level);
         setActiveTab('listen');
       }
@@ -1475,7 +1036,6 @@ function LearnerApp() {
       const item = SPEAKING_LIBRARY.find((s) => s.id === itemId);
       if (item) {
         setLibSpeakId(item.id);
-        setLibSpeakReveal(false);
         resetSpeakingJudge();
         setLibSpeakLevel(item.level);
         setActiveTab('speak');
@@ -1498,19 +1058,6 @@ function LearnerApp() {
     setMobileMenuOpen(false);
     resetSpeakingJudge();
     resetWritingFeedback();
-    
-    if (tab === 'vocab') {
-      // First visit: preselect the level the placement test suggested.
-      let level = trainerLevel;
-      if (!trainerLevelInitRef.current) {
-        trainerLevelInitRef.current = true;
-        if (placementSuggestedLevel) {
-          level = placementSuggestedLevel;
-          setTrainerLevel(level);
-        }
-      }
-      rebuildTrainerQueue(level);
-    }
   };
 
   // Count each browser once per day so the admin dashboard sees real traffic,
@@ -1567,21 +1114,6 @@ function LearnerApp() {
       return;
     }
     logOutUser().catch((err) => console.warn('Sign out failed:', err));
-  };
-
-  const loadPaymentMethods = async () => {
-    setPaymentMethodsLoading(true);
-    try {
-      const response = await fetch('/api/payments/methods');
-      if (!response.ok) throw new Error('Could not load payment methods.');
-      const data = await response.json();
-      setPaymentMethods(data);
-    } catch (err) {
-      console.warn('Payment methods load failed:', err);
-      setPaymentMessage({ type: 'error', text: 'Төлбөрийн сонголтуудыг ачаалж чадсангүй.' });
-    } finally {
-      setPaymentMethodsLoading(false);
-    }
   };
 
   // Teacher-promo lookup for the paywall (discount display + free-grant CTA).
@@ -1646,13 +1178,6 @@ function LearnerApp() {
     if (!currentUser.isGuest) loadMyPromo();
   }, [currentUser?.email, currentUser?.billing?.plan, currentUser?.isGuest, isTest]);
 
-  const getCurrentIdToken = async () => {
-    if (!isFirebaseConfigured) throw new Error('Firebase тохиргоо дутуу байна.');
-    const user = getAuthInstance().currentUser;
-    if (!user) throw new Error('Төлбөр эхлүүлэхийн тулд дахин нэвтэрнэ үү.');
-    return user.getIdToken();
-  };
-
   // Merge a billing object returned by the payments API into the local profile.
   const applyBillingUpdate = (billing: NonNullable<UserProfile['billing']>) => {
     if (!currentUserRef.current) return;
@@ -1667,171 +1192,19 @@ function LearnerApp() {
     setCurrentUser(nextProfile);
   };
 
-  // 100%-off teacher code: the server granted the subscription for free and
-  // returns billing with no checkout `url`. Reuse the exact billing-refresh path
-  // the paid success flow uses (applyBillingUpdate), close the paywall panels,
-  // and re-read the promo so its firstPaymentDone flips. Returns true if it
-  // handled a free grant (caller should stop).
-  const handleFreeGrant = (data: any): boolean => {
-    if (!data || data.free !== true || data.url) return false;
-    if (data.billing) applyBillingUpdate(data.billing);
-    setBylCheckout(null);
-    setDummyInvoice(null);
-    setPaymentMessage({ type: 'success', text: 'Урамшууллын кодоор танд үнэгүй эрх нээгдлээ 🎉' });
-    loadMyPromo();
-    return true;
-  };
-
-  const startBylCheckout = async (planId: 'pro' | 'max') => {
-    setPaymentActionLoading(true);
-    setPaymentMessage(null);
-    setDummyInvoice(null);
-    try {
-      const token = await getCurrentIdToken();
-      const response = await fetch('/api/payments/byl/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ plan: planId, interval: billingInterval }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Төлбөр эхлүүлэхэд алдаа гарлаа.');
-
-      // 100%-off teacher code: server already granted access (no URL to open) —
-      // refresh billing the same way the paid success path does and close out.
-      if (handleFreeGrant(data)) return;
-
-      setBylCheckout(data);
-      // Pop the hosted checkout right away; the panel keeps a link in case the
-      // browser blocked the popup.
-      if (data.url) window.open(data.url, '_blank', 'noopener');
-      setPaymentMessage({ type: 'info', text: 'Төлбөрийн хуудас нээгдлээ. QPay, SocialPay эсвэл Pocket-оор төлнө үү.' });
-    } catch (err: any) {
-      setPaymentMessage({ type: 'error', text: err?.message || 'Төлбөр эхлүүлэхэд алдаа гарлаа.' });
-    } finally {
-      setPaymentActionLoading(false);
-    }
-  };
-
-  // Dummy provider: creates a pending invoice, then "Төлбөр төлөх (туршилт)"
-  // simulates the bank confirmation and activates the plan — same Firestore
-  // billing flow live Byl uses, minus the real money.
-  const startDummyCheckout = async (planId: 'pro' | 'max') => {
-    setPaymentActionLoading(true);
-    setPaymentMessage(null);
-    setBylCheckout(null);
-    try {
-      const token = await getCurrentIdToken();
-      const response = await fetch('/api/payments/dummy/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ plan: planId, interval: billingInterval }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Туршилтын нэхэмжлэл үүсгэхэд алдаа гарлаа.');
-
-      // 100%-off teacher code path also short-circuits the dummy flow.
-      if (handleFreeGrant(data)) return;
-
-      setDummyInvoice(data);
-      setPaymentMessage({ type: 'info', text: 'Туршилтын нэхэмжлэл үүслээ. "Төлбөр төлөх (туршилт)" товчоор баталгаажуулна уу.' });
-    } catch (err: any) {
-      setPaymentMessage({ type: 'error', text: err?.message || 'Туршилтын нэхэмжлэл үүсгэхэд алдаа гарлаа.' });
-    } finally {
-      setPaymentActionLoading(false);
-    }
-  };
-
-  const payDummyInvoice = async () => {
-    if (!dummyInvoice) return;
-    setPaymentStatusLoading(true);
-    setPaymentMessage(null);
-    try {
-      const token = await getCurrentIdToken();
-      const response = await fetch(`/api/payments/dummy/invoices/${encodeURIComponent(dummyInvoice.senderInvoiceNo)}/pay`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Туршилтын төлбөр амжилтгүй боллоо.');
-
-      if (data.billing) applyBillingUpdate(data.billing);
-      setDummyInvoice(null);
-      setPaymentMessage({ type: 'success', text: `Туршилтын төлбөр амжилттай. ${PLANS[dummyInvoice.plan].name} багц идэвхтэй боллоо!` });
-    } catch (err: any) {
-      setPaymentMessage({ type: 'error', text: err?.message || 'Туршилтын төлбөр амжилтгүй боллоо.' });
-    } finally {
-      setPaymentStatusLoading(false);
-    }
-  };
-
-  // Byl if the merchant token is live, otherwise the dummy simulator.
-  const startCheckout = (planId: 'pro' | 'max') => {
-    if (paymentMethods?.byl.status === 'ready') return startBylCheckout(planId);
-    return startDummyCheckout(planId);
-  };
-
-  // Polls one Byl checkout; returns true once Byl reports it paid. Used by the
-  // manual "Одоо шалгах" button (silent=false) and the auto-poll loop below
-  // (silent=true — no "not yet paid" noise every few seconds).
-  const bylCheckoutRef = useRef<BylCheckoutResponse | null>(null);
-  bylCheckoutRef.current = bylCheckout;
-  const bylPollBusyRef = useRef(false);
-  const pollBylInvoice = async (silent: boolean): Promise<boolean> => {
-    const checkout = bylCheckoutRef.current;
-    if (!checkout || bylPollBusyRef.current) return false;
-    bylPollBusyRef.current = true;
-    if (!silent) {
-      setPaymentStatusLoading(true);
-      setPaymentMessage(null);
-    }
-    try {
-      const token = await getCurrentIdToken();
-      const response = await fetch(`/api/payments/byl/invoices/${encodeURIComponent(checkout.senderInvoiceNo)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Төлбөрийн төлөв шалгахад алдаа гарлаа.');
-
-      if (data.paid || data.status === 'paid') {
-        if (data.billing) applyBillingUpdate(data.billing);
-        setBylCheckout(null);
-        setPaymentMessage({ type: 'success', text: 'Төлбөр баталгаажлаа. Эрх идэвхтэй боллоо! 🎉' });
-        return true;
-      }
-      if (!silent) {
-        setPaymentMessage({ type: 'info', text: 'Төлбөр хараахан баталгаажаагүй байна. Төлбөрийн хуудсан дээр төлснөөс хойш хэдхэн секундэд автоматаар баталгаажна.' });
-      }
-      return false;
-    } catch (err: any) {
-      if (!silent) setPaymentMessage({ type: 'error', text: err?.message || 'Төлбөрийн төлөв шалгахад алдаа гарлаа.' });
-      return false;
-    } finally {
-      bylPollBusyRef.current = false;
-      if (!silent) setPaymentStatusLoading(false);
-    }
-  };
-  const checkBylPaymentStatus = () => pollBylInvoice(false);
-
-  // While a Byl checkout is open, auto-confirm: the learner pays on the hosted
-  // page, Byl clears it, and the plan activates here without any clicking.
-  // Polls every 4s for up to 15 minutes (then the manual button still works).
-  useEffect(() => {
-    if (!bylCheckout) return;
-    const startedAt = Date.now();
-    const timer = setInterval(async () => {
-      if (Date.now() - startedAt > 15 * 60 * 1000) { clearInterval(timer); return; }
-      const paid = await pollBylInvoice(true);
-      if (paid) clearInterval(timer);
-    }, 4000);
-    return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bylCheckout?.senderInvoiceNo]);
+  // Byl / dummy checkout + invoice polling — shared with the English track.
+  const {
+    paymentMethods, paymentMethodsLoading, loadPaymentMethods,
+    bylCheckout, setBylCheckout,
+    dummyInvoice,
+    paymentActionLoading, paymentStatusLoading,
+    paymentMessage, setPaymentMessage,
+    startCheckout, payDummyInvoice, checkBylPaymentStatus,
+  } = useBylCheckout({
+    applyBilling: applyBillingUpdate,
+    billingInterval,
+    onFreeGrant: loadMyPromo,
+  });
 
   // ---------------------------------------------------------------------------
   // Locked-feature card. Shown wherever the current plan doesn't cover a
@@ -2592,207 +1965,14 @@ function LearnerApp() {
       )}
 
       {/* Shared Sidebar - Visible on Desktop only */}
-      <nav aria-label="Desktop menu" className="hidden md:flex flex-col h-screen py-8 px-4 gap-y-6 bg-ink w-[280px] fixed left-0 top-0 text-paper border-r border-ink-line select-none z-30 shadow-[4px_0_24px_rgba(0,0,0,0.6)]">
-        <div>
-          <h1 className="text-2xl font-light tracking-tight font-serif flex items-center gap-2">
-            <BrandLogo className="w-8 h-8" />
-            <span><span className="text-paper">Vivid</span> <span className="text-paper-2">Lingua</span></span>
-          </h1>
-        </div>
-
-        {/* User Context Avatar Panel */}
-        {currentUser ? (
-          <div className="flex items-center gap-3 bg-ink-raise p-3 rounded-xl border border-ink-line cursor-pointer hover:bg-ink-raise transition-colors" onClick={() => selectTab('profile')}>
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-ink-line">
-              <img 
-                alt="Profile" 
-                className="w-full h-full object-cover bg-ink-2" 
-                src={currentUser.avatar}
-              />
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-[10px] font-black uppercase text-paper tracking-wider flex items-center gap-1">
-                <Target className="w-2.5 h-2.5" /> {currentUser.targetLevel} ТҮВШИН
-              </p>
-              <h2 className="text-[15px] font-extrabold truncate text-paper leading-tight">{currentUser.name}</h2>
-              <p className="text-[11px] text-paper-2 truncate leading-none mt-0.5">{currentUser.role}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 bg-ink-raise p-3 rounded-xl border border-ink-line">
-            <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-ink-line flex items-center justify-center bg-ink-raise text-paper-2">
-              <span className="material-symbols-outlined">account_circle</span>
-            </div>
-            <div>
-              <p className="text-xs text-paper-2">Сайн байна уу?</p>
-              <h2 className="text-[16px] font-bold">Нэвтрээгүй</h2>
-            </div>
-          </div>
-        )}
-
-        {/* Dynamic Streak Badge Card */}
-        <div>
-          <div className="bg-ink-raise text-paper text-[14px] font-bold rounded-xl px-4 py-3 flex items-center justify-between border border-ink-line">
-            <span className="flex items-center gap-2 text-paper-2">
-              <Flame className="w-5 h-5 text-paper fill-paper-2 animate-pulse" />
-              Streak: {streak} өдөр
-            </span>
-            <span className="text-[11px] font-serif bg-paper text-ink px-2.5 py-0.5 rounded-full font-extrabold uppercase tracking-wide">AUTO</span>
-          </div>
-        </div>
-
-        {/* Tabs Lists layout */}
-        <ul className="flex flex-col gap-2 flex-grow mt-2 overflow-y-auto pr-1">
-          {currentUser && (
-            <li>
-              <button 
-                onClick={() => selectTab('profile')}
-                className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                  activeTab === 'profile' 
-                    ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                    : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-                }`}
-              >
-                <Target className={`w-5 h-5 ${activeTab === 'profile' ? 'text-paper' : ''}`} />
-                <span className="text-[14px] font-bold">Хяналтын самбар</span>
-              </button>
-            </li>
-          )}
-          <li>
-            <button 
-              onClick={() => selectTab('read')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'read' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <BookOpen className={`w-5 h-5 ${activeTab === 'read' ? 'text-paper' : ''}`} />
-              <span className="text-[14px] font-bold">Унших</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('listen')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'listen' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Headphones className={`w-5 h-5 ${activeTab === 'listen' ? 'text-paper' : ''}`} />
-              <span className="text-[14px] font-bold">Сонсох</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('speak')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'speak' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Mic className={`w-5 h-5 ${activeTab === 'speak' ? 'text-paper' : ''}`} />
-              <span className="text-[14px] font-bold">Ярих</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('write')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'write' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Edit3 className={`w-5 h-5 ${activeTab === 'write' ? 'text-paper' : ''}`} />
-              <span className="text-[14px] font-bold">Бичих</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('vocab')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'vocab' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Languages className={`w-5 h-5 ${activeTab === 'vocab' ? 'text-paper' : ''}`} />
-              <span className="text-[14px] font-bold flex-grow flex justify-between items-center pr-4">
-                <span>Үгсийн сан</span>
-                {dueCount > 0 && (
-                  <span className="bg-paper text-ink text-[10px] font-bold font-serif px-2 py-0.5 rounded-full">
-                    {dueCount}
-                  </span>
-                )}
-              </span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('translate')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'translate' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Sparkles className={`w-5 h-5 ${activeTab === 'translate' ? 'text-paper text-paper' : ''}`} />
-              <span className="text-[14px] font-bold">Орчуулагч</span>
-            </button>
-          </li>
-          <li>
-            <button 
-              onClick={() => selectTab('exam')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'exam' 
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise' 
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <GraduationCap className={`w-5 h-5 ${activeTab === 'exam' ? 'text-paper' : ''} text-paper`} />
-              <span className="text-[14px] font-bold">Шалгалт</span>
-            </button>
-          </li>
-          <li>
-            <button
-              onClick={() => selectTab('friends')}
-              className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 transition-all rounded-r-lg group cursor-pointer ${
-                activeTab === 'friends'
-                  ? 'text-paper border-l-4 border-paper bg-ink-raise'
-                  : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-              }`}
-            >
-              <Swords className={`w-5 h-5 ${activeTab === 'friends' ? 'text-paper' : ''} text-paper`} />
-              <span className="text-[14px] font-bold">Найзууд</span>
-            </button>
-          </li>
-        </ul>
-
-        {/* Sidebar Settings Footer */}
-        <div className="border-t border-ink-line pt-4 flex flex-col gap-1">
-          <button 
-            onClick={() => selectTab('settings')}
-            className={`flex items-center gap-3 py-2 px-4 rounded-lg font-bold text-left transition-colors cursor-pointer ${
-              activeTab === 'settings' ? 'text-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'
-            }`}
-          >
-            <Settings className="w-4 h-4 text-paper-3" />
-            <span className="text-sm">Тохиргоо</span>
-          </button>
-          {currentUser && (
-            <button 
-              onClick={logoutUser}
-              className="flex items-center gap-3 py-2 px-4 rounded-lg font-bold text-left text-paper hover:text-paper-2 hover:bg-ink-raise transition-colors cursor-pointer w-full"
-            >
-              <LogOut className="w-4 h-4 text-paper-3" />
-              <span className="text-sm">Гарах</span>
-            </button>
-          )}
-        </div>
-      </nav>
+      <AppSidebar
+        currentUser={currentUser}
+        activeTab={activeTab}
+        selectTab={selectTab}
+        streak={streak}
+        dueCount={dueCount}
+        logoutUser={logoutUser}
+      />
 
       {/* Shared TopAppBar - Mobile Only */}
       <header className="md:hidden flex justify-between items-center w-full px-4 h-16 bg-ink-raise border-b-2 border-ink-line fixed top-0 left-0 z-40 shrink-0">
@@ -3064,2068 +2244,155 @@ function LearnerApp() {
 
           {/* Tab 1: Унших (Reading) - Screen 3 layout */}
           {activeTab === 'read' && (
-            <div className="w-full pb-24">
-
-
-              {/* LIBRARY browser — 50+ readings */}
-              {(() => {
-                const filtered = libReadLevel === 'all' ? READING_LIBRARY : READING_LIBRARY.filter(r => r.level === libReadLevel);
-                const item = READING_LIBRARY.find(r => r.id === libReadId) || READING_LIBRARY[0];
-                // Multi-question set: per-item questions get a stable per-question shuffle
-                // so the correct answer position can't be gamed ("always B").
-                const questions = getReadingQuestions(item).map((qq, qi) => shuffleQuiz(`read:${item.id}:${qi}`, qq));
-                const qIdx = Math.min(libReadQIdx, questions.length - 1);
-                const q = questions[qIdx];
-                const qAnswer = libReadAnswers[qIdx] ?? null;
-                const idxInFiltered = filtered.findIndex(r => r.id === item.id);
-                const openReadItem = (next: ReadingItem) => { setLibReadId(next.id); setLibReadQIdx(0); setLibReadAnswers({}); setLibReadTrans(readTranslateEnabled); };
-                return (
-                  <>
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    {/* List of readings */}
-                    <aside className="lg:col-span-4 border-2 border-ink-line rounded-xl p-4 block-shadow">
-                      <div className="flex gap-1 mb-3">
-                        {LIB_LEVELS.map(lv => (
-                          <button key={lv} onClick={() => setLibReadLevel(lv)}
-                            className={`flex-1 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${libReadLevel === lv ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2'}`}>
-                            {lv === 'all' ? 'Бүгд' : lv}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="nested-scroll flex flex-col gap-2 max-h-[55vh] max-lg:h-[45vh] max-lg:max-h-[45vh] pr-1">
-                        {filtered.map(r => {
-                          const isLocked = (lockedActivityIds.read.has(r.id) && r.level === currentUser?.targetLevel) || lessonPlanLocked(r.level, r.id, 'read');
-                          return (
-                            <button key={r.id} onClick={() => openReadItem(r)}
-                              className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libReadId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-paper text-ink shrink-0">{r.level}</span>
-                                <span className="text-xs font-bold text-paper truncate flex items-center gap-1.5">
-                                  {isLocked && <span>🔒</span>}
-                                  {r.titleMn}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-paper-2 mt-0.5 truncate">{r.title} · {r.topic}</p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </aside>
-
-                    {/* Reader */}
-                    <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
-                      {lessonPlanLocked(item.level, item.id, 'read') ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', 'Үнэгүй эрхээр зөвхөн A1 түвшний эхний хичээл болон үгийн сан нээлттэй. Бусад хичээлүүд Pro багцад нээгдэнэ.', 'pro') : lockedActivityIds.read.has(item.id) && item.level === currentUser?.targetLevel ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                          <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
-                            <Shield className="w-8 h-8" />
-                          </div>
-                          <h2 className="text-xl font-bold text-paper">🔒 Энэ дасгал түгжигдсэн байна</h2>
-                          <p className="text-sm text-paper-2 max-w-sm font-sans font-medium">
-                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
-                          </p>
-                          <button 
-                            onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-paper text-ink font-bold rounded-xl text-sm hover:bg-paper transition-all shadow-md cursor-pointer font-serif"
-                          >
-                            Сургалтын зам руу очих
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                            <div className="flex gap-2">
-                              <button onClick={() => speakGerman(item.text, audioSpeed === '0.8' ? 0.8 : 1.0)} title="Сонсох"
-                                className="p-2 border-2 border-ink-line rounded-full bg-ink-raise hover:scale-105 transition-transform text-paper block-shadow cursor-pointer">
-                                <Volume2 className="w-5 h-5" />
-                              </button>
-                              <button onClick={() => setLibReadTrans(v => !v)}
-                                className={`px-3 py-1 border-2 border-ink-line rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libReadTrans ? 'bg-paper text-ink' : 'bg-ink-raise text-paper'}`}>
-                                <Languages className="w-4 h-4" /> {libReadTrans ? 'Нуух' : 'Орчуулга'}
-                              </button>
-                            </div>
-                          </div>
-
-                          <h2 className="text-2xl md:text-3xl font-extrabold text-paper mb-1 tracking-tight">{item.title}</h2>
-                          <p className="text-sm text-paper-2 mb-5">{item.titleMn}</p>
-
-                          <p className="text-lg leading-relaxed text-paper whitespace-pre-line font-medium">{renderRichGerman(item.text)}</p>
-                          {libReadTrans && (
-                            <p className="text-sm leading-relaxed text-paper-2 whitespace-pre-line mt-4 pt-4 border-t border-ink-line/50 italic">{item.translation}</p>
-                          )}
-
-                          {/* Comprehension questions — multi-question set with prev/next */}
-                          <div className="mt-6 pt-5 border-t border-ink-line">
-                            <p className="text-xs font-serif font-bold uppercase text-paper mb-2">Ойлголт шалгах · Асуулт {qIdx + 1}/{questions.length}:</p>
-                            <p className="text-base font-bold text-paper mb-3">{q.question}</p>
-                            <div className="mb-4 flex flex-wrap gap-2">
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ink-raise border-2 border-ink-line text-xs font-semibold rounded-full font-serif block-shadow text-paper">
-                                <Lightbulb className="w-4 h-4 text-paper fill-paper-2" />
-                                {q.hint ?? 'Санамж: тодруулсан үг дээр дарж утга, дуудлагыг нь үзээрэй.'}
-                              </span>
-                            </div>
-                            <MCQBlock
-                              choices={q.choices}
-                              correctIndex={q.correctIndex}
-                              selectedAnswer={qAnswer}
-                              feedbackText={q.explanation}
-                              onSelect={(index) => {
-                                if (!requireAccount()) return;
-                                const nextAnswers = { ...libReadAnswers, [qIdx]: index };
-                                setLibReadAnswers(nextAnswers);
-                                const actId = activityKey('library:read', item.id);
-                                const profile = currentUserRef.current;
-                                if (index === q.correctIndex) {
-                                  // The activity counts as done once EVERY question is answered correctly.
-                                  const allCorrect = questions.every((qq, i) => nextAnswers[i] === qq.correctIndex);
-                                  if (allCorrect) {
-                                    recordStudyActivity(actId);
-                                    if (profile && profile.mistakeIds?.includes(actId)) {
-                                      applyMetricProfile({
-                                        ...profile,
-                                        mistakeIds: clearMistake(profile.mistakeIds, actId),
-                                      });
-                                    }
-                                  }
-                                } else if (profile) {
-                                  applyMetricProfile({
-                                    ...profile,
-                                    mistakeIds: addMistake(profile.mistakeIds, actId),
-                                  });
-                                }
-                              }}
-                            />
-                            {qAnswer !== null && qAnswer !== q.correctIndex && (
-                              <>
-                                <button
-                                  onClick={() => { const na = { ...libReadAnswers }; delete na[qIdx]; setLibReadAnswers(na); }}
-                                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                                  <RotateCcw className="w-3.5 h-3.5" /> Дахин оролдох
-                                </button>
-                                <GrammarTipCard
-                                  correctAnswer={q.choices[q.correctIndex]}
-                                  explanation={q.explanation}
-                                  germanContext={item.text}
-                                  level={item.level}
-                                />
-                              </>
-                            )}
-                            <QuizNav
-                              qIdx={qIdx}
-                              total={questions.length}
-                              answered={qAnswer !== null}
-                              onPrev={() => setLibReadQIdx(Math.max(0, qIdx - 1))}
-                              onNext={() => {
-                                if (qIdx < questions.length - 1) setLibReadQIdx(qIdx + 1);
-                                else if (filtered.length > 0) openReadItem(filtered[(Math.max(idxInFiltered, 0) + 1) % filtered.length]);
-                              }}
-                              nextLessonLabel={qIdx === questions.length - 1}
-                            />
-                          </div>
-
-                          {/* Prev/next lesson */}
-                          {idxInFiltered >= 0 && filtered.length > 1 && (
-                            <div className="flex items-center justify-between mt-6 pt-4 border-t border-ink-line">
-                              <button onClick={() => openReadItem(filtered[(idxInFiltered - 1 + filtered.length) % filtered.length])}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                                <ArrowLeft className="w-3.5 h-3.5" /> Өмнөх хичээл
-                              </button>
-                              <span className="text-[11px] font-serif font-bold text-paper-2">{idxInFiltered + 1} / {filtered.length}</span>
-                              <button onClick={() => openReadItem(filtered[(idxInFiltered + 1) % filtered.length])}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                                Дараах хичээл <ArrowRight className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </section>
-                  </div>
-                  <ExternalResourcesPanel skill="read" level={libReadLevel} />
-                  </>
-                );
-              })()}
-
-            </div>
+            <ReadTab
+              libReadId={libReadId}
+              setLibReadId={setLibReadId}
+              libReadLevel={libReadLevel}
+              setLibReadLevel={setLibReadLevel}
+              readTranslateEnabled={readTranslateEnabled}
+              audioSpeed={audioSpeed}
+              currentUser={currentUser}
+              currentUserRef={currentUserRef}
+              lockedActivityIds={lockedActivityIds}
+              lessonPlanLocked={lessonPlanLocked}
+              renderPlanLockCard={renderPlanLockCard}
+              selectTab={selectTab}
+              requireAccount={requireAccount}
+              recordStudyActivity={recordStudyActivity}
+              applyMetricProfile={applyMetricProfile}
+              speakGerman={speakGerman}
+              renderRichGerman={renderRichGerman}
+            />
           )}
 
           {/* Tab 2: Сонсох (Listening) - Screen 2 layout */}
           {activeTab === 'listen' && (
-            <div className="w-full pb-24">
-
-
-              {/* LIBRARY browser — 50+ listening clips */}
-              {(() => {
-                const filtered = libListenLevel === 'all' ? LISTENING_LIBRARY : LISTENING_LIBRARY.filter(r => r.level === libListenLevel);
-                const item = LISTENING_LIBRARY.find(r => r.id === libListenId) || LISTENING_LIBRARY[0];
-                const questions = getListeningQuestions(item).map((qq, qi) => shuffleQuiz(`listen:${item.id}:${qi}`, qq));
-                const qIdx = Math.min(libListenQIdx, questions.length - 1);
-                const q = questions[qIdx];
-                const qAnswer = libListenAnswers[qIdx] ?? null;
-                const idxInFiltered = filtered.findIndex(r => r.id === item.id);
-                const openListenItem = (next: ListeningItem) => { setLibListenId(next.id); setLibListenQIdx(0); setLibListenAnswers({}); setLibListenTrans(readTranslateEnabled); };
-                return (
-                  <>
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    <aside className="lg:col-span-4 border-2 border-ink-line rounded-xl p-4 block-shadow">
-                      <div className="flex gap-1 mb-3">
-                        {LIB_LEVELS.map(lv => (
-                          <button key={lv} onClick={() => setLibListenLevel(lv)}
-                            className={`flex-1 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${libListenLevel === lv ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2'}`}>
-                            {lv === 'all' ? 'Бүгд' : lv}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="nested-scroll flex flex-col gap-2 max-h-[55vh] max-lg:h-[45vh] max-lg:max-h-[45vh] pr-1">
-                        {filtered.map(r => {
-                          const isLocked = (lockedActivityIds.listen.has(r.id) && r.level === currentUser?.targetLevel) || lessonPlanLocked(r.level, r.id, 'listen');
-                          return (
-                            <button key={r.id} onClick={() => openListenItem(r)}
-                              className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libListenId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-paper text-ink shrink-0">{r.level}</span>
-                                <span className="text-xs font-bold text-paper truncate flex items-center gap-1.5">
-                                  {isLocked && <span>🔒</span>}
-                                  {r.titleMn}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-paper-2 mt-0.5 truncate">{r.title} · {r.topic}</p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </aside>
-
-                    <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
-                      {lessonPlanLocked(item.level, item.id, 'listen') ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', 'Үнэгүй эрхээр зөвхөн A1 түвшний эхний хичээл болон үгийн сан нээлттэй. Бусад хичээлүүд Pro багцад нээгдэнэ.', 'pro') : lockedActivityIds.listen.has(item.id) && item.level === currentUser?.targetLevel ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                          <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
-                            <Shield className="w-8 h-8" />
-                          </div>
-                          <h2 className="text-xl font-bold text-paper">🔒 Энэ дасгал түгжигдсэн байна</h2>
-                          <p className="text-sm text-paper-2 max-w-sm font-sans font-medium">
-                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
-                          </p>
-                          <button 
-                            onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-paper text-ink font-bold rounded-xl text-sm hover:bg-paper transition-all shadow-md cursor-pointer font-serif"
-                          >
-                            Сургалтын зам руу очих
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center justify-between mb-5">
-                            <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                            <button onClick={() => setLibListenTrans(v => !v)}
-                              className={`px-3 py-1 border-2 border-ink-line rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${libListenTrans ? 'bg-paper text-ink' : 'bg-ink-raise text-paper'}`}>
-                              <Languages className="w-4 h-4" /> {libListenTrans ? 'Нуух' : 'Текст'}
-                            </button>
-                          </div>
-
-                          <h2 className="text-xl md:text-2xl font-extrabold text-paper mb-1">{item.titleMn}</h2>
-                          <p className="text-xs text-paper-2 mb-5">{item.title}</p>
-
-                          {/* Play controls */}
-                          <div className="flex flex-col items-center gap-3 py-6 bg-ink-raise border-2 border-ink-line rounded-xl mb-5">
-                            <div className="flex items-center gap-4">
-                              {/* Replay from start */}
-                              <button onClick={() => { if (!requireAccount()) return; playListening(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0); }}
-                                title="Эхнээс дахин тоглуулах"
-                                className="w-11 h-11 rounded-full bg-ink-raise text-paper border-2 border-ink-line flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
-                                <RotateCcw className="w-5 h-5" />
-                              </button>
-                              {/* Play / Pause / Resume toggle */}
-                              <button onClick={() => {
-                                  if (!requireAccount()) return;
-                                  if (listenState === 'playing') pauseListening();
-                                  else if (listenState === 'paused') resumeListening();
-                                  else playListening(item.audioText, audioSpeed === '0.8' ? 0.8 : 1.0);
-                                }}
-                                title={listenState === 'playing' ? 'Түр зогсоох' : 'Тоглуулах'}
-                                className={`w-16 h-16 rounded-full bg-paper text-ink border-2 border-ink-line flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow ${listenState === 'playing' ? 'animate-pulse ring-4 ring-paper/30' : ''}`}>
-                                {listenState === 'playing' ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-0.5" />}
-                              </button>
-                            </div>
-                            <p className="text-xs text-paper-2 font-sans">
-                              {listenState === 'playing' ? 'Тоглож байна… дарж түр зогсоо' : listenState === 'paused' ? 'Түр зогссон… дарж үргэлжлүүл' : 'Сонсохын тулд тоглуулах товчийг дарна уу'}
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <button onClick={() => { setAudioSpeed('0.8'); if (listenState !== 'idle') playListening(item.audioText, 0.8); }}
-                                className={`px-3 py-1 rounded-full border-2 border-ink-line text-[11px] font-bold font-serif cursor-pointer block-shadow ${audioSpeed === '0.8' ? 'bg-ink-raise text-paper' : 'bg-ink-raise text-paper-2'}`}>
-                                0.8x (Удаан)
-                              </button>
-                              <button onClick={() => { setAudioSpeed('1.0'); if (listenState !== 'idle') playListening(item.audioText, 1.0); }}
-                                className={`px-3 py-1 rounded-full border-2 border-ink-line text-[11px] font-bold font-serif cursor-pointer block-shadow ${audioSpeed === '1.0' ? 'bg-ink-raise text-paper' : 'bg-ink-raise text-paper-2'}`}>
-                                1.0x (Хэвийн)
-                              </button>
-                            </div>
-                          </div>
-
-                          {libListenTrans && (
-                            <div className="bg-ink-raise border-l-4 border-ink-line rounded-lg p-3 mb-5">
-                              <p className="text-sm text-paper font-medium whitespace-pre-line">{renderRichGerman(item.audioText)}</p>
-                              <p className="text-xs text-paper-2 mt-2 pt-2 border-t border-ink-line/50 italic">{item.transcriptMn}</p>
-                            </div>
-                          )}
-
-                          {/* Comprehension — multi-question set with prev/next */}
-                          <div className="pt-5 border-t border-ink-line">
-                            <p className="text-xs font-serif font-bold uppercase text-paper mb-2">Ойлголт шалгах · Асуулт {qIdx + 1}/{questions.length}:</p>
-                            <p className="text-base font-bold text-paper mb-3">{q.question}</p>
-                            <div className="mb-4 flex flex-wrap gap-2">
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ink-raise border-2 border-ink-line text-xs font-semibold rounded-full font-serif block-shadow text-paper">
-                                <Lightbulb className="w-4 h-4 text-paper fill-paper-2" />
-                                {q.hint ?? 'Санамж: "Текст" товчийг дарж, тодруулсан үг дээр дарна уу.'}
-                              </span>
-                            </div>
-                            <MCQBlock
-                              choices={q.choices}
-                              correctIndex={q.correctIndex}
-                              selectedAnswer={qAnswer}
-                              feedbackText={q.explanation}
-                              onSelect={(index) => {
-                                if (!requireAccount()) return;
-                                const nextAnswers = { ...libListenAnswers, [qIdx]: index };
-                                setLibListenAnswers(nextAnswers);
-                                const actId = activityKey('library:listen', item.id);
-                                const profile = currentUserRef.current;
-                                if (index === q.correctIndex) {
-                                  const allCorrect = questions.every((qq, i) => nextAnswers[i] === qq.correctIndex);
-                                  if (allCorrect) {
-                                    recordStudyActivity(actId);
-                                    if (profile && profile.mistakeIds?.includes(actId)) {
-                                      applyMetricProfile({
-                                        ...profile,
-                                        mistakeIds: clearMistake(profile.mistakeIds, actId),
-                                      });
-                                    }
-                                  }
-                                } else if (profile) {
-                                  applyMetricProfile({
-                                    ...profile,
-                                    mistakeIds: addMistake(profile.mistakeIds, actId),
-                                  });
-                                }
-                              }}
-                            />
-                            {qAnswer !== null && qAnswer !== q.correctIndex && (
-                              <>
-                                <button
-                                  onClick={() => { const na = { ...libListenAnswers }; delete na[qIdx]; setLibListenAnswers(na); }}
-                                  className="mt-4 flex items-center gap-2 px-4 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                                  <RotateCcw className="w-3.5 h-3.5" /> Дахин оролдох
-                                </button>
-                                <GrammarTipCard
-                                  correctAnswer={q.choices[q.correctIndex]}
-                                  explanation={q.explanation}
-                                  germanContext={item.audioText}
-                                  level={item.level}
-                                />
-                              </>
-                            )}
-                            <QuizNav
-                              qIdx={qIdx}
-                              total={questions.length}
-                              answered={qAnswer !== null}
-                              onPrev={() => setLibListenQIdx(Math.max(0, qIdx - 1))}
-                              onNext={() => {
-                                if (qIdx < questions.length - 1) setLibListenQIdx(qIdx + 1);
-                                else if (filtered.length > 0) openListenItem(filtered[(Math.max(idxInFiltered, 0) + 1) % filtered.length]);
-                              }}
-                              nextLessonLabel={qIdx === questions.length - 1}
-                            />
-                          </div>
-
-                          {/* Prev/next lesson */}
-                          {idxInFiltered >= 0 && filtered.length > 1 && (
-                            <div className="flex items-center justify-between mt-6 pt-4 border-t border-ink-line">
-                              <button onClick={() => openListenItem(filtered[(idxInFiltered - 1 + filtered.length) % filtered.length])}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                                <ArrowLeft className="w-3.5 h-3.5" /> Өмнөх хичээл
-                              </button>
-                              <span className="text-[11px] font-serif font-bold text-paper-2">{idxInFiltered + 1} / {filtered.length}</span>
-                              <button onClick={() => openListenItem(filtered[(idxInFiltered + 1) % filtered.length])}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                                Дараах хичээл <ArrowRight className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </section>
-                  </div>
-                  <ExternalResourcesPanel skill="listen" level={libListenLevel} />
-                  </>
-                );
-              })()}
-
-            </div>
+            <ListenTab
+              libListenId={libListenId}
+              setLibListenId={setLibListenId}
+              libListenLevel={libListenLevel}
+              setLibListenLevel={setLibListenLevel}
+              readTranslateEnabled={readTranslateEnabled}
+              audioSpeed={audioSpeed}
+              setAudioSpeed={setAudioSpeed}
+              currentUser={currentUser}
+              currentUserRef={currentUserRef}
+              lockedActivityIds={lockedActivityIds}
+              lessonPlanLocked={lessonPlanLocked}
+              renderPlanLockCard={renderPlanLockCard}
+              selectTab={selectTab}
+              requireAccount={requireAccount}
+              recordStudyActivity={recordStudyActivity}
+              applyMetricProfile={applyMetricProfile}
+              renderRichGerman={renderRichGerman}
+            />
           )}
 
           {/* Tab 3: Ярих (Speaking) - Screen 4 layout */}
           {activeTab === 'speak' && (
-            <div className="w-full pb-24">
-
-
-              {/* LIBRARY browser — 50+ speaking prompts */}
-              {(() => {
-                const filtered = libSpeakLevel === 'all' ? SPEAKING_LIBRARY : SPEAKING_LIBRARY.filter(r => r.level === libSpeakLevel);
-                const item = SPEAKING_LIBRARY.find(r => r.id === libSpeakId) || SPEAKING_LIBRARY[0];
-                const idxInFiltered = filtered.findIndex(r => r.id === item.id);
-                const openSpeakItem = (next: SpeakingItem) => { setLibSpeakId(next.id); setLibSpeakReveal(false); resetSpeakingJudge(); };
-                return (
-                  <>
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    <aside className="lg:col-span-4 border-2 border-ink-line rounded-xl p-4 block-shadow">
-                      <div className="flex gap-1 mb-3">
-                        {LIB_LEVELS.map(lv => (
-                          <button key={lv} onClick={() => setLibSpeakLevel(lv)}
-                            className={`flex-1 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${libSpeakLevel === lv ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2'}`}>
-                            {lv === 'all' ? 'Бүгд' : lv}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="nested-scroll flex flex-col gap-2 max-h-[55vh] max-lg:h-[45vh] max-lg:max-h-[45vh] pr-1">
-                        {filtered.map(r => {
-                          const isLocked = (lockedActivityIds.speak.has(r.id) && r.level === currentUser?.targetLevel) || lessonPlanLocked(r.level, r.id, 'speak');
-                          return (
-                            <button key={r.id} onClick={() => openSpeakItem(r)}
-                              className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libSpeakId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-paper text-ink shrink-0">{r.level}</span>
-                                <span className="text-xs font-bold text-paper truncate flex items-center gap-1.5">
-                                  {isLocked && <span>🔒</span>}
-                                  {r.titleMn}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-paper-2 mt-0.5 truncate">{r.title} · {r.topic}</p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </aside>
-
-                    <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
-                      {lessonPlanLocked(item.level, item.id, 'speak') ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', 'Үнэгүй эрхээр зөвхөн A1 түвшний эхний хичээл болон үгийн сан нээлттэй. Бусад хичээлүүд Pro багцад нээгдэнэ.', 'pro') : lockedActivityIds.speak.has(item.id) && item.level === currentUser?.targetLevel ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                          <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
-                            <Shield className="w-8 h-8" />
-                          </div>
-                          <h2 className="text-xl font-bold text-paper">🔒 Энэ дасгал түгжигдсэн байна</h2>
-                          <p className="text-sm text-paper-2 max-w-sm font-sans font-medium">
-                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
-                          </p>
-                          <button 
-                            onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-paper text-ink font-bold rounded-xl text-sm hover:bg-paper transition-all shadow-md cursor-pointer font-serif"
-                          >
-                            Сургалтын зам руу очих
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                          <h2 className="text-xl md:text-2xl font-extrabold text-paper mt-4 mb-1">{item.titleMn}</h2>
-                          <p className="text-xs text-paper-2 mb-4">{item.title}</p>
-
-                      {/* Task prompt */}
-                      <div className="bg-ink-raise border-l-4 border-ink-line rounded-lg p-4 mb-5">
-                        <p className="text-xs font-serif font-bold uppercase text-paper mb-1">Даалгавар:</p>
-                        <p className="text-base font-bold text-paper">{item.prompt}</p>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 mb-5">
-                        <button onClick={() => { if (!requireAccount()) return; speakGerman(item.modelAnswer, 1.0); }}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform">
-                          <Volume2 className="w-4 h-4" /> Загварыг сонсох
-                        </button>
-                        <button onClick={() => setLibSpeakReveal(v => !v)}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                          <Lightbulb className="w-4 h-4 text-paper fill-current" /> {libSpeakReveal ? 'Нуух' : 'Загвар хариулт харах'}
-                        </button>
-                      </div>
-
-                      {/* Tips */}
-                      <div className="mb-2">
-                        <p className="text-[11px] font-serif font-bold uppercase text-paper-2 mb-2">Хэрэгтэй хэллэг:</p>
-                        <div className="flex flex-col gap-1.5">
-                          {item.tips.map((t, i) => (
-                            <div key={i} className="flex items-start gap-2 text-xs text-paper">
-                              <span className="text-paper-2 font-black">›</span>{t}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {libSpeakReveal && (
-                        <div className="bg-ink-raise/40 border-2 border-ink-line rounded-lg p-4 mt-4">
-                          <p className="text-[10px] font-bold uppercase text-paper-2 mb-1">Загвар хариулт:</p>
-                          <p className="text-base text-paper font-medium leading-relaxed">{renderRichGerman(item.modelAnswer)}</p>
-                          <p className="text-xs text-paper-2 mt-2 italic leading-relaxed">{item.modelMn}</p>
-                        </div>
-                      )}
-                      <p className="text-[11px] text-paper-2 mt-4 italic">Зөвлөмж: эхлээд өөрөө чангаар хэлж үзээд, дараа нь загвартай харьцуулаарай.</p>
-
-                      {/* AI judge — graded against this item's model answer. Every imported
-                          speaking resource gets it automatically because it is data-driven. */}
-                      {renderSpeakingJudge(item.modelAnswer)}
-                      {renderSpeakingReport(item.modelAnswer)}
-
-                      {/* Prev/next lesson */}
-                      {idxInFiltered >= 0 && filtered.length > 1 && (
-                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-ink-line">
-                          <button onClick={() => openSpeakItem(filtered[(idxInFiltered - 1 + filtered.length) % filtered.length])}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                            <ArrowLeft className="w-3.5 h-3.5" /> Өмнөх хичээл
-                          </button>
-                          <span className="text-[11px] font-serif font-bold text-paper-2">{idxInFiltered + 1} / {filtered.length}</span>
-                          <button onClick={() => openSpeakItem(filtered[(idxInFiltered + 1) % filtered.length])}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                            Дараах хичээл <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </section>
-              </div>
-                  <ExternalResourcesPanel skill="speak" level={libSpeakLevel} />
-                  </>
-                );
-              })()}
-
-            </div>
+            <SpeakTab
+              libSpeakId={libSpeakId}
+              setLibSpeakId={setLibSpeakId}
+              libSpeakLevel={libSpeakLevel}
+              setLibSpeakLevel={setLibSpeakLevel}
+              currentUser={currentUser}
+              lockedActivityIds={lockedActivityIds}
+              lessonPlanLocked={lessonPlanLocked}
+              renderPlanLockCard={renderPlanLockCard}
+              selectTab={selectTab}
+              requireAccount={requireAccount}
+              speakGerman={speakGerman}
+              renderRichGerman={renderRichGerman}
+              renderSpeakingJudge={renderSpeakingJudge}
+              renderSpeakingReport={renderSpeakingReport}
+              resetSpeakingJudge={resetSpeakingJudge}
+            />
           )}
 
           {/* Tab 4: Бичих (Writing) - Screen 6 layout */}
           {activeTab === 'write' && (
-            <div className="w-full pb-24">
-
-
-              {/* LIBRARY browser — 50+ writing tasks */}
-              {(() => {
-                const filtered = libWriteLevel === 'all' ? WRITING_LIBRARY : WRITING_LIBRARY.filter(r => r.level === libWriteLevel);
-                const item = WRITING_LIBRARY.find(r => r.id === libWriteId) || WRITING_LIBRARY[0];
-                const words = libWriteText.trim() ? libWriteText.trim().split(/\s+/).length : 0;
-                const idxInFiltered = filtered.findIndex(r => r.id === item.id);
-                const openWriteItem = (next: WritingItem) => { setLibWriteId(next.id); setLibWriteText(''); setLibWriteReveal(false); resetWritingFeedback(); };
-                return (
-                  <>
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    <aside className="lg:col-span-4 border-2 border-ink-line rounded-xl p-4 block-shadow">
-                      <div className="flex gap-1 mb-3">
-                        {LIB_LEVELS.map(lv => (
-                          <button key={lv} onClick={() => setLibWriteLevel(lv)}
-                            className={`flex-1 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${libWriteLevel === lv ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2'}`}>
-                            {lv === 'all' ? 'Бүгд' : lv}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="nested-scroll flex flex-col gap-2 max-h-[55vh] max-lg:h-[45vh] max-lg:max-h-[45vh] pr-1">
-                        {filtered.map(r => {
-                          const isLocked = (lockedActivityIds.write.has(r.id) && r.level === currentUser?.targetLevel) || lessonPlanLocked(r.level, r.id, 'write');
-                          return (
-                            <button key={r.id} onClick={() => openWriteItem(r)}
-                              className={`text-left p-2.5 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${r.id === libWriteId ? 'bg-ink-raise' : 'bg-ink-raise hover:bg-ink-2'}`}>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-paper text-ink shrink-0">{r.level}</span>
-                                <span className="text-xs font-bold text-paper truncate flex items-center gap-1.5">
-                                  {isLocked && <span>🔒</span>}
-                                  {r.titleMn}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-paper-2 mt-0.5 truncate">{r.title} · {r.topic}</p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </aside>
-
-                    <section className="lg:col-span-8 border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow text-paper">
-                      {lessonPlanLocked(item.level, item.id, 'write') ? renderPlanLockCard('Энэ хичээл Pro багцад нээлттэй', 'Үнэгүй эрхээр зөвхөн A1 түвшний эхний хичээл болон үгийн сан нээлттэй. Бусад хичээлүүд Pro багцад нээгдэнэ.', 'pro') : lockedActivityIds.write.has(item.id) && item.level === currentUser?.targetLevel ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-                          <div className="w-16 h-16 rounded-full bg-ink-2 flex items-center justify-center text-paper-2">
-                            <Shield className="w-8 h-8" />
-                          </div>
-                          <h2 className="text-xl font-bold text-paper">🔒 Энэ дасгал түгжигдсэн байна</h2>
-                          <p className="text-sm text-paper-2 max-w-sm font-sans font-medium">
-                            Шалгалт өгөх эсвэл өмнөх хэсгийг дуусгаж нээнэ үү.
-                          </p>
-                          <button 
-                            onClick={() => selectTab('profile')}
-                            className="px-5 py-2.5 bg-paper text-ink font-bold rounded-xl text-sm hover:bg-paper transition-all shadow-md cursor-pointer font-serif"
-                          >
-                            Сургалтын зам руу очих
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{item.level} · {item.topic}</span>
-                          <h2 className="text-xl md:text-2xl font-extrabold text-paper mt-4 mb-1">{item.titleMn}</h2>
-                          <p className="text-xs text-paper-2 mb-4">{item.title}</p>
-
-                      <div className="bg-ink-raise rounded-lg p-4 mb-4">
-                        <p className="text-xs font-serif font-bold uppercase text-paper mb-1">Даалгавар:</p>
-                        <p className="text-sm font-bold text-paper mb-2">{item.prompt}</p>
-                        <ul className="text-xs text-paper-2 space-y-1 list-disc list-inside">
-                          {item.points.map((p, i) => <li key={i}>{p}</li>)}
-                        </ul>
-                      </div>
-
-                      <textarea value={libWriteText} onChange={(e) => setLibWriteText(e.target.value)}
-                        placeholder="Энд герман хэлээр бичнэ үү..." rows={6} maxLength={2000}
-                        className="w-full px-3 py-2 text-sm border-2 border-ink-line rounded-lg bg-ink-raise text-paper placeholder:text-paper-3 outline-none focus:border-ink-line resize-y" />
-
-                      <div className="flex items-center justify-between mt-3">
-                        <span className="text-[11px] text-paper-2">{words} үг</span>
-                        <button onClick={() => setLibWriteReveal(v => !v)}
-                          className="px-4 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-xs cursor-pointer block-shadow hover:scale-[1.02] transition-transform flex items-center gap-1">
-                          <Lightbulb className="w-3.5 h-3.5 text-paper fill-current" /> {libWriteReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
-                        </button>
-                      </div>
-
-                      {libWriteReveal && (
-                        <div className="bg-ink-raise/40 border-2 border-ink-line rounded-lg p-4 mt-4">
-                          <p className="text-[10px] font-bold uppercase text-paper-2 mb-1">Загвар хариулт:</p>
-                          <p className="text-sm text-paper whitespace-pre-line leading-relaxed font-medium">{renderRichGerman(item.modelAnswer)}</p>
-                          <p className="text-xs text-paper-2 whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-ink-line/30 italic">{item.modelMn}</p>
-                        </div>
-                      )}
-
-                      {/* AI writing check — flags wrong grammar / words and recommends
-                          better wording. Data-driven, so new imports get it automatically. */}
-                      {renderWritingChecker(libWriteText, { prompt: item.prompt, points: item.points, modelAnswer: item.modelAnswer, level: item.level })}
-
-                      {/* Prev/next lesson */}
-                      {idxInFiltered >= 0 && filtered.length > 1 && (
-                        <div className="flex items-center justify-between mt-6 pt-4 border-t border-ink-line">
-                          <button onClick={() => openWriteItem(filtered[(idxInFiltered - 1 + filtered.length) % filtered.length])}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                            <ArrowLeft className="w-3.5 h-3.5" /> Өмнөх хичээл
-                          </button>
-                          <span className="text-[11px] font-serif font-bold text-paper-2">{idxInFiltered + 1} / {filtered.length}</span>
-                          <button onClick={() => openWriteItem(filtered[(idxInFiltered + 1) % filtered.length])}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border-2 border-ink-line bg-ink-raise text-paper font-bold text-xs font-serif cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                            Дараах хичээл <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </section>
-              </div>
-                  <ExternalResourcesPanel skill="write" level={libWriteLevel} />
-                  </>
-            );
-              })()}
-
-            </div>
+            <WriteTab
+              libWriteId={libWriteId}
+              setLibWriteId={setLibWriteId}
+              libWriteLevel={libWriteLevel}
+              setLibWriteLevel={setLibWriteLevel}
+              currentUser={currentUser}
+              lockedActivityIds={lockedActivityIds}
+              lessonPlanLocked={lessonPlanLocked}
+              renderPlanLockCard={renderPlanLockCard}
+              selectTab={selectTab}
+              renderRichGerman={renderRichGerman}
+              renderWritingChecker={renderWritingChecker}
+              resetWritingFeedback={resetWritingFeedback}
+            />
           )}
 
           {/* Tab 5: Үгсийн сан (Vocabulary) — Trainer (flashcards) + Dictionary (browse) */}
           {activeTab === 'vocab' && (
-          <div className="mt-4 animate-fade-in">
-
-            {/* Sub-view toggle: flashcard Trainer vs in-app Dictionary */}
-            <div className="flex w-full sm:w-auto sm:inline-flex p-1.5 bg-ink-raise border-2 border-ink-line rounded-2xl block-shadow mb-6">
-              <button
-                onClick={() => setVocabView('trainer')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-serif text-sm transition-all cursor-pointer ${
-                  vocabView === 'trainer' ? 'bg-paper text-ink border-2 border-ink-line block-shadow-green' : 'text-paper-2 hover:bg-ink-raise'
-                }`}
-              >
-                <RotateCcw className="w-4 h-4" />
-                Дасгал
-              </button>
-              <button
-                onClick={() => setVocabView('browse')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-serif text-sm transition-all cursor-pointer ${
-                  vocabView === 'browse' ? 'bg-paper text-ink border-2 border-ink-line block-shadow-green' : 'text-paper-2 hover:bg-ink-raise'
-                }`}
-              >
-                <Library className="w-4 h-4" />
-                Толь бичиг
-              </button>
-            </div>
-
-            {vocabView === 'trainer' && (
-            <>
-            {/* Trainer level filter (A1 → C2) + placement-based suggestion */}
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="text-xs font-serif font-bold text-paper-3 uppercase tracking-wider mr-1">Түвшин:</span>
-              {LEVEL_OPTIONS.map((lvl) => (
-                <button
-                  key={lvl}
-                  onClick={() => selectTrainerLevel(lvl)}
-                  className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                    trainerLevel === lvl ? 'bg-paper text-ink' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
-                  }`}
-                >
-                  {lvl === 'all' ? 'Бүгд' : lvl}
-                  {lvl !== 'all' && lvl === placementSuggestedLevel && (
-                    <span className="ml-1.5 text-[10px] uppercase opacity-80">★</span>
-                  )}
-                </button>
-              ))}
-              {placementSuggestedLevel && (
-                <span className="text-xs font-bold text-paper-2 font-sans ml-1">
-                  ★ Түвшин тогтоох шалгалтын дүнгээр танд {placementSuggestedLevel} түвшний үгсийг санал болгож байна
-                </span>
-              )}
-            </div>
-
-            {vocabList.length === 0 ? (
-              <div className="rounded-2xl border-2 border-ink-line p-10 block-shadow text-center">
-                <p className="font-bold text-paper-2 font-sans">
-                  Энэ түвшинд дасгал хийх үг алга. Өөр түвшин сонгоно уу.
-                </p>
-              </div>
-            ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-              {/* Central carousel card element block */}
-              <div className="lg:col-span-8 flex flex-col items-center justify-center min-h-[500px]">
-                
-                {/* Visual tactile card flip display wrapper */}
-                <div 
-                  onClick={() => setVocabFlipped(prev => !prev)}
-                  className="w-full max-w-2xl aspect-[4/3] sm:aspect-video perspective-1000 cursor-pointer"
-                >
-                  <div className="relative w-full h-full transform-style-3d border-2 border-ink-line rounded-2xl block-shadow">
-                    
-                    {/* FRONT of the card (displays German word) - Backface hidden layout */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-ink-2 text-paper rounded-2xl flex flex-col items-center justify-between p-8 transition-transform duration-500 transform-style-3d ${
-                      vocabFlipped ? '[transform:rotateY(-180deg)]' : '[transform:rotateY(0deg)]'
-                    }`}>
-                      <span className="text-xs font-serif font-bold text-paper-2 uppercase tracking-wider px-3 py-1 bg-ink-raise border border-ink-line rounded-full">
-                        Шинэ үг
-                      </span>
-                      
-                      <div className="flex flex-col items-center gap-4">
-                        {vocabList[currentVocabIndex].article && (
-                          <span className={`text-base font-black lowercase tracking-widest px-4 py-1 rounded-full border-2 border-ink-line block-shadow ${
-                            vocabList[currentVocabIndex].article === 'der' ? 'bg-ink-raise text-paper-2' :
-                            vocabList[currentVocabIndex].article === 'die' ? 'bg-ink-raise text-paper-2' :
-                            'bg-ink-raise text-paper-2'
-                          }`}>
-                            {vocabList[currentVocabIndex].article}
-                          </span>
-                        )}
-                        <h2 className="text-4xl sm:text-5xl font-black text-paper text-center font-sans tracking-tight">
-                          {vocabList[currentVocabIndex].german}
-                        </h2>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const w = vocabList[currentVocabIndex];
-                            speakGerman(w.article ? `${w.article} ${w.german}` : w.german);
-                          }}
-                          className="p-4 rounded-full bg-ink-raise hover:bg-ink-2 border-2 border-ink-line hover:scale-110 text-paper-2 transition-all block-shadow cursor-pointer flex items-center justify-center"
-                        >
-                          <Volume2 className="w-8 h-8 font-black stroke-[2.5px]" />
-                        </button>
-                      </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setVocabFlipped(true);
-                        }}
-                        className="mb-2 px-6 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
-                      >
-                        Хариултыг харах ↺
-                      </button>
-                    </div>
-
-                    {/* BACK of the card (displays Mongolian definitions & explanations) */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-ink-2 text-paper rounded-2xl flex flex-col items-center justify-between p-8 border-2 border-ink-line shadow-black/40 transition-transform duration-500 transform-style-3d ${
-                      vocabFlipped ? '[transform:rotateY(0deg)]' : '[transform:rotateY(180deg)]'
-                    }`}>
-                      <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise px-3 py-1 border border-ink-line rounded-full uppercase tracking-wider">
-                        {vocabList[currentVocabIndex].category}
-                      </span>
-
-                      <div className="flex flex-col items-center gap-6 w-full max-w-md">
-                        <h2 className="text-3xl font-extrabold text-paper text-center font-sans tracking-tight">
-                          {vocabList[currentVocabIndex].mongolian}
-                        </h2>
-                        
-                        <div className="w-full bg-ink-raise p-4 rounded-xl border-2 border-ink-line block-shadow text-center">
-                          <p className="text-sm leading-normal text-paper-2 italic mb-2 font-sans font-bold">
-                            "{vocabList[currentVocabIndex].exampleGerman}"
-                          </p>
-                          <p className="text-sm font-bold text-paper-2 leading-normal font-sans">
-                            {vocabList[currentVocabIndex].exampleMongolian}
-                          </p>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setVocabFlipped(false);
-                        }}
-                        className="mb-2 px-6 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
-                      >
-                        Үгийг харах ↺
-                      </button>
-                    </div>
-
-                  </div>
-                </div>
-
-                {/* Display tactile repeat-repeat actions buttons on flipped cards */}
-                <div className={`flex flex-col sm:flex-row gap-4 mt-8 w-full max-w-2xl transition-opacity duration-300 ${
-                  vocabFlipped ? 'opacity-100 pointer-events-auto' : 'opacity-30 pointer-events-none'
-                }`}>
-                  <button
-                    onClick={() => handleVocabAction(false)}
-                    className="flex-1 basis-0 flex items-center justify-center gap-2 border-2 border-ink-line text-paper hover:bg-ink-raise0 hover:text-paper py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-orange cursor-pointer transition-all active:scale-95"
-                  >
-                    <RotateCcw className="w-5 h-5 font-black" />
-                    Дахин давтах
-                  </button>
-                  <button
-                    onClick={() => handleVocabAction(true)}
-                    className="flex-1 basis-0 flex items-center justify-center gap-2 bg-paper border-2 border-ink-line text-ink hover:bg-white py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-green cursor-pointer transition-all active:scale-95"
-                  >
-                    <CheckCircle className="w-5 h-5 font-black fill-current" />
-                    Мэднэ
-                  </button>
-                </div>
-
-              </div>
-
-              {/* Right Sidebar: Progression Circular SVG & upcoming word panels */}
-              <aside className="lg:col-span-4 flex flex-col gap-6">
-                {/* SVGs Progress tracking ring list items */}
-                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow flex flex-col items-center">
-                  <h3 className="text-lg font-bold text-paper mb-6 w-full font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
-                    Өнөөдрийн явц
-                  </h3>
-                  
-                  <div className="relative w-40 h-40 mb-4 flex items-center justify-center select-none">
-                    {/* SVG circular calculation */}
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle 
-                        className="text-paper-2 stroke-current" 
-                        cx="80" 
-                        cy="80" 
-                        fill="transparent" 
-                        r="60" 
-                        strokeWidth="10"                      ></circle>
-                      <circle 
-                        className="text-paper-2 stroke-current progress-ring__circle transition-all duration-500" 
-                        cx="80" 
-                        cy="80" 
-                        fill="transparent" 
-                        r="60" 
-                        strokeWidth="10"
-                        strokeDasharray={376.8}
-                        strokeDashoffset={376.8 - (376.8 * vocabMemorizedCount) / vocabTotalCount}
-                        strokeLinecap="round"                      ></circle>
-                    </svg>
-                    
-                    {/* Central counter summary text */}
-                    <div className="absolute flex flex-col items-center justify-center text-center">
-                      <span className="text-3xl font-extrabold text-paper font-serif">
-                        {vocabMemorizedCount}/{vocabTotalCount}
-                      </span>
-                      <span className="text-xs font-bold text-paper-3 uppercase font-serif">Цээжилсэн үг</span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between w-full mt-4 text-xs font-serif font-bold border-t border-ink-line pt-4">
-                    <div className="flex items-center gap-2 text-paper-2">
-                      <div className="w-3 h-3 rounded-full bg-paper"></div>
-                      <span>Мэдэхгүй</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-paper-2">
-                      <div className="w-3 h-3 rounded-full bg-ink-raise"></div>
-                      <span>Цээжилсэн</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Carousel Upcoming Cards lists previews */}
-                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                  <h3 className="text-lg font-bold text-paper mb-4 font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
-                    Дараагийн үгс
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {/* Show the current word + a short upcoming window (the dictionary has 200+ words) */}
-                    {Array.from({ length: Math.min(12, vocabList.length) }).map((_, i) => {
-                      const idx = (currentVocabIndex + i) % vocabList.length;
-                      const item = vocabList[idx];
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setVocabFlipped(false);
-                            setCurrentVocabIndex(idx);
-                          }}
-                          className={`px-3 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                            idx === currentVocabIndex
-                              ? 'bg-ink-raise text-paper border-ink-line'
-                              : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
-                          }`}
-                        >
-                          {item.german}
-                        </button>
-                      );
-                    })}
-                    <span className="px-3 py-1.5 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold text-paper-2 blur-[0.5px] opacity-70">
-                      ...
-                    </span>
-                  </div>
-                </div>
-
-                {/* Resource card — opens the in-app dictionary (Browse) */}
-                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                  <h3 className="text-lg font-bold text-paper mb-2 font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
-                    Нэмэлт эх сурвалж
-                  </h3>
-                  <p className="text-xs text-paper-2 mb-4 leading-normal font-sans">
-                    Илүү олон герман үг, жишээ өгүүлбэрийг апп дотроос шууд хайж, түвшингээр шүүж үзээрэй.
-                  </p>
-                  <button
-                    onClick={() => setVocabView('browse')}
-                    className="w-full flex items-center justify-center gap-2 bg-paper text-ink border-2 border-ink-line py-3 px-4 rounded-xl font-bold font-sans text-sm block-shadow-green cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
-                  >
-                    <Library className="w-4 h-4" />
-                    Толь бичиг нээх ({DICTIONARY.length})
-                  </button>
-                </div>
-              </aside>
-
-            </div>
-            )}
-            </>
-            )}
-
-            {/* Dictionary (Browse) — searchable, filterable German→Mongolian word list */}
-            {vocabView === 'browse' && (
-            <div className="flex flex-col gap-6 pb-24">
-
-              {/* Header + search + filters */}
-              <div className="rounded-2xl border-2 border-ink-line p-6 block-shadow flex flex-col gap-5">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div>
-                    <h2 className="text-2xl font-light text-paper font-serif flex items-center gap-2">
-                      <Library className="w-6 h-6 text-paper-2" />
-                      Герман–Монгол толь бичиг
-                    </h2>
-                    <p className="text-xs text-paper-2 font-sans mt-1">
-                      Нийт {DICTIONARY.length} үг · хайж, төрөл болон түвшингээр шүүнэ
-                    </p>
-                  </div>
-                </div>
-
-                {/* Search box */}
-                <div className="relative">
-                  <Search className="w-5 h-5 text-paper-3 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={dictSearch}
-                    onChange={(e) => setDictSearch(e.target.value)}
-                    placeholder="Герман эсвэл монгол үгээр хайх..."
-                    className="w-full bg-ink-raise border-2 border-ink-line rounded-xl pl-12 pr-10 py-3 text-md font-bold text-paper focus:border-ink-line outline-none transition-all placeholder:text-paper-3 placeholder:font-normal shadow-inner"
-                  />
-                  {dictSearch && (
-                    <button
-                      onClick={() => setDictSearch('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-paper-3 hover:text-paper cursor-pointer"
-                      title="Цэвэрлэх"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Word-class filter chips */}
-                <div className="flex flex-wrap gap-2">
-                  {WORD_CLASS_LABELS.map((c) => (
-                    <button
-                      key={c.value}
-                      onClick={() => setDictClass(c.value)}
-                      className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                        dictClass === c.value ? 'bg-ink-raise text-paper' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
-                      }`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Level filter chips */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-serif font-bold text-paper-3 uppercase tracking-wider mr-1">Түвшин:</span>
-                  {LEVEL_OPTIONS.map((lvl) => (
-                    <button
-                      key={lvl}
-                      onClick={() => setDictLevel(lvl)}
-                      className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
-                        dictLevel === lvl ? 'bg-paper text-ink' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
-                      }`}
-                    >
-                      {lvl === 'all' ? 'Бүгд' : lvl}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Results count */}
-              <div className="flex items-center justify-between px-1">
-                <span className="text-sm font-bold text-paper-2 font-serif">
-                  {filteredDictionary.length} үг олдлоо
-                </span>
-              </div>
-
-              {/* Word cards grid */}
-              {filteredDictionary.length === 0 ? (
-                <div className="rounded-2xl border-2 border-ink-line p-12 block-shadow text-center">
-                  <HelpCircle className="w-12 h-12 text-paper-3 mx-auto mb-3" />
-                  <p className="text-paper-2 font-bold font-sans">Тохирох үг олдсонгүй.</p>
-                  <p className="text-xs text-paper-3 mt-1">Хайлт эсвэл шүүлтүүрээ өөрчилж үзнэ үү.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {filteredDictionary.slice(0, dictVisible).map((w, idx) => (
-                      <div
-                        key={`${w.german}-${idx}`}
-                        className="rounded-xl border-2 border-ink-line p-5 block-shadow flex flex-col gap-3 hover:-translate-y-0.5 transition-transform"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          {w.article ? (
-                            <span className={`text-sm font-black lowercase tracking-widest px-3 py-0.5 rounded-full border-2 border-ink-line ${
-                              w.article === 'der' ? 'bg-ink-raise text-paper-2' :
-                              w.article === 'die' ? 'bg-ink-raise text-paper-2' :
-                              'bg-ink-raise text-paper-2'
-                            }`}>
-                              {w.article}
-                            </span>
-                          ) : (
-                            <span className="text-[11px] font-serif font-bold text-paper-2 bg-ink-raise px-2.5 py-1 border border-ink-line rounded-full uppercase tracking-wider">
-                              {WORD_CLASS_LABELS.find((c) => c.value === w.wordClass)?.label || ''}
-                            </span>
-                          )}
-                          <span className="text-[11px] font-serif font-extrabold text-paper-2 bg-ink-raise px-2.5 py-1 border border-ink-line rounded-full">
-                            {w.level}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <h3 className="text-2xl font-black text-paper font-sans tracking-tight leading-tight truncate">
-                              {w.german}
-                            </h3>
-                            {w.phonetic && (
-                              <p className="text-xs text-paper-2/70 font-mono mt-0.5">{w.phonetic}</p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => speakGerman(w.article ? `${w.article} ${w.german}` : w.german)}
-                            className="shrink-0 p-2.5 rounded-full bg-ink-raise hover:bg-ink-2 border-2 border-ink-line hover:scale-110 text-paper-2 transition-all cursor-pointer"
-                            title="Дуудлага сонсох"
-                          >
-                            <Volume2 className="w-5 h-5 stroke-[2.5px]" />
-                          </button>
-                        </div>
-
-                        {/* Meaning: Mongolian once translated, otherwise the English gloss. */}
-                        {w.mongolian.trim() ? (
-                          <p className="text-base font-bold text-paper-2 font-sans">{w.mongolian}</p>
-                        ) : (
-                          <p className="text-base font-bold text-paper-2 font-sans">
-                            {w.english}
-                            <span className="ml-1.5 text-[10px] font-serif font-bold text-paper-3 align-middle">EN</span>
-                          </p>
-                        )}
-                        {w.wordClass === 'noun' && w.plural && (
-                          <p className="text-xs text-paper-2/80 font-sans -mt-1">
-                            Олон тоо: <span className="font-bold">die {w.plural}</span>
-                          </p>
-                        )}
-
-                        {w.exampleGerman.trim() && (
-                          <div className="mt-auto bg-ink-raise p-3 rounded-lg border border-ink-line">
-                            <p className="text-xs leading-normal text-paper-2 italic font-sans font-semibold mb-1">
-                              „{w.exampleGerman}“
-                            </p>
-                            <p className="text-xs text-paper-2/80 leading-normal font-sans">
-                              {w.exampleMongolian}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Load more */}
-                  {dictVisible < filteredDictionary.length && (
-                    <div className="flex justify-center mt-2">
-                      <button
-                        onClick={() => setDictVisible((n) => n + 24)}
-                        className="flex items-center gap-2 border-2 border-ink-line text-paper hover:bg-ink-raise py-3 px-8 rounded-xl font-bold font-sans text-sm block-shadow cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
-                      >
-                        <ChevronRight className="w-4 h-4 rotate-90" />
-                        Цааш үзэх ({filteredDictionary.length - dictVisible})
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-
-              <p className="text-center text-[11px] text-paper-3 font-sans mt-2">
-                Vocabeo.com-ийн загвараар бүтээв
-              </p>
-            </div>
-            )}
-
-          </div>
+            <VocabTab
+              TRAINER_WORDS={TRAINER_WORDS}
+              placementSuggestedLevel={placementSuggestedLevel}
+              currentUserRef={currentUserRef}
+              requireAccount={requireAccount}
+              applyMetricProfile={applyMetricProfile}
+              speakGerman={speakGerman}
+            />
           )}
 
           {/* Tab: Орчуулагч (Professional Translation & Lingua Helper) */}
-          {/* AI translator: Free/Pro spend monthly teaser uses, Max is unlimited.
-              Once the teaser runs out the upgrade card replaces the workspace. */}
-          {activeTab === 'translate' && !aiUsable && (
-            <div className="max-w-2xl mx-auto w-full pb-24 animate-fade-in">
-              {renderPlanLockCard(
-                'AI Орчуулагч',
-                aiLockDesc('Дүрмийн задаргаатай ухаалаг орчуулагч'),
-                'max',
-              )}
-            </div>
-          )}
-          {activeTab === 'translate' && aiUsable && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pb-24 animate-fade-in font-sans">
-              <div className="lg:col-span-12">{renderAiTeaserBanner()}</div>
-              
-              {/* Left Side: Translation Workspace */}
-              <div className="lg:col-span-12 xl:col-span-7 flex flex-col gap-6">
-                <div className="rounded-xl p-6 md:p-8 border-2 border-ink-line block-shadow relative">
-                  
-                  {/* Neon top accent */}
-                  <div className="absolute top-0 left-0 w-full h-[5px] bg-paper rounded-t-xl"></div>
-                  
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-paper fill-paper-2 animate-pulse" />
-                      <h2 className="text-2xl font-light text-paper font-serif">
-                        Орчуулагч
-                      </h2>
-                    </div>
-                    <span className="text-[11px] font-serif font-extrabold bg-ink-raise text-paper-2 px-3 py-1 rounded-full border border-ink-line uppercase tracking-widest">
-                      PRO
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-paper-2 mb-4 leading-relaxed font-sans">
-                    Энгийн орчуулгын системүүд шиг шууд холбож орчуулахгүй, энэхүү ухаалаг систем нь өгүүлбэрийн зүй, үгс тус бүрийн хувирал, дуудлагыг дүрмийн тайлбартай хамт гаргаж заах сургалтын зориулалттай.
-                  </p>
-
-                  <div className="relative">
-                    <textarea 
-                      value={translationInput}
-                      onChange={(e) => setTranslationInput(e.target.value)}
-                      placeholder="Орчуулах герман эсвэл монгол өгүүлбэрээ энд бичнэ үү..."
-                      className="w-full min-h-[120px] bg-ink-raise border-2 border-ink-line font-bold rounded-xl p-4 text-md text-paper focus:border-ink-line outline-none transition-all placeholder:text-paper-3 resize-none shadow-inner"
-                    />
-                    {translationInput && (
-                      <button 
-                        onClick={() => setTranslationInput('')}
-                        className="absolute right-3 top-3 text-[12px] text-paper-3 font-bold border border-ink-line bg-ink-raise hover:bg-ink-2 px-2.5 py-1 rounded-md transition-all cursor-pointer"
-                        title="Арилгах"
-                      >
-                        Цэвэрлэх
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Sample Phrases cards */}
-                  <div className="mt-4">
-                    <p className="text-xs font-bold text-paper-3 font-serif mb-2 uppercase">Туршиж үзэх жишээ өгүүлбэрүүд:</p>
-                    <div className="flex flex-col gap-2">
-                      <button 
-                        onClick={() => {
-                          setTranslationInput('Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche.');
-                          translateText('Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche.');
-                        }}
-                        className="text-left py-2 px-3 bg-ink-raise border border-ink-line rounded-lg hover:border-ink-line text-xs font-semibold hover:bg-ink-2 text-paper-2 transition-all flex justify-between items-center group cursor-pointer"
-                      >
-                        <span>🇩🇪 "Ich trinke jeden Morgen eine große Tasse Kaffee in der Küche."</span>
-                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-paper" />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setTranslationInput('Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална.');
-                          translateText('Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална.');
-                        }}
-                        className="text-left py-2 px-3 bg-ink-raise border border-ink-line rounded-lg hover:border-ink-line text-xs font-semibold hover:bg-ink-2 text-paper-2 transition-all flex justify-between items-center group cursor-pointer"
-                      >
-                        <span>🇲🇳 "Өнөөдөр цаг агаар сайхан байгаа тул бид цэцэрлэгт хүрээлэнд зугаална."</span>
-                        <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-all text-paper" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex justify-end gap-3">
-                    <button 
-                      onClick={() => translateText()}
-                      disabled={translationLoading || !translationInput.trim()}
-                      className="px-6 py-3 border-2 border-ink-line text-sm font-bold bg-ink-raise text-paper-2 rounded-xl hover:bg-ink-raise transition-all cursor-pointer block-shadow flex items-center gap-2 border-ink-line disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {translationLoading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-ink-line border-t-transparent rounded-full animate-spin"></div>
-                          Орчуулж байна...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 fill-current text-paper" />
-                          Нэгдсэн Орчуулга Хийх
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {translationError && (
-                    <div className="mt-4 p-4 border border-ink-line bg-ink-raise rounded-xl text-paper-2 text-xs font-bold leading-relaxed flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-paper shrink-0" />
-                      <span>{translationError}</span>
-                    </div>
-                  )}
-
-                </div>
-              </div>
-
-              {/* Right Side: Translation Details & Deep Linguistic breakdown */}
-              <div className="lg:col-span-12 xl:col-span-5 flex flex-col gap-6">
-                
-                {translationLoading ? (
-                  <div className="rounded-xl border-2 border-ink-line p-8 block-shadow h-[400px] flex flex-col items-center justify-center text-center">
-                    <div className="relative mb-6">
-                      <div className="w-16 h-16 border-4 border-ink-line border-t-amber-500 rounded-full animate-spin"></div>
-                      <Sparkles className="w-6 h-6 text-paper absolute inset-0 m-auto animate-pulse" />
-                    </div>
-                    <h3 className="text-lg font-bold text-paper font-serif mb-2">Герман Хэлний Үйлчилгээ</h3>
-                    <p className="text-xs text-paper-2 max-w-xs leading-normal">
-                      Өгүүлбэрийг орчуулж, үгс бүрийн үндсэн хэлбэрийг олох болон хэл зүйн бүтцийг судалж байна.
-                    </p>
-                  </div>
-                ) : translationResult ? (
-                  <div className="flex flex-col gap-6 animate-scale-up">
-                    
-                    {/* Translation Core Card */}
-                    <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                      <div className="flex justify-between items-center pb-3 border-b border-ink-line mb-4">
-                        <span className="text-xs font-medium uppercase tracking-widest text-paper-2 bg-ink-raise px-2.5 py-1 rounded-md border border-ink-line">
-                          Илэрсэн хэл: {translationResult.detectedLanguage === 'German' ? '🇩🇪 Герман' : '🇲🇳 Монгол'}
-                        </span>
-                        <div className="flex gap-2">
-                          {translationResult.detectedLanguage === 'German' || translationResult.detectedLanguage === 'german' ? (
-                            <button 
-                              onClick={() => speakGerman(translationInput)}
-                              className="w-8 h-8 rounded-full bg-ink-raise border border-ink-line hover:bg-ink-2 flex items-center justify-center text-paper-2 cursor-pointer"
-                              title="Германаар уншуулах"
-                            >
-                              <Volume2 className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={() => speakGerman(translationResult.translation)}
-                              className="w-8 h-8 rounded-full bg-ink-raise border border-ink-line hover:bg-ink-2 flex items-center justify-center text-paper-2 cursor-pointer"
-                              title="Орчуулгыг германаар уншуулах"
-                            >
-                              <Volume2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mb-4">
-                        <p className="text-[10px] uppercase font-bold text-paper-3 font-serif tracking-wide mb-1">Гүйцэтгэсэн Орчуулга:</p>
-                        <p className="text-lg font-black text-paper leading-snug">
-                          {translationResult.translation}
-                        </p>
-                      </div>
-
-                      {translationResult.pronunciation && (
-                        <div className="mb-1 p-3 bg-ink-raise border border-ink-line rounded-lg">
-                          <p className="text-[10px] uppercase font-bold text-paper-3 font-serif tracking-wide mb-0.5">Унших удирдамж:</p>
-                          <code className="text-xs font-mono font-bold text-paper-2 bg-ink-raise px-1.5 py-0.5 rounded border border-ink-line">
-                            {translationResult.pronunciation}
-                          </code>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Linguistic Grammar Explanation Card */}
-                    <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                      <h3 className="text-sm font-medium text-paper-2 font-serif mb-3 flex items-center gap-2">
-                        <Lightbulb className="w-4 h-4 text-paper fill-paper-2 animate-pulse" />
-                        БҮТЭЦ & ДҮРМИЙН ТАЙЛБАР:
-                      </h3>
-                      <p className="text-xs leading-relaxed text-paper-2 font-sans">
-                        {translationResult.grammarExplanation}
-                      </p>
-                    </div>
-
-                    {/* Vocabulary Parsing List */}
-                    <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                      <h3 className="text-sm font-medium text-paper-2 font-serif mb-4 pb-2 border-b border-ink-line uppercase tracking-wider">
-                        Үгсийн бүтэц (Дэлгэрэнгүй):
-                      </h3>
-                      <div className="flex flex-col gap-3">
-                        {translationResult.words && translationResult.words.map((w, index) => (
-                          <div key={index} className="flex flex-col gap-1 p-2.5 bg-ink-raise border border-ink-line rounded-lg text-xs hover:border-ink-line transition-all">
-                            <div className="flex justify-between items-center">
-                              <span className="font-extrabold text-paper">{w.word}</span>
-                              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-ink-raise text-paper-2">
-                                {w.partOfSpeech}
-                              </span>
-                            </div>
-                            <div className="text-[11px] text-paper-2 flex justify-between mt-1">
-                              <span>Толь бичгийн хэлбэр: <strong className="text-paper-2">{w.baseForm}</strong></span>
-                              <span>= <strong className="text-paper">{w.translation}</strong></span>
-                            </div>
-                            <p className="text-[10.5px] text-paper-3 leading-normal mt-1 border-t border-dashed border-ink-line pt-1">
-                              {w.explanation}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Context Examples */}
-                    {translationResult.examples && translationResult.examples.length > 0 && (
-                      <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                        <h3 className="text-sm font-medium text-paper font-serif mb-3 uppercase tracking-wider">
-                          Холбогдох Жишээнүүд:
-                        </h3>
-                        <div className="space-y-3">
-                          {translationResult.examples.map((ex, idx) => (
-                            <div key={idx} className="p-3 bg-ink-raise rounded-xl border border-ink-line">
-                              <p className="text-xs font-bold text-paper-2">🇩🇪 {ex.german}</p>
-                              <p className="text-xs text-paper-2 mt-1">🇲🇳 {ex.mongolian}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                  </div>
-                ) : (
-                  <div className="rounded-xl border-2 border-ink-line p-8 block-shadow h-[320px] flex flex-col items-center justify-center text-center relative overflow-hidden group">
-                    <div className="w-16 h-16 rounded-full bg-ink-raise border border-ink-line flex items-center justify-center text-paper-2 mb-4 transition-all group-hover:scale-110">
-                      <Languages className="w-8 h-8 text-paper" />
-                    </div>
-                    <h3 className="text-lg font-bold text-paper font-serif mb-2">Үгийн Шинжилгээ Ба Орчуулга</h3>
-                    <p className="text-xs text-paper-2 max-w-xs leading-normal font-sans">
-                      Зүүн талбар дахь өгүүлбэрийг орчуулсны дараа энд дэлгэрэнгүй толь бичиг, дуудлагын зөвлөмжүүд болон дүрэм харагдах болно.
-                    </p>
-                  </div>
-                )}
-
-              </div>
-
-            </div>
+          {activeTab === 'translate' && (
+            <TranslateTab
+              aiUsable={aiUsable}
+              renderPlanLockCard={renderPlanLockCard}
+              aiLockDesc={aiLockDesc}
+              renderAiTeaserBanner={renderAiTeaserBanner}
+              aiAuthHeaders={aiAuthHeaders}
+              refreshAiQuota={refreshAiQuota}
+              setAiQuota={setAiQuota}
+              speakGerman={speakGerman}
+            />
           )}
 
           {/* Tab 8: Шалгалт — CEFR түвшний шалгалтууд (A1–C2) */}
           {activeTab === 'exam' && (
-            <div className="w-full pb-24 animate-fade-in">
-
-              {/* Header */}
-              <div className="flex items-center gap-3 pb-4 border-b border-ink-line mb-6 text-paper">
-                <GraduationCap className="w-8 h-8 text-paper" />
-                <div>
-                  <h2 className="text-2xl font-extrabold font-serif text-paper">Шалгалт</h2>
-                  <p className="text-xs text-paper-2 font-mono">CEFR түвшин (A1–C2) · Унших · Сонсох · Бичих · Ярих</p>
-                </div>
-              </div>
-
-              {/* LEVEL SELECTOR */}
-              {examLevelSel === null && (
-                <>
-                  {/* Түвшин тогтоох үнэлгээний тест — 4 ур чадвар, CEFR түвшин */}
-                  <button onClick={() => { if (!requireAccount()) return; setPlacementOpen(true); }}
-                    className="w-full text-left mb-4 bg-gradient-to-br from-ink-raise to-ink-2 border-2 border-ink-line rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-ink-raise border-2 border-ink-line flex items-center justify-center shrink-0">
-                        <Sparkles className="w-7 h-7 text-paper-2" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-lg md:text-xl font-light font-serif text-paper">Түвшин тогтоох тест</h3>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-paper text-ink">Einstufungstest</span>
-                        </div>
-                        <p className="text-xs text-paper leading-relaxed mt-1">Дөрвөн ур чадварыг бүгдийг шалгаад <b className="text-paper">CEFR түвшнээ</b> (A1–C2) тогтоолгоно. Асуултууд таны түвшинд автоматаар тохирно. 10–15 минут.</p>
-                        <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-paper bg-ink-raise border border-ink-line px-3 py-1 rounded-full">Тест эхлүүлэх <ArrowRight className="w-3.5 h-3.5" /></span>
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* TestDaF бүрэн загвар шалгалтын симуляци — Pro ба түүнээс дээш багцад. */}
-                  <button onClick={() => fullContent ? setTestdafOpen(true) : setActiveTab('profile')}
-                    className="w-full text-left mb-6 bg-gradient-to-br from-ink-raise to-ink-2 border-2 border-ink-line rounded-2xl p-5 md:p-6 block-shadow hover:scale-[1.01] active:scale-95 transition-transform cursor-pointer">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-ink-raise border-2 border-ink-line flex items-center justify-center shrink-0">
-                        <GraduationCap className="w-7 h-7 text-paper-2" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-lg md:text-xl font-light font-serif text-paper">TestDaF — Бүрэн загвар шалгалт</h3>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-paper text-ink">Prüfungssimulation</span>
-                        </div>
-                        <p className="text-xs text-paper leading-relaxed mt-1">Жинхэнэ шалгалтын бүтэц: <b className="text-paper">Унших</b> 60′/30, <b className="text-paper">Сонсох</b> 40′/25, <b className="text-paper">Бичих</b> 60′/график-эссэ, <b className="text-paper">Ярих</b> 35′/7 ситуаци. Цаг хэмжсэн, дараалсан, AI үнэлгээтэй.</p>
-                        <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-paper bg-ink-raise border border-ink-line px-3 py-1 rounded-full">
-                          {fullContent ? <>Симуляци эхлүүлэх <ArrowRight className="w-3.5 h-3.5" /></> : <><Lock className="w-3.5 h-3.5" /> Pro багцаар нээгдэнэ</>}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-
-                  <p className="text-sm text-paper-2 mb-5 max-w-2xl">Эсвэл <b className="text-paper">CEFR түвшнээ</b> сонгоно уу. Түвшин бүр <b className="text-paper">Унших, Сонсох, Бичих, Ярих</b> гэсэн дөрвөн хэсэгтэй бөгөөд хэсэг бүрт 5+ тест байна. Доош нь A1 хамгийн хялбар, C2 хамгийн хүнд.</p>
-
-                  {/* Free tier: only the first N questions of the bank are open. */}
-                  {!fullContent && (
-                    <div className="flex items-start gap-3 mb-5 p-4 bg-ink-raise/60 border-2 border-ink-line rounded-xl block-shadow max-w-2xl">
-                      <Lock className="w-5 h-5 text-paper shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-extrabold text-paper">Үнэгүй эрхээр A1 шалгалт бүрийн (унших/сонсох/бичих/ярих) эхний {FREE_QUESTIONS_PER_SECTION} асуулт нээлттэй.</p>
-                        <p className="text-xs text-paper-2 mt-1">
-                          Бүх түвшний {EXAM_LEVEL_ORDER.reduce((n, lv) => n + EXAMS[lv].reading.length + EXAMS[lv].listening.length + EXAMS[lv].writing.length + EXAMS[lv].speaking.length, 0)} тестийг бүрэн нээхийн тулд{' '}
-                          <button onClick={() => setActiveTab('profile')} className="font-bold text-paper-2 underline cursor-pointer">Pro эсвэл Max багц</button> аваарай.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {EXAM_LEVEL_ORDER.map((lv) => {
-                      const ex = EXAMS[lv];
-                      const total = ex.reading.length + ex.listening.length + ex.writing.length + ex.speaking.length;
-                      return (
-                        <button key={lv} onClick={() => { setExamLevelSel(lv); selectExamSection('reading'); }}
-                          className="text-left border-2 border-ink-line rounded-xl p-5 block-shadow hover:scale-[1.02] active:scale-95 transition-transform cursor-pointer">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-3xl font-light font-serif text-paper">{lv}</span>
-                            <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-paper text-ink">{total} тест</span>
-                          </div>
-                          <p className="text-sm font-extrabold text-paper-2 mb-1">{ex.titleMn}</p>
-                          <p className="text-xs text-paper-2 leading-relaxed">{ex.descriptionMn}</p>
-                          <div className="flex items-center gap-2 mt-3 text-paper-2">
-                            <BookOpen className="w-4 h-4" /><Headphones className="w-4 h-4" /><Edit3 className="w-4 h-4" /><Mic className="w-4 h-4" />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-
-              {/* LEVEL EXAM (4 sections, each with 5+ tests) */}
-              {examLevelSel !== null && (() => {
-                const exam = EXAMS[examLevelSel];
-                const items = exam[examSec];
-                const item = items[Math.min(examItemIdx, items.length - 1)];
-                const answered = examItemAns !== null;
-                // Free plan: only the first FREE_QUESTIONS_PER_SECTION questions
-                // of each A1 section (reading/listening/writing/speaking).
-                const itemLocked = isExamQuestionLocked(currentUser, examLevelSel, examSec, Math.min(examItemIdx, items.length - 1));
-                const sections = [
-                  { key: 'reading' as const, icon: BookOpen, mn: 'Унших' },
-                  { key: 'listening' as const, icon: Headphones, mn: 'Сонсох' },
-                  { key: 'writing' as const, icon: Edit3, mn: 'Бичих' },
-                  { key: 'speaking' as const, icon: Mic, mn: 'Ярих' },
-                ];
-                return (
-                  <div className="font-sans">
-                    {/* Back + level title */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <button onClick={() => { stopTts(); setExamLevelSel(null); }}
-                        className="px-3 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-xl font-bold text-xs cursor-pointer block-shadow hover:bg-ink-2 transition-colors flex items-center gap-1">
-                        <ArrowLeft className="w-4 h-4" /> Түвшнүүд
-                      </button>
-                      <span className="text-lg font-light font-serif text-paper">{examLevelSel} · {exam.titleMn}</span>
-                    </div>
-
-                    {/* Section tabs */}
-                    <div className="grid grid-cols-4 gap-2 mb-5">
-                      {sections.map((s) => {
-                        const Icon = s.icon; const active = examSec === s.key;
-                        return (
-                          <button key={s.key} onClick={() => selectExamSection(s.key)}
-                            className={`flex flex-col items-center gap-1 py-2.5 px-1 rounded-lg border-2 border-ink-line cursor-pointer transition-colors ${active ? 'bg-paper text-ink' : 'bg-ink-raise text-paper-2 hover:bg-ink-2'}`}>
-                            <Icon className="w-4 h-4" />
-                            <span className="text-[10px] font-bold font-serif">{s.mn} ({exam[s.key].length})</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Test selector chips — a lock marks questions beyond the free limit. */}
-                    <div className="flex flex-wrap gap-2 mb-5">
-                      {items.map((_, i) => {
-                        const locked = isExamQuestionLocked(currentUser, examLevelSel, examSec, i);
-                        return (
-                          <button key={i} onClick={() => selectExamItem(i)}
-                            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg border-2 border-ink-line text-xs font-bold cursor-pointer transition-colors ${examItemIdx === i ? 'bg-ink-raise text-paper' : locked ? 'bg-ink-raise text-paper-2 opacity-60 hover:opacity-80' : 'bg-ink-raise text-paper-2 hover:bg-ink-2'}`}>
-                            {locked && <Lock className="w-3 h-3" />} Тест {i + 1}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Detail card */}
-                    <div className="border-2 border-ink-line rounded-xl p-6 md:p-8 block-shadow">
-                      {itemLocked ? renderPlanLockCard(
-                        `Тест ${examItemIdx + 1} түгжээтэй`,
-                        `Үнэгүй эрхээр A1 шалгалт бүрийн эхний ${FREE_QUESTIONS_PER_SECTION} асуулт нээлттэй. Энэ тестийг нээхийн тулд Pro эсвэл Max багц аваарай.`,
-                        'pro',
-                      ) : (<>
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise border border-ink-line px-3 py-1.5 rounded-full">{examLevelSel} · {(item as ExamItem).topic}</span>
-                        {(examSec === 'reading' || examSec === 'listening') && (
-                          <div className="flex gap-2">
-                            {examSec === 'reading' && (
-                              <button onClick={() => { if (!requireAccount()) return; speakGerman((item as typeof exam.reading[number]).text, audioSpeed === '0.8' ? 0.8 : 1.0); }} title="Сонсох"
-                                className="p-2 border-2 border-ink-line rounded-full bg-ink-raise hover:scale-105 transition-transform text-paper block-shadow cursor-pointer">
-                                <Volume2 className="w-5 h-5" />
-                              </button>
-                            )}
-                            <button onClick={() => setExamItemTrans(v => !v)}
-                              className={`px-3 py-1 border-2 border-ink-line rounded-full font-bold text-xs block-shadow cursor-pointer hover:scale-105 transition-transform flex items-center gap-1 ${examItemTrans ? 'bg-paper text-ink' : 'bg-ink-raise text-paper'}`}>
-                              <Languages className="w-4 h-4" /> {examItemTrans ? 'Нуух' : (examSec === 'reading' ? 'Орчуулга' : 'Текст')}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      <h3 className="text-xl md:text-2xl font-extrabold text-paper mb-1">{(item as ExamItem).titleMn}</h3>
-                      <p className="text-xs text-paper-2 mb-5">{(item as ExamItem).title}</p>
-
-                      {/* READING */}
-                      {examSec === 'reading' && (() => {
-                        const r = item as typeof exam.reading[number];
-                        const sq = shuffleQuiz(`exam:${exam.level}:reading:${r.id}`, { question: r.question, choices: r.choices, correctIndex: r.correctIndex });
-                        return (
-                          <>
-                            <p className="text-lg leading-relaxed text-paper whitespace-pre-line font-medium">{r.text}</p>
-                            {examItemTrans && <p className="text-sm leading-relaxed text-paper-2 whitespace-pre-line mt-4 pt-4 border-t border-ink-line/50 italic">{r.translation}</p>}
-                            <div className="mt-6 pt-5 border-t border-ink-line">
-                              <p className="text-xs font-serif font-bold uppercase text-paper mb-2">Ойлголт шалгах:</p>
-                              <p className="text-base font-bold text-paper mb-3">{r.question}</p>
-                              <MCQBlock
-                                choices={sq.choices}
-                                correctIndex={sq.correctIndex}
-                                selectedAnswer={examItemAns}
-                                onSelect={(index) => {
-                                if (!requireAccount()) return;
-                                  setExamItemAns(index);
-                                  if (index === sq.correctIndex) recordStudyActivity(activityKey(`exam:${exam.level}:reading`, r.id));
-                                }}
-                              />
-                            </div>
-                          </>
-                        );
-                      })()}
-
-                      {/* LISTENING */}
-                      {examSec === 'listening' && (() => {
-                        const l = item as typeof exam.listening[number];
-                        const sq = shuffleQuiz(`exam:${exam.level}:listening:${l.id}`, { question: l.question, choices: l.choices, correctIndex: l.correctIndex });
-                        return (
-                          <>
-                            <div className="flex flex-col items-center gap-3 py-6 bg-ink-raise border-2 border-ink-line rounded-xl mb-5">
-                              <button onClick={() => { if (!requireAccount()) return; speakGerman(l.audioText, audioSpeed === '0.8' ? 0.8 : 1.0); }}
-                                className="w-16 h-16 rounded-full bg-paper text-ink border-2 border-ink-line flex items-center justify-center cursor-pointer hover:scale-105 transition-transform block-shadow">
-                                <Volume2 className="w-7 h-7" />
-                              </button>
-                              <p className="text-xs text-paper-2">Бичлэгийг сонсохын тулд дарна уу (2 удаа)</p>
-                            </div>
-                            {examItemTrans && (
-                              <div className="bg-ink-raise border-l-4 border-ink-line rounded-lg p-3 mb-5">
-                                <p className="text-sm text-paper font-medium">{l.audioText}</p>
-                                <p className="text-xs text-paper-2 mt-2 pt-2 border-t border-ink-line/50 italic">{l.transcriptMn}</p>
-                              </div>
-                            )}
-                            <div className="pt-5 border-t border-ink-line">
-                              <p className="text-xs font-serif font-bold uppercase text-paper mb-2">Ойлголт шалгах:</p>
-                              <p className="text-base font-bold text-paper mb-3">{l.question}</p>
-                              <MCQBlock
-                                choices={sq.choices}
-                                correctIndex={sq.correctIndex}
-                                selectedAnswer={examItemAns}
-                                onSelect={(index) => {
-                                if (!requireAccount()) return;
-                                  stopTts(); // done answering — stop the clip if it's still playing
-                                  setExamItemAns(index);
-                                  if (index === sq.correctIndex) recordStudyActivity(activityKey(`exam:${exam.level}:listening`, l.id));
-                                }}
-                              />
-                            </div>
-                          </>
-                        );
-                      })()}
-
-                      {/* WRITING */}
-                      {examSec === 'writing' && (() => {
-                        const w = item as typeof exam.writing[number];
-                        const words = examItemWrite.trim() ? examItemWrite.trim().split(/\s+/).length : 0;
-                        return (
-                          <>
-                            <div className="bg-ink-raise rounded-lg p-4 mb-4">
-                              <p className="text-xs font-serif font-bold uppercase text-paper mb-1">Даалгавар:</p>
-                              <p className="text-sm font-bold text-paper mb-2">{w.prompt}</p>
-                              <ul className="text-xs text-paper-2 space-y-1 list-disc list-inside">{w.points.map((p, i) => <li key={i}>{p}</li>)}</ul>
-                            </div>
-                            <textarea value={examItemWrite} onChange={(e) => setExamItemWrite(e.target.value)} placeholder="Энд герман хэлээр бичнэ үү..." rows={6} maxLength={2000}
-                              className="w-full px-3 py-2 text-sm border-2 border-ink-line rounded-lg bg-ink-raise text-paper placeholder:text-paper-3 outline-none focus:border-ink-line resize-y" />
-                            <div className="flex items-center justify-between mt-3">
-                              <span className="text-[11px] text-paper-2">{words} үг</span>
-                              <button onClick={() => setExamItemReveal(v => !v)}
-                                className="px-4 py-2 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-xs cursor-pointer block-shadow hover:scale-[1.02] transition-transform flex items-center gap-1">
-                                <Lightbulb className="w-3.5 h-3.5 text-paper fill-current" /> {examItemReveal ? 'Загварыг нуух' : 'Загвар хариулт харах'}
-                              </button>
-                            </div>
-                            {examItemReveal && (
-                              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-lg p-4 mt-4">
-                                <p className="text-[10px] font-bold uppercase text-paper-2 mb-1">Загвар хариулт:</p>
-                                <p className="text-sm text-paper whitespace-pre-line leading-relaxed font-medium">{w.modelAnswer}</p>
-                                <p className="text-xs text-paper-2 whitespace-pre-line leading-relaxed mt-2 pt-2 border-t border-ink-line/30 italic">{w.modelMn}</p>
-                              </div>
-                            )}
-
-                            {/* AI writing check for the exam writing task. */}
-                            {renderWritingChecker(examItemWrite, { prompt: w.prompt, points: w.points, modelAnswer: w.modelAnswer, level: w.level })}
-                          </>
-                        );
-                      })()}
-
-                      {/* SPEAKING */}
-                      {examSec === 'speaking' && (() => {
-                        const sp = item as typeof exam.speaking[number];
-                        return (
-                          <>
-                            <div className="bg-ink-raise border-l-4 border-ink-line rounded-lg p-4 mb-5">
-                              <p className="text-xs font-serif font-bold uppercase text-paper mb-1">Даалгавар:</p>
-                              <p className="text-base font-bold text-paper">{sp.prompt}</p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 mb-5">
-                              <button onClick={() => { if (!requireAccount()) return; speakGerman(sp.modelAnswer, 1.0); }}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform">
-                                <Volume2 className="w-4 h-4" /> Загварыг сонсох
-                              </button>
-                              <button onClick={() => setExamItemReveal(v => !v)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-ink-raise text-paper border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] transition-transform">
-                                <Lightbulb className="w-4 h-4 text-paper fill-current" /> {examItemReveal ? 'Нуух' : 'Загвар хариулт харах'}
-                              </button>
-                            </div>
-                            <div className="mb-2">
-                              <p className="text-[11px] font-serif font-bold uppercase text-paper-2 mb-2">Хэрэгтэй хэллэг:</p>
-                              <div className="flex flex-col gap-1.5">{sp.tips.map((t, i) => <div key={i} className="flex items-start gap-2 text-xs text-paper"><span className="text-paper-2 font-black">›</span>{t}</div>)}</div>
-                            </div>
-                            {examItemReveal && (
-                              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-lg p-4 mt-4">
-                                <p className="text-[10px] font-bold uppercase text-paper-2 mb-1">Загвар хариулт:</p>
-                                <p className="text-base text-paper font-medium leading-relaxed">{sp.modelAnswer}</p>
-                                <p className="text-xs text-paper-2 mt-2 italic leading-relaxed">{sp.modelMn}</p>
-                              </div>
-                            )}
-                            <p className="text-[11px] text-paper-2 mt-4 italic">Зөвлөмж: эхлээд өөрөө чангаар хэлж үзээд, дараа нь загвартай харьцуулаарай.</p>
-
-                            {/* AI judge for exam speaking — graded against this item's model answer. */}
-                            {renderSpeakingJudge(sp.modelAnswer)}
-                            {renderSpeakingReport(sp.modelAnswer)}
-                          </>
-                        );
-                      })()}
-                      </>)}
-                    </div>
-
-                    {/* Prev / Next navigation */}
-                    <div className="flex justify-between items-center mt-6 pt-4 border-t border-ink-line/50">
-                      <button
-                        onClick={() => selectExamItem(examItemIdx - 1)}
-                        disabled={examItemIdx === 0}
-                        className={`flex items-center gap-1 px-4 py-2.5 border-2 border-ink-line rounded-xl font-bold text-xs block-shadow transition-colors ${examItemIdx === 0 ? 'opacity-40 cursor-not-allowed bg-ink-raise text-paper-2' : 'bg-ink-raise text-paper cursor-pointer hover:bg-ink-2'}`}
-                      >
-                        <ArrowLeft className="w-4 h-4" /> Өмнөх
-                      </button>
-                      <span className="text-xs text-paper-2 font-serif font-bold">{examItemIdx + 1} / {items.length}</span>
-                      <button
-                        onClick={() => selectExamItem(examItemIdx + 1)}
-                        disabled={examItemIdx >= items.length - 1}
-                        className={`flex items-center gap-1 px-4 py-2.5 border-2 border-ink-line rounded-xl font-bold text-xs block-shadow transition-colors ${examItemIdx >= items.length - 1 ? 'opacity-40 cursor-not-allowed bg-ink-raise text-paper-2' : 'bg-paper text-ink cursor-pointer hover:scale-[1.02]'}`}
-                      >
-                        Дараах <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
+            <ExamTab
+              currentUser={currentUser}
+              fullContent={fullContent}
+              audioSpeed={audioSpeed}
+              requireAccount={requireAccount}
+              setActiveTab={setActiveTab}
+              setTestdafOpen={setTestdafOpen}
+              setPlacementOpen={setPlacementOpen}
+              recordStudyActivity={recordStudyActivity}
+              speakGerman={speakGerman}
+              renderPlanLockCard={renderPlanLockCard}
+              renderWritingChecker={renderWritingChecker}
+              renderSpeakingJudge={renderSpeakingJudge}
+              renderSpeakingReport={renderSpeakingReport}
+              resetSpeakingJudge={resetSpeakingJudge}
+              resetWritingFeedback={resetWritingFeedback}
+            />
           )}
 
           {/* Legacy A1 model-test panel — superseded by the level-based exams above. */}
 
           {/* Special view Module: Settings (Тохиргоо) view panel */}
           {activeTab === 'settings' && (
-            <div className="max-w-xl mx-auto w-full border-2 border-ink-line rounded-xl p-8 block-shadow animate-fade-in pb-24">
-              <div className="flex items-center gap-3 pb-4 border-b border-ink-line mb-6 text-paper">
-                <Settings className="w-6 h-6 outline" />
-                <h2 className="text-2xl font-extrabold font-serif">Тохиргоо ба Хувийн Төлөв</h2>
-              </div>
-
-              <div className="space-y-6 font-sans">
-                {/* 1. Profile editor — avatar, name, level, daily goal, learning goal */}
-                {profileDraft && currentUser && (
-                  <div className="space-y-5 bg-ink-raise p-4 md:p-5 rounded-xl border-2 border-ink-line block-shadow">
-                    <div className="flex items-center gap-2 text-paper">
-                      <Target className="w-5 h-5" />
-                      <h4 className="text-sm font-serif font-bold uppercase tracking-wide">Профайл</h4>
-                    </div>
-
-                    {/* Avatar + name */}
-                    <div className="flex items-center gap-4">
-                      <div className="relative shrink-0">
-                        <div className="w-20 h-20 rounded-full overflow-hidden bg-ink-raise border-2 border-ink-line block-shadow">
-                          <img src={profileDraft.avatar} alt={profileDraft.name} className="w-full h-full object-cover" />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowAvatarPicker((v) => !v)}
-                          className="absolute -bottom-1 -right-1 p-1.5 bg-paper text-ink rounded-full border-2 border-ink-line block-shadow cursor-pointer hover:opacity-90"
-                          aria-label="Зураг солих"
-                        >
-                          <Camera className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Нэр</label>
-                        <input
-                          type="text"
-                          value={profileDraft.name}
-                          maxLength={30}
-                          onChange={(e) => setProfileDraft((d) => d && { ...d, name: e.target.value })}
-                          className="w-full mt-1 px-3 py-2 bg-ink-raise border-2 border-ink-line rounded-xl text-paper font-bold outline-none focus:border-ink-line"
-                          placeholder="Таны нэр"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Avatar picker grid */}
-                    {showAvatarPicker && (
-                      <div className="space-y-3 p-3 bg-ink-raise rounded-xl border border-ink-line">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-[11px] font-bold uppercase text-paper-3 font-serif">Зургаа сонгох эсвэл оруулах</span>
-                          <div className="flex items-center gap-2">
-                            <input
-                              ref={avatarFileInputRef}
-                              type="file"
-                              accept="image/png,image/jpeg,image/webp,image/gif"
-                              onChange={handleAvatarUpload}
-                              className="hidden"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => avatarFileInputRef.current?.click()}
-                              disabled={avatarUploading}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-paper text-ink border-2 border-ink-line rounded-lg text-xs font-bold cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {avatarUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                              Зураг оруулах
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setAvatarPage((p) => p + 1)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold cursor-pointer hover:bg-ink-raise"
-                            >
-                              <Shuffle className="w-3.5 h-3.5" /> Шинэчлэх
-                            </button>
-                          </div>
-                        </div>
-                        {avatarError && <p className="text-[11px] text-paper-2 font-semibold">{avatarError}</p>}
-                        <div className="flex flex-wrap gap-1.5">
-                          {AVATAR_STYLES.map((s) => (
-                            <button
-                              key={s.id}
-                              type="button"
-                              onClick={() => { setAvatarStyle(s.id); setAvatarPage(0); }}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border-2 cursor-pointer transition-all ${avatarStyle === s.id ? 'bg-paper text-ink border-ink-line' : 'bg-ink-raise border-ink-line text-paper hover:bg-ink-raise'}`}
-                            >
-                              {s.label}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                          {avatarOptions(currentUser.email, avatarPage, avatarStyle).map((url) => {
-                            const selected = profileDraft.avatar === url;
-                            return (
-                              <button
-                                key={url}
-                                type="button"
-                                onClick={() => setProfileDraft((d) => d && { ...d, avatar: url })}
-                                className={`relative aspect-square rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${selected ? 'border-ink-line ring-2 ring-paper/30' : 'border-ink-line hover:border-ink-line/60'}`}
-                              >
-                                <img src={url} alt="avatar" className="w-full h-full object-cover bg-ink-raise" />
-                                {selected && (
-                                  <span className="absolute top-0.5 right-0.5 bg-paper text-ink rounded-full p-0.5">
-                                    <Check className="w-3 h-3" />
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Target level */}
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Зорилтот түвшин</label>
-                      <div className="grid grid-cols-6 gap-1.5 mt-1.5">
-                        {(['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const).map((lvl) => (
-                          <button
-                            key={lvl}
-                            type="button"
-                            onClick={() => setProfileDraft((d) => d && { ...d, targetLevel: lvl })}
-                            className={`py-2 rounded-lg text-sm font-black border-2 cursor-pointer transition-all ${profileDraft.targetLevel === lvl ? 'bg-paper text-ink border-ink-line' : 'bg-ink-raise border-ink-line text-paper hover:bg-ink-raise'}`}
-                          >
-                            {lvl}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Daily goal */}
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Өдрийн зорилго</label>
-                      <div className="grid grid-cols-5 gap-1.5 mt-1.5">
-                        {[5, 10, 15, 30, 60].map((m) => (
-                          <button
-                            key={m}
-                            type="button"
-                            onClick={() => setProfileDraft((d) => d && { ...d, dailyGoalMinutes: m })}
-                            className={`py-2 rounded-lg text-xs font-bold border-2 cursor-pointer transition-all ${profileDraft.dailyGoalMinutes === m ? 'bg-paper text-ink border-ink-line' : 'bg-ink-raise border-ink-line text-paper hover:bg-ink-raise'}`}
-                          >
-                            {m}<span className="text-[9px]">мин</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Learning goal */}
-                    <div>
-                      <label className="text-[11px] font-bold uppercase text-paper-3 font-serif">Суралцах зорилго</label>
-                      <textarea
-                        value={profileDraft.learningGoal}
-                        maxLength={280}
-                        rows={3}
-                        onChange={(e) => setProfileDraft((d) => d && { ...d, learningGoal: e.target.value })}
-                        className="w-full mt-1 px-3 py-2 bg-ink-raise border-2 border-ink-line rounded-xl text-paper text-sm outline-none focus:border-ink-line resize-none"
-                        placeholder="Жишээ: Goethe B1 шалгалт өгөх"
-                      />
-                      <p className="text-right text-[10px] text-paper-3 mt-0.5">{profileDraft.learningGoal.length}/280</p>
-                    </div>
-
-                    {/* Save */}
-                    <div className="space-y-1.5">
-                      <button
-                        type="button"
-                        onClick={saveProfileEdits}
-                        disabled={profileSaving || !profileDraft.name.trim()}
-                        className="w-full flex items-center justify-center gap-2 py-3 bg-paper text-ink font-black rounded-xl border-2 border-ink-line block-shadow cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                      >
-                        {profileSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : profileSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                        {profileSaved ? 'Хадгалагдлаа' : 'Хадгалах'}
-                      </button>
-                      {profileSaveError && <p className="text-center text-[11px] text-paper-2 font-semibold">Хадгалж чадсангүй. Дахин оролдоно уу.</p>}
-                    </div>
-                  </div>
-                )}
-
-                {/* 2. Interactive toggles state */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-serif font-bold uppercase text-paper-3">Хичээлийн тохируулга:</h4>
-                  
-                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
-                    <div>
-                      <h5 className="text-sm font-bold">Орчуулга автоматаар харуулах</h5>
-                      <p className="text-[11px] text-paper-3">Унших, сонсох зохиолд орчуулгыг шууд харуулна. Унтраалттай үед эхлээд өөрөө уншиж, гацсан үедээ "Орчуулга" товчоор нээнэ.</p>
-                    </div>
-                    <button
-                      onClick={() => setReadTranslateEnabled(prev => { const next = !prev; setLibReadTrans(next); setLibListenTrans(next); return next; })}
-                      className={`w-12 h-6 rounded-full transition-colors relative border border-ink-line block-shadow cursor-pointer ${
-                        readTranslateEnabled ? 'bg-paper' : 'bg-ink-2'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
-                        readTranslateEnabled ? 'left-6' : 'left-1'
-                      }`}></div>
-                    </button>
-                  </div>
-
-                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
-                    <div>
-                      <h5 className="text-sm font-bold">Удаан хэмнэлтийн сонсох зам</h5>
-                      <p className="text-[11px] text-paper-3">Сонсох СД зам дээр Германы хурдыг 0.8х дээр удирдах тохиргоо.</p>
-                    </div>
-                    <button 
-                      onClick={() => setAudioSpeed(prev => prev === '1.0' ? '0.8' : '1.0')}
-                      className={`w-12 h-6 rounded-full transition-colors relative border border-ink-line block-shadow cursor-pointer ${
-                        audioSpeed === '0.8' ? 'bg-paper' : 'bg-ink-2'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
-                        audioSpeed === '0.8' ? 'left-6' : 'left-1'
-                      }`}></div>
-                    </button>
-                  </div>
-
-                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
-                    <div>
-                      <h5 className="text-sm font-bold">Streak автоматаар тооцох</h5>
-                      <p className="text-[11px] text-paper-3">Зөв дуусгасан дасгалтай өдөр streak-д автоматаар орно.</p>
-                    </div>
-                    <span className="font-bold text-sm bg-ink-raise px-3 py-1 border border-ink-line rounded-lg">{streak} өдөр</span>
-                  </div>
-                </div>
-
-                {/* 3. Account essentials */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-serif font-bold uppercase text-paper-3">Бүртгэл:</h4>
-                  <div className="flex items-center justify-between p-3 border-2 border-ink-line rounded-xl block-shadow">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Mail className="w-4 h-4 text-paper-3 shrink-0" />
-                      <span className="text-sm font-bold text-paper truncate">{currentUser?.email}</span>
-                    </div>
-                    <span className="text-[10px] text-paper-3 font-mono shrink-0 ml-2">Имэйл</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleResetPassword}
-                    className="w-full flex items-center justify-between p-3 border-2 border-ink-line rounded-xl block-shadow cursor-pointer hover:bg-ink-raise transition-colors"
-                  >
-                    <span className="flex items-center gap-2 text-sm font-bold text-paper"><Lock className="w-4 h-4 text-paper-3" /> Нууц үг солих</span>
-                    <span className="text-[11px] text-paper-2 font-bold shrink-0 ml-2">{resetSent ? 'Имэйл илгээлээ ✓' : 'Имэйл авах'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={logoutUser}
-                    className="w-full flex items-center justify-center gap-2 p-3 bg-ink-raise border-2 border-ink-line text-paper-2 font-bold rounded-xl cursor-pointer hover:bg-ink-raise transition-all"
-                  >
-                    <LogOut className="w-4 h-4" /> Гарах
-                  </button>
-                </div>
-
-                {/* Explanations instructions */}
-                <div className="bg-ink-raise border border-ink-line p-4 rounded-xl text-center">
-                  <p className="text-xs text-paper-2 leading-snug">
-                    Vivid Lingua аппликэйшний бүхий л хичээлийн загваруудыг цээжлүүлэн бэлтгэлээ. Та settings цэсийг ашиглан хичээлийн удирдамжийг хялбархан тааруулж болно.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <SettingsTab
+              currentUser={currentUser}
+              currentUserRef={currentUserRef}
+              setCurrentUser={setCurrentUser}
+              readTranslateEnabled={readTranslateEnabled}
+              setReadTranslateEnabled={setReadTranslateEnabled}
+              audioSpeed={audioSpeed}
+              setAudioSpeed={setAudioSpeed}
+              streak={streak}
+              logoutUser={logoutUser}
+            />
           )}
 
           {/* Bottom Interactive Sticky Navbar (Mobile Only) - matches screen specs */}
-          <nav aria-label="Mobile Navigation Drawer" className="md:hidden fixed bottom-0 left-0 w-full bg-ink-raise border-t-2 border-ink-line z-40 pb-safe">
-            <div className="flex justify-around items-center h-16">
-              
-              <button 
-                onClick={() => selectTab('read')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'read' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'read' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <BookOpen className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-serif">Унших</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('listen')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'listen' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'listen' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <Headphones className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-serif">Сонсох</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('speak')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'speak' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'speak' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <Mic className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-serif">Ярих</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('write')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'write' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'write' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <Edit3 className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-serif">Бичих</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('vocab')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'vocab' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'vocab' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <Languages className="w-5 h-5" />
-                <span className="text-[10px] font-bold font-serif font-medium">Үгс</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('translate')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'translate' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'translate' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full text-paper"></div>}
-                <Sparkles className="w-5 h-5 text-paper" />
-                <span className="text-[10px] font-bold font-serif">Орч</span>
-              </button>
-
-              <button 
-                onClick={() => selectTab('exam')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'exam' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'exam' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full text-paper"></div>}
-                <GraduationCap className="w-5 h-5 text-paper" />
-                <span className="text-[10px] font-bold font-serif">Сорил</span>
-              </button>
-
-              <button
-                onClick={() => selectTab('friends')}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 relative cursor-pointer ${
-                  activeTab === 'friends' ? 'text-paper' : 'text-paper-2'
-                }`}
-              >
-                {activeTab === 'friends' && <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-paper rounded-b-full"></div>}
-                <Swords className="w-5 h-5 text-paper" />
-                <span className="text-[10px] font-bold font-serif">Найз</span>
-              </button>
-            </div>
-          </nav>
+          <MobileNav activeTab={activeTab} selectTab={selectTab} />
 
         </div>
       </main>
