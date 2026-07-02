@@ -23,7 +23,7 @@ export default function IeltsVocabTab({
   allContent: boolean;
   onUpgrade: () => void;
 }) {
-  const { recordStudy } = useEnglishStats();
+  const { recordStudy, requireAccount } = useEnglishStats();
   const [level, setLevel] = useState<EnglishLevel | 'all'>('all');
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -58,6 +58,8 @@ export default function IeltsVocabTab({
     setRevealed(false);
   }
   function say() {
+    // Guests browse; TTS playback (a paid Azure call) needs an account.
+    if (!requireAccount()) return;
     if (card) void speak(card.word, { voice: 'en-GB-SoniaNeural', rate: 0.9 });
   }
 
@@ -129,7 +131,7 @@ export default function IeltsVocabTab({
                 </div>
               ) : (
                 <button
-                  onClick={() => { setRevealed(true); recordStudy(); }}
+                  onClick={() => { if (!requireAccount()) return; setRevealed(true); recordStudy(); }}
                   className="mt-4 inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 font-bold"
                 >
                   <Eye className="w-4 h-4" /> Орчуулга харах
