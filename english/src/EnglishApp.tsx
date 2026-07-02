@@ -1,10 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { GraduationCap, Globe, BookMarked, Sigma, ArrowRight, LogOut, Sparkles, Lock } from 'lucide-react';
-import IeltsApp from './ielts/IeltsApp';
-import SatApp from './sat/SatApp';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { GraduationCap, Globe, BookMarked, Sigma, ArrowRight, LogOut, Sparkles, Lock, Loader2 } from 'lucide-react';
 import { EnglishStatsProvider, useEnglishStats } from './stats';
 import { useEnglishAccess } from './access';
 import EnglishUpgrade from './EnglishUpgrade';
+
+// Each exam app is its own chunk — IELTS and SAT both drag in megabyte-scale
+// generated vocab/test data, so picking one must not download the other.
+const IeltsApp = lazy(() => import('./ielts/IeltsApp'));
+const SatApp = lazy(() => import('./sat/SatApp'));
+
+function ExamLoader() {
+  return (
+    <div className="min-h-screen bg-ink text-paper font-sans flex items-center justify-center">
+      <Loader2 className="w-7 h-7 text-paper-2 animate-spin" />
+    </div>
+  );
+}
 
 // Brand mark — matches the German track's logo so the tracks feel like one product.
 function BrandLogo({ className = 'w-7 h-7' }: { className?: string }) {
@@ -158,7 +169,7 @@ export default function EnglishApp({ onSwitchLanguage }: { onSwitchLanguage?: ()
   // The upgrade modal lives alongside it, opened by the content-level paywalls.
   return (
     <EnglishStatsProvider onSwitchLanguage={onSwitchLanguage}>
-      {content}
+      <Suspense fallback={<ExamLoader />}>{content}</Suspense>
       <EnglishUpgrade open={upgradeOpen} onClose={() => setUpgradeOpen(false)} currentPlan={access.plan} />
     </EnglishStatsProvider>
   );

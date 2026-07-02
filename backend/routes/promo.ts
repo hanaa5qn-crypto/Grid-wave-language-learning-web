@@ -110,7 +110,7 @@ export function registerPromoRoute(app: Express) {
       return res.status(409).json({ error: 'Энэ код аль хэдийн бүртгэгдсэн байна.' });
     }
 
-    return res.status(201).json({ code, ...teacherCodePayload(code, doc as unknown as Record<string, unknown>) });
+    return res.status(201).json(teacherCodePayload(code, doc as unknown as Record<string, unknown>));
   });
 
   // --- Admin: бүх код + статистик жагсаах --------------------------------------

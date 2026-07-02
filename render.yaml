@@ -1,8 +1,8 @@
 # Render deployment blueprint for Vivid Lingua.
 #
-# This deploys the WHOLE app — website + AI backend — as one free web service.
-# Render reads this file automatically when you create a "Blueprint" from your
-# GitHub repo. (You can also configure the same values by hand in the dashboard.)
+# NOTE: production currently runs on VERCEL (see DEPLOY.md). This blueprint is
+# kept as a fallback deploy target; if you use it, fill in EVERY secret below
+# in the Render dashboard or payments/auth/AI/TTS boot broken.
 services:
   - type: web
     name: vivid-lingua
@@ -14,8 +14,32 @@ services:
     startCommand: npm start
     autoDeploy: true
     envVars:
-      # Your Gemini API key for the AI features. Marked secret (sync:false), so
-      # you paste it in the Render dashboard — it is never committed to git.
-      # The app still boots without it; AI features fall back to offline mode.
+      # All secrets are sync:false — paste values in the Render dashboard,
+      # never commit them.
+      # Firebase Admin SDK (auth verification + all entitlement writes).
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      # Byl payment gateway (QPay/SocialPay checkout) + webhook signing secret.
+      - key: BYL_TOKEN
+        sync: false
+      - key: BYL_PROJECT_ID
+        sync: false
+      - key: BYL_WEBHOOK_SECRET
+        sync: false
+      # Gemini for AI grading — either a plain API key or Vertex AI project
+      # settings (see backend/lib/ai.ts for the resolution order).
       - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_VERTEX_PROJECT
+        sync: false
+      - key: GOOGLE_VERTEX_LOCATION
+        sync: false
+      # Azure neural TTS proxy (listening playback). Optional; the client falls
+      # back to browser speechSynthesis without it.
+      - key: AZURE_SPEECH_KEY
+        sync: false
+      - key: AZURE_SPEECH_REGION
+        sync: false
+      # Public URL used for payment success/cancel redirects.
+      - key: APP_BASE_URL
         sync: false

@@ -15,7 +15,7 @@
 import React, {
   createContext, useCallback, useContext, useEffect, useRef, useState,
 } from 'react';
-import { subscribeToAuthedProfile, updateProfileFields, logOutUser } from '../../frontend/src/auth';
+import { subscribeToAuthedProfile, updateProfileFields, logOutUser, publishAuthedProfile } from '../../frontend/src/auth';
 import { calculateStreakWithGrace, localDateKey } from '../../frontend/src/learning';
 import type { UserProfile } from '../../frontend/src/profiles';
 import AccountScreen from '../../frontend/src/AccountScreen';
@@ -131,8 +131,9 @@ export function EnglishStatsProvider({
       setLoading(false);
       // New real account → grant the 3-day Pro trial. The server transaction is
       // idempotent (skips when billing is already active), so re-attempting on a
-      // remount is harmless. The profile is a one-shot read, so merge the granted
-      // billing into local state to unlock the trial without a reload.
+      // remount is harmless. Publish the granted billing through the shared
+      // profile store so EVERY consumer — including the paywall's
+      // useEnglishAccess — unlocks without a reload, not just this provider.
       if (p && !p.isGuest && !signupTrialEnsuredRef.current) {
         signupTrialEnsuredRef.current = true;
         ensureSignupTrial()
@@ -141,6 +142,7 @@ export function EnglishStatsProvider({
               const next: UserProfile = { ...profileRef.current, billing: trial.billing };
               profileRef.current = next;
               setProfile(next);
+              publishAuthedProfile(next);
             }
           })
           .catch((err) => console.warn('ensureSignupTrial error:', err));

@@ -87,7 +87,7 @@ export default function HeroPage({ onLogin, onSignup, onGuest }: HeroPageProps) 
   return (
     <div
       id="top"
-      className="relative min-h-screen w-full overflow-x-hidden bg-[#141313] text-[#e5e2e1] antialiased selection:bg-white selection:text-[#141313]"
+      className="relative min-h-screen w-full overflow-x-hidden bg-ink-raise text-[#e5e2e1] antialiased selection:bg-white selection:text-ink-raise"
       style={{ fontFamily: '"Inter", system-ui, sans-serif' }}
     >
       {/* Liquid-glass surface (still used across the page). */}
@@ -120,8 +120,8 @@ export default function HeroPage({ onLogin, onSignup, onGuest }: HeroPageProps) 
           />
         )}
         {/* Contrast overlay — keep white type legible, deepen toward the fold edge. */}
-        <div className="absolute inset-0 bg-[#141313]/60" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#141313]/30 via-transparent to-[#141313]" />
+        <div className="absolute inset-0 bg-ink-raise/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-ink-raise/30 via-transparent to-ink-raise" />
         {/* Atmospheric glows drift on scroll (parallax). */}
         <motion.div
           style={{ y: glowY }}
@@ -252,7 +252,7 @@ export default function HeroPage({ onLogin, onSignup, onGuest }: HeroPageProps) 
             onClick={onSignup}
             whileHover={reduce ? undefined : { scale: 1.02 }}
             whileTap={reduce ? undefined : { scale: 0.98 }}
-            className="group inline-flex items-center justify-center gap-3 rounded-full bg-white px-8 py-4 text-[12px] font-semibold uppercase tracking-[0.18em] text-[#141313] transition-colors duration-300 hover:bg-[#e2e2e2]"
+            className="group inline-flex items-center justify-center gap-3 rounded-full bg-white px-8 py-4 text-[12px] font-semibold uppercase tracking-[0.18em] text-ink-raise transition-colors duration-300 hover:bg-[#e2e2e2]"
           >
             Begin journey
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -338,7 +338,7 @@ export default function HeroPage({ onLogin, onSignup, onGuest }: HeroPageProps) 
           className="grid gap-px overflow-hidden rounded-xl border border-white/10 bg-white/5 sm:grid-cols-2 lg:grid-cols-3"
         >
           {SKILLS.map(({ icon: Icon, title, desc }) => (
-            <StaggerItem key={title} className="bg-[#141313] p-8 transition-colors hover:bg-[#1c1b1b]">
+            <StaggerItem key={title} className="bg-ink-raise p-8 transition-colors hover:bg-ink-2">
               <Icon className="mb-4 h-6 w-6 text-white" strokeWidth={1.5} />
               <h3 className="mb-1.5 text-xl text-white" style={serif}>{title}</h3>
               <p className="text-sm leading-relaxed text-[#8e9192]">{desc}</p>
@@ -405,7 +405,7 @@ export default function HeroPage({ onLogin, onSignup, onGuest }: HeroPageProps) 
             onClick={onSignup}
             whileHover={reduce ? undefined : { scale: 1.02 }}
             whileTap={reduce ? undefined : { scale: 0.98 }}
-            className="group inline-flex items-center justify-center gap-3 rounded-full bg-white px-9 py-4 text-[12px] font-semibold uppercase tracking-[0.18em] text-[#141313] transition-colors duration-300 hover:bg-[#e2e2e2]"
+            className="group inline-flex items-center justify-center gap-3 rounded-full bg-white px-9 py-4 text-[12px] font-semibold uppercase tracking-[0.18em] text-ink-raise transition-colors duration-300 hover:bg-[#e2e2e2]"
           >
             Create your account
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />

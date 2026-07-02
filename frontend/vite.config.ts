@@ -10,7 +10,10 @@ export default defineConfig(() => {
     root: __dirname,
     build: {
       outDir: path.resolve(__dirname, '../dist'),
-      emptyOutDir: false,
+      // Safe to empty: `npm run build` runs vite BEFORE esbuild writes
+      // dist/server.cjs, and stale hashed bundles otherwise accumulate
+      // (~4 MB per historical build).
+      emptyOutDir: true,
     },
     resolve: {
       alias: {

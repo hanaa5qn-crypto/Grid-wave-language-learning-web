@@ -27,7 +27,6 @@ Notes:
 - `lint`/`test` can OOM on the large generated vocab files — prefix with `NODE_OPTIONS=--max-old-space-size=4096`.
 - The dev backend (`tsx`) does **not** watch — restart it after backend changes. Frontend uses Vite HMR (set `DISABLE_HMR=true` to disable file-watching during agent edits).
 - Vitest is configured inside `frontend/vite.config.ts`; always pass `--config frontend/vite.config.ts`.
-- One test is known-failing and pre-existing: `englishLearning.test.ts` "progress percent … 100" (duplicate ids in the reading/listening library make it 97). Not a regression — leave unless explicitly fixing it.
 
 ## Architecture
 
