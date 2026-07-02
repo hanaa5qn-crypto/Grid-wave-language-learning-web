@@ -32,7 +32,7 @@ import LoginScreen from './LoginScreen';
 import LandingPage from './LandingPage';
 import { track, trackVisitOncePerDay } from './analytics';
 import {
-  subscribeToAuthedProfile, logOutUser, saveProfileProgress, sendResetEmail,
+  subscribeToAuthedProfile, logOutUser, updateProfileFields, sendResetEmail,
 } from './auth';
 import { isFirebaseConfigured, getStorageInstance, getAuthInstance } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -341,7 +341,8 @@ function LearnerApp() {
     const goalClean = learningGoal.toLowerCase();
     const role = goalClean.includes('сургууль') ? 'Оюутан' : goalClean.includes('ажил') ? 'Мэргэжилтэн' : 'Суралцагч';
     // Spread from the ref so a background study-time save that landed since
-    // this render isn't clobbered (saveProfileProgress merges).
+    // this render isn't clobbered (the Firestore write below only patches the
+    // edited fields anyway).
     const base = currentUserRef.current ?? currentUser;
     const next = stripServerOwnedFields({
       ...base,
@@ -355,7 +356,14 @@ function LearnerApp() {
     currentUserRef.current = next;
     setCurrentUser(next);
     try {
-      await saveProfileProgress(next);
+      await updateProfileFields({
+        name,
+        avatar: profileDraft.avatar,
+        targetLevel: profileDraft.targetLevel,
+        dailyGoalMinutes: profileDraft.dailyGoalMinutes,
+        learningGoal,
+        role,
+      });
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 2500);
     } catch (err) {
@@ -436,7 +444,7 @@ function LearnerApp() {
         // (and the leaderboard) stop showing the stale number.
         if ((profile.streak ?? 0) > 0 && normalizedProfile.streak === 0) {
           setBrokenStreakNotice(profile.streak);
-          saveProfileProgress(normalizedProfile).catch((err) => {
+          updateProfileFields({ streak: normalizedProfile.streak }).catch((err) => {
             console.warn('Could not persist streak reset to Firestore:', err);
           });
         }
@@ -657,6 +665,7 @@ function LearnerApp() {
   }, [dictSearch, dictClass, dictLevel]);
 
   const applyMetricProfile = (profile: UserProfile, save = true) => {
+    const prev = currentUserRef.current;
     const normalizedProfile = normalizeProfileMetrics(profile);
     currentUserRef.current = normalizedProfile;
     studySecondsRef.current = normalizedProfile.studySecondsByDate ?? {};
@@ -668,9 +677,21 @@ function LearnerApp() {
     setStudyDays(normalizedProfile.studyDays ?? []);
     setStudySecondsByDate(normalizedProfile.studySecondsByDate ?? {});
     if (save && !isTest) {
-      saveProfileProgress(normalizedProfile).catch((err) => {
-        console.warn('Could not save progress to Firestore:', err);
-      });
+      // Patch only the fields this action actually changed (vs the previous
+      // in-memory profile) so a German-track write can never clobber the
+      // English-track (`*En`) fields on the shared document.
+      const patch: Partial<UserProfile> & Record<string, unknown> = {};
+      const prevRecord = prev as unknown as Record<string, unknown> | null;
+      for (const [key, value] of Object.entries(normalizedProfile as unknown as Record<string, unknown>)) {
+        if (value === undefined) continue;
+        if (prevRecord && JSON.stringify(prevRecord[key]) === JSON.stringify(value)) continue;
+        patch[key] = value;
+      }
+      if (Object.keys(patch).length > 0) {
+        updateProfileFields(patch).catch((err) => {
+          console.warn('Could not save progress to Firestore:', err);
+        });
+      }
     }
   };
 
@@ -718,7 +739,12 @@ function LearnerApp() {
     pendingStudySaveSecondsRef.current += seconds;
     if (pendingStudySaveSecondsRef.current >= STUDY_SAVE_THRESHOLD_SECONDS && !isTest) {
       pendingStudySaveSecondsRef.current = 0;
-      saveProfileProgress(nextProfile).catch((err) => {
+      // Dotted path patches only today's seconds, never sibling date keys.
+      updateProfileFields({
+        [`studySecondsByDate.${today}`]: nextSeconds[today],
+        learningCurve: nextProfile.learningCurve,
+        lastActiveAt: nextProfile.lastActiveAt,
+      }).catch((err) => {
         console.warn('Could not save study time to Firestore:', err);
       });
     }
@@ -737,7 +763,13 @@ function LearnerApp() {
       const profile = currentUserRef.current;
       if (!profile || pendingStudySaveSecondsRef.current <= 0) return;
       pendingStudySaveSecondsRef.current = 0;
-      saveProfileProgress(profile).catch((err) => {
+      // Whole map (not a dotted path): pending seconds may straddle midnight,
+      // and only the German track writes studySecondsByDate anyway.
+      updateProfileFields({
+        studySecondsByDate: profile.studySecondsByDate ?? {},
+        learningCurve: profile.learningCurve,
+        lastActiveAt: profile.lastActiveAt,
+      }).catch((err) => {
         console.warn('Could not save study time to Firestore:', err);
       });
     };

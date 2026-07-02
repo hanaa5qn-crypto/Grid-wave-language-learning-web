@@ -15,7 +15,7 @@
 import React, {
   createContext, useCallback, useContext, useEffect, useRef, useState,
 } from 'react';
-import { subscribeToAuthedProfile, saveProfileProgress, logOutUser } from '../../frontend/src/auth';
+import { subscribeToAuthedProfile, updateProfileFields, logOutUser } from '../../frontend/src/auth';
 import { calculateStreakWithGrace, localDateKey } from '../../frontend/src/learning';
 import type { UserProfile } from '../../frontend/src/profiles';
 import AccountScreen from '../../frontend/src/AccountScreen';
@@ -168,7 +168,7 @@ export function EnglishStatsProvider({
     };
     profileRef.current = next;
     setProfile(next);
-    saveProfileProgress(next).catch((err) => {
+    updateProfileFields({ studyDaysEn, lastActiveAt: next.lastActiveAt }).catch((err) => {
       console.warn('Could not save English study day to Firestore:', err);
     });
   }, []);
@@ -181,7 +181,9 @@ export function EnglishStatsProvider({
     const next: UserProfile = { ...p, ...patch, lastActiveAt: new Date().toISOString() };
     profileRef.current = next;
     setProfile(next);
-    saveProfileProgress(next).catch((err) => {
+    // Write only the patched fields (never the whole profile) so English saves
+    // can't clobber concurrent German-track writes on the shared document.
+    updateProfileFields({ ...patch, lastActiveAt: next.lastActiveAt }).catch((err) => {
       console.warn('Could not save English learning state to Firestore:', err);
     });
   }, []);
@@ -252,7 +254,11 @@ export function EnglishStatsProvider({
     pendingSaveSecondsRef.current += seconds;
     if (pendingSaveSecondsRef.current >= STUDY_SAVE_THRESHOLD_SECONDS) {
       pendingSaveSecondsRef.current = 0;
-      saveProfileProgress(next).catch((err) => {
+      // Dotted path patches only today's seconds, never sibling date keys.
+      updateProfileFields({
+        [`studySecondsByDateEn.${today}`]: studySecondsByDateEn[today],
+        lastActiveAt: next.lastActiveAt,
+      }).catch((err) => {
         console.warn('Could not save English study time to Firestore:', err);
       });
     }
@@ -267,7 +273,12 @@ export function EnglishStatsProvider({
       const p = profileRef.current;
       if (!canTrack(p) || pendingSaveSecondsRef.current <= 0) return;
       pendingSaveSecondsRef.current = 0;
-      saveProfileProgress(p).catch((err) => {
+      // Whole map (not a dotted path): pending seconds may straddle midnight,
+      // and only the English track writes studySecondsByDateEn anyway.
+      updateProfileFields({
+        studySecondsByDateEn: p.studySecondsByDateEn ?? {},
+        lastActiveAt: p.lastActiveAt,
+      }).catch((err) => {
         console.warn('Could not save English study time to Firestore:', err);
       });
     };
@@ -306,7 +317,7 @@ export function EnglishStatsProvider({
   // German streak (profile.studyDays / profile.streak).
   const streak = calculateStreakWithGrace(profile?.studyDaysEn ?? []).streak;
 
-  // Sync the provider after a settings save (saveProfileProgress doesn't re-fire
+  // Sync the provider after a settings save (a Firestore write doesn't re-fire
   // the auth listener, so the provider's copy would otherwise go stale).
   const applyProfile = useCallback((next: UserProfile) => {
     profileRef.current = next;
