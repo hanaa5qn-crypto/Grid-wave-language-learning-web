@@ -58,6 +58,8 @@ function categoryFor(w: SeedWord): string {
       return `Угтвар үг (${w.level})`;
     case 'phrase':
       return `Хэллэг (${w.level})`;
+    default:
+      return `Үг (${w.level})`;
   }
 }
 

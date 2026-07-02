@@ -15,7 +15,7 @@
 // the German track's plans.ts; we import them so both tracks stay in lockstep.
 // =============================================================================
 import { useEffect, useState } from 'react';
-import { subscribeToAuthedProfile } from '../../frontend/src/auth';
+import { subscribeToProfileUpdates } from '../../frontend/src/auth';
 import type { UserProfile } from '../../frontend/src/profiles';
 import { getAuthInstance, isFirebaseConfigured } from '../../frontend/src/firebase';
 import {
@@ -47,7 +47,10 @@ export function useEnglishAccess(): EnglishAccess {
 
   useEffect(() => {
     if (!isFirebaseConfigured) return;
-    const unsub = subscribeToAuthedProfile((p) => {
+    // Updates channel (not just auth events): entitlements must reflect the
+    // freshest profile — e.g. the signup-trial grant published by the stats
+    // provider — or a fresh trial user stays paywalled until a full reload.
+    const unsub = subscribeToProfileUpdates((p) => {
       setProfile(p);
       setLoading(false);
     });

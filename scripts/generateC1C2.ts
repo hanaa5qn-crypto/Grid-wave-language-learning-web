@@ -83,7 +83,7 @@ async function main() {
   for (const seed of seeds) {
     const prior = existing[seed.german];
     if (prior?.mongolian) {
-      out.push({ exampleGerman: '', exampleMongolian: '', ...prior });
+      out.push({ ...prior, exampleGerman: prior.exampleGerman ?? '', exampleMongolian: prior.exampleMongolian ?? '' });
       continue;
     }
 

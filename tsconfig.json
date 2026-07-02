@@ -10,6 +10,14 @@
       "DOM.Iterable"
     ],
     "skipLibCheck": true,
+    // Full `strict` is off only because the repo deliberately has no
+    // @types/react (React 19 gotcha — see CLAUDE.md): noImplicitAny alone
+    // reports ~7k errors, all from untyped React. These four are the strict
+    // flags that ARE affordable here; keep adding as they become feasible.
+    "strictNullChecks": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "noFallthroughCasesInSwitch": true,
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "moduleDetection": "force",
@@ -27,6 +35,7 @@
     "frontend/src/**/*",
     "english/src/**/*",
     "backend/**/*",
+    "api/**/*",
     "scripts/**/*",
     "tests/**/*"
   ],

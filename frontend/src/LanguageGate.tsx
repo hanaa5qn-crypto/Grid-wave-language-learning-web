@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import AccountScreen from './AccountScreen';
-import { saveTrackChoice, subscribeToAuthedProfile, logOutUser } from './auth';
+import { saveTrackChoice, subscribeToProfileUpdates, logOutUser } from './auth';
 import { UserProfile } from './profiles';
 
 // Each track is its own chunk: picking German must not download the English
@@ -128,9 +128,10 @@ export default function LanguageGate() {
   }
 
   // Load the shared account profile for the setup/settings screen. Guests resolve
-  // to null and skip straight to the chooser.
+  // to null and skip straight to the chooser. Updates channel so the setup
+  // screen reflects the freshest saved profile, not a login-time snapshot.
   useEffect(() => {
-    const unsub = subscribeToAuthedProfile((p) => {
+    const unsub = subscribeToProfileUpdates((p) => {
       setProfile(p);
       setProfileResolved(true);
     });

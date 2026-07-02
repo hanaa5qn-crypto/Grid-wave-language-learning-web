@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { getAuthInstance, isFirebaseConfigured } from './firebase';
 import LoginScreen from './LoginScreen';
 import HeroPage from './HeroPage';
+import AppErrorBoundary from './components/AppErrorBoundary';
 
 // Code-split at the routing seam: a signed-out visitor on the hero page must
 // not download the learner tracks, the admin dashboard, or the legal pages.
@@ -62,7 +63,11 @@ export default function AuthGate() {
   } else if (path.startsWith('/contact')) {
     node = <ContactPage />;
   }
-  return <Suspense fallback={<BrandLoader />}>{node}</Suspense>;
+  return (
+    <AppErrorBoundary>
+      <Suspense fallback={<BrandLoader />}>{node}</Suspense>
+    </AppErrorBoundary>
+  );
 }
 
 function AuthFlow() {

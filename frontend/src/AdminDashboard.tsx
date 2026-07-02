@@ -32,8 +32,6 @@ import {
   adminDeleteTeacherCode,
 } from './promo';
 
-const ADMIN_EMAILS = ['hanaa5qn@gmail.com', 'yubndaayubnda@gmail.com'];
-
 // Track scope for the dashboard. undefined = all customers; 'en'/'de' restrict
 // to one learning track via the profile's `track` field.
 type Track = 'en' | 'de';
@@ -47,11 +45,6 @@ const TRACK_TITLE: Record<Track, string> = { en: 'English', de: 'German' };
 interface CustomerRow {
   id: string;
   profile: UserProfile;
-}
-
-function isAdminEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(email.trim().toLowerCase());
 }
 
 function parseDate(value: unknown): Date | null {
@@ -269,7 +262,13 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
   const [deletingCode, setDeletingCode] = useState<string | null>(null);
   const [confirmDeleteCode, setConfirmDeleteCode] = useState<string | null>(null);
 
-  const isAuthedAdmin = isAdminEmail(authUser?.email);
+  // Admin access is the server-set custom claim (admin:true) minted only by
+  // scripts/setAdminClaims.ts — the same check firestore.rules enforces. Never
+  // gate on email: sign-ups are unverified, so anyone could register an
+  // admin-looking address, and a hardcoded list also leaks admin emails in the
+  // public bundle.
+  const [adminClaim, setAdminClaim] = useState(false);
+  const isAuthedAdmin = adminClaim;
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -280,7 +279,15 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
     return onAuthStateChanged(getAuthInstance(), (user) => {
       setAuthUser(user);
       if (user?.email) setEmail(user.email);
-      setAuthLoading(false);
+      if (!user) {
+        setAdminClaim(false);
+        setAuthLoading(false);
+        return;
+      }
+      user.getIdTokenResult()
+        .then((result) => setAdminClaim(result.claims.admin === true))
+        .catch(() => setAdminClaim(false))
+        .finally(() => setAuthLoading(false));
     });
   }, []);
 
@@ -625,9 +632,14 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
     setLoginError('');
     try {
       const cred = await signInWithEmailAndPassword(getAuthInstance(), email.trim(), password);
-      if (!isAdminEmail(cred.user.email)) {
+      // Force-refresh so a freshly granted admin claim is on the token now.
+      const result = await cred.user.getIdTokenResult(true);
+      if (result.claims.admin !== true) {
         await signOut(getAuthInstance());
+        setAdminClaim(false);
         setLoginError('This account is not allowed to access the admin dashboard.');
+      } else {
+        setAdminClaim(true);
       }
     } catch (err) {
       console.error('Admin login failed:', err);
