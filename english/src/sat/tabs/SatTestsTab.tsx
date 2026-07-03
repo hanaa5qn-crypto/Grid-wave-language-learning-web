@@ -6,12 +6,18 @@
 // the catalogue. Mirrors the IELTS tests tab.
 // =============================================================================
 import React, { useState } from 'react';
-import { ClipboardList, BookOpen, Sigma, Layers, ArrowRight, Lock } from 'lucide-react';
+import { ClipboardList, BookOpen, Sigma, Layers, ArrowRight, Lock, History } from 'lucide-react';
 import { SAT_TESTS } from '../satTests';
 import SatTestRunner from '../SatTestRunner';
 import { SatTest } from '../../types';
 import { FREE_TESTS } from '../../access';
 import { useEnglishStats } from '../../stats';
+
+// Format a saved attempt's date compactly for the card footer.
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString();
+}
 
 export default function SatTestsTab({
   allContent,
@@ -20,8 +26,14 @@ export default function SatTestsTab({
   allContent: boolean;
   onUpgrade: () => void;
 }) {
-  const { requireAccount } = useEnglishStats();
+  const { requireAccount, profile } = useEnglishStats();
   const [selected, setSelected] = useState<SatTest | null>(null);
+
+  // testHistoryEn is newest-first; the first entry for a test id is its last
+  // attempt. SAT logs per-module ids ("<test.id>:<sectionIndex>").
+  const history = profile?.testHistoryEn ?? [];
+  const lastAttempt = (testId: string) =>
+    history.find((h) => h.exam === 'sat' && h.testId.startsWith(`${testId}:`)) ?? null;
 
   if (selected) {
     return (
@@ -49,6 +61,7 @@ export default function SatTestsTab({
           const mathSections = t.sections.filter((s) => s.module === 'Math');
           const totalQuestions = t.sections.reduce((n, s) => n + s.questions.length, 0);
           const locked = !allContent && i >= FREE_TESTS;
+          const attempt = lastAttempt(t.id);
           return (
             <button
               key={t.id}
@@ -82,6 +95,14 @@ export default function SatTestsTab({
                   <Layers className="w-4 h-4" /> {totalQuestions} questions
                 </span>
               </div>
+              {attempt && (
+                <span className="mt-3 flex items-center gap-1.5 text-xs text-paper-2">
+                  <History className="w-3.5 h-3.5" />
+                  Сүүлийн оролдлого:{attempt.label && ` ${attempt.label} —`} {attempt.correct}/{attempt.total}
+                  {attempt.scaledScore !== undefined && ` · ${attempt.scaledScore} оноо`}
+                  {fmtDate(attempt.takenAt) && ` · ${fmtDate(attempt.takenAt)}`}
+                </span>
+              )}
               <span className="mt-4 inline-flex items-center gap-1 text-primary font-semibold">
                 {locked ? (
                   <>

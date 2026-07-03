@@ -6,7 +6,7 @@
 // grading, estimated band scores via ieltsBandScore, TTS playback for listening
 // transcripts and speaking sample answers, and a live word counter for writing.
 // =============================================================================
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, BookOpen, Headphones, Edit3, Mic, Volume2, VolumeX,
   CheckCircle2, XCircle, Award, Eye, EyeOff, ClipboardCheck, RotateCcw,
@@ -215,11 +215,14 @@ function BandBanner({
 // ===========================================================================
 // Reading paper
 // ===========================================================================
-function ReadingPaper({ passages }: { passages: IeltsReadingPassage[] }) {
-  const { recordStudy } = useEnglishStats();
+function ReadingPaper({ passages, test }: { passages: IeltsReadingPassage[]; test: IeltsTest }) {
+  const { recordStudy, recordTestResult } = useEnglishStats();
   const [active, setActive] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  // Record the finished attempt to history at most once per submit (a Try again
+  // → resubmit records a fresh attempt, but a single submit never double-logs).
+  const recordedRef = useRef(false);
 
   const passage = passages[active];
 
@@ -235,6 +238,22 @@ function ReadingPaper({ passages }: { passages: IeltsReadingPassage[] }) {
   }
 
   const set = (id: number, v: string) => setResponses((r) => ({ ...r, [id]: v }));
+
+  const submit = () => {
+    setSubmitted(true);
+    recordStudy();
+    if (recordedRef.current) return;
+    recordedRef.current = true;
+    recordTestResult({
+      takenAt: new Date().toISOString(),
+      exam: 'ielts',
+      testId: `${test.id}:reading`,
+      label: `${test.title} · Reading`,
+      correct: correctCount,
+      total: allQuestions.length,
+      band: ieltsBandScore(correctCount, 'reading'),
+    });
+  };
 
   return (
     <div className="space-y-5">
@@ -279,8 +298,8 @@ function ReadingPaper({ passages }: { passages: IeltsReadingPassage[] }) {
 
       <PaperActions
         submitted={submitted}
-        onSubmit={() => { setSubmitted(true); recordStudy(); }}
-        onReset={() => { setSubmitted(false); setResponses({}); }}
+        onSubmit={submit}
+        onReset={() => { setSubmitted(false); setResponses({}); recordedRef.current = false; }}
       />
       {submitted && <BandBanner correct={correctCount} total={allQuestions.length} kind="reading" />}
     </div>
@@ -290,13 +309,14 @@ function ReadingPaper({ passages }: { passages: IeltsReadingPassage[] }) {
 // ===========================================================================
 // Listening paper
 // ===========================================================================
-function ListeningPaper({ sections }: { sections: IeltsListeningSection[] }) {
-  const { recordStudy } = useEnglishStats();
+function ListeningPaper({ sections, test }: { sections: IeltsListeningSection[]; test: IeltsTest }) {
+  const { recordStudy, recordTestResult } = useEnglishStats();
   const [active, setActive] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const recordedRef = useRef(false);
 
   const section = sections[active];
 
@@ -311,6 +331,22 @@ function ListeningPaper({ sections }: { sections: IeltsListeningSection[] }) {
   }
 
   const set = (id: number, v: string) => setResponses((r) => ({ ...r, [id]: v }));
+
+  const submit = () => {
+    setSubmitted(true);
+    recordStudy();
+    if (recordedRef.current) return;
+    recordedRef.current = true;
+    recordTestResult({
+      takenAt: new Date().toISOString(),
+      exam: 'ielts',
+      testId: `${test.id}:listening`,
+      label: `${test.title} · Listening`,
+      correct: correctCount,
+      total: allQuestions.length,
+      band: ieltsBandScore(correctCount, 'listening'),
+    });
+  };
 
   const play = () => {
     speak(section.transcript, 0.92);
@@ -390,8 +426,8 @@ function ListeningPaper({ sections }: { sections: IeltsListeningSection[] }) {
 
       <PaperActions
         submitted={submitted}
-        onSubmit={() => { setSubmitted(true); recordStudy(); }}
-        onReset={() => { setSubmitted(false); setResponses({}); }}
+        onSubmit={submit}
+        onReset={() => { setSubmitted(false); setResponses({}); recordedRef.current = false; }}
       />
       {submitted && <BandBanner correct={correctCount} total={allQuestions.length} kind="listening" />}
     </div>
@@ -592,8 +628,8 @@ export default function IeltsTestRunner({ test, onExit }: { test: IeltsTest; onE
         ))}
       </div>
 
-      {paper === 'reading' && <ReadingPaper passages={test.reading} />}
-      {paper === 'listening' && <ListeningPaper sections={test.listening} />}
+      {paper === 'reading' && <ReadingPaper passages={test.reading} test={test} />}
+      {paper === 'listening' && <ListeningPaper sections={test.listening} test={test} />}
       {paper === 'writing' && <WritingPaper tasks={test.writing} />}
       {paper === 'speaking' && <SpeakingPaper parts={test.speaking} />}
     </div>

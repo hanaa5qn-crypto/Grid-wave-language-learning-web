@@ -341,7 +341,7 @@ export default function SatTestRunner({
   test: SatTest;
   onExit: () => void;
 }) {
-  const { recordStudy } = useEnglishStats();
+  const { recordStudy, recordTestResult } = useEnglishStats();
   const sections = test.sections;
   const [activeSection, setActiveSection] = useState(0);
   const [current, setCurrent] = useState(0);
@@ -352,6 +352,10 @@ export default function SatTestRunner({
   const [flagged, setFlagged] = useState<Record<number, boolean>>({});
   // Which section indices have been graded.
   const [graded, setGraded] = useState<Record<number, boolean>>({});
+  // Section indices already written to test history — one entry per submit, so a
+  // re-render can't double-log. Cleared for a section on retry (a resubmit is a
+  // genuinely new attempt worth recording again).
+  const recordedSectionsRef = useRef<Set<number>>(new Set());
 
   const section = sections[activeSection];
   const questions = section ? section.questions : [];
@@ -398,6 +402,18 @@ export default function SatTestRunner({
     setGraded((g) => ({ ...g, [activeSection]: true }));
     setCurrent(0);
     recordStudy();
+    if (!recordedSectionsRef.current.has(activeSection)) {
+      recordedSectionsRef.current.add(activeSection);
+      recordTestResult({
+        takenAt: new Date().toISOString(),
+        exam: 'sat',
+        testId: `${test.id}:${activeSection}`,
+        label: `${test.title} · ${sectionLabel(section)}`,
+        correct: correctCount,
+        total: questions.length,
+        scaledScore: satScaledScore(correctCount, sectionScoreKey(section)),
+      });
+    }
   };
 
   const retryModule = () => {
@@ -428,6 +444,7 @@ export default function SatTestRunner({
       return next;
     });
     setGraded((g) => ({ ...g, [activeSection]: false }));
+    recordedSectionsRef.current.delete(activeSection);
     setCurrent(0);
   };
 

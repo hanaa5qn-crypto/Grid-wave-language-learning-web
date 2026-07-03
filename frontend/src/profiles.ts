@@ -29,6 +29,20 @@ export interface UserProfile {
   // `<exam>:<word>` keys (e.g. "ielts:abate", "sat:candid"). Lets the IELTS/SAT
   // vocab trainers resume where the learner left off across sessions.
   vocabLearnedEn?: string[];
+  // Finished English mock-test attempts (IELTS/SAT), most-recent FIRST, capped
+  // so returning learners see their past attempts under each test card. band is
+  // the IELTS estimated band (when available); scaledScore is the SAT scaled
+  // section score (when available).
+  testHistoryEn?: Array<{
+    takenAt: string;
+    exam: 'ielts' | 'sat';
+    testId: string;
+    label: string;
+    correct: number;
+    total: number;
+    band?: number;
+    scaledScore?: number;
+  }>;
   // English CEFR target level (A1..C2). Set by the English placement test on
   // first English signup, or chosen by the learner on the English dashboard.
   targetLevelEn?: string;

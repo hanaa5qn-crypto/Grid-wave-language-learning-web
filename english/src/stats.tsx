@@ -23,7 +23,8 @@ import { canInteract } from '../../frontend/src/plans';
 import { ensureSignupTrial } from '../../frontend/src/promo';
 import { Lock } from 'lucide-react';
 import {
-  addEnglishMistake, clearEnglishMistake, EN_LEVEL_ORDER, type EnglishPlacementResult,
+  addEnglishMistake, clearEnglishMistake, appendTestHistory, EN_LEVEL_ORDER,
+  type EnglishPlacementResult, type EnglishTestHistoryEntry,
 } from './englishLearning';
 
 // Mirrors the German app's tracker tuning (App.tsx).
@@ -57,6 +58,12 @@ export interface EnglishStats {
   recordPracticeDone: (activityId: string) => void;
   /** Mark a vocab flashcard (enVocabKey) as learned so the trainer resumes. */
   markVocabLearned: (vocabKey: string) => void;
+  /**
+   * Record a finished mock-test attempt (IELTS/SAT) into testHistoryEn so a
+   * returning learner sees their past attempts under each test card. Appends
+   * most-recent first, capped; guest-guarded like the others.
+   */
+  recordTestResult: (entry: EnglishTestHistoryEntry) => void;
   /** Set the English CEFR target level (clears the pending-placement flag). */
   setEnglishLevel: (level: string) => void;
   /** Persist an English placement-test result (level + per-skill scores). */
@@ -88,6 +95,7 @@ const StatsContext = createContext<EnglishStats>({
   recordEnglishActivity: () => {},
   recordPracticeDone: () => {},
   markVocabLearned: () => {},
+  recordTestResult: () => {},
   setEnglishLevel: () => {},
   saveEnglishPlacement: () => {},
   skipEnglishPlacement: () => {},
@@ -241,6 +249,20 @@ export function EnglishStatsProvider({
     if (!canTrack(p)) return;
     if ((p.vocabLearnedEn ?? []).includes(vocabKey)) return;
     patchProfile({ vocabLearnedEn: [...(p.vocabLearnedEn ?? []), vocabKey] });
+  }, [patchProfile]);
+
+  // Persist a finished mock-test attempt into the history ledger (most-recent
+  // first, capped). Also marks today as studied so the streak advances on the
+  // same submit the score is shown. Guest-guarded via patchProfile/canTrack.
+  const recordTestResult = useCallback((entry: EnglishTestHistoryEntry) => {
+    const p = profileRef.current;
+    if (!canTrack(p)) return;
+    const testHistoryEn = appendTestHistory(p.testHistoryEn ?? [], entry);
+    const today = localDateKey();
+    const studyDaysEn = (p.studyDaysEn ?? []).includes(today)
+      ? p.studyDaysEn
+      : Array.from(new Set([...(p.studyDaysEn ?? []), today])).sort();
+    patchProfile({ testHistoryEn, studyDaysEn });
   }, [patchProfile]);
 
   const setEnglishLevel = useCallback((level: string) => {
@@ -401,6 +423,7 @@ export function EnglishStatsProvider({
     recordEnglishActivity,
     recordPracticeDone,
     markVocabLearned,
+    recordTestResult,
     setEnglishLevel,
     saveEnglishPlacement,
     skipEnglishPlacement,

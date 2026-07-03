@@ -5,12 +5,18 @@
 // Holds the selected-test state; onExit clears it and returns to the catalogue.
 // =============================================================================
 import React, { useState } from 'react';
-import { ClipboardList, BookOpen, Headphones, Edit3, Mic, ArrowRight, Lock } from 'lucide-react';
+import { ClipboardList, BookOpen, Headphones, Edit3, Mic, ArrowRight, Lock, History } from 'lucide-react';
 import { IELTS_TESTS } from '../ieltsTests';
 import IeltsTestRunner from '../IeltsTestRunner';
 import { IeltsTest } from '../../types';
 import { FREE_TESTS } from '../../access';
 import { useEnglishStats } from '../../stats';
+
+// Format a saved attempt's date compactly for the card footer.
+function fmtDate(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString();
+}
 
 export default function IeltsTestsTab({
   allContent,
@@ -19,8 +25,14 @@ export default function IeltsTestsTab({
   allContent: boolean;
   onUpgrade: () => void;
 }) {
-  const { requireAccount } = useEnglishStats();
+  const { requireAccount, profile } = useEnglishStats();
   const [selected, setSelected] = useState<IeltsTest | null>(null);
+
+  // testHistoryEn is newest-first; the first entry for a test id is its last
+  // attempt. IELTS logs per-paper ids ("<test.id>:reading" / ":listening").
+  const history = profile?.testHistoryEn ?? [];
+  const lastAttempt = (testId: string) =>
+    history.find((h) => h.exam === 'ielts' && h.testId.startsWith(`${testId}:`)) ?? null;
 
   if (selected) {
     return <IeltsTestRunner test={selected} onExit={() => setSelected(null)} />;
@@ -40,6 +52,7 @@ export default function IeltsTestsTab({
       <div className="grid gap-4">
         {IELTS_TESTS.map((t, i) => {
           const locked = !allContent && i >= FREE_TESTS;
+          const attempt = lastAttempt(t.id);
           return (
             <button
               key={t.id}
@@ -76,6 +89,14 @@ export default function IeltsTestsTab({
                   <Mic className="w-4 h-4" /> {t.speaking.length} parts
                 </span>
               </div>
+              {attempt && (
+                <span className="mt-3 flex items-center gap-1.5 text-xs text-paper-2">
+                  <History className="w-3.5 h-3.5" />
+                  Сүүлийн оролдлого:{attempt.label && ` ${attempt.label} —`} {attempt.correct}/{attempt.total}
+                  {attempt.band !== undefined && ` · Band ${attempt.band.toFixed(1)}`}
+                  {fmtDate(attempt.takenAt) && ` · ${fmtDate(attempt.takenAt)}`}
+                </span>
+              )}
               <span className="mt-4 inline-flex items-center gap-1 text-primary font-semibold">
                 {locked ? (
                   <>

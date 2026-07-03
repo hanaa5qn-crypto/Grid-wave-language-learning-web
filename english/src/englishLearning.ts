@@ -42,6 +42,37 @@ export function enVocabKey(exam: 'ielts' | 'sat', word: string): string {
 }
 
 // =============================================================================
+// 0. Mock-test history — finished IELTS/SAT test attempts, newest first.
+// -----------------------------------------------------------------------------
+// Persisted on the profile (testHistoryEn) so a returning learner sees their
+// past attempts on each test card. Pure append/cap logic lives here so it is
+// unit-tested in isolation; stats.tsx calls appendTestHistory before writing.
+// =============================================================================
+export interface EnglishTestHistoryEntry {
+  takenAt: string;
+  exam: 'ielts' | 'sat';
+  testId: string;
+  label: string;
+  correct: number;
+  total: number;
+  band?: number;        // IELTS estimated band, when the runner computes one
+  scaledScore?: number; // SAT scaled section score, when the runner computes one
+}
+
+// Default cap: keep the 50 most recent attempts so the profile doc stays small.
+export const EN_TEST_HISTORY_LIMIT = 50;
+
+// Prepend a finished attempt (most-recent FIRST) and cap the list. Pure so the
+// provider stays a thin caller and the behaviour is directly testable.
+export function appendTestHistory(
+  history: EnglishTestHistoryEntry[] = [],
+  entry: EnglishTestHistoryEntry,
+  limit = EN_TEST_HISTORY_LIMIT,
+): EnglishTestHistoryEntry[] {
+  return [entry, ...history].slice(0, limit);
+}
+
+// =============================================================================
 // 1. Progress + "what did I cover"
 // =============================================================================
 

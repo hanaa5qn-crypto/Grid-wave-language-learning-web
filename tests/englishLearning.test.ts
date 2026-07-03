@@ -6,7 +6,8 @@ import {
   buildEnglishToday, resolveEnglishMistakes, addEnglishMistake, clearEnglishMistake,
   englishProgressPercent, EN_TRACKABLE_TOTAL, buildEnglishUnits, enUnitUnlocked,
   enUnitPassed, buildEnglishCurve, enActivityKey, enSatKey, enVocabKey,
-  type EnPlacementAnswer,
+  appendTestHistory, EN_TEST_HISTORY_LIMIT,
+  type EnPlacementAnswer, type EnglishTestHistoryEntry,
 } from '../english/src/englishLearning';
 import { READING_LIBRARY, LISTENING_LIBRARY } from '../english/src/content';
 
@@ -130,6 +131,39 @@ describe('scoreEnglishPlacement', () => {
     expect(r.totalQuestions).toBe(4);
     expect(r.totalCorrect).toBe(3);
     expect(r.skillScores.read.total + r.skillScores.listen.total).toBe(4);
+  });
+});
+
+describe('appendTestHistory (capped, newest-first)', () => {
+  const entry = (i: number): EnglishTestHistoryEntry => ({
+    takenAt: `2026-07-0${(i % 9) + 1}T00:00:00.000Z`,
+    exam: 'ielts', testId: `ielts-${i}:reading`, label: `Test ${i}`,
+    correct: i, total: 40, band: 6,
+  });
+
+  it('prepends the new entry (most recent first)', () => {
+    const a = entry(1), b = entry(2);
+    expect(appendTestHistory([a], b)).toEqual([b, a]);
+  });
+
+  it('starts from empty history without error', () => {
+    const a = entry(1);
+    expect(appendTestHistory(undefined, a)).toEqual([a]);
+    expect(appendTestHistory([], a)).toEqual([a]);
+  });
+
+  it('caps at the limit, dropping the oldest tail', () => {
+    let hist: EnglishTestHistoryEntry[] = [];
+    for (let i = 0; i < EN_TEST_HISTORY_LIMIT + 5; i++) hist = appendTestHistory(hist, entry(i));
+    expect(hist).toHaveLength(EN_TEST_HISTORY_LIMIT);
+    // Newest (last appended) is first; the earliest few fell off the end.
+    expect(hist[0].testId).toBe(`ielts-${EN_TEST_HISTORY_LIMIT + 4}:reading`);
+  });
+
+  it('honours a custom limit', () => {
+    const hist = appendTestHistory([entry(1), entry(2)], entry(3), 2);
+    expect(hist).toHaveLength(2);
+    expect(hist[0].testId).toBe('ielts-3:reading');
   });
 });
 
