@@ -7,7 +7,7 @@
 // =============================================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Headphones, Play, Pause, Eye, EyeOff, ListChecks, RotateCcw, ChevronLeft,
+  Headphones, Play, Pause, Eye, EyeOff, ListChecks, RotateCcw, ChevronLeft, CheckCircle2,
 } from 'lucide-react';
 import { LISTENING_LIBRARY } from '../../content';
 import { playTts, pauseTts, resumeTts, stopTts, type TtsState } from '../../../../frontend/src/utils/tts';
@@ -20,7 +20,12 @@ import { enActivityKey } from '../../englishLearning';
 const LISTEN_OPTS = { lang: 'en-GB', voice: 'en-GB-SoniaNeural', rate: 0.92 } as const;
 
 export default function IeltsListeningTab({ allContent, onUpgrade }: { allContent: boolean; onUpgrade: () => void }) {
-  const { recordStudy, recordEnglishActivity, requireAccount } = useEnglishStats();
+  const { recordStudy, recordEnglishActivity, requireAccount, profile } = useEnglishStats();
+  // Persisted completion ledger — shows which sections were finished before.
+  const completed = useMemo(
+    () => new Set(profile?.completedActivityIdsEn ?? []),
+    [profile?.completedActivityIdsEn],
+  );
   // Free accounts start on the unlocked A1 level; paid users keep the academic default.
   const [level, setLevel] = useState<EnglishLevel | 'all'>(allContent ? 'B2' : 'A1');
   const [active, setActive] = useState<ListeningItem | null>(null);
@@ -187,6 +192,7 @@ export default function IeltsListeningTab({ allContent, onUpgrade }: { allConten
       <div className="grid gap-3 sm:grid-cols-2">
         {sections.map((p) => {
           const locked = isFreeLessonLocked(allContent, p.level);
+          const done = completed.has(enActivityKey('listen', p.id));
           return (
             <button
               key={p.id}
@@ -198,6 +204,11 @@ export default function IeltsListeningTab({ allContent, onUpgrade }: { allConten
                   {p.level}
                 </span>
                 <span className="text-xs text-paper-2">{p.topic}</span>
+                {done && !locked && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-ink-2 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                    <CheckCircle2 className="w-3 h-3" /> Хийсэн
+                  </span>
+                )}
                 {locked && <span className="ml-auto"><LockBadge /></span>}
               </div>
               <h3 className="font-bold text-paper">{p.title}</h3>

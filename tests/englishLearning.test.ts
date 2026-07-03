@@ -5,7 +5,7 @@ import {
   scoreEnglishPlacement,
   buildEnglishToday, resolveEnglishMistakes, addEnglishMistake, clearEnglishMistake,
   englishProgressPercent, EN_TRACKABLE_TOTAL, buildEnglishUnits, enUnitUnlocked,
-  enUnitPassed, buildEnglishCurve, enActivityKey,
+  enUnitPassed, buildEnglishCurve, enActivityKey, enSatKey, enVocabKey,
   type EnPlacementAnswer,
 } from '../english/src/englishLearning';
 import { READING_LIBRARY, LISTENING_LIBRARY } from '../english/src/content';
@@ -151,6 +151,19 @@ describe('English dashboard engine', () => {
       ...LISTENING_LIBRARY.map((i) => enActivityKey('listen', i.id)),
     ];
     expect(englishProgressPercent(all)).toBe(100);
+  });
+
+  it('progress percent ignores SAT practice ids sharing the ledger', () => {
+    const satOnly = [enSatKey(90001), enSatKey(90002)];
+    expect(englishProgressPercent(satOnly)).toBe(0);
+    const mixed = [...satOnly, enActivityKey('read', READING_LIBRARY[0].id)];
+    expect(englishProgressPercent(mixed)).toBe(englishProgressPercent([mixed[2]]));
+  });
+
+  it('SAT + vocab ledger keys are stable and namespaced', () => {
+    expect(enSatKey(90001)).toBe('en:sat:90001');
+    expect(enVocabKey('ielts', '  Abate ')).toBe('ielts:abate');
+    expect(enVocabKey('sat', 'Candid')).toBe('sat:candid');
   });
 
   it("today's session suggests an item per skill at the level", () => {

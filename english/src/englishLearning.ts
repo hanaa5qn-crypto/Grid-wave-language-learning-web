@@ -29,6 +29,18 @@ export function enActivityKey(skill: EnSkill, itemId: number): string {
   return `en:${skill}:${itemId}`;
 }
 
+// Stable id for a single SAT practice question (Reading & Writing or Math).
+// Lives in the same completedActivityIdsEn ledger as the skill activities, but
+// under its own prefix so the reading/listening progress metric ignores it.
+export function enSatKey(questionId: number): string {
+  return `en:sat:${questionId}`;
+}
+
+// Stable id for a learned vocab flashcard in the vocabLearnedEn ledger.
+export function enVocabKey(exam: 'ielts' | 'sat', word: string): string {
+  return `${exam}:${word.trim().toLowerCase()}`;
+}
+
 // =============================================================================
 // 1. Progress + "what did I cover"
 // =============================================================================
@@ -41,7 +53,11 @@ export const EN_TRACKABLE_TOTAL = READING_LIBRARY.length + LISTENING_LIBRARY.len
 
 export function englishProgressPercent(completedIds: string[] = []): number {
   if (EN_TRACKABLE_TOTAL === 0) return 0;
-  const done = new Set(completedIds).size;
+  // Count only the auto-scored skill activities — the ledger also holds SAT
+  // practice-question ids (en:sat:*) which must not inflate this metric.
+  const done = new Set(
+    completedIds.filter((id) => id.startsWith('en:read:') || id.startsWith('en:listen:')),
+  ).size;
   return Math.min(100, Math.round((done / EN_TRACKABLE_TOTAL) * 100));
 }
 

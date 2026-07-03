@@ -25,6 +25,10 @@ export interface UserProfile {
   // Session, mistake log, progress and learning path.
   completedActivityIdsEn?: string[];
   mistakeIdsEn?: string[];
+  // English vocab flashcards the learner has revealed/learned, as
+  // `<exam>:<word>` keys (e.g. "ielts:abate", "sat:candid"). Lets the IELTS/SAT
+  // vocab trainers resume where the learner left off across sessions.
+  vocabLearnedEn?: string[];
   // English CEFR target level (A1..C2). Set by the English placement test on
   // first English signup, or chosen by the learner on the English dashboard.
   targetLevelEn?: string;

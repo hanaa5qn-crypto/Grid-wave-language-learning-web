@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import { CheckCircle2, XCircle, RotateCcw, Lock } from 'lucide-react';
 import { SatQuestion } from '../../types';
 import { useEnglishStats } from '../../stats';
+import { enSatKey } from '../../englishLearning';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -76,8 +77,10 @@ export function gridInCorrect(q: SatQuestion, value: string): boolean {
 // A single self-grading SAT question (passage + MCQ or grid-in) with a worked
 // explanation shown after answering.
 export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q, index }) => {
-  const { recordStudy, requireAccount } = useEnglishStats();
+  const { recordStudy, recordPracticeDone, requireAccount, profile } = useEnglishStats();
   const gridIn = isGridIn(q);
+  // Persisted "answered before" state — survives reloads and future sessions.
+  const doneBefore = (profile?.completedActivityIdsEn ?? []).includes(enSatKey(q.id));
   const [picked, setPicked] = useState<number | undefined>(undefined);
   const [grid, setGrid] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -96,8 +99,13 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
   return (
     <div className="rounded-2xl bg-ink-raise p-4 sm:p-5">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-paper-2 font-semibold text-sm">
+        <span className="flex items-center gap-2 text-paper-2 font-semibold text-sm">
           {index + 1}.
+          {doneBefore && !submitted && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-ink-2 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+              <CheckCircle2 className="w-3 h-3" /> Хийсэн
+            </span>
+          )}
         </span>
         <span className="flex items-center gap-2">
           {q.difficulty && (
@@ -190,7 +198,12 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
           <button
             type="button"
             disabled={!canSubmit}
-            onClick={() => { if (!requireAccount()) return; setSubmitted(true); recordStudy(); }}
+            onClick={() => {
+              if (!requireAccount()) return;
+              setSubmitted(true);
+              recordStudy();
+              recordPracticeDone(enSatKey(q.id)); // remember it across sessions
+            }}
             className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2 text-sm font-semibold disabled:opacity-40"
           >
             <CheckCircle2 className="w-4 h-4" /> Check answer

@@ -48,6 +48,15 @@ export interface EnglishStats {
    * log; a right answer clears it. Also marks today as studied.
    */
   recordEnglishActivity: (activityId: string, correct: boolean) => void;
+  /**
+   * Mark a single practice question (e.g. a SAT practice card, enSatKey) as
+   * done in the completion ledger WITHOUT touching the mistake log — practice
+   * cards are retryable in place, so a miss isn't queued for review. Also marks
+   * today as studied.
+   */
+  recordPracticeDone: (activityId: string) => void;
+  /** Mark a vocab flashcard (enVocabKey) as learned so the trainer resumes. */
+  markVocabLearned: (vocabKey: string) => void;
   /** Set the English CEFR target level (clears the pending-placement flag). */
   setEnglishLevel: (level: string) => void;
   /** Persist an English placement-test result (level + per-skill scores). */
@@ -77,6 +86,8 @@ const StatsContext = createContext<EnglishStats>({
   enabled: false,
   recordStudy: () => {},
   recordEnglishActivity: () => {},
+  recordPracticeDone: () => {},
+  markVocabLearned: () => {},
   setEnglishLevel: () => {},
   saveEnglishPlacement: () => {},
   skipEnglishPlacement: () => {},
@@ -208,6 +219,28 @@ export function EnglishStatsProvider({
       ? p.studyDaysEn
       : Array.from(new Set([...(p.studyDaysEn ?? []), today])).sort();
     patchProfile({ completedActivityIdsEn, mistakeIdsEn, studyDaysEn });
+  }, [patchProfile]);
+
+  // Persist a done practice question (SAT card etc.) into the completion
+  // ledger only — no mistake-log entry, the card offers an in-place retry.
+  const recordPracticeDone = useCallback((activityId: string) => {
+    const p = profileRef.current;
+    if (!canTrack(p)) return;
+    if ((p.completedActivityIdsEn ?? []).includes(activityId)) return;
+    const completedActivityIdsEn = [...(p.completedActivityIdsEn ?? []), activityId];
+    const today = localDateKey();
+    const studyDaysEn = (p.studyDaysEn ?? []).includes(today)
+      ? p.studyDaysEn
+      : Array.from(new Set([...(p.studyDaysEn ?? []), today])).sort();
+    patchProfile({ completedActivityIdsEn, studyDaysEn });
+  }, [patchProfile]);
+
+  // Persist a learned vocab flashcard so the trainer can resume next session.
+  const markVocabLearned = useCallback((vocabKey: string) => {
+    const p = profileRef.current;
+    if (!canTrack(p)) return;
+    if ((p.vocabLearnedEn ?? []).includes(vocabKey)) return;
+    patchProfile({ vocabLearnedEn: [...(p.vocabLearnedEn ?? []), vocabKey] });
   }, [patchProfile]);
 
   const setEnglishLevel = useCallback((level: string) => {
@@ -366,6 +399,8 @@ export function EnglishStatsProvider({
     enabled: canTrack(profile),
     recordStudy,
     recordEnglishActivity,
+    recordPracticeDone,
+    markVocabLearned,
     setEnglishLevel,
     saveEnglishPlacement,
     skipEnglishPlacement,

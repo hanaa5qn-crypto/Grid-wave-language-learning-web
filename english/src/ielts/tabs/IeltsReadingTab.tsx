@@ -6,7 +6,7 @@
 // experience (academic passages + comprehension questions).
 // =============================================================================
 import React, { useMemo, useState } from 'react';
-import { BookOpen, ListChecks, RotateCcw, ChevronLeft } from 'lucide-react';
+import { BookOpen, ListChecks, RotateCcw, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { READING_LIBRARY } from '../../content';
 import { ReadingItem, EnglishLevel } from '../../types';
 import { McqBlock, LevelFilter, ScoreBanner, IELTS_LEVELS, isFreeLessonLocked, LockBadge } from './quizKit';
@@ -14,7 +14,12 @@ import { useEnglishStats } from '../../stats';
 import { enActivityKey } from '../../englishLearning';
 
 export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent: boolean; onUpgrade: () => void }) {
-  const { recordStudy, recordEnglishActivity, requireAccount } = useEnglishStats();
+  const { recordStudy, recordEnglishActivity, requireAccount, profile } = useEnglishStats();
+  // Persisted completion ledger — shows which passages were finished before.
+  const completed = useMemo(
+    () => new Set(profile?.completedActivityIdsEn ?? []),
+    [profile?.completedActivityIdsEn],
+  );
   // Free accounts start on the unlocked A1 level; paid users keep the academic default.
   const [level, setLevel] = useState<EnglishLevel | 'all'>(allContent ? 'B2' : 'A1');
   const [active, setActive] = useState<ReadingItem | null>(null);
@@ -130,6 +135,7 @@ export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent:
       <div className="grid gap-3 sm:grid-cols-2">
         {passages.map((p) => {
           const locked = isFreeLessonLocked(allContent, p.level);
+          const done = completed.has(enActivityKey('read', p.id));
           return (
             <button
               key={p.id}
@@ -141,6 +147,11 @@ export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent:
                   {p.level}
                 </span>
                 <span className="text-xs text-paper-2">{p.topic}</span>
+                {done && !locked && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-ink-2 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                    <CheckCircle2 className="w-3 h-3" /> Хийсэн
+                  </span>
+                )}
                 {locked && <span className="ml-auto"><LockBadge /></span>}
               </div>
               <h3 className="font-bold text-paper">{p.title}</h3>
