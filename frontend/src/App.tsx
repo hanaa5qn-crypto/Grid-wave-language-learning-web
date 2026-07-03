@@ -781,8 +781,13 @@ function LearnerApp() {
       );
     });
 
+  // Stop speech whenever the learner switches to a non-listening tab — a
+  // Read-aloud passage or Exam listening clip must never keep talking on
+  // another tab. (Per-clip stops live inside tabs/ListenTab.tsx.)
+  useEffect(() => {
+    if (activeTab !== 'listen') stopTts();
+  }, [activeTab]);
   // Cancel any in-flight utterance on unmount so it never keeps talking.
-  // (Per-clip / per-tab stops live inside tabs/ListenTab.tsx.)
   useEffect(() => () => stopTts(), []);
 
 

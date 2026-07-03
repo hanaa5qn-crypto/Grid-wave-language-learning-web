@@ -111,18 +111,67 @@ export async function updateProfileFields(
     stripped[key] = value;
   }
   if (Object.keys(stripped).length === 0) return;
+  // Keep the shared cache + update-channel subscribers (paywall, language gate)
+  // in sync, same as saveProfileProgress — otherwise they render a stale
+  // login-time snapshot until the next full reload.
+  if (sharedProfile) {
+    publishAuthedProfile(mergePatch(sharedProfile as unknown as Record<string, unknown>, expandDottedPaths(stripped)) as unknown as UserProfile);
+  }
   try {
     await updateDoc(profileRef(user.uid), stripped as UpdateData<UserProfile>);
   } catch (err) {
     // updateDoc fails when the document doesn't exist yet (e.g. the signup
     // profile write was skipped) — fall back to a merge write so the doc is
-    // created and progress is never lost.
+    // created and progress is never lost. setDoc does NOT interpret dotted
+    // keys as nested field paths (only updateDoc does), so expand them first
+    // or `studySecondsByDate.2026-07-02` becomes a literal top-level field.
     if ((err as { code?: string }).code === 'not-found') {
-      await setDoc(profileRef(user.uid), stripped, { merge: true });
+      await setDoc(profileRef(user.uid), expandDottedPaths(stripped), { merge: true });
     } else {
       throw err;
     }
   }
+}
+
+// `{'a.b': 1}` → `{a: {b: 1}}`. Sibling dotted keys sharing a prefix merge into
+// one nested object.
+function expandDottedPaths(patch: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(patch)) {
+    const segments = key.split('.');
+    let node = out;
+    for (let i = 0; i < segments.length - 1; i++) {
+      const existing = node[segments[i]];
+      if (typeof existing === 'object' && existing !== null && !Array.isArray(existing)) {
+        node = existing as Record<string, unknown>;
+      } else {
+        const fresh: Record<string, unknown> = {};
+        node[segments[i]] = fresh;
+        node = fresh;
+      }
+    }
+    node[segments[segments.length - 1]] = value;
+  }
+  return out;
+}
+
+// Non-mutating deep merge of an expanded patch into a profile copy — mirrors
+// Firestore's merge semantics: plain objects merge per-key, everything else
+// (arrays, scalars) is replaced.
+function mergePatch(base: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...base };
+  for (const [key, value] of Object.entries(patch)) {
+    const existing = out[key];
+    if (
+      typeof value === 'object' && value !== null && !Array.isArray(value) &&
+      typeof existing === 'object' && existing !== null && !Array.isArray(existing)
+    ) {
+      out[key] = mergePatch(existing as Record<string, unknown>, value as Record<string, unknown>);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
 }
 
 // Persist which learning track the signed-in user picked ('de' German / 'en'
