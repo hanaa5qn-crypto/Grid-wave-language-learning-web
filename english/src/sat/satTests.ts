@@ -7,8 +7,10 @@
 import { SatTest } from '../types';
 import { SAT_TEST_1 } from './satTest1';
 import { SAT_TEST_2 } from './satTest2';
+import { SAT_TEST_3 } from './satTest3';
+import { SAT_TEST_4 } from './satTest4';
 
-export const SAT_TESTS: SatTest[] = [SAT_TEST_1, SAT_TEST_2];
+export const SAT_TESTS: SatTest[] = [SAT_TEST_1, SAT_TEST_2, SAT_TEST_3, SAT_TEST_4];
 
 // Approximate Digital SAT scaling. Reading & Writing raw is out of 54, Math out
 // of 44. The official curve is roughly linear in the middle with compression at

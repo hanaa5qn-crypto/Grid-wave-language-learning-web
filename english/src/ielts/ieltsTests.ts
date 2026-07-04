@@ -9,8 +9,16 @@ import { IeltsTest } from '../types';
 import { IELTS_TEST_1 } from './ieltsTest1';
 import { IELTS_TEST_2 } from './ieltsTest2';
 import { IELTS_GENERAL_1 } from './ieltsGeneral1';
+import { IELTS_PRACTICE_TESTS_A } from './ieltsPracticeGenerated1';
+import { IELTS_PRACTICE_TESTS_B } from './ieltsPracticeGenerated2';
 
-export const IELTS_TESTS: IeltsTest[] = [IELTS_TEST_1, IELTS_TEST_2, IELTS_GENERAL_1];
+export const IELTS_TESTS: IeltsTest[] = [
+  IELTS_TEST_1,
+  IELTS_TEST_2,
+  IELTS_GENERAL_1,
+  ...IELTS_PRACTICE_TESTS_A,
+  ...IELTS_PRACTICE_TESTS_B,
+];
 
 // Official-style IELTS raw-score (out of 40) → band conversion. Reading uses the
 // Academic table; Listening uses its own. These mirror the conversion ranges

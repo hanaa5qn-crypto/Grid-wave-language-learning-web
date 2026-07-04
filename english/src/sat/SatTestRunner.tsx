@@ -44,9 +44,30 @@ function normaliseAnswer(raw: string): string {
   return t;
 }
 
+// Evaluate a "n/d" fraction string to a decimal, or null if not a fraction.
+function fractionToDecimal(s: string): number | null {
+  const m = /^-?\d+\/\d+$/.exec(s);
+  if (!m) return null;
+  const [n, d] = s.split('/').map(Number);
+  return d === 0 ? null : n / d;
+}
+
 function gridInCorrect(q: SatQuestion, value: string): boolean {
   if (q.gridInAnswer === undefined) return false;
-  return normaliseAnswer(value) === normaliseAnswer(q.gridInAnswer);
+  const a = normaliseAnswer(value);
+  const b = normaliseAnswer(q.gridInAnswer);
+  if (a === b) return true;
+  // Fraction vs. decimal (e.g. ".333" vs. stored "1/3"): compare numerically.
+  const aFrac = fractionToDecimal(a);
+  const bFrac = fractionToDecimal(b);
+  if (aFrac !== null || bFrac !== null) {
+    const aNum = aFrac !== null ? aFrac : Number(a);
+    const bNum = bFrac !== null ? bFrac : Number(b);
+    if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
+      return Math.abs(aNum - bNum) < 0.001;
+    }
+  }
+  return false;
 }
 
 function mcqCorrect(q: SatQuestion, choiceIndex: number | undefined): boolean {
@@ -293,7 +314,13 @@ function ModuleResult({
   onReview: () => void;
   onRetry: () => void;
 }) {
-  const scaled = satScaledScore(correct, sectionScoreKey(section));
+  // satScaledScore expects a raw score out of the full-length curve (54 RW /
+  // 44 Math). Scale proportionally so a shorter module isn't graded against
+  // the full-length maximum (identity when total matches that curve max).
+  const key = sectionScoreKey(section);
+  const curveMax = key === 'reading' ? 54 : 44;
+  const scaledRaw = total > 0 ? Math.round((correct * curveMax) / total) : 0;
+  const scaled = satScaledScore(scaledRaw, key);
   return (
     <div className="rounded-2xl bg-ink-2 text-paper p-5 sm:p-6">
       <p className="text-sm font-semibold opacity-80">{sectionLabel(section)} · graded</p>

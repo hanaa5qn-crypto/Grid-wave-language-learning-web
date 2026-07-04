@@ -198,7 +198,11 @@ const QuestionInput: React.FC<{
 function BandBanner({
   correct, total, kind,
 }: { correct: number; total: number; kind: 'reading' | 'listening' }) {
-  const band = ieltsBandScore(correct, kind);
+  // ieltsBandScore expects a raw score out of the official 40-question paper.
+  // Scale proportionally so a shorter generated test isn't graded against the
+  // full-length maximum (identity when total === 40).
+  const scaledRaw = total > 0 ? Math.round((correct * 40) / total) : 0;
+  const band = ieltsBandScore(scaledRaw, kind);
   return (
     <div className="rounded-2xl bg-ink-2 text-paper px-5 py-4 flex flex-wrap items-center justify-between gap-3">
       <span className="inline-flex items-center gap-2 font-semibold">
