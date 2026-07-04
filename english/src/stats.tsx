@@ -50,12 +50,12 @@ export interface EnglishStats {
    */
   recordEnglishActivity: (activityId: string, correct: boolean) => void;
   /**
-   * Mark a single practice question (e.g. a SAT practice card, enSatKey) as
-   * done in the completion ledger WITHOUT touching the mistake log — practice
-   * cards are retryable in place, so a miss isn't queued for review. Also marks
-   * today as studied.
+   * Record a graded SAT practice question (enSatKey) by correctness: a right
+   * answer adds it to the completion ledger and clears any prior mistake; a
+   * wrong answer queues it in the mistake log and does NOT mark it done, so it
+   * resurfaces (flagged) until answered correctly. Also marks today as studied.
    */
-  recordPracticeDone: (activityId: string) => void;
+  recordPracticeDone: (activityId: string, correct: boolean) => void;
   /** Mark a vocab flashcard (enVocabKey) as learned so the trainer resumes. */
   markVocabLearned: (vocabKey: string) => void;
   /**
@@ -229,18 +229,23 @@ export function EnglishStatsProvider({
     patchProfile({ completedActivityIdsEn, mistakeIdsEn, studyDaysEn });
   }, [patchProfile]);
 
-  // Persist a done practice question (SAT card etc.) into the completion
-  // ledger only — no mistake-log entry, the card offers an in-place retry.
-  const recordPracticeDone = useCallback((activityId: string) => {
+  // Persist a graded SAT practice question: correct → completed + cleared from
+  // mistakes (so it hides next visit); incorrect → queued in the mistake log
+  // and left OFF the completion ledger (so it stays flagged for retry).
+  const recordPracticeDone = useCallback((activityId: string, correct: boolean) => {
     const p = profileRef.current;
     if (!canTrack(p)) return;
-    if ((p.completedActivityIdsEn ?? []).includes(activityId)) return;
-    const completedActivityIdsEn = [...(p.completedActivityIdsEn ?? []), activityId];
+    const completedActivityIdsEn = correct
+      ? Array.from(new Set([...(p.completedActivityIdsEn ?? []), activityId]))
+      : (p.completedActivityIdsEn ?? []);
+    const mistakeIdsEn = correct
+      ? clearEnglishMistake(p.mistakeIdsEn ?? [], activityId)
+      : addEnglishMistake(p.mistakeIdsEn ?? [], activityId);
     const today = localDateKey();
     const studyDaysEn = (p.studyDaysEn ?? []).includes(today)
       ? p.studyDaysEn
       : Array.from(new Set([...(p.studyDaysEn ?? []), today])).sort();
-    patchProfile({ completedActivityIdsEn, studyDaysEn });
+    patchProfile({ completedActivityIdsEn, mistakeIdsEn, studyDaysEn });
   }, [patchProfile]);
 
   // Persist a learned vocab flashcard so the trainer can resume next session.

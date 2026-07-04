@@ -7,7 +7,7 @@
 // look-and-feel stays consistent. Pure presentation; no exam data here.
 // =============================================================================
 import React, { useState } from 'react';
-import { CheckCircle2, XCircle, RotateCcw, Lock } from 'lucide-react';
+import { CheckCircle2, XCircle, RotateCcw, Lock, ChevronDown } from 'lucide-react';
 import { SatQuestion } from '../../types';
 import { useEnglishStats } from '../../stats';
 import { enSatKey } from '../../englishLearning';
@@ -52,6 +52,52 @@ export function FreePracticeLock({ hiddenCount, onUpgrade }: { hiddenCount: numb
   );
 }
 
+// Per-question practice status, derived from the profile's completion +
+// mistake ledgers (see recordPracticeDone in stats.tsx):
+//   'correct'   — answered right at least once, no outstanding mistake
+//   'incorrect' — currently flagged in the mistake log (retry it)
+//   'unseen'    — never answered
+export type SatQuestionStatus = 'correct' | 'incorrect' | 'unseen';
+
+export function satQuestionStatus(
+  questionId: number,
+  completedIds: string[],
+  mistakeIds: string[],
+): SatQuestionStatus {
+  const key = enSatKey(questionId);
+  if (mistakeIds.includes(key)) return 'incorrect';
+  if (completedIds.includes(key)) return 'correct';
+  return 'unseen';
+}
+
+// Stable partition: flagged mistakes float to the top of the (already
+// difficulty-sorted) list, everything else keeps its relative order.
+export function sortMistakesFirst<Q extends { id: number }>(
+  questions: Q[],
+  mistakeIds: string[],
+): Q[] {
+  const isMistake = (q: Q) => mistakeIds.includes(enSatKey(q.id));
+  return questions.slice().sort((a, b) => Number(isMistake(b)) - Number(isMistake(a)));
+}
+
+// Small pill toggle shared by the Math/RW practice tabs — reveals questions
+// already answered correctly (hidden by default so a tab reads as "what's
+// left to do").
+export function CompletedToggle({ show, onChange }: { show: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!show)}
+      className={[
+        'rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
+        show ? 'bg-paper text-ink' : 'bg-ink-2 text-paper-2 hover:text-paper',
+      ].join(' ')}
+    >
+      Хийсэн харуулах
+    </button>
+  );
+}
+
 // A grid-in item is one with no choices array (student-produced response).
 export function isGridIn(q: SatQuestion): boolean {
   return !q.choices || q.choices.length === 0;
@@ -81,6 +127,7 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
   const gridIn = isGridIn(q);
   // Persisted "answered before" state — survives reloads and future sessions.
   const doneBefore = (profile?.completedActivityIdsEn ?? []).includes(enSatKey(q.id));
+  const mistakeBefore = (profile?.mistakeIdsEn ?? []).includes(enSatKey(q.id));
   const [picked, setPicked] = useState<number | undefined>(undefined);
   const [grid, setGrid] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -101,7 +148,12 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
       <div className="flex items-center justify-between mb-3">
         <span className="flex items-center gap-2 text-paper-2 font-semibold text-sm">
           {index + 1}.
-          {doneBefore && !submitted && (
+          {!submitted && mistakeBefore && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-ink-2 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+              <XCircle className="w-3 h-3" /> Буруу — дахин хийх
+            </span>
+          )}
+          {doneBefore && !mistakeBefore && !submitted && (
             <span className="inline-flex items-center gap-1 rounded-full bg-ink-2 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
               <CheckCircle2 className="w-3 h-3" /> Хийсэн
             </span>
@@ -202,7 +254,7 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
               if (!requireAccount()) return;
               setSubmitted(true);
               recordStudy();
-              recordPracticeDone(enSatKey(q.id)); // remember it across sessions
+              recordPracticeDone(enSatKey(q.id), wasCorrect); // correct→done+clears mistake, wrong→flagged for retry
             }}
             className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2 text-sm font-semibold disabled:opacity-40"
           >
@@ -267,3 +319,38 @@ export function DomainFilter<T extends string>({
     </div>
   );
 }
+
+// Difficulty breakdown shown in a domain header when no single difficulty is
+// selected — e.g. "E 8 · M 12 · H 5".
+export type DifficultyCounts = { Easy: number; Medium: number; Hard: number };
+
+// A collapsible domain section (native <details>/<summary>, no accordion lib).
+// Reused by the Math and RW practice tabs so the collapse/expand + header
+// markup — bullet, domain name, filtered count, difficulty breakdown, chevron
+// — lives in one place. `open` is driven by the parent's domain filter (a
+// single selected domain renders open; otherwise the tab loads fully
+// collapsed as a compact index).
+export const DomainSection: React.FC<{
+  domain: string;
+  count: number;
+  breakdown?: DifficultyCounts;
+  open: boolean;
+  children: React.ReactNode;
+}> = ({ domain, count, breakdown, open, children }) => {
+  return (
+    <details open={open} className="group">
+      <summary className="list-none [&::-webkit-details-marker]:hidden flex items-center gap-2 cursor-pointer text-lg font-bold text-paper">
+        <span className="h-5 w-1.5 rounded-full bg-paper" />
+        {domain}
+        <span className="text-sm font-normal text-paper-2">· {count}</span>
+        {breakdown && (
+          <span className="text-xs font-normal text-paper-2/70">
+            E {breakdown.Easy} · M {breakdown.Medium} · H {breakdown.Hard}
+          </span>
+        )}
+        <ChevronDown className="w-4 h-4 ml-auto shrink-0 text-paper-2 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="space-y-4 mt-4">{children}</div>
+    </details>
+  );
+};

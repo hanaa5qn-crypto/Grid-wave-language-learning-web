@@ -20,17 +20,33 @@ export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent:
     () => new Set(profile?.completedActivityIdsEn ?? []),
     [profile?.completedActivityIdsEn],
   );
+  // Failed-and-not-yet-repassed ledger — flags cards that need another attempt.
+  const mistakes = useMemo(
+    () => new Set(profile?.mistakeIdsEn ?? []),
+    [profile?.mistakeIdsEn],
+  );
   // Free accounts start on the unlocked A1 level; paid users keep the academic default.
   const [level, setLevel] = useState<EnglishLevel | 'all'>(allContent ? 'B2' : 'A1');
   const [active, setActive] = useState<ReadingItem | null>(null);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   // IELTS reading sits at B1+; keep the academic-leaning passages.
-  const passages = useMemo(() => {
+  const levelPool = useMemo(() => {
     const pool = READING_LIBRARY.filter((p) => IELTS_LEVELS.includes(p.level));
     return level === 'all' ? pool : pool.filter((p) => p.level === level);
   }, [level]);
+  const passages = useMemo(() => {
+    // Failed cards surface first (need a redo); passed cards hide unless toggled on.
+    return levelPool
+      .filter((p) => showCompleted || !completed.has(enActivityKey('read', p.id)) || mistakes.has(enActivityKey('read', p.id)))
+      .sort((a, b) => {
+        const aFailed = mistakes.has(enActivityKey('read', a.id)) ? 0 : 1;
+        const bFailed = mistakes.has(enActivityKey('read', b.id)) ? 0 : 1;
+        return aFailed - bFailed;
+      });
+  }, [levelPool, showCompleted, completed, mistakes]);
 
   function open(item: ReadingItem) {
     setActive(item);
@@ -130,12 +146,24 @@ export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent:
         </p>
       </div>
 
-      <LevelFilter levels={IELTS_LEVELS} active={level} onChange={setLevel} />
+      <div className="flex flex-wrap items-center gap-2">
+        <LevelFilter levels={IELTS_LEVELS} active={level} onChange={setLevel} />
+        <button
+          onClick={() => setShowCompleted((s) => !s)}
+          className={`rounded-full px-3 py-1 text-xs font-bold transition-colors ${
+            showCompleted ? 'bg-paper text-ink' : 'bg-ink-2 text-paper-2 hover:text-paper'
+          }`}
+        >
+          Хийсэн харуулах
+        </button>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         {passages.map((p) => {
+          const key = enActivityKey('read', p.id);
           const locked = isFreeLessonLocked(allContent, p.level);
-          const done = completed.has(enActivityKey('read', p.id));
+          const done = completed.has(key);
+          const failed = mistakes.has(key);
           return (
             <button
               key={p.id}
@@ -147,7 +175,12 @@ export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent:
                   {p.level}
                 </span>
                 <span className="text-xs text-paper-2">{p.topic}</span>
-                {done && !locked && (
+                {failed && !locked && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-900/40 text-amber-300 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                    Буруу — дахин хийх
+                  </span>
+                )}
+                {done && !failed && !locked && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-ink-2 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                     <CheckCircle2 className="w-3 h-3" /> Хийсэн
                   </span>
@@ -163,8 +196,11 @@ export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent:
         })}
       </div>
 
-      {passages.length === 0 && (
+      {passages.length === 0 && levelPool.length === 0 && (
         <p className="text-paper-2">Энэ түвшинд эх бичвэр алга байна.</p>
+      )}
+      {passages.length === 0 && levelPool.length > 0 && (
+        <p className="text-paper-2">Бүгдийг зөв хийсэн — Хийсэн харуулах дээр дарж дахин үзнэ үү.</p>
       )}
     </div>
   );
