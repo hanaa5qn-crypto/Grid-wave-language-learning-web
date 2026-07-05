@@ -242,7 +242,7 @@ export function BillingCard({
                       disabled={paymentActionLoading || isCurrent || founderAccess}
                       className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm uppercase tracking-[0.15em] cursor-pointer disabled:cursor-not-allowed transition-colors border ${
                         highlight
-                          ? 'bg-paper hover:bg-white text-ink border-paper disabled:bg-ink-raise disabled:text-paper-3 disabled:border-ink-line'
+                          ? 'bg-paper hover:bg-paper-bright text-ink border-paper disabled:bg-ink-raise disabled:text-paper-3 disabled:border-ink-line'
                           : 'bg-transparent hover:bg-ink-raise text-paper border-ink-line hover:border-paper/60 disabled:bg-ink-raise disabled:text-paper-3 disabled:border-ink-line'
                       }`}
                     >
@@ -296,7 +296,7 @@ export function BillingCard({
               <button
                 onClick={payDummyInvoice}
                 disabled={paymentStatusLoading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-paper hover:bg-white disabled:bg-ink-raise disabled:text-paper-3 text-ink border border-paper disabled:border-ink-line rounded-xl font-medium text-sm uppercase tracking-[0.15em] cursor-pointer disabled:cursor-not-allowed transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-paper hover:bg-paper-bright disabled:bg-ink-raise disabled:text-paper-3 text-ink border border-paper disabled:border-ink-line rounded-xl font-medium text-sm uppercase tracking-[0.15em] cursor-pointer disabled:cursor-not-allowed transition-colors"
               >
                 {paymentStatusLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
                 Төлбөр төлөх (туршилт)
@@ -320,7 +320,7 @@ export function BillingCard({
                 href={bylCheckout.url}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-paper hover:bg-white text-ink border border-paper rounded-xl font-medium text-sm uppercase tracking-[0.15em] transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-paper hover:bg-paper-bright text-ink border border-paper rounded-xl font-medium text-sm uppercase tracking-[0.15em] transition-colors"
               >
                 Төлбөрийн хуудас нээх <ExternalLink className="w-4 h-4" />
               </a>
@@ -416,7 +416,7 @@ export function BillingCard({
               <button
                 type="submit"
                 disabled={manualPromoLoading || !manualPromoCode.trim()}
-                className="bg-paper hover:bg-white disabled:bg-ink-raise disabled:text-paper-3 text-ink px-5 py-2 rounded-xl text-xs font-medium uppercase tracking-[0.15em] cursor-pointer disabled:cursor-not-allowed transition-colors border border-paper disabled:border-ink-line shrink-0 h-[38px] flex items-center justify-center"
+                className="bg-paper hover:bg-paper-bright disabled:bg-ink-raise disabled:text-paper-3 text-ink px-5 py-2 rounded-xl text-xs font-medium uppercase tracking-[0.15em] cursor-pointer disabled:cursor-not-allowed transition-colors border border-paper disabled:border-ink-line shrink-0 h-[38px] flex items-center justify-center"
               >
                 {manualPromoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Холбох'}
               </button>

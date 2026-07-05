@@ -44,7 +44,7 @@ export function FreePracticeLock({ hiddenCount, onUpgrade }: { hiddenCount: numb
       </p>
       <button
         onClick={onUpgrade}
-        className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 text-sm font-bold hover:bg-white"
+        className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 text-sm font-bold hover:bg-paper-bright"
       >
         <Lock className="w-4 h-4" /> Pro-оор нээх
       </button>

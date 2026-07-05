@@ -24,6 +24,7 @@ import {
 import { updateProfileFields, sendResetEmail } from './auth';
 import { getAuthInstance, getStorageInstance, isFirebaseConfigured } from './firebase';
 import { effectivePlan } from './plans';
+import { getTheme, setTheme, Theme } from './lib/theme';
 
 const DAILY_GOALS = [5, 10, 15, 30, 60];
 
@@ -89,6 +90,7 @@ export default function AccountScreen({
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [theme, setThemeState] = useState<Theme>(getTheme);
 
   const isGuest = !!profile.isGuest;
   const avatarKey = profile.email || profile.name || 'vivid';
@@ -221,7 +223,7 @@ export default function AccountScreen({
               <button
                 type="button"
                 onClick={() => setShowAvatarPicker((v) => !v)}
-                className="absolute -bottom-1 -right-1 p-1.5 bg-paper text-ink rounded-full border border-ink-line hover:bg-white"
+                className="absolute -bottom-1 -right-1 p-1.5 bg-paper text-ink rounded-full border border-ink-line hover:bg-paper-bright"
                 aria-label="Зураг солих"
               >
                 <Camera className="w-3.5 h-3.5" />
@@ -256,7 +258,7 @@ export default function AccountScreen({
                     type="button"
                     onClick={() => avatarFileInputRef.current?.click()}
                     disabled={avatarUploading}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-paper text-ink border border-ink-line rounded-lg text-xs font-bold hover:bg-white disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-paper text-ink border border-ink-line rounded-lg text-xs font-bold hover:bg-paper-bright disabled:opacity-50"
                   >
                     {avatarUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                     Зураг оруулах
@@ -373,7 +375,7 @@ export default function AccountScreen({
                 type="button"
                 onClick={() => void persist()}
                 disabled={saving || !name.trim()}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-paper text-ink font-black rounded-xl hover:bg-white disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-3 bg-paper text-ink font-black rounded-xl hover:bg-paper-bright disabled:opacity-50"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                 {saved ? 'Хадгалагдлаа' : 'Хадгалах'}
@@ -403,6 +405,27 @@ export default function AccountScreen({
         {/* Account essentials */}
         <section className="rounded-2xl bg-ink-raise border border-ink-line p-5 sm:p-6 space-y-3">
           <h2 className="text-xs font-serif font-bold uppercase tracking-wide text-paper-3">Бүртгэл</h2>
+          <div className="flex items-center justify-between rounded-xl bg-ink-2 border border-ink-line px-4 py-3">
+            <div>
+              <p className="text-sm font-bold text-paper">Light mode</p>
+              <p className="text-[11px] text-paper-3">Switch between light and dark theme</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const next: Theme = theme === 'light' ? 'dark' : 'light';
+                setTheme(next);
+                setThemeState(next);
+              }}
+              className={`w-12 h-6 rounded-full transition-colors relative border border-ink-line ${
+                theme === 'light' ? 'bg-paper' : 'bg-ink-2'
+              }`}
+            >
+              <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
+                theme === 'light' ? 'left-6' : 'left-1'
+              }`}></div>
+            </button>
+          </div>
           {profile.email && (
             <div className="flex items-center justify-between rounded-xl bg-ink-2 border border-ink-line px-4 py-3">
               <span className="flex items-center gap-2 min-w-0">
@@ -447,7 +470,7 @@ export default function AccountScreen({
             type="button"
             onClick={() => void handleContinue()}
             disabled={saving}
-            className="w-full flex items-center justify-center gap-2 py-3.5 bg-paper text-ink font-black rounded-xl hover:bg-white disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 py-3.5 bg-paper text-ink font-black rounded-xl hover:bg-paper-bright disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             Үргэлжлүүлэх <ArrowRight className="w-4 h-4" />

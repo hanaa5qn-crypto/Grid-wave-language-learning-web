@@ -338,7 +338,7 @@ export function VocabTab({
                   </button>
                   <button
                     onClick={() => handleVocabAction(true)}
-                    className="flex-1 basis-0 flex items-center justify-center gap-2 bg-paper border-2 border-ink-line text-ink hover:bg-white py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-green cursor-pointer transition-all active:scale-95"
+                    className="flex-1 basis-0 flex items-center justify-center gap-2 bg-paper border-2 border-ink-line text-ink hover:bg-paper-bright py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-green cursor-pointer transition-all active:scale-95"
                   >
                     <CheckCircle className="w-5 h-5 font-black fill-current" />
                     Мэднэ

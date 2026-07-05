@@ -90,7 +90,7 @@ function GraphSVG({ graph }: { graph: typeof TESTDAF_EXAM.writing.graph }) {
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[420px] max-w-[640px] mx-auto block">
         {ticks.map((t, i) => (
           <g key={i}>
-            <line x1={padL} y1={y(t)} x2={W - padR} y2={y(t)} stroke="rgba(255,255,255,0.18)" strokeWidth={1} />
+            <line x1={padL} y1={y(t)} x2={W - padR} y2={y(t)} stroke="var(--color-paper)" strokeOpacity={0.18} strokeWidth={1} />
             <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="fill-paper-2" fontSize={11}>{t}</text>
           </g>
         ))}
@@ -98,12 +98,13 @@ function GraphSVG({ graph }: { graph: typeof TESTDAF_EXAM.writing.graph }) {
           <text key={lab} x={x(i)} y={H - padB + 20} textAnchor="middle" className="fill-paper" fontSize={12} fontWeight={600}>{lab}</text>
         ))}
         {graph.series.map((s, si) => {
-          const tone = si === 0 ? '#ededeb' : 'rgba(237,237,235,0.5)';
+          const tone = 'var(--color-paper)';
+          const toneOpacity = si === 0 ? 1 : 0.5;
           return (
           <g key={s.label}>
-            <polyline fill="none" stroke={tone} strokeWidth={3} strokeLinejoin="round" strokeLinecap="round"
+            <polyline fill="none" stroke={tone} strokeOpacity={toneOpacity} strokeWidth={3} strokeLinejoin="round" strokeLinecap="round"
               points={s.values.map((v, i) => `${x(i)},${y(v)}`).join(' ')} />
-            {s.values.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r={4} fill="#0a0a0a" stroke={tone} strokeWidth={2.5} />)}
+            {s.values.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r={4} fill="var(--color-ink)" stroke={tone} strokeOpacity={toneOpacity} strokeWidth={2.5} />)}
           </g>
           );
         })}
@@ -111,7 +112,7 @@ function GraphSVG({ graph }: { graph: typeof TESTDAF_EXAM.writing.graph }) {
       <div className="flex flex-wrap gap-4 justify-center mt-1">
         {graph.series.map((s, si) => (
           <div key={s.label} className="flex items-center gap-1.5 text-xs font-bold text-paper">
-            <span className="w-3.5 h-3.5 rounded-sm inline-block" style={{ background: si === 0 ? '#ededeb' : 'rgba(237,237,235,0.5)' }} /> {s.label}
+            <span className="w-3.5 h-3.5 rounded-sm inline-block" style={{ background: 'var(--color-paper)', opacity: si === 0 ? 1 : 0.5 }} /> {s.label}
           </div>
         ))}
       </div>
@@ -345,7 +346,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
                 <p>Сонсох хэсэгт бичлэгийг хөтчийн дуу хоолойгоор тоглуулна (чихэвчтэйгээ шалга). Ярих хэсэгт микрофоны зөвшөөрөл шаардана. Цаг дуусахад дараагийн хэсэг рүү автоматаар шилжинэ.</p>
               </div>
               <button onClick={goReading}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] hover:bg-white active:scale-95 transition-transform cursor-pointer">
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] hover:bg-paper-bright active:scale-95 transition-transform cursor-pointer">
                 <Play className="w-5 h-5" /> Шалгалт эхлүүлэх
               </button>
             </div>
@@ -422,7 +423,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
                   {writeText.trim() ? writeText.trim().split(/\s+/).length : 0} / {exam.writing.minWords} үг
                 </span>
                 <button onClick={evalWriting} disabled={writeLoading || !writeText.trim()}
-                  className="px-5 py-2.5 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] cursor-pointer hover:bg-white transition-transform flex items-center gap-1.5 disabled:opacity-40">
+                  className="px-5 py-2.5 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] cursor-pointer hover:bg-paper-bright transition-transform flex items-center gap-1.5 disabled:opacity-40">
                   {writeLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />} AI-аар шалгуулах
                 </button>
               </div>
@@ -468,7 +469,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
               <div className="flex flex-col items-center gap-3 py-4 border border-ink-line rounded-xl bg-ink-raise mb-4">
                 {spkMode === 'idle' && (
                   <div className="flex flex-wrap gap-2 justify-center">
-                    <button onClick={beginPrep} className="flex items-center gap-2 px-5 py-2.5 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] cursor-pointer hover:bg-white transition-transform">
+                    <button onClick={beginPrep} className="flex items-center gap-2 px-5 py-2.5 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] cursor-pointer hover:bg-paper-bright transition-transform">
                       <Clock className="w-4 h-4" /> Бэлдэж эхлэх ({fmt(curTask.prepSeconds)})
                     </button>
                     <button onClick={() => startRecording(curTask)} className="flex items-center gap-2 px-5 py-2.5 bg-transparent border border-ink-line text-paper rounded-full font-medium text-xs uppercase tracking-[0.15em] cursor-pointer hover:border-paper/60 hover:bg-ink-2 transition-colors">
@@ -505,7 +506,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
                         <RefreshCw className="w-3.5 h-3.5" /> Дахин бичих
                       </button>
                       <button onClick={() => evalSpeaking(curTask)} disabled={spkLoading === curTask.no}
-                        className="flex items-center gap-1.5 px-5 py-2.5 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] cursor-pointer hover:bg-white transition-transform disabled:opacity-40">
+                        className="flex items-center gap-1.5 px-5 py-2.5 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] cursor-pointer hover:bg-paper-bright transition-transform disabled:opacity-40">
                         {spkLoading === curTask.no ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />} AI-аар үнэлүүлэх
                       </button>
                     </div>
@@ -560,7 +561,7 @@ export default function TestDafExam({ onExit }: { onExit: () => void }) {
                     {showModels ? 'Загвар хариулт нуух' : 'Загвар хариултыг харах'}
                   </button>
                 </div>
-                <button onClick={onExit} className="flex items-center gap-1.5 px-5 py-2.5 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] cursor-pointer hover:bg-white transition-colors">
+                <button onClick={onExit} className="flex items-center gap-1.5 px-5 py-2.5 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] cursor-pointer hover:bg-paper-bright transition-colors">
                   Хаах <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -627,7 +628,7 @@ function TaskHeader({ no, total, de, instr }: { no: number; total: number; de: s
 function NextBar({ label, onNext }: { label: string; onNext: () => void }) {
   return (
     <div className="flex justify-end pt-2">
-      <button onClick={onNext} className="flex items-center gap-2 px-6 py-3 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] hover:bg-white active:scale-95 transition-transform cursor-pointer">
+      <button onClick={onNext} className="flex items-center gap-2 px-6 py-3 bg-paper text-ink rounded-full font-medium text-xs uppercase tracking-[0.15em] hover:bg-paper-bright active:scale-95 transition-transform cursor-pointer">
         {label} <ArrowRight className="w-4 h-4" />
       </button>
     </div>

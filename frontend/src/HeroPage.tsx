@@ -87,7 +87,7 @@ export default function HeroPage({ onLogin, onSignup, onGuest }: HeroPageProps) 
   return (
     <div
       id="top"
-      className="relative min-h-screen w-full overflow-x-hidden bg-ink-raise text-[#e5e2e1] antialiased selection:bg-white selection:text-ink-raise"
+      className="force-dark relative min-h-screen w-full overflow-x-hidden bg-ink-raise text-[#e5e2e1] antialiased selection:bg-white selection:text-ink-raise"
       style={{ fontFamily: '"Inter", system-ui, sans-serif' }}
     >
       {/* Liquid-glass surface (still used across the page). */}

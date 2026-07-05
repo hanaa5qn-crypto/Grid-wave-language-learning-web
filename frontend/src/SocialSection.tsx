@@ -183,7 +183,7 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
             <button
               onClick={shareInvite}
               disabled={!referral}
-              className="flex-1 bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-lg py-2.5 px-4 hover:bg-white disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="flex-1 bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-lg py-2.5 px-4 hover:bg-paper-bright disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               {copied ? <><Check className="w-4 h-4" /> Хуулагдлаа</> : <><Share2 className="w-4 h-4" /> Линк хуваалцах</>}
             </button>
@@ -250,7 +250,7 @@ export default function SocialSection({ targetLevel, onPlayDuel, refreshKey }: S
           <button
             onClick={() => void startDuel()}
             disabled={startLoading}
-            className="w-full bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-lg py-2.5 px-4 hover:bg-white disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-lg py-2.5 px-4 hover:bg-paper-bright disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             {startLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
             Линкээр нээлттэй тулаан үүсгэх

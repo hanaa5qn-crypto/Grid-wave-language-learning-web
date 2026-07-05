@@ -6,6 +6,15 @@
     <meta name="google-site-verification" content="eljTndvGcPDNDBvRt473FaIE7ettOJks1hFFmbDpAsQ" />
     <meta name="google-site-verification" content="MK4NF9Qx2jy72o0fXPme3zIvhSdPEkHivRSs08TYxWM" />
     <meta name="theme-color" content="#0c0b09" />
+    <script>
+      // Runs before the app bundle to avoid a flash of the wrong theme.
+      try {
+        if (localStorage.getItem('theme') === 'light') {
+          document.documentElement.classList.add('light');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#fdfcfa');
+        }
+      } catch {}
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />
 
@@ -44,7 +53,7 @@
     />
     <meta name="twitter:image" content="https://www.gridwave.me/og-card.png" />
   </head>
-  <body style="background-color: #0c0b09">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

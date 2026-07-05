@@ -147,7 +147,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
             <div className="flex gap-3">
               <button
                 onClick={() => setQuitConfirmOpen(false)}
-                className="flex-[2] bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3 px-4 hover:bg-white transition-all cursor-pointer"
+                className="flex-[2] bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3 px-4 hover:bg-paper-bright transition-all cursor-pointer"
               >
                 Үргэлжлүүлэх
               </button>
@@ -204,7 +204,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
       <button
         onClick={answer}
         disabled={selected === null}
-        className="flex-1 bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white transition-all cursor-pointer flex items-center justify-center gap-2"
+        className="flex-1 bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-paper-bright transition-all cursor-pointer flex items-center justify-center gap-2"
       >
         Дараах <ArrowRight className="w-5 h-5" />
       </button>,
@@ -237,7 +237,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
         </button>
         <button
           onClick={() => void submit(correctCount)}
-          className="flex-[2] bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 hover:bg-white transition-all cursor-pointer"
+          className="flex-[2] bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 hover:bg-paper-bright transition-all cursor-pointer"
         >
           Дахин илгээх
         </button>
@@ -321,7 +321,7 @@ export default function DuelScreen({ duel, onExit }: DuelScreenProps) {
       {!finished && submitted && (
         <button
           onClick={share}
-          className="w-full bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 hover:bg-white transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="w-full bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 hover:bg-paper-bright transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           {copied ? <><Check className="w-5 h-5" /> Линк хуулагдлаа</> : <><Share2 className="w-5 h-5" /> Урилгын линк хуваалцах</>}
         </button>

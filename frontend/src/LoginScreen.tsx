@@ -375,7 +375,7 @@ export default function LoginScreen({ inviteContext, onBack, onGuest, initialMod
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-paper hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed text-ink text-xs font-medium uppercase tracking-[0.15em] py-3.5 px-6 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 mt-2"
+                className="w-full bg-paper hover:bg-paper-bright disabled:opacity-40 disabled:cursor-not-allowed text-ink text-xs font-medium uppercase tracking-[0.15em] py-3.5 px-6 rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 mt-2"
               >
                 {submitting ? (
                   <>

@@ -193,7 +193,7 @@ export default function OnboardingWizard({ userName, onComplete }: OnboardingWiz
         <button
           onClick={handleNext}
           disabled={isNextDisabled()}
-          className="flex-[2] bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="flex-[2] bg-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-xl py-3.5 px-6 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-paper-bright transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           {step === 3 ? (
             <>

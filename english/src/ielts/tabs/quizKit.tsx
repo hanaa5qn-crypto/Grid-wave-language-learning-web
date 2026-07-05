@@ -218,7 +218,7 @@ export function ProLockedTab({
         <p className="text-paper-2 leading-relaxed max-w-md mx-auto">{blurb}</p>
         <button
           onClick={onUpgrade}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold hover:bg-white"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold hover:bg-paper-bright"
         >
           <Lock className="w-4 h-4" /> Pro-оор нээх
         </button>

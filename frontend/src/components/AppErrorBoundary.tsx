@@ -40,7 +40,7 @@ export default class AppErrorBoundary extends Component<BoundaryProps, BoundaryS
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-5 px-5 py-2.5 bg-paper text-ink rounded-full text-xs font-medium uppercase tracking-[0.15em] hover:bg-white transition-colors"
+              className="mt-5 px-5 py-2.5 bg-paper text-ink rounded-full text-xs font-medium uppercase tracking-[0.15em] hover:bg-paper-bright transition-colors"
             >
               Дахин ачаалах
             </button>

@@ -460,7 +460,7 @@ export function EnglishStatsProvider({
             </div>
             <div className="flex flex-col gap-2">
               <button onClick={goSignup}
-                className="w-full px-4 py-2.5 rounded-xl bg-paper text-ink text-sm font-bold cursor-pointer hover:bg-white transition-colors">
+                className="w-full px-4 py-2.5 rounded-xl bg-paper text-ink text-sm font-bold cursor-pointer hover:bg-paper-bright transition-colors">
                 Sign up
               </button>
               <button onClick={() => setGuestPromptOpen(false)}

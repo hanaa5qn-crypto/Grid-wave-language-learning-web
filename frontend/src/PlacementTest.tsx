@@ -384,7 +384,7 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
             <div className="flex gap-3">
               <button
                 onClick={() => setQuitConfirmOpen(false)}
-                className="flex-[2] bg-paper text-ink rounded-xl py-3 px-4 text-xs uppercase tracking-[0.15em] font-medium hover:bg-white transition-all cursor-pointer"
+                className="flex-[2] bg-paper text-ink rounded-xl py-3 px-4 text-xs uppercase tracking-[0.15em] font-medium hover:bg-paper-bright transition-all cursor-pointer"
               >
                 Үргэлжлүүлэх
               </button>
@@ -458,7 +458,7 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
         </button>
         <button
           onClick={startQuiz}
-          className="flex-[2] bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium hover:bg-white hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="flex-[2] bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium hover:bg-paper-bright hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           Тест эхлүүлэх <ArrowRight className="w-5 h-5" />
         </button>
@@ -516,7 +516,7 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
       <button
         onClick={submitAnswer}
         disabled={selected === null}
-        className="flex-1 bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
+        className="flex-1 bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-paper-bright hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
       >
         Дараах <ArrowRight className="w-5 h-5" />
       </button>,
@@ -556,7 +556,7 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
           <button
             onClick={redeemEvalCredit}
             disabled={payLoading}
-            className="w-full bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium disabled:opacity-40 hover:bg-white hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium disabled:opacity-40 hover:bg-paper-bright hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             {payLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Crown className="w-5 h-5" />}
             Захиалгад багтсан — үнэгүй нээх ({evalCredits})
@@ -570,7 +570,7 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
                 href={invoice.url}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full bg-paper text-ink rounded-full py-3 px-6 text-xs uppercase tracking-[0.15em] font-medium hover:bg-white transition-all flex items-center justify-center gap-2"
+                className="w-full bg-paper text-ink rounded-full py-3 px-6 text-xs uppercase tracking-[0.15em] font-medium hover:bg-paper-bright transition-all flex items-center justify-center gap-2"
               >
                 <QrCode className="w-5 h-5" /> Төлбөрийн хуудас нээх
               </a>
@@ -590,7 +590,7 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
           <button
             onClick={startBylPayment}
             disabled={payLoading}
-            className="w-full bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium disabled:opacity-40 hover:bg-white hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium disabled:opacity-40 hover:bg-paper-bright hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             {payLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <QrCode className="w-5 h-5" />}
             {PLACEMENT_RESULT_PRICE_MNT.toLocaleString()}₮ төлж нээх
@@ -652,7 +652,7 @@ export default function PlacementTest({ isFounder, evalCredits = 0, onFinish, on
       </div>,
       <button
         onClick={() => completeAndExit(record)}
-        className="flex-1 bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium hover:bg-white hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
+        className="flex-1 bg-paper text-ink rounded-full py-3.5 px-6 text-xs uppercase tracking-[0.15em] font-medium hover:bg-paper-bright hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
       >
         {record.level} түвшнээс суралцаж эхлэх <Sparkles className="w-5 h-5 text-ink" />
       </button>,

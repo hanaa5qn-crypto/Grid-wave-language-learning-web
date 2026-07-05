@@ -1724,7 +1724,7 @@ function LearnerApp() {
             </div>
             <div className="flex flex-col gap-2">
               <button onClick={exitGuestToSignup}
-                className="w-full px-4 py-2.5 rounded-xl bg-paper text-ink text-sm font-bold cursor-pointer hover:bg-white transition-colors">
+                className="w-full px-4 py-2.5 rounded-xl bg-paper text-ink text-sm font-bold cursor-pointer hover:bg-paper-bright transition-colors">
                 Бүртгүүлэх
               </button>
               <button onClick={() => setGuestPromptOpen(false)}
@@ -1958,8 +1958,8 @@ function LearnerApp() {
                 }}
                 className={`px-8 py-3 font-sans font-bold text-[16px] rounded-xl border-2 border-ink-line transition-all block-shadow w-full sm:w-auto cursor-pointer ${
                   coreLessonFeedback === 'correct' 
-                    ? 'bg-paper text-ink hover:bg-white' 
-                    : 'bg-paper text-ink hover:bg-white'
+                    ? 'bg-paper text-ink hover:bg-paper-bright' 
+                    : 'bg-paper text-ink hover:bg-paper-bright'
                 }`}
               >
                 Үргэлжлүүлэх
@@ -2173,7 +2173,7 @@ function LearnerApp() {
           {/* Unified Lesson Progress Bar - Screen 2/3 style */}
           {activeTab !== 'settings' && activeTab !== 'profile' && activeTab !== 'friends' && (
             <div className="w-full mb-8 flex items-center gap-4 bg-ink-raise p-4 rounded-2xl border border-ink-line block-shadow">
-              <div className="h-4 flex-grow bg-ink-raise border border-ink-line rounded-full overflow-hidden relative shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <div className="h-4 flex-grow bg-ink-raise border border-ink-line rounded-full overflow-hidden relative shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-paper)_5%,transparent)]">
                 <div 
                   className="h-full bg-paper transition-all duration-300 rounded-full relative" 
                   style={{ width: `${lessonProgress}%` }}

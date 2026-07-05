@@ -169,7 +169,7 @@ export default function EnglishPlacementTest({
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
             <button
               onClick={startQuiz}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-white"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-paper-bright"
             >
               Тест эхлүүлэх <ArrowRight className="w-4 h-4" />
             </button>
@@ -284,7 +284,7 @@ export default function EnglishPlacementTest({
                   <div className="flex flex-col sm:flex-row gap-2.5 justify-center">
                     <button
                       onClick={() => (onUpgrade ? onUpgrade() : onFinish(result))}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 text-sm font-bold hover:bg-white"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 text-sm font-bold hover:bg-paper-bright"
                     >
                       <Crown className="w-4 h-4" /> Pro-оор бүгдийг нээх
                     </button>
@@ -302,7 +302,7 @@ export default function EnglishPlacementTest({
 
           <button
             onClick={() => onFinish(result)}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-8 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-white mt-8"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-8 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-paper-bright mt-8"
           >
             Сургалт руу орох <ArrowRight className="w-4 h-4" />
           </button>
@@ -342,14 +342,14 @@ export default function EnglishPlacementTest({
               {ttsState === 'playing' ? (
                 <button
                   onClick={pauseTts}
-                  className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-medium hover:bg-white"
+                  className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-medium hover:bg-paper-bright"
                 >
                   <Pause className="w-4 h-4" /> Түр зогсоох
                 </button>
               ) : (
                 <button
                   onClick={() => (ttsState === 'paused' ? resumeTts() : playListen(question.transcript!))}
-                  className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-medium hover:bg-white"
+                  className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-medium hover:bg-paper-bright"
                 >
                   <Play className="w-4 h-4" /> {ttsState === 'paused' ? 'Үргэлжлүүлэх' : 'Сонсох'}
                 </button>
@@ -383,7 +383,7 @@ export default function EnglishPlacementTest({
           <button
             onClick={submitAnswer}
             disabled={selected === null}
-            className="w-full mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-paper-bright disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {answeredCount + 1 >= EN_PLACEMENT_TOTAL ? 'Дуусгах' : 'Дараагийнх'} <ArrowRight className="w-4 h-4" />
           </button>

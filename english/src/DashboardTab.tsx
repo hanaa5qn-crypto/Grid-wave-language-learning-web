@@ -187,7 +187,7 @@ export default function DashboardTab({ onNavigate }: { onNavigate?: (dest: DashD
                   <p className="text-sm font-bold text-paper truncate">{today.vocabCount} үг ({targetLevel}) сурах</p>
                 </div>
               </div>
-              <button onClick={() => onNavigate?.('vocab')} className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs hover:bg-white shrink-0">Эхлэх</button>
+              <button onClick={() => onNavigate?.('vocab')} className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs hover:bg-paper-bright shrink-0">Эхлэх</button>
             </div>
           </div>
         </div>
@@ -426,7 +426,7 @@ function TodayCell({ skill, title, onGo }: { skill: EnSkill; title?: string; onG
           <p className="text-sm font-bold text-paper truncate">{title}</p>
         </div>
       </div>
-      <button onClick={onGo} className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs hover:bg-white shrink-0">Эхлэх</button>
+      <button onClick={onGo} className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs hover:bg-paper-bright shrink-0">Эхлэх</button>
     </div>
   );
 }
@@ -448,7 +448,7 @@ function QuickBtn({ label, onClick, primary }: { label: string; onClick: () => v
   return (
     <button
       onClick={onClick}
-      className={`py-2.5 px-3 text-center text-xs font-medium uppercase tracking-[0.15em] rounded-lg border transition-colors ${primary ? 'bg-paper hover:bg-white border-paper text-ink' : 'bg-transparent hover:bg-ink-2 border-ink-line hover:border-paper/60 text-paper-2 hover:text-paper'}`}
+      className={`py-2.5 px-3 text-center text-xs font-medium uppercase tracking-[0.15em] rounded-lg border transition-colors ${primary ? 'bg-paper hover:bg-paper-bright border-paper text-ink' : 'bg-transparent hover:bg-ink-2 border-ink-line hover:border-paper/60 text-paper-2 hover:text-paper'}`}
     >
       {label}
     </button>

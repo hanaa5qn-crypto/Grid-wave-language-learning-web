@@ -23,7 +23,7 @@ export default function QuizNav({ qIdx, total, answered, onPrev, onNext, nextLes
       </span>
       <button onClick={onNext} disabled={!answered}
         className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-ink-line font-medium text-xs uppercase tracking-[0.15em] transition-all ${
-          !answered ? 'opacity-40 cursor-default bg-transparent text-paper-2' : 'cursor-pointer bg-paper text-ink border-paper hover:bg-white hover:-translate-y-0.5'}`}>
+          !answered ? 'opacity-40 cursor-default bg-transparent text-paper-2' : 'cursor-pointer bg-paper text-ink border-paper hover:bg-paper-bright hover:-translate-y-0.5'}`}>
         {nextLessonLabel ? 'Дараах хичээл' : 'Дараах асуулт'} <ArrowRight className="w-4 h-4" />
       </button>
     </div>

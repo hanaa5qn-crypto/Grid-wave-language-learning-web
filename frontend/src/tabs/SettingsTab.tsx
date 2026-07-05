@@ -8,6 +8,7 @@ import {
 import { updateProfileFields, sendResetEmail } from '../auth';
 import { isFirebaseConfigured, getStorageInstance, getAuthInstance } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getTheme, setTheme, Theme } from '../lib/theme';
 
 interface SettingsTabProps {
   currentUser: UserProfile | null;
@@ -47,6 +48,7 @@ export function SettingsTab({
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileSaveError, setProfileSaveError] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [theme, setThemeState] = useState<Theme>(getTheme);
 
   // Seed the draft when the signed-in *identity* changes (login / account
   // switch / logout) — keyed by email, NOT on every currentUser update, so a
@@ -349,6 +351,27 @@ export function SettingsTab({
                     >
                       <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
                         readTranslateEnabled ? 'left-6' : 'left-1'
+                      }`}></div>
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
+                    <div>
+                      <h5 className="text-sm font-bold">Цайвар горим</h5>
+                      <p className="text-[11px] text-paper-3">Цайвар болон бараан дэлгэцийн горим солих.</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const next: Theme = theme === 'light' ? 'dark' : 'light';
+                        setTheme(next);
+                        setThemeState(next);
+                      }}
+                      className={`w-12 h-6 rounded-full transition-colors relative border border-ink-line block-shadow cursor-pointer ${
+                        theme === 'light' ? 'bg-paper' : 'bg-ink-2'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
+                        theme === 'light' ? 'left-6' : 'left-1'
                       }`}></div>
                     </button>
                   </div>

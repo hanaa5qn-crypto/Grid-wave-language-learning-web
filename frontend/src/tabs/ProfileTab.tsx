@@ -138,7 +138,7 @@ export function ProfileTab({
                     </div>
                     <button
                       onClick={() => startActivity('read', todaySession.reading!.id)}
-                      className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs cursor-pointer hover:bg-white shrink-0"
+                      className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs cursor-pointer hover:bg-paper-bright shrink-0"
                     >
                       Эхлэх
                     </button>
@@ -169,7 +169,7 @@ export function ProfileTab({
                     </div>
                     <button
                       onClick={() => startActivity('listen', todaySession.listening!.id)}
-                      className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs cursor-pointer hover:bg-white shrink-0"
+                      className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs cursor-pointer hover:bg-paper-bright shrink-0"
                     >
                       Эхлэх
                     </button>
@@ -200,7 +200,7 @@ export function ProfileTab({
                     </div>
                     <button
                       onClick={() => startActivity('speak', todaySession.speaking!.id)}
-                      className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs cursor-pointer hover:bg-white shrink-0"
+                      className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs cursor-pointer hover:bg-paper-bright shrink-0"
                     >
                       Эхлэх
                     </button>
@@ -231,7 +231,7 @@ export function ProfileTab({
                     </div>
                     <button
                       onClick={() => selectTab('vocab')}
-                      className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs cursor-pointer hover:bg-white shrink-0"
+                      className="px-4 py-2 bg-paper text-ink font-medium uppercase tracking-[0.15em] rounded-full text-xs cursor-pointer hover:bg-paper-bright shrink-0"
                     >
                       Давтах
                     </button>
@@ -641,7 +641,7 @@ export function ProfileTab({
                 </button>
                 <button
                   onClick={() => selectTab('speak')}
-                  className="py-2.5 px-3 text-center bg-paper hover:bg-white border border-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-lg cursor-pointer transition-colors"
+                  className="py-2.5 px-3 text-center bg-paper hover:bg-paper-bright border border-paper text-ink text-xs font-medium uppercase tracking-[0.15em] rounded-lg cursor-pointer transition-colors"
                 >
                   Дуут AI Багш
                 </button>

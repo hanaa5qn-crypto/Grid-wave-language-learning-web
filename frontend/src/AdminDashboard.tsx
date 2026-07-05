@@ -210,7 +210,7 @@ class DashboardErrorBoundary extends Component<BoundaryProps, BoundaryState> {
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-5 px-5 py-2.5 bg-paper text-ink rounded-full text-xs font-medium uppercase tracking-[0.15em] hover:bg-white transition-colors"
+              className="mt-5 px-5 py-2.5 bg-paper text-ink rounded-full text-xs font-medium uppercase tracking-[0.15em] hover:bg-paper-bright transition-colors"
             >
               Reload
             </button>
@@ -697,7 +697,7 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
 
           <button
             type="submit"
-            className="w-full mt-5 bg-paper text-ink rounded-full py-3 text-xs font-medium uppercase tracking-[0.15em] hover:bg-white transition-colors"
+            className="w-full mt-5 bg-paper text-ink rounded-full py-3 text-xs font-medium uppercase tracking-[0.15em] hover:bg-paper-bright transition-colors"
           >
             Sign In
           </button>
@@ -739,7 +739,7 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
             <button
               onClick={loadDashboard}
               disabled={loading}
-              className="px-5 py-2.5 bg-paper text-ink rounded-full text-xs font-medium uppercase tracking-[0.15em] flex items-center gap-2 hover:bg-white transition-colors disabled:opacity-40"
+              className="px-5 py-2.5 bg-paper text-ink rounded-full text-xs font-medium uppercase tracking-[0.15em] flex items-center gap-2 hover:bg-paper-bright transition-colors disabled:opacity-40"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Refresh
@@ -1293,7 +1293,7 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
             <button
               type="submit"
               disabled={creating}
-              className="mt-4 px-6 py-2.5 bg-paper text-ink rounded-full text-xs font-medium uppercase tracking-[0.15em] flex items-center gap-2 hover:bg-white transition-colors disabled:opacity-40"
+              className="mt-4 px-6 py-2.5 bg-paper text-ink rounded-full text-xs font-medium uppercase tracking-[0.15em] flex items-center gap-2 hover:bg-paper-bright transition-colors disabled:opacity-40"
             >
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               Код үүсгэх

@@ -85,6 +85,7 @@
   --color-ink-line: #262626;     /* hairline borders · dividers         */
   --color-ink-line-2: #3a3a3a;   /* stronger border · hover edge        */
   --color-paper: #ededeb;        /* primary text · light fills (CTA)    */
+  --color-paper-bright: #ffffff; /* hover-intensified paper              */
   --color-paper-2: #9b9893;      /* secondary text                      */
   --color-paper-3: #66635e;      /* faint text · placeholders · captions*/
 
@@ -106,6 +107,121 @@
     to { opacity: 1; transform: none; }
   }
 }
+
+/* ──────────────────────────────────────────────────────────────
+   LIGHT MODE — redefines the same custom properties on html.light.
+   html.light beats :root on specificity for the same html element, so every
+   utility (bg-ink, text-paper, bg-primary, ...) re-themes with no JS/component
+   changes. Warm "Atelier Press" character kept, inverted: warm paper-white
+   surfaces, dark warm-graphite ink. Every foreground/background pair below is
+   contrast-checked to WCAG AA (4.5:1+) — see PR notes for the numbers.
+   "Fixed" M3 roles (surface-tint, *-fixed, *-fixed-variant) are intentionally
+   NOT overridden — they're theme-invariant by design.
+   ────────────────────────────────────────────────────────────── */
+html.light {
+  --color-background: #fdfcfa;
+  --color-surface-dim: #ede9e0;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface: #fdfcfa;
+  --color-surface-container-low: #f7f4ee;
+  --color-surface-container: #f1ede4;
+  --color-surface-container-high: #ebe6da;
+  --color-surface-variant: #e8e0d0;
+  --color-inverse-surface: #332c22;
+
+  --color-on-background: #1c1a17;
+  --color-on-surface: #1c1a17;
+  --color-on-surface-variant: #5c5648;
+
+  --color-primary: #8f6a1d;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #f6e6c2;
+  --color-on-primary-container: #4a3410;
+
+  --color-secondary: #186b56;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #d3f0e4;
+  --color-on-secondary-container: #0d3a2e;
+
+  --color-tertiary: #b8502b;
+
+  --color-error: #c23a2b;
+  --color-on-error: #ffffff;
+  --color-error-container: #fbdbd4;
+  --color-on-error-container: #5c140c;
+
+  --color-outline: #79705c;
+  --color-outline-variant: #d9d2c2;
+
+  --color-ink: #faf9f7;
+  --color-ink-raise: #ffffff;
+  --color-ink-2: #f1efec;
+  --color-ink-line: #ddd9d2;
+  --color-ink-line-2: #c7c2b8;
+  --color-paper: #1c1a17;
+  --color-paper-bright: #000000;
+  --color-paper-2: #5f5c56;
+  --color-paper-3: #86827a;
+
+  background-color: #fdfcfa;
+}
+
+/* ── force-dark ─────────────────────────────────────────────────
+   The landing page (HeroPage.tsx) keeps its original dark design in
+   BOTH themes. It's scoped with .force-dark, which redeclares the same
+   custom properties html.light overrides, but pinned to their original
+   :root/@theme dark values — inherited custom properties resolve from
+   the nearest ancestor, so this wins over html.light without any
+   specificity fight. Keep in sync if the @theme dark palette changes. */
+.force-dark {
+  --color-background: #0c0b09;
+  --color-surface-dim: #0e0d0a;
+  --color-surface-container-lowest: #090806;
+  --color-surface: #14120e;
+  --color-surface-container-low: #1b1813;
+  --color-surface-container: #211d17;
+  --color-surface-container-high: #29241c;
+  --color-surface-variant: #332c22;
+  --color-inverse-surface: #f6f1e8;
+
+  --color-on-background: #f5f1e8;
+  --color-on-surface: #f5f1e8;
+  --color-on-surface-variant: #beb5a3;
+
+  --color-primary: #e6b85c;
+  --color-on-primary: #2a1c02;
+  --color-primary-container: #4a3410;
+  --color-on-primary-container: #f4e6c4;
+
+  --color-secondary: #5cc2a8;
+  --color-on-secondary: #043026;
+  --color-secondary-container: #123d31;
+  --color-on-secondary-container: #bfe9da;
+
+  --color-tertiary: #f2855f;
+
+  --color-error: #ff6b5a;
+  --color-on-error: #40090a;
+  --color-error-container: #6e1f17;
+  --color-on-error-container: #ffd9d1;
+
+  --color-outline: #8c8472;
+  --color-outline-variant: #3a352a;
+
+  --color-ink: #0a0a0a;
+  --color-ink-raise: #141414;
+  --color-ink-2: #1e1e1e;
+  --color-ink-line: #262626;
+  --color-ink-line-2: #3a3a3a;
+  --color-paper: #ededeb;
+  --color-paper-bright: #ffffff;
+  --color-paper-2: #9b9893;
+  --color-paper-3: #66635e;
+
+  background-color: #0c0b09;
+}
+
+/* HeroPage doesn't use .block-shadow* classes, so no scoping needed there. */
 
 /* ---------- Base atmosphere ---------- */
 
@@ -241,6 +357,15 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
   .block-shadow-orange:hover { background-color: rgba(237, 237, 235, 0.045); }
   .block-shadow-green { background-color: rgba(237, 237, 235, 0.02); }
   .block-shadow-green:hover { background-color: rgba(237, 237, 235, 0.045); }
+
+  /* Light mode: the pale (237,237,235) wash disappears on a near-white page,
+     so tint with dark ink instead — same subtlety, visible on paper. */
+  html.light .block-shadow { background-color: rgba(28, 26, 23, 0.02); }
+  html.light .block-shadow:hover { background-color: rgba(28, 26, 23, 0.045); }
+  html.light .block-shadow-orange { background-color: rgba(28, 26, 23, 0.02); }
+  html.light .block-shadow-orange:hover { background-color: rgba(28, 26, 23, 0.045); }
+  html.light .block-shadow-green { background-color: rgba(28, 26, 23, 0.02); }
+  html.light .block-shadow-green:hover { background-color: rgba(28, 26, 23, 0.045); }
 }
 
 .block-shadow {
@@ -313,6 +438,24 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 .block-shadow-green:active {
   transform: translateY(1px) scale(0.99);
   transition-duration: 0.1s;
+}
+
+/* Light mode: same (237,237,235) borders/shadow washes are invisible on a
+   near-white page — swap to dark-ink borders and a lighter, softer shadow. */
+html.light .block-shadow,
+html.light .block-shadow-orange,
+html.light .block-shadow-green {
+  border-color: rgba(28, 26, 23, 0.1);
+  box-shadow: 0 4px 24px -1px rgba(28, 26, 23, 0.12);
+}
+
+html.light .block-shadow:hover,
+html.light .block-shadow-orange:hover,
+html.light .block-shadow-green:hover {
+  border-color: rgba(28, 26, 23, 0.28);
+  box-shadow:
+    0 0 0 1px rgba(28, 26, 23, 0.08),
+    0 10px 28px -6px rgba(28, 26, 23, 0.2);
 }
 
 /* Card perspective rotations for Vocabulary flipping */
@@ -403,6 +546,11 @@ main > :not(.absolute):not(.fixed):nth-child(n+6) { animation-delay: 0.3s; }
 code, pre {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: #c9c6c0 !important;
+}
+
+/* Light mode: the pale dark-mode code color reads at ~1.7:1 on a white page. */
+html.light code, html.light pre {
+  color: #4a463d !important;
 }
 
 /* Respect users who prefer stillness */
