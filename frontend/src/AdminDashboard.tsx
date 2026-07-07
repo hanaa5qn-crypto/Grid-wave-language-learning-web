@@ -253,6 +253,8 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
     code: '',
     teacherName: '',
     teacherContact: '',
+    teacherEmail: '',
+    kind: 'teacher' as 'teacher' | 'influencer',
     discountPercent: '',
     commissionPercent: '',
   });
@@ -358,6 +360,7 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
     const code = createForm.code.trim();
     const teacherName = createForm.teacherName.trim();
     const teacherContact = createForm.teacherContact.trim();
+    const teacherEmail = createForm.teacherEmail.trim();
     const discountPercent = Number(createForm.discountPercent);
     const commissionPercent = Number(createForm.commissionPercent);
 
@@ -384,10 +387,12 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
         code,
         teacherName,
         teacherContact: teacherContact || undefined,
+        teacherEmail: teacherEmail || undefined,
+        kind: createForm.kind,
         discountPercent,
         commissionPercent,
       });
-      setCreateForm({ code: '', teacherName: '', teacherContact: '', discountPercent: '', commissionPercent: '' });
+      setCreateForm({ code: '', teacherName: '', teacherContact: '', teacherEmail: '', kind: 'teacher', discountPercent: '', commissionPercent: '' });
       await loadPromo();
     } catch (err) {
       console.error('Create teacher code failed:', err);
@@ -1229,7 +1234,7 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
 
           <form onSubmit={handleCreateCode} className="p-5 border-b border-ink-line bg-ink-2/60">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-paper-3 mb-3">Шинэ код үүсгэх</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
               <div className="lg:col-span-1">
                 <label className="block text-[11px] font-medium uppercase tracking-[0.18em] text-paper-3 mb-1.5">Код</label>
                 <input
@@ -1256,6 +1261,27 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
                   placeholder="Сонголтоор"
                   className="w-full bg-ink-raise border border-ink-line rounded-lg px-3 py-2.5 text-sm font-medium text-paper placeholder:text-paper-3 outline-none focus:border-paper/60"
                 />
+              </div>
+              <div className="lg:col-span-1">
+                <label className="block text-[11px] font-medium uppercase tracking-[0.18em] text-paper-3 mb-1.5">Багшийн имэйл</label>
+                <input
+                  type="email"
+                  value={createForm.teacherEmail}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, teacherEmail: e.target.value }))}
+                  placeholder="Сонголтоор"
+                  className="w-full bg-ink-raise border border-ink-line rounded-lg px-3 py-2.5 text-sm font-medium text-paper placeholder:text-paper-3 outline-none focus:border-paper/60"
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <label className="block text-[11px] font-medium uppercase tracking-[0.18em] text-paper-3 mb-1.5">Төрөл</label>
+                <select
+                  value={createForm.kind}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, kind: e.target.value as 'teacher' | 'influencer' }))}
+                  className="w-full bg-ink-raise border border-ink-line rounded-lg px-3 py-2.5 text-sm font-medium text-paper outline-none focus:border-paper/60"
+                >
+                  <option value="teacher">Багш</option>
+                  <option value="influencer">Инфлюенсер</option>
+                </select>
               </div>
               <div className="lg:col-span-1">
                 <label className="block text-[11px] font-medium uppercase tracking-[0.18em] text-paper-3 mb-1.5">Хямдрал %</label>
@@ -1323,9 +1349,17 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
                         <span className="font-medium bg-ink-2 border border-ink-line text-paper px-2.5 py-1 rounded-md text-xs tracking-[0.12em] uppercase">{tc.code}</span>
                       </td>
                       <td className="px-5 py-4">
-                        <p className="font-medium text-paper truncate">{tc.teacherName}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-paper truncate">{tc.teacherName}</p>
+                          <span className="text-[10px] font-medium uppercase tracking-[0.1em] bg-ink-2 border border-ink-line text-paper-2 px-2 py-0.5 rounded-md shrink-0">
+                            {tc.kind === 'influencer' ? 'Инфлюенсер' : 'Багш'}
+                          </span>
+                        </div>
                         {tc.teacherContact && (
                           <p className="text-xs text-paper-2 font-medium truncate">{tc.teacherContact}</p>
+                        )}
+                        {tc.teacherEmail && (
+                          <p className="text-xs text-paper-3 font-medium truncate">{tc.teacherEmail}</p>
                         )}
                       </td>
                       <td className="px-5 py-4 font-serif font-light text-paper">{tc.discountPercent}%</td>

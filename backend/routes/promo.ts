@@ -10,6 +10,8 @@ import {
   parsePercent,
   parseTeacherName,
   parseTeacherCodeId,
+  parseCodeKind,
+  parseTeacherEmail,
   type TeacherCode,
   type UserPromo,
 } from '../lib/promo';
@@ -62,6 +64,8 @@ function teacherCodePayload(code: string, data: Record<string, unknown>) {
     code,
     teacherName: String(data.teacherName ?? ''),
     teacherContact: String(data.teacherContact ?? ''),
+    teacherEmail: String(data.teacherEmail ?? ''),
+    kind: data.kind === 'influencer' ? 'influencer' : 'teacher',
     discountPercent: Number(data.discountPercent ?? 0),
     commissionPercent: Number(data.commissionPercent ?? 0),
     active: data.active !== false,
@@ -84,15 +88,26 @@ export function registerPromoRoute(app: Express) {
     const discountPercent = parsePercent(req.body?.discountPercent);
     const commissionPercent = parsePercent(req.body?.commissionPercent);
     const teacherContact = String(req.body?.teacherContact ?? '').trim().slice(0, 120);
+    const kind = parseCodeKind(req.body?.kind);
+    // teacherEmail нь заавал биш талбар — оруулаагүй бол алгасна, оруулсан бол
+    // формат шалгана.
+    const teacherEmailRaw = req.body?.teacherEmail;
+    const teacherEmail = teacherEmailRaw === undefined || teacherEmailRaw === null || teacherEmailRaw === ''
+      ? null
+      : parseTeacherEmail(teacherEmailRaw);
 
     if (!code) return res.status(400).json({ error: 'Код буруу байна (дор хаяж 3 үсэг/тоо).' });
     if (!teacherName) return res.status(400).json({ error: 'Багшийн нэр шаардлагатай.' });
     if (discountPercent === null) return res.status(400).json({ error: 'Хямдралын хувь 0–100 байх ёстой.' });
     if (commissionPercent === null) return res.status(400).json({ error: 'Комиссын хувь 0–100 байх ёстой.' });
+    if (kind === null) return res.status(400).json({ error: 'Кодын төрөл буруу байна.' });
+    if (teacherEmailRaw && teacherEmail === null) return res.status(400).json({ error: 'Багшийн и-мэйл буруу байна.' });
 
     const doc: TeacherCode = {
       teacherName,
       ...(teacherContact ? { teacherContact } : {}),
+      ...(teacherEmail ? { teacherEmail } : {}),
+      kind,
       discountPercent,
       commissionPercent,
       active: true,
@@ -141,10 +156,25 @@ export function registerPromoRoute(app: Express) {
 
     const update: Record<string, unknown> = {};
     if (typeof req.body?.active === 'boolean') update.active = req.body.active;
+    if (req.body?.kind !== undefined) {
+      const kind = parseCodeKind(req.body.kind);
+      if (kind === null) return res.status(400).json({ error: 'Кодын төрөл буруу байна.' });
+      update.kind = kind;
+    }
     const discount = parsePercent(req.body?.discountPercent);
     if (req.body?.discountPercent !== undefined && discount !== null) update.discountPercent = discount;
     const commission = parsePercent(req.body?.commissionPercent);
     if (req.body?.commissionPercent !== undefined && commission !== null) update.commissionPercent = commission;
+    if (req.body?.teacherEmail !== undefined) {
+      const raw = req.body.teacherEmail;
+      if (raw === null || raw === '') {
+        update.teacherEmail = FieldValue.delete(); // цэвэрлэх
+      } else {
+        const teacherEmail = parseTeacherEmail(raw);
+        if (teacherEmail === null) return res.status(400).json({ error: 'Багшийн и-мэйл буруу байна.' });
+        update.teacherEmail = teacherEmail;
+      }
+    }
     if (Object.keys(update).length === 0) return res.status(400).json({ error: 'Шинэчлэх талбар алга.' });
 
     await ref.set(update, { merge: true });

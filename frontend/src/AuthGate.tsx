@@ -11,6 +11,7 @@ import AppErrorBoundary from './components/AppErrorBoundary';
 // Each lazy() below becomes its own chunk fetched on first render.
 const LanguageGate = lazy(() => import('./LanguageGate'));
 const AdminDashboard = lazy(() => import('./AdminDashboard'));
+const TeacherDashboard = lazy(() => import('./TeacherDashboard'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
@@ -56,6 +57,8 @@ export default function AuthGate() {
       : path.startsWith('/admin/german') ? 'de'
       : undefined;
     node = <AdminDashboard track={track} />;
+  } else if (path.startsWith('/teacher')) {
+    node = <TeacherDashboard />;
   } else if (path.startsWith('/terms')) {
     node = <TermsPage />;
   } else if (path.startsWith('/privacy')) {

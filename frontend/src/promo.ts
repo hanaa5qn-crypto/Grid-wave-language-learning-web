@@ -17,6 +17,8 @@ export interface TeacherCodeView {
   code: string;
   teacherName: string;
   teacherContact: string;
+  teacherEmail?: string;
+  kind: 'teacher' | 'influencer';
   discountPercent: number;
   commissionPercent: number;
   active: boolean;
@@ -89,6 +91,8 @@ export function adminCreateTeacherCode(input: {
   code: string;
   teacherName: string;
   teacherContact?: string;
+  teacherEmail?: string;
+  kind?: 'teacher' | 'influencer';
   discountPercent: number;
   commissionPercent: number;
 }): Promise<TeacherCodeView> {
@@ -107,4 +111,52 @@ export function adminDeleteTeacherCode(code: string): Promise<{ deleted: boolean
   return promoFetch(`/api/admin/teacher-codes/${encodeURIComponent(code)}`, {
     method: 'DELETE',
   });
+}
+
+// --- Багш (Teacher class-sandbox) --------------------------------------------
+
+export interface TeacherTestHistoryEntry {
+  takenAt: string;
+  exam: string;
+  testId: string;
+  label: string;
+  correct: number;
+  total: number;
+  band?: number;
+  scaledScore?: number;
+}
+
+export interface TeacherStudentView {
+  uid: string;
+  name: string;
+  email: string;
+  code: string;
+  streak: number;
+  placementLevel: string | null;
+  testHistoryEn: TeacherTestHistoryEntry[];
+  vocabLearnedCount: number;
+  mistakeCount: number;
+  studyDaysEn: number;
+  lastActive: string | null;
+}
+
+// Багшийн өөрийн код(ууд)ор холбогдсон сурагчид. 403 { error: 'not_a_teacher' }
+// хэрэв bearer email ямар ч teacherCodes.teacherEmail-тэй тохирохгүй бол.
+export function getTeacherStudents(): Promise<{ codes: string[]; students: TeacherStudentView[] }> {
+  return promoFetch('/api/teacher/students');
+}
+
+export interface TeacherStudentDetailView extends TeacherStudentView {
+  studySecondsByDate: Record<string, number>;
+  studySecondsByDateEn: Record<string, number>;
+  totalStudySeconds: number;
+  dailyGoalMinutes: number;
+  placementSkillScores: Record<string, { correct: number; total: number }> | null;
+  completedActivityCount: number;
+}
+
+// Нэг сурагчийн дэлгэрэнгүй харагдац (суралцсан цаг, тестийн бүрэн түүх, ур
+// чадвар). 404 хэрэв caller-ийн код(ууд)тай холбоогүй сурагч бол.
+export function getTeacherStudentDetail(uid: string): Promise<TeacherStudentDetailView> {
+  return promoFetch(`/api/teacher/students/${encodeURIComponent(uid)}`);
 }

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import express, { type Express } from 'express';
 import request from 'supertest';
 
@@ -19,7 +19,7 @@ const h = vi.hoisted(() => ({
   // Sentinel returned by the mocked FieldValue.delete(); the db mock recognises
   // it to drop a field, mirroring Firestore's delete marker.
   DELETE: Symbol('field-value-delete'),
-  state: { db: null as any, user: null as any },
+  state: { db: null as any, user: null as any, admin: null as any },
 }));
 
 vi.mock('firebase-admin/firestore', () => ({
@@ -32,7 +32,7 @@ vi.mock('firebase-admin/firestore', () => ({
 vi.mock('../backend/lib/firebaseAdmin', () => ({
   getFirebaseAdmin: () => (h.state.db ? { db: h.state.db } : null),
   verifyFirebaseBearer: async () => h.state.user,
-  verifyFirebaseAdmin: async () => null,
+  verifyFirebaseAdmin: async () => h.state.admin,
   firebaseAdminMissingMessage: () => 'Firebase admin тохируулаагүй.',
 }));
 
@@ -52,6 +52,10 @@ function makeDb(seed: Record<string, Record<string, unknown>>) {
   const ref = (col: string, id: string) => ({
     __key: `${col}/${id}`,
     get: async () => snap(`${col}/${id}`),
+    async create(data: Record<string, unknown>) {
+      if (store.has(`${col}/${id}`)) throw new Error('already exists');
+      store.set(`${col}/${id}`, { ...data });
+    },
   });
   // Apply a write payload onto a stored doc, honouring the DELETE sentinel and
   // the FieldValue.increment({__increment}) marker the route uses for counters.
@@ -173,6 +177,43 @@ describe('DELETE /api/promo/me — detach unused promo code', () => {
     const res = await request(buildApp()).delete('/api/promo/me');
 
     expect(res.status).toBe(401);
+  });
+});
+
+describe('POST /api/admin/teacher-codes — code kind', () => {
+  beforeEach(() => {
+    h.state.admin = { uid: 'admin1' };
+    h.state.db = makeDb({});
+  });
+
+  afterEach(() => {
+    h.state.admin = null;
+  });
+
+  it('persists an influencer code', async () => {
+    const res = await request(buildApp()).post('/api/admin/teacher-codes').send({
+      code: 'INFL1',
+      teacherName: 'Bat',
+      kind: 'influencer',
+      discountPercent: 10,
+      commissionPercent: 5,
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.kind).toBe('influencer');
+    expect((h.state.db.store.get('teacherCodes/INFL1') as any).kind).toBe('influencer');
+  });
+
+  it('rejects an invalid kind', async () => {
+    const res = await request(buildApp()).post('/api/admin/teacher-codes').send({
+      code: 'BAD1',
+      teacherName: 'Bat',
+      kind: 'sponsor',
+      discountPercent: 10,
+      commissionPercent: 5,
+    });
+
+    expect(res.status).toBe(400);
   });
 });
 

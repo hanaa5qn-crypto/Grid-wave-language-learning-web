@@ -13,6 +13,8 @@ import { normalizeCode } from './socialLogic';
 export interface TeacherCode {
   teacherName: string;
   teacherContact?: string;      // гар аргаар төлбөр өгөхөд (зөвхөн admin харна)
+  teacherEmail?: string;        // lowercase — багшийн /api/teacher/students-д хандах эрх энэ email-ээр баталгаажна
+  kind?: 'teacher' | 'influencer'; // admin-ий ангилал; байхгүй бол 'teacher' (хуучин баримт)
   discountPercent: number;      // 0..100; 100 = үнэгүй
   commissionPercent: number;    // 0..100, цэвэр төлсөн дүнгээс
   active: boolean;
@@ -71,4 +73,19 @@ export function parseTeacherName(value: unknown): string | null {
 export function parseTeacherCodeId(value: unknown): string | null {
   const code = normalizeCode(value);
   return code.length >= 3 ? code : null;
+}
+
+// Кодын төрөл: 'teacher' (анхны утга) эсвэл 'influencer'. Буруу утга бол null.
+export function parseCodeKind(value: unknown): 'teacher' | 'influencer' | null {
+  if (value === undefined) return 'teacher';
+  return value === 'teacher' || value === 'influencer' ? value : null;
+}
+
+// Багшийн и-мэйл — lowercase болгож нормчилно. Хоосон/буруу форматтай бол null.
+// (undefined тусад нь route дээр "оруулаагүй" гэж авч, '' эсвэл null-г "цэвэрлэх"
+// гэж ялгах ёстой тул энэ функц зөвхөн ФОРМАТ шалгана, undefined-г үл хамаарна.)
+export function parseTeacherEmail(value: unknown): string | null {
+  const email = String(value ?? '').trim().toLowerCase();
+  if (!email) return null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 }
