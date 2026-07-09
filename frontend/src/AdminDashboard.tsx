@@ -1,6 +1,6 @@
 import React, { Component, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
 import {
-  Activity, AlertCircle, BarChart3, Clock, CreditCard, DollarSign,
+  Activity, AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, BarChart3, ChevronLeft, ChevronRight, Clock, CreditCard, DollarSign,
   Flame, Gift, GraduationCap, Loader2, LogOut, Plus, RefreshCw, Search, ShieldCheck,
   Tag, Trash2, TrendingUp, UserCheck, UserPlus, Users, Check, X
 } from 'lucide-react';
@@ -153,6 +153,68 @@ function shortMonthLabel(key: string): string {
   return new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(year, month - 1, 1));
 }
 
+const CUSTOMERS_PER_PAGE = 10;
+
+type CustomerSortKey = 'name' | 'level' | 'progress' | 'activity' | 'plan' | 'ltv';
+
+// dir: default direction on first click — numbers biggest-first, text A→Z.
+const CUSTOMER_SORTS: Record<CustomerSortKey, { value: (p: UserProfile) => string | number; dir: 1 | -1 }> = {
+  name: { value: (p) => (p.name ?? p.email ?? '').toLowerCase(), dir: 1 },
+  level: { value: (p) => (p.targetLevel ?? '').toLowerCase(), dir: 1 },
+  progress: { value: (p) => p.progress ?? 0, dir: -1 },
+  activity: { value: (p) => parseDate(p.lastActiveAt)?.getTime() ?? 0, dir: -1 },
+  plan: { value: (p) => `${p.billing?.plan ?? ''}/${p.billing?.status ?? ''}`.toLowerCase(), dir: 1 },
+  ltv: { value: (p) => lifetimeValueCents(p), dir: -1 },
+};
+
+function compareCustomers(a: UserProfile, b: UserProfile, key: CustomerSortKey, dir: 1 | -1): number {
+  const av = CUSTOMER_SORTS[key].value(a);
+  const bv = CUSTOMER_SORTS[key].value(b);
+  const base = typeof av === 'number' && typeof bv === 'number'
+    ? av - bv
+    : String(av).localeCompare(String(bv));
+  return base * dir;
+}
+
+// Shared table footer: "start–end of total" + Prev / Next. Renders nothing
+// when everything fits on one page.
+function TablePager({ page, pageCount, total, onPage }: {
+  page: number;
+  pageCount: number;
+  total: number;
+  onPage: (page: number) => void;
+}) {
+  if (total <= CUSTOMERS_PER_PAGE) return null;
+  return (
+    <div className="px-5 py-3 border-t border-ink-line flex items-center justify-between gap-4">
+      <span className="text-xs font-medium text-paper-2">
+        {page * CUSTOMERS_PER_PAGE + 1}–{Math.min((page + 1) * CUSTOMERS_PER_PAGE, total)} of {total}
+      </span>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onPage(page - 1)}
+          disabled={page === 0}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-ink-line text-xs font-medium text-paper-2 hover:text-paper hover:bg-ink-2 disabled:opacity-40 disabled:pointer-events-none"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" /> Prev
+        </button>
+        <span className="text-xs font-medium text-paper-2">
+          {page + 1} / {pageCount}
+        </span>
+        <button
+          type="button"
+          onClick={() => onPage(page + 1)}
+          disabled={page >= pageCount - 1}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-ink-line text-xs font-medium text-paper-2 hover:text-paper hover:bg-ink-2 disabled:opacity-40 disabled:pointer-events-none"
+        >
+          Next <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function KpiCard({
   label,
   value,
@@ -242,6 +304,9 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
   const [analytics, setAnalytics] = useState<AnalyticsDay[]>([]);
   const [dataError, setDataError] = useState('');
   const [queryText, setQueryText] = useState('');
+  const [customerSort, setCustomerSort] = useState<{ key: CustomerSortKey; dir: 1 | -1 } | null>(null);
+  const [customerPage, setCustomerPage] = useState(0);
+  const [trialPage, setTrialPage] = useState(0);
   const [lastLoadedAt, setLastLoadedAt] = useState<Date | null>(null);
 
   // Багш / Promo кодын төлөв
@@ -484,14 +549,30 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
 
   const filteredCustomers = useMemo(() => {
     const query = queryText.trim().toLowerCase();
-    if (!query) return scopedCustomers;
-    return scopedCustomers.filter(({ profile }) => (
+    const rows = !query ? scopedCustomers : scopedCustomers.filter(({ profile }) => (
       (profile.name ?? '').toLowerCase().includes(query) ||
       (profile.email ?? '').toLowerCase().includes(query) ||
       (profile.targetLevel ?? '').toLowerCase().includes(query) ||
       (profile.billing?.plan ?? '').toLowerCase().includes(query)
     ));
-  }, [scopedCustomers, queryText]);
+    if (!customerSort) return rows;
+    return [...rows].sort((a, b) => compareCustomers(a.profile, b.profile, customerSort.key, customerSort.dir));
+  }, [scopedCustomers, queryText, customerSort]);
+
+  const toggleCustomerSort = (key: CustomerSortKey) => {
+    setCustomerSort((prev) =>
+      prev?.key === key ? { key, dir: (prev.dir * -1) as 1 | -1 } : { key, dir: CUSTOMER_SORTS[key].dir });
+    setCustomerPage(0);
+  };
+
+  // Clamp instead of an effect: if search/track narrows the list below the
+  // current page, render the last page that still exists.
+  const customerPageCount = Math.max(1, Math.ceil(filteredCustomers.length / CUSTOMERS_PER_PAGE));
+  const safeCustomerPage = Math.min(customerPage, customerPageCount - 1);
+  const pagedCustomers = filteredCustomers.slice(
+    safeCustomerPage * CUSTOMERS_PER_PAGE,
+    (safeCustomerPage + 1) * CUSTOMERS_PER_PAGE,
+  );
 
   const topCustomers = useMemo(() => {
     return [...scopedCustomers]
@@ -509,6 +590,13 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
       Number(b.trial.active) - Number(a.trial.active) || a.trial.daysLeft - b.trial.daysLeft);
     return rows;
   }, [scopedCustomers]);
+
+  const trialPageCount = Math.max(1, Math.ceil(trialUsers.length / CUSTOMERS_PER_PAGE));
+  const safeTrialPage = Math.min(trialPage, trialPageCount - 1);
+  const pagedTrialUsers = trialUsers.slice(
+    safeTrialPage * CUSTOMERS_PER_PAGE,
+    (safeTrialPage + 1) * CUSTOMERS_PER_PAGE,
+  );
 
   const trialSummary = useMemo(() => {
     const active = trialUsers.filter((r) => r.trial.active);
@@ -966,7 +1054,7 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-line">
-                {trialUsers.map(({ id, profile, trial }) => (
+                {pagedTrialUsers.map(({ id, profile, trial }) => (
                   <tr key={id} className="hover:bg-ink-2">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
@@ -1014,6 +1102,8 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
               </tbody>
             </table>
           </div>
+
+          <TablePager page={safeTrialPage} pageCount={trialPageCount} total={trialUsers.length} onPage={setTrialPage} />
         </section>
 
         <section className="bg-ink-raise border border-ink-line rounded-2xl shadow-black/40 overflow-hidden">
@@ -1124,7 +1214,7 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
               <Search className="w-4 h-4 text-paper-3 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 value={queryText}
-                onChange={(event) => setQueryText(event.target.value)}
+                onChange={(event) => { setQueryText(event.target.value); setCustomerPage(0); }}
                 placeholder="Search customers"
                 className="w-full bg-ink-raise border border-ink-line rounded-lg pl-9 pr-3 py-2.5 text-sm font-medium text-paper placeholder:text-paper-3 outline-none focus:border-paper/60"
               />
@@ -1135,16 +1225,35 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
             <table className="w-full text-sm">
               <thead className="bg-ink-2 text-paper-3">
                 <tr>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em]">Customer</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em]">Level</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em]">Progress</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em]">Activity</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em]">Plan</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em]">LTV</th>
+                  {([
+                    ['name', 'Customer'],
+                    ['level', 'Level'],
+                    ['progress', 'Progress'],
+                    ['activity', 'Activity'],
+                    ['plan', 'Plan'],
+                    ['ltv', 'LTV'],
+                  ] as [CustomerSortKey, string][]).map(([key, label]) => (
+                    <th
+                      key={key}
+                      aria-sort={customerSort?.key === key ? (customerSort.dir === 1 ? 'ascending' : 'descending') : undefined}
+                      className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-[0.18em]"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => toggleCustomerSort(key)}
+                        className={`inline-flex items-center gap-1.5 uppercase tracking-[0.18em] ${customerSort?.key === key ? 'text-paper' : 'hover:text-paper-2'}`}
+                      >
+                        {label}
+                        {customerSort?.key === key
+                          ? (customerSort.dir === 1 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)
+                          : <ArrowUpDown className="w-3 h-3 opacity-40" />}
+                      </button>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-ink-line">
-                {filteredCustomers.map(({ id, profile }) => (
+                {pagedCustomers.map(({ id, profile }) => (
                   <tr key={id} className="hover:bg-ink-2">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
@@ -1199,6 +1308,8 @@ function AdminDashboardInner({ track }: { track?: Track } = {}) {
               </tbody>
             </table>
           </div>
+
+          <TablePager page={safeCustomerPage} pageCount={customerPageCount} total={filteredCustomers.length} onPage={setCustomerPage} />
         </section>
 
         <section className="bg-ink-raise border border-ink-line rounded-2xl shadow-black/40 overflow-hidden">
