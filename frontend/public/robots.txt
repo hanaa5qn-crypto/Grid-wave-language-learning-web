@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /teacher
+Disallow: /api/
 
 Sitemap: https://www.gridwave.me/sitemap.xml
