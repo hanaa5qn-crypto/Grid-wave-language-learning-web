@@ -1,5 +1,6 @@
 import React from "react";
 import { Lightbulb } from "lucide-react";
+import { useTheme } from "./lib/theme";
 
 interface GrammarTipCardProps {
   /** The correct answer text */
@@ -32,37 +33,40 @@ export default function GrammarTipCard({
   level,
 }: GrammarTipCardProps) {
   const tip = explanation || getLevelTip(level);
+  const themeName = useTheme();
+  const gold = themeName === 'gold';
+  const aurora = themeName === 'aurora';
 
   return (
-    <div className="bg-ink-raise border border-ink-line rounded-xl p-5 mt-4 animate-fade-in">
+    <div className={gold || aurora ? "bg-amber-500/10 border-2 border-amber-400/60 rounded-xl p-5 mt-4 animate-fade-in" : "bg-ink-raise border border-ink-line rounded-xl p-5 mt-4 animate-fade-in"}>
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
-        <Lightbulb className="w-5 h-5 text-paper-2" />
-        <span className="text-paper font-serif font-light tracking-tight text-base">
+        <Lightbulb className={gold || aurora ? "w-5 h-5 text-amber-400" : "w-5 h-5 text-paper-2"} />
+        <span className={gold || aurora ? "text-amber-300 font-bold text-base" : "text-paper font-serif font-light tracking-tight text-base"}>
           Дүрмийн зөвлөмж
         </span>
       </div>
 
       {/* Correct answer */}
-      <p className="text-paper font-serif font-light tracking-tight text-lg mb-2">
+      <p className={gold ? "text-teal-300 font-bold text-lg mb-2" : aurora ? "text-emerald-300 font-bold text-lg mb-2" : "text-paper font-serif font-light tracking-tight text-lg mb-2"}>
         ✅ Зөв хариулт: <span className="underline">{correctAnswer}</span>
       </p>
 
       {/* Explanation / level tip */}
-      <p className="text-paper-2 text-sm leading-relaxed mb-3">{tip}</p>
+      <p className={gold || aurora ? "text-on-surface-variant text-sm leading-relaxed mb-3" : "text-paper-2 text-sm leading-relaxed mb-3"}>{tip}</p>
 
       {/* German context refresher */}
       {germanContext && (
-        <div className="bg-ink-2 border border-ink-line rounded-lg px-4 py-3 mt-2">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-paper-3 font-medium mb-1">
+        <div className={gold || aurora ? "bg-amber-400/10 rounded-lg px-4 py-3 mt-2" : "bg-ink-2 border border-ink-line rounded-lg px-4 py-3 mt-2"}>
+          <p className={gold || aurora ? "text-xs text-amber-300 font-medium mb-1" : "text-[11px] uppercase tracking-[0.18em] text-paper-3 font-medium mb-1"}>
             📖 Эх бичвэрээс:
           </p>
-          <p className="text-sm text-paper italic">{germanContext}</p>
+          <p className={gold || aurora ? "text-sm text-on-surface italic" : "text-sm text-paper italic"}>{germanContext}</p>
         </div>
       )}
 
       {/* Generic grammar refresher */}
-      <p className="text-xs text-paper-3 mt-3">
+      <p className={gold || aurora ? "text-xs text-amber-200/80 mt-3" : "text-xs text-paper-3 mt-3"}>
         💡 Герман хэлэнд үйл үг нь үндсэн өгүүлбэрт хоёр дахь байрлалд,
         туслах өгүүлбэрт хамгийн сүүлд байрладаг болохыг санаарай.
       </p>

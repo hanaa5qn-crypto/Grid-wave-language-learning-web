@@ -18,6 +18,7 @@ import {
 import { ieltsBandScore } from './ieltsTests';
 import { speak as neuralSpeak, stopSpeaking } from '../audio';
 import { useEnglishStats } from '../stats';
+import { useTheme } from '../../../frontend/src/lib/theme';
 
 // ---- Paper navigation ------------------------------------------------------
 type Paper = 'reading' | 'listening' | 'writing' | 'speaking';
@@ -89,6 +90,9 @@ const QuestionInput: React.FC<{
 }> = ({
   q, index, value, submitted, onChange,
 }) => {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const correct = isCorrect(q, value);
   const accepted = Array.isArray(q.answer) ? q.answer : [q.answer];
   const fixed = fixedDropdownOptions(q.type);
@@ -106,10 +110,15 @@ const QuestionInput: React.FC<{
               key={oi}
               className={[
                 'flex items-start gap-3 rounded-xl border px-4 py-2.5 cursor-pointer transition-colors',
-                submitted && norm(opt) === norm(accepted[0]) ? 'border-paper/60 bg-paper text-ink' :
-                submitted && picked ? 'border-ink-line bg-ink-2 text-paper-2' :
-                picked ? 'border-paper bg-ink-2 text-paper' :
-                'border-ink-line hover:border-paper/60',
+                gold || aurora
+                  ? (submitted && norm(opt) === norm(accepted[0]) ? 'border-secondary bg-secondary text-white' :
+                     submitted && picked ? 'border-on-background bg-surface-container-high text-on-surface-variant' :
+                     picked ? 'border-secondary bg-surface-container-high text-on-surface' :
+                     'border-on-background text-on-surface hover:border-secondary/60')
+                  : (submitted && norm(opt) === norm(accepted[0]) ? 'border-paper/60 bg-paper text-ink' :
+                     submitted && picked ? 'border-ink-line bg-ink-2 text-paper-2' :
+                     picked ? 'border-paper bg-ink-2 text-paper' :
+                     'border-ink-line hover:border-paper/60'),
               ].join(' ')}
             >
               <input
@@ -133,7 +142,7 @@ const QuestionInput: React.FC<{
         value={value ?? ''}
         disabled={submitted}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full sm:w-64 rounded-xl bg-ink-raise border border-ink-line px-3 py-2.5 text-paper disabled:opacity-70"
+        className={gold || aurora ? "w-full sm:w-64 rounded-xl bg-surface-container border border-on-background px-3 py-2.5 text-on-surface disabled:opacity-70" : "w-full sm:w-64 rounded-xl bg-ink-raise border border-ink-line px-3 py-2.5 text-paper disabled:opacity-70"}
       >
         <option value="">— select —</option>
         {fixed.map((opt) => (
@@ -148,7 +157,7 @@ const QuestionInput: React.FC<{
         value={value ?? ''}
         disabled={submitted}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl bg-ink-raise border border-ink-line px-3 py-2.5 text-paper disabled:opacity-70"
+        className={gold || aurora ? "w-full rounded-xl bg-surface-container border border-on-background px-3 py-2.5 text-on-surface disabled:opacity-70" : "w-full rounded-xl bg-ink-raise border border-ink-line px-3 py-2.5 text-paper disabled:opacity-70"}
       >
         <option value="">— select —</option>
         {q.options.map((opt, oi) => (
@@ -165,23 +174,25 @@ const QuestionInput: React.FC<{
         disabled={submitted}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Type your answer…"
-        className="w-full sm:w-80 rounded-xl bg-ink-raise border border-ink-line px-3 py-2.5 text-paper disabled:opacity-70"
+        className={gold || aurora ? "w-full sm:w-80 rounded-xl bg-surface-container border border-on-background px-3 py-2.5 text-on-surface disabled:opacity-70" : "w-full sm:w-80 rounded-xl bg-ink-raise border border-ink-line px-3 py-2.5 text-paper disabled:opacity-70"}
       />
     );
   }
 
   return (
-    <div className="rounded-2xl bg-ink-raise p-4">
+    <div className={gold || aurora ? "rounded-2xl bg-surface-container p-4" : "rounded-2xl bg-ink-raise p-4"}>
       <div className="flex items-center justify-between gap-3 mb-2">
-        <span className="text-xs font-bold text-paper">Q{index + 1}</span>
-        <span className="text-[11px] uppercase tracking-wide text-paper-2">{TYPE_LABEL[q.type]}</span>
+        <span className={gold || aurora ? "text-xs font-bold text-on-surface" : "text-xs font-bold text-paper"}>Q{index + 1}</span>
+        <span className={gold || aurora ? "text-[11px] uppercase tracking-wide text-on-surface-variant" : "text-[11px] uppercase tracking-wide text-paper-2"}>{TYPE_LABEL[q.type]}</span>
       </div>
       <p className="font-medium mb-3 whitespace-pre-line">{q.prompt}</p>
       {control}
       {submitted && (
         <div className={[
           'mt-3 rounded-xl px-3 py-2 text-sm flex items-start gap-2',
-          correct ? 'bg-paper text-ink' : 'bg-ink-2 text-paper-2',
+          gold || aurora
+            ? (correct ? 'bg-secondary text-white' : 'bg-surface-container-high text-on-surface-variant')
+            : (correct ? 'bg-paper text-ink' : 'bg-ink-2 text-paper-2'),
         ].join(' ')}>
           {correct ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> : <XCircle className="w-4 h-4 mt-0.5 shrink-0" />}
           <span>
@@ -198,13 +209,16 @@ const QuestionInput: React.FC<{
 function BandBanner({
   correct, total, kind,
 }: { correct: number; total: number; kind: 'reading' | 'listening' }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   // ieltsBandScore expects a raw score out of the official 40-question paper.
   // Scale proportionally so a shorter generated test isn't graded against the
   // full-length maximum (identity when total === 40).
   const scaledRaw = total > 0 ? Math.round((correct * 40) / total) : 0;
   const band = ieltsBandScore(scaledRaw, kind);
   return (
-    <div className="rounded-2xl bg-ink-2 text-paper px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+    <div className={gold || aurora ? "rounded-2xl bg-surface-container-high text-on-surface px-5 py-4 flex flex-wrap items-center justify-between gap-3" : "rounded-2xl bg-ink-2 text-paper px-5 py-4 flex flex-wrap items-center justify-between gap-3"}>
       <span className="inline-flex items-center gap-2 font-semibold">
         <ClipboardCheck className="w-5 h-5" /> {correct} / {total} correct
       </span>
@@ -220,6 +234,9 @@ function BandBanner({
 // Reading paper
 // ===========================================================================
 function ReadingPaper({ passages, test }: { passages: IeltsReadingPassage[]; test: IeltsTest }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const { recordStudy, recordTestResult } = useEnglishStats();
   const [active, setActive] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
@@ -238,7 +255,7 @@ function ReadingPaper({ passages, test }: { passages: IeltsReadingPassage[]; tes
   const correctCount = allQuestions.filter((q) => isCorrect(q, responses[q.id])).length;
 
   if (!passage) {
-    return <p className="text-paper-2">No reading passages in this test.</p>;
+    return <p className={gold || aurora ? "text-on-surface-variant" : "text-paper-2"}>No reading passages in this test.</p>;
   }
 
   const set = (id: number, v: string) => setResponses((r) => ({ ...r, [id]: v }));
@@ -269,7 +286,9 @@ function ReadingPaper({ passages, test }: { passages: IeltsReadingPassage[]; tes
             onClick={() => setActive(i)}
             className={[
               'px-4 py-2 rounded-full text-sm font-semibold border',
-              i === active ? 'bg-paper text-ink border-paper' : 'border-ink-line text-paper-2 hover:text-paper',
+              gold || aurora
+                ? (i === active ? 'bg-secondary text-white border-secondary' : 'border-on-background text-on-surface-variant hover:text-on-surface')
+                : (i === active ? 'bg-paper text-ink border-paper' : 'border-ink-line text-paper-2 hover:text-paper'),
             ].join(' ')}
           >
             Passage {p.number}
@@ -279,9 +298,9 @@ function ReadingPaper({ passages, test }: { passages: IeltsReadingPassage[]; tes
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Passage text — preserves \n\n paragraph breaks */}
-        <article className="rounded-2xl bg-ink-raise p-5 max-h-[70vh] overflow-y-auto">
+        <article className={gold || aurora ? "rounded-2xl bg-surface-container p-5 max-h-[70vh] overflow-y-auto" : "rounded-2xl bg-ink-raise p-5 max-h-[70vh] overflow-y-auto"}>
           <h3 className="text-xl font-bold mb-1">{passage.title}</h3>
-          <p className="text-xs text-paper-2 mb-4">Passage {passage.number}</p>
+          <p className={gold || aurora ? "text-xs text-on-surface-variant mb-4" : "text-xs text-paper-2 mb-4"}>Passage {passage.number}</p>
           <div className="leading-relaxed whitespace-pre-line text-[15px]">{passage.text}</div>
         </article>
 
@@ -314,6 +333,9 @@ function ReadingPaper({ passages, test }: { passages: IeltsReadingPassage[]; tes
 // Listening paper
 // ===========================================================================
 function ListeningPaper({ sections, test }: { sections: IeltsListeningSection[]; test: IeltsTest }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const { recordStudy, recordTestResult } = useEnglishStats();
   const [active, setActive] = useState(0);
   const [responses, setResponses] = useState<Record<number, string>>({});
@@ -331,7 +353,7 @@ function ListeningPaper({ sections, test }: { sections: IeltsListeningSection[];
   const correctCount = allQuestions.filter((q) => isCorrect(q, responses[q.id])).length;
 
   if (!section) {
-    return <p className="text-paper-2">No listening sections in this test.</p>;
+    return <p className={gold || aurora ? "text-on-surface-variant" : "text-paper-2"}>No listening sections in this test.</p>;
   }
 
   const set = (id: number, v: string) => setResponses((r) => ({ ...r, [id]: v }));
@@ -379,7 +401,9 @@ function ListeningPaper({ sections, test }: { sections: IeltsListeningSection[];
             onClick={() => selectSection(i)}
             className={[
               'px-4 py-2 rounded-full text-sm font-semibold border',
-              i === active ? 'bg-paper text-ink border-paper' : 'border-ink-line text-paper-2 hover:text-paper',
+              gold || aurora
+                ? (i === active ? 'bg-secondary text-white border-secondary' : 'border-on-background text-on-surface-variant hover:text-on-surface')
+                : (i === active ? 'bg-paper text-ink border-paper' : 'border-ink-line text-paper-2 hover:text-paper'),
             ].join(' ')}
           >
             Section {s.number}
@@ -387,29 +411,29 @@ function ListeningPaper({ sections, test }: { sections: IeltsListeningSection[];
         ))}
       </div>
 
-      <div className="rounded-2xl bg-ink-2 p-5">
+      <div className={gold || aurora ? "rounded-2xl bg-surface-container-high p-5" : "rounded-2xl bg-ink-2 p-5"}>
         <h3 className="text-xl font-bold mb-1">{section.title}</h3>
-        <p className="text-xs text-paper-2 mb-4">Section {section.number}</p>
+        <p className={gold || aurora ? "text-xs text-on-surface-variant mb-4" : "text-xs text-paper-2 mb-4"}>Section {section.number}</p>
         <div className="flex flex-wrap gap-3">
           {!playing ? (
-            <button onClick={play} className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 font-semibold">
+            <button onClick={play} className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-5 py-2.5 font-semibold" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 font-semibold"}>
               <Volume2 className="w-4 h-4" /> Play section audio
             </button>
           ) : (
-            <button onClick={stop} className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 font-semibold">
+            <button onClick={stop} className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-5 py-2.5 font-semibold" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 font-semibold"}>
               <VolumeX className="w-4 h-4" /> Stop audio
             </button>
           )}
           <button
             onClick={() => setShowTranscript((s) => !s)}
-            className="inline-flex items-center gap-2 rounded-full border border-ink-line px-5 py-2.5"
+            className={gold || aurora ? "inline-flex items-center gap-2 rounded-full border border-on-background px-5 py-2.5" : "inline-flex items-center gap-2 rounded-full border border-ink-line px-5 py-2.5"}
           >
             {showTranscript ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             {showTranscript ? 'Hide' : 'Show'} transcript
           </button>
         </div>
         {showTranscript && (
-          <div className="mt-4 rounded-xl bg-ink-raise p-4 leading-relaxed whitespace-pre-line text-[15px]">
+          <div className={gold || aurora ? "mt-4 rounded-xl bg-surface-container p-4 leading-relaxed whitespace-pre-line text-[15px]" : "mt-4 rounded-xl bg-ink-raise p-4 leading-relaxed whitespace-pre-line text-[15px]"}>
             {section.transcript}
           </div>
         )}
@@ -442,6 +466,9 @@ function ListeningPaper({ sections, test }: { sections: IeltsListeningSection[];
 // Writing paper
 // ===========================================================================
 function WritingPaper({ tasks }: { tasks: IeltsTest['writing'] }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
 
@@ -451,14 +478,14 @@ function WritingPaper({ tasks }: { tasks: IeltsTest['writing'] }) {
         const words = (drafts[t.task] || '').trim().split(/\s+/).filter(Boolean).length;
         const enough = words >= t.minWords;
         return (
-          <div key={t.task} className="rounded-2xl bg-ink-raise p-5">
+          <div key={t.task} className={gold || aurora ? "rounded-2xl bg-surface-container p-5" : "rounded-2xl bg-ink-raise p-5"}>
             <div className="flex items-center justify-between gap-3 mb-2">
               <h3 className="text-lg font-bold">Task {t.task}</h3>
-              <span className="text-xs text-paper-2">Minimum {t.minWords} words</span>
+              <span className={gold || aurora ? "text-xs text-on-surface-variant" : "text-xs text-paper-2"}>Minimum {t.minWords} words</span>
             </div>
             <p className="mb-3 whitespace-pre-line leading-relaxed">{t.prompt}</p>
             {t.visual && (
-              <div className="mb-4 rounded-xl bg-ink-raise p-4 text-sm text-paper-2 italic whitespace-pre-line">
+              <div className={gold || aurora ? "mb-4 rounded-xl bg-surface-container p-4 text-sm text-on-surface-variant italic whitespace-pre-line" : "mb-4 rounded-xl bg-ink-raise p-4 text-sm text-paper-2 italic whitespace-pre-line"}>
                 {t.visual}
               </div>
             )}
@@ -467,15 +494,15 @@ function WritingPaper({ tasks }: { tasks: IeltsTest['writing'] }) {
               onChange={(e) => setDrafts((d) => ({ ...d, [t.task]: e.target.value }))}
               rows={8}
               placeholder="Write your response here…"
-              className="w-full rounded-xl bg-ink-raise border border-ink-line p-3 text-paper"
+              className={gold || aurora ? "w-full rounded-xl bg-surface-container border border-on-background p-3 text-on-surface" : "w-full rounded-xl bg-ink-raise border border-ink-line p-3 text-paper"}
             />
             <div className="flex items-center justify-between mt-2">
-              <span className={`text-xs font-medium ${enough ? 'text-paper-2' : 'text-paper'}`}>
+              <span className={gold || aurora ? `text-xs font-medium ${enough ? 'text-on-surface-variant' : 'text-on-surface'}` : `text-xs font-medium ${enough ? 'text-paper-2' : 'text-paper'}`}>
                 {words} / {t.minWords} words {enough ? '✓' : ''}
               </span>
               <button
                 onClick={() => setRevealed((r) => ({ ...r, [t.task]: !r[t.task] }))}
-                className="inline-flex items-center gap-2 rounded-full border border-ink-line px-4 py-2 text-sm"
+                className={gold || aurora ? "inline-flex items-center gap-2 rounded-full border border-on-background px-4 py-2 text-sm" : "inline-flex items-center gap-2 rounded-full border border-ink-line px-4 py-2 text-sm"}
               >
                 {revealed[t.task] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 {revealed[t.task] ? 'Hide' : 'Show'} model answer
@@ -483,9 +510,9 @@ function WritingPaper({ tasks }: { tasks: IeltsTest['writing'] }) {
             </div>
             {revealed[t.task] && (
               <div className="mt-4 space-y-4">
-                <div className="rounded-xl bg-ink-raise p-4 leading-relaxed whitespace-pre-line">{t.modelAnswer}</div>
+                <div className={gold || aurora ? "rounded-xl bg-surface-container p-4 leading-relaxed whitespace-pre-line" : "rounded-xl bg-ink-raise p-4 leading-relaxed whitespace-pre-line"}>{t.modelAnswer}</div>
                 {t.examinerNotes.length > 0 && (
-                  <div className="rounded-xl bg-paper text-ink p-4">
+                  <div className={gold || aurora ? "rounded-xl bg-secondary text-white p-4" : "rounded-xl bg-paper text-ink p-4"}>
                     <p className="font-semibold mb-2 inline-flex items-center gap-2"><Award className="w-4 h-4" /> Examiner notes</p>
                     <ul className="list-disc pl-5 space-y-1 text-sm">
                       {t.examinerNotes.map((n, i) => <li key={i}>{n}</li>)}
@@ -505,6 +532,9 @@ function WritingPaper({ tasks }: { tasks: IeltsTest['writing'] }) {
 // Speaking paper
 // ===========================================================================
 function SpeakingPaper({ parts }: { parts: IeltsTest['speaking'] }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
   return (
@@ -512,19 +542,19 @@ function SpeakingPaper({ parts }: { parts: IeltsTest['speaking'] }) {
       {parts.map((p) => {
         const isCueCard = p.part === 2;
         return (
-          <div key={p.part} className="rounded-2xl bg-ink-raise p-5">
+          <div key={p.part} className={gold || aurora ? "rounded-2xl bg-surface-container p-5" : "rounded-2xl bg-ink-raise p-5"}>
             <div className="flex items-center justify-between gap-3 mb-3">
               <h3 className="text-lg font-bold">Part {p.part}</h3>
-              <span className="text-xs text-paper-2">{p.title}</span>
+              <span className={gold || aurora ? "text-xs text-on-surface-variant" : "text-xs text-paper-2"}>{p.title}</span>
             </div>
 
             {isCueCard ? (
               // Part 2 — single cue card with bullet prompts.
-              <div className="rounded-2xl bg-ink-2 p-5 mb-4">
-                <p className="text-xs font-bold text-paper mb-2">Cue card</p>
+              <div className={gold || aurora ? "rounded-2xl bg-surface-container-high p-5 mb-4" : "rounded-2xl bg-ink-2 p-5 mb-4"}>
+                <p className={gold || aurora ? "text-xs font-bold text-on-surface mb-2" : "text-xs font-bold text-paper mb-2"}>Cue card</p>
                 <ul className="space-y-1.5">
                   {p.questions.map((line, i) => (
-                    <li key={i} className={i === 0 ? 'font-semibold' : 'list-disc ml-5 text-paper-2'}>
+                    <li key={i} className={gold || aurora ? (i === 0 ? 'font-semibold' : 'list-disc ml-5 text-on-surface-variant') : (i === 0 ? 'font-semibold' : 'list-disc ml-5 text-paper-2')}>
                       {line}
                     </li>
                   ))}
@@ -534,28 +564,28 @@ function SpeakingPaper({ parts }: { parts: IeltsTest['speaking'] }) {
               // Parts 1 & 3 — interview / discussion questions.
               <ul className="space-y-2 mb-4">
                 {p.questions.map((qn, i) => (
-                  <li key={i} className="rounded-xl bg-ink-raise px-4 py-2.5">{qn}</li>
+                  <li key={i} className={gold || aurora ? "rounded-xl bg-surface-container px-4 py-2.5" : "rounded-xl bg-ink-raise px-4 py-2.5"}>{qn}</li>
                 ))}
               </ul>
             )}
 
             <div className="space-y-3">
-              <p className="text-xs font-bold text-paper inline-flex items-center gap-2"><Mic className="w-4 h-4" /> Sample answers</p>
+              <p className={gold || aurora ? "text-xs font-bold text-on-surface inline-flex items-center gap-2" : "text-xs font-bold text-paper inline-flex items-center gap-2"}><Mic className="w-4 h-4" /> Sample answers</p>
               {p.sampleAnswers.map((ans, i) => {
                 const key = `${p.part}-${i}`;
                 return (
-                  <div key={key} className="rounded-xl bg-ink-raise p-4">
-                    <p className={`leading-relaxed ${revealed[key] ? '' : 'line-clamp-2 text-paper-2'}`}>{ans}</p>
+                  <div key={key} className={gold || aurora ? "rounded-xl bg-surface-container p-4" : "rounded-xl bg-ink-raise p-4"}>
+                    <p className={gold || aurora ? `leading-relaxed ${revealed[key] ? '' : 'line-clamp-2 text-on-surface-variant'}` : `leading-relaxed ${revealed[key] ? '' : 'line-clamp-2 text-paper-2'}`}>{ans}</p>
                     <div className="flex flex-wrap gap-2 mt-3">
                       <button
                         onClick={() => speak(ans)}
-                        className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-4 py-1.5 text-sm font-semibold"
+                        className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-4 py-1.5 text-sm font-semibold" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-4 py-1.5 text-sm font-semibold"}
                       >
                         <Volume2 className="w-4 h-4" /> Hear answer
                       </button>
                       <button
                         onClick={() => setRevealed((r) => ({ ...r, [key]: !r[key] }))}
-                        className="inline-flex items-center gap-2 rounded-full border border-ink-line px-4 py-1.5 text-sm"
+                        className={gold || aurora ? "inline-flex items-center gap-2 rounded-full border border-on-background px-4 py-1.5 text-sm" : "inline-flex items-center gap-2 rounded-full border border-ink-line px-4 py-1.5 text-sm"}
                       >
                         {revealed[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         {revealed[key] ? 'Collapse' : 'Read full'}
@@ -576,14 +606,17 @@ function SpeakingPaper({ parts }: { parts: IeltsTest['speaking'] }) {
 function PaperActions({
   submitted, onSubmit, onReset,
 }: { submitted: boolean; onSubmit: () => void; onReset: () => void }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   return (
     <div className="flex flex-wrap gap-3">
       {!submitted ? (
-        <button onClick={onSubmit} className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 font-semibold">
+        <button onClick={onSubmit} className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-6 py-2.5 font-semibold" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 font-semibold"}>
           <ClipboardCheck className="w-4 h-4" /> Submit answers
         </button>
       ) : (
-        <button onClick={onReset} className="inline-flex items-center gap-2 rounded-full border border-ink-line px-6 py-2.5 font-semibold">
+        <button onClick={onReset} className={gold || aurora ? "inline-flex items-center gap-2 rounded-full border border-on-background px-6 py-2.5 font-semibold" : "inline-flex items-center gap-2 rounded-full border border-ink-line px-6 py-2.5 font-semibold"}>
           <RotateCcw className="w-4 h-4" /> Try again
         </button>
       )}
@@ -595,6 +628,9 @@ function PaperActions({
 // Root runner — default export consumed by EnglishApp's TestsTab.
 // ===========================================================================
 export default function IeltsTestRunner({ test, onExit }: { test: IeltsTest; onExit: () => void }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const [paper, setPaper] = useState<Paper>('reading');
 
   // Leaving the runner should silence any in-flight TTS.
@@ -607,24 +643,26 @@ export default function IeltsTestRunner({ test, onExit }: { test: IeltsTest; onE
     <div className="max-w-6xl">
       {/* Header: persistent Back + title */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <button onClick={exit} className="inline-flex items-center gap-2 text-paper-2 hover:text-paper">
+        <button onClick={exit} className={gold || aurora ? "inline-flex items-center gap-2 text-on-surface-variant hover:text-on-surface" : "inline-flex items-center gap-2 text-paper-2 hover:text-paper"}>
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
         <div className="text-right">
           <h2 className="text-xl font-bold">{test.title}</h2>
-          <p className="text-xs text-paper-2">{test.module} · {test.source}</p>
+          <p className={gold || aurora ? "text-xs text-on-surface-variant" : "text-xs text-paper-2"}>{test.module} · {test.source}</p>
         </div>
       </div>
 
       {/* Paper switcher */}
-      <div className="inline-flex flex-wrap rounded-full bg-ink-raise p-1 mb-6">
+      <div className={gold || aurora ? "inline-flex flex-wrap rounded-full bg-surface-container p-1 mb-6" : "inline-flex flex-wrap rounded-full bg-ink-raise p-1 mb-6"}>
         {PAPERS.map((p) => (
           <button
             key={p.key}
             onClick={() => { stopSpeaking(); setPaper(p.key); }}
             className={[
               'inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full text-sm font-semibold transition-colors',
-              paper === p.key ? 'bg-paper text-ink' : 'text-paper-2 hover:text-paper',
+              gold || aurora
+                ? (paper === p.key ? 'bg-secondary text-white' : 'text-on-surface-variant hover:text-on-surface')
+                : (paper === p.key ? 'bg-paper text-ink' : 'text-paper-2 hover:text-paper'),
             ].join(' ')}
           >
             <p.icon className="w-4 h-4" /> {p.label}

@@ -27,6 +27,8 @@ import ContactPage from './pages/ContactPage';
 import { UserProfile, DEFAULT_PROFILES, createGuestProfile } from './profiles';
 import { getMyPromo, redeemPromoCode, removeMyPromo, ensureSignupTrial, type MyPromo } from './promo';
 import LoginScreen from './LoginScreen';
+import GoldLoginScreen from './GoldLoginScreen';
+import AuroraLoginScreen from './AuroraLoginScreen';
 import LandingPage from './LandingPage';
 import { track, trackVisitOncePerDay } from './analytics';
 import {
@@ -62,8 +64,13 @@ import MCQBlock from './components/MCQBlock';
 import ExternalResourcesPanel from './components/ExternalResourcesPanel';
 import QuizNav from './components/QuizNav';
 import { BillingCard } from './components/BillingCard';
+import { GoldBillingCard } from './components/GoldBillingCard';
+import { AuroraBillingCard } from './components/AuroraBillingCard';
 import { BrandLogo } from './components/BrandLogo';
 import { ProfileTab } from './tabs/ProfileTab';
+import { GoldProfileTab } from './tabs/GoldProfileTab';
+import { AuroraProfileTab } from './tabs/AuroraProfileTab';
+import { useTheme } from './lib/theme';
 import { TranslateTab } from './tabs/TranslateTab';
 import { ExamTab } from './tabs/ExamTab';
 import { ReadTab } from './tabs/ReadTab';
@@ -117,6 +124,20 @@ export default function App() {
 }
 
 function LearnerApp() {
+  // Gold theme renders the original "Atelier Press" dashboard markup
+  // (resurrected from git, pre-monochrome) instead of the ink/paper one.
+  const uiTheme = useTheme();
+  const DashboardTab = uiTheme === 'gold' ? GoldProfileTab : uiTheme === 'aurora' ? AuroraProfileTab : ProfileTab;
+  const PlanBillingCard = uiTheme === 'gold' ? GoldBillingCard : uiTheme === 'aurora' ? AuroraBillingCard : BillingCard;
+  const ActiveLoginScreen = uiTheme === 'gold' ? GoldLoginScreen : uiTheme === 'aurora' ? AuroraLoginScreen : LoginScreen;
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
+  // Mobile drawer tab-button classes; gold restores original Atelier chrome,
+  // aurora restores the original violet Aurora Atelier chrome.
+  const drawerTab = (active: boolean) =>
+    gold || aurora
+      ? `flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${active ? 'bg-white/15' : 'text-on-primary-container'}`
+      : `flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${active ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`;
   // Whether the user is logged in is now driven by Firebase Authentication.
   // The signed-in user's profile + progress lives in Firestore (users/{uid}),
   // so it follows them across devices and survives every redeploy.
@@ -1342,9 +1363,9 @@ function LearnerApp() {
     'max',
   ) : (
     // Microphone Interface Area — real voice recording for the AI coach
-    <div className="w-full flex flex-col items-center justify-center relative py-6 bg-ink-raise border-2 border-ink-line border-dashed rounded-xl block-shadow my-4">
+    <div className={gold || aurora ? "w-full flex flex-col items-center justify-center relative py-6 bg-surface-container-low border-2 border-on-background border-dashed rounded-xl block-shadow my-4" : "w-full flex flex-col items-center justify-center relative py-6 bg-ink-raise border-2 border-ink-line border-dashed rounded-xl block-shadow my-4"}>
 
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 bg-ink-raise border-2 border-ink-line text-[11px] font-light font-serif rounded-full uppercase tracking-wider block-shadow">
+      <span className={gold || aurora ? "inline-flex items-center gap-1.5 px-3 py-1 mb-4 bg-primary-container border-2 border-on-background text-[11px] font-black font-space rounded-full uppercase tracking-wider block-shadow" : "inline-flex items-center gap-1.5 px-3 py-1 mb-4 bg-ink-raise border-2 border-ink-line text-[11px] font-light font-serif rounded-full uppercase tracking-wider block-shadow"}>
         <AudioLines className="w-3.5 h-3.5" /> Дуут AI багш
       </span>
 
@@ -1355,7 +1376,9 @@ function LearnerApp() {
           onClick={() => toggleMic(target)}
           disabled={speakingLoading && !isRecording}
           title={isRecording ? 'Зогсоох' : 'Бичиж эхлэх'}
-          className={`relative z-10 w-24 h-24 text-paper rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none border-2 border-ink-line cursor-pointer block-shadow disabled:opacity-60 disabled:cursor-not-allowed ${
+          className={gold || aurora ? `relative z-10 w-24 h-24 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none border-2 border-on-background cursor-pointer block-shadow disabled:opacity-60 disabled:cursor-not-allowed ${
+            isRecording ? 'bg-error text-white animate-ripple' : 'bg-secondary'
+          }` : `relative z-10 w-24 h-24 text-paper rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform duration-200 focus:outline-none border-2 border-ink-line cursor-pointer block-shadow disabled:opacity-60 disabled:cursor-not-allowed ${
             isRecording ? 'bg-paper text-ink animate-ripple' : 'bg-paper'
           }`}
         >
@@ -1363,29 +1386,29 @@ function LearnerApp() {
         </button>
       </div>
 
-      <h4 className="text-xl font-black text-paper-2 font-sans mb-1 flex items-center gap-2">
-        {isRecording && <span className="w-2.5 h-2.5 rounded-full bg-paper animate-pulse" />}
+      <h4 className={gold || aurora ? "text-xl font-black text-secondary font-sans mb-1 flex items-center gap-2" : "text-xl font-black text-paper-2 font-sans mb-1 flex items-center gap-2"}>
+        {isRecording && <span className={gold || aurora ? "w-2.5 h-2.5 rounded-full bg-error animate-pulse" : "w-2.5 h-2.5 rounded-full bg-paper animate-pulse"} />}
         {speakingLoading && !isRecording
           ? 'AI сонсож байна...'
           : isRecording
             ? `Бичиж байна  ${String(Math.floor(recordSeconds / 60)).padStart(2, '0')}:${String(recordSeconds % 60).padStart(2, '0')}`
             : 'Бичихийн тулд дарна уу'}
       </h4>
-      <p className="text-sm font-semibold text-paper-3 text-center px-4 max-w-md">
+      <p className={gold || aurora ? "text-sm font-semibold text-outline text-center px-4 max-w-md" : "text-sm font-semibold text-paper-3 text-center px-4 max-w-md"}>
         {voiceSupportMessage || 'Микрофон дээр дарж германаар чанга ярина уу. Дуусаад зогсоох товчийг дарвал AI таны дуу хоолойг сонсож, дуудлага, аялга, дүрэм, үгсийн санг үнэлнэ.'}
       </p>
 
       {/* Playback of the learner's own recording */}
       {recordedAudioUrl && !isRecording && (
         <div className="mt-5 w-full max-w-sm px-4 flex flex-col items-center gap-1.5">
-          <p className="text-[11px] font-serif text-paper-3 font-bold uppercase">Таны бичлэг:</p>
+          <p className={gold || aurora ? "text-[11px] font-space text-outline font-bold uppercase" : "text-[11px] font-serif text-paper-3 font-bold uppercase"}>Таны бичлэг:</p>
           <audio src={recordedAudioUrl} controls className="w-full h-10" />
         </div>
       )}
 
       {/* Text alternative input field for users with missing micro permissions */}
       <div className="mt-6 w-full max-w-sm px-4 flex flex-col gap-2">
-        <p className="text-[11px] font-serif text-paper-3 font-bold uppercase text-center">Эсвэл дуу бичихгүйгээр шивж туршина уу:</p>
+        <p className={gold || aurora ? "text-[11px] font-space text-outline font-bold uppercase text-center" : "text-[11px] font-serif text-paper-3 font-bold uppercase text-center"}>Эсвэл дуу бичихгүйгээр шивж туршина уу:</p>
         <div className="flex gap-2">
           <input
             type="text"
@@ -1393,12 +1416,12 @@ function LearnerApp() {
             value={speakingTextEntered}
             onChange={(e) => setSpeakingTextEntered(e.target.value)}
             maxLength={500}
-            className="flex-grow bg-ink-raise border-2 border-ink-line font-bold text-sm px-3 py-2 rounded-xl outline-none focus:border-ink-line transition-all text-paper"
+            className={gold || aurora ? "flex-grow bg-surface-container-low border-2 border-on-background font-bold text-sm px-3 py-2 rounded-xl outline-none focus:border-primary transition-all text-on-surface" : "flex-grow bg-ink-raise border-2 border-ink-line font-bold text-sm px-3 py-2 rounded-xl outline-none focus:border-ink-line transition-all text-paper"}
           />
           <button
             onClick={() => evaluateSpeechText(speakingTextEntered, target)}
             disabled={!speakingTextEntered.trim() || speakingLoading}
-            className="px-4 py-2 border-2 border-ink-line text-sm font-bold bg-paper text-ink rounded-xl block-shadow cursor-pointer disabled:opacity-50"
+            className={gold ? "px-4 py-2 border-2 border-on-background text-sm font-bold bg-primary text-on-primary rounded-xl block-shadow cursor-pointer disabled:opacity-50" : aurora ? "px-4 py-2 border-2 border-on-background text-sm font-bold bg-primary text-white rounded-xl block-shadow cursor-pointer disabled:opacity-50" : "px-4 py-2 border-2 border-ink-line text-sm font-bold bg-paper text-ink rounded-xl block-shadow cursor-pointer disabled:opacity-50"}
           >
             {speakingLoading ? 'Үнэлж байна...' : 'Шалгах'}
           </button>
@@ -1413,15 +1436,17 @@ function LearnerApp() {
       <div className="w-full flex flex-col gap-4 animate-scale-up">
 
         {/* Headline + summary */}
-        <div className="w-full border-2 border-ink-line rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow">
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 border-ink-line shrink-0 block-shadow ${
+        <div className={gold || aurora ? "w-full border-2 border-on-background rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow" : "w-full border-2 border-ink-line rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow"}>
+          <div className={gold || aurora ? `w-11 h-11 rounded-full flex items-center justify-center border-2 border-on-background shrink-0 block-shadow ${
+            speakingEvaluation.isCorrect ? 'bg-secondary-container' : 'bg-error-container'
+          }` : `w-11 h-11 rounded-full flex items-center justify-center border-2 border-ink-line shrink-0 block-shadow ${
             speakingEvaluation.isCorrect ? 'bg-ink-raise' : 'bg-ink-raise'
           }`}>
-            {speakingEvaluation.isCorrect ? <CheckCircle className="w-5 h-5 text-paper-2" /> : <AlertCircle className="w-5 h-5 text-paper-2" />}
+            {speakingEvaluation.isCorrect ? <CheckCircle className={gold || aurora ? "w-5 h-5 text-secondary" : "w-5 h-5 text-paper-2"} /> : <AlertCircle className={gold || aurora ? "w-5 h-5 text-error" : "w-5 h-5 text-paper-2"} />}
           </div>
           <div className="flex-grow">
-            <h5 className="text-lg font-black text-paper mb-1 font-sans">{speakingEvaluation.feedbackMessage}</h5>
-            <p className="text-sm text-paper-2 leading-relaxed font-sans">{speakingEvaluation.analysis}</p>
+            <h5 className={gold || aurora ? "text-lg font-black text-on-surface mb-1 font-sans" : "text-lg font-black text-paper mb-1 font-sans"}>{speakingEvaluation.feedbackMessage}</h5>
+            <p className={gold || aurora ? "text-sm text-on-surface-variant leading-relaxed font-sans" : "text-sm text-paper-2 leading-relaxed font-sans"}>{speakingEvaluation.analysis}</p>
           </div>
         </div>
 
@@ -1434,14 +1459,14 @@ function LearnerApp() {
               { label: 'Чөлөөтэй байдал', value: speakingEvaluation.fluencyScore, icon: Gauge },
             ].filter((s) => typeof s.value === 'number').map((s, i) => {
               const v = s.value as number;
-              const tone = v >= 75 ? 'text-paper-2' : v >= 50 ? 'text-paper' : 'text-paper-2';
-              const barTone = v >= 75 ? 'bg-paper' : v >= 50 ? 'bg-paper' : 'bg-paper';
+              const tone = gold ? (v >= 75 ? 'text-secondary' : v >= 50 ? 'text-amber-600' : 'text-error') : aurora ? (v >= 75 ? 'text-secondary' : v >= 50 ? 'text-yellow-600' : 'text-error') : (v >= 75 ? 'text-paper-2' : v >= 50 ? 'text-paper' : 'text-paper-2');
+              const barTone = gold ? (v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-amber-500' : 'bg-error') : aurora ? (v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-yellow-500' : 'bg-error') : (v >= 75 ? 'bg-paper' : v >= 50 ? 'bg-paper' : 'bg-paper');
               return (
-                <div key={i} className="border-2 border-ink-line rounded-xl p-4 block-shadow flex flex-col items-center text-center">
+                <div key={i} className={gold || aurora ? "border-2 border-on-background rounded-xl p-4 block-shadow flex flex-col items-center text-center" : "border-2 border-ink-line rounded-xl p-4 block-shadow flex flex-col items-center text-center"}>
                   <s.icon className={`w-5 h-5 mb-1 ${tone}`} />
-                  <span className={`text-3xl font-light font-serif ${tone}`}>{v}</span>
-                  <span className="text-[10px] font-bold uppercase text-paper-3 tracking-wide mt-0.5">{s.label}</span>
-                  <div className="w-full h-1.5 bg-ink-2 rounded-full mt-2 overflow-hidden">
+                  <span className={gold || aurora ? `text-3xl font-black font-space ${tone}` : `text-3xl font-light font-serif ${tone}`}>{v}</span>
+                  <span className={gold || aurora ? "text-[10px] font-bold uppercase text-outline tracking-wide mt-0.5" : "text-[10px] font-bold uppercase text-paper-3 tracking-wide mt-0.5"}>{s.label}</span>
+                  <div className={gold || aurora ? "w-full h-1.5 bg-surface-container-high rounded-full mt-2 overflow-hidden" : "w-full h-1.5 bg-ink-2 rounded-full mt-2 overflow-hidden"}>
                     <div className={`h-full ${barTone} rounded-full transition-all`} style={{ width: `${v}%` }} />
                   </div>
                 </div>
@@ -1452,30 +1477,30 @@ function LearnerApp() {
 
         {/* What the AI heard */}
         {speakingEvaluation.transcript && (
-          <div className="w-full bg-ink-raise border-2 border-ink-line rounded-xl p-4 block-shadow">
-            <p className="text-[11px] font-serif font-bold uppercase text-paper-3 mb-1 flex items-center gap-1.5">
+          <div className={gold || aurora ? "w-full bg-surface-container-low border-2 border-on-background rounded-xl p-4 block-shadow" : "w-full bg-ink-raise border-2 border-ink-line rounded-xl p-4 block-shadow"}>
+            <p className={gold || aurora ? "text-[11px] font-space font-bold uppercase text-outline mb-1 flex items-center gap-1.5" : "text-[11px] font-serif font-bold uppercase text-paper-3 mb-1 flex items-center gap-1.5"}>
               <MessageSquareText className="w-3.5 h-3.5" /> AI сонссон нь
             </p>
-            <p className="text-base font-bold text-paper font-sans">"{speakingEvaluation.transcript}"</p>
+            <p className={gold || aurora ? "text-base font-bold text-on-surface font-sans" : "text-base font-bold text-paper font-sans"}>"{speakingEvaluation.transcript}"</p>
           </div>
         )}
 
         {/* Detailed feedback cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
-            { label: 'Дуудлага', text: speakingEvaluation.pronunciationFeedback, icon: AudioLines, tint: 'bg-ink-raise' },
-            { label: 'Аялга', text: speakingEvaluation.accentNote, icon: Languages, tint: 'bg-ink-raise' },
-            { label: 'Дүрэм', text: speakingEvaluation.grammarFeedback, icon: SpellCheck, tint: 'bg-ink-raise' },
-            { label: 'Үгсийн сан', text: speakingEvaluation.vocabularyFeedback, icon: BookOpen, tint: 'bg-ink-raise' },
+            { label: 'Дуудлага', text: speakingEvaluation.pronunciationFeedback, icon: AudioLines, tint: gold || aurora ? 'bg-primary-container' : 'bg-ink-raise' },
+            { label: 'Аялга', text: speakingEvaluation.accentNote, icon: Languages, tint: gold || aurora ? 'bg-secondary-container' : 'bg-ink-raise' },
+            { label: 'Дүрэм', text: speakingEvaluation.grammarFeedback, icon: SpellCheck, tint: gold || aurora ? 'bg-error-container' : 'bg-ink-raise' },
+            { label: 'Үгсийн сан', text: speakingEvaluation.vocabularyFeedback, icon: BookOpen, tint: gold || aurora ? 'bg-primary-container' : 'bg-ink-raise' },
           ].filter((c) => c.text).map((c, i) => (
-            <div key={i} className="border-2 border-ink-line rounded-xl p-4 block-shadow">
-              <p className="text-xs font-black uppercase text-paper mb-1.5 flex items-center gap-1.5">
-                <span className={`w-6 h-6 rounded-full ${c.tint} border-2 border-ink-line flex items-center justify-center`}>
+            <div key={i} className={gold || aurora ? "border-2 border-on-background rounded-xl p-4 block-shadow" : "border-2 border-ink-line rounded-xl p-4 block-shadow"}>
+              <p className={gold || aurora ? "text-xs font-black uppercase text-on-surface mb-1.5 flex items-center gap-1.5" : "text-xs font-black uppercase text-paper mb-1.5 flex items-center gap-1.5"}>
+                <span className={gold || aurora ? `w-6 h-6 rounded-full ${c.tint} border-2 border-on-background flex items-center justify-center` : `w-6 h-6 rounded-full ${c.tint} border-2 border-ink-line flex items-center justify-center`}>
                   <c.icon className="w-3.5 h-3.5" />
                 </span>
                 {c.label}
               </p>
-              <p className="text-sm text-paper-2 leading-relaxed font-sans">{c.text}</p>
+              <p className={gold || aurora ? "text-sm text-on-surface-variant leading-relaxed font-sans" : "text-sm text-paper-2 leading-relaxed font-sans"}>{c.text}</p>
             </div>
           ))}
         </div>
@@ -1484,21 +1509,21 @@ function LearnerApp() {
         {((speakingEvaluation.strengths?.length || 0) > 0 || (speakingEvaluation.improvements?.length || 0) > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {(speakingEvaluation.strengths?.length || 0) > 0 && (
-              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4">
-                <p className="text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"><ThumbsUp className="w-4 h-4" /> Сайн байгаа тал</p>
+              <div className={gold || aurora ? "bg-secondary-container/40 border-2 border-secondary rounded-xl p-4" : "bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4"}>
+                <p className={gold || aurora ? "text-xs font-black uppercase text-secondary mb-2 flex items-center gap-1.5" : "text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"}><ThumbsUp className="w-4 h-4" /> Сайн байгаа тал</p>
                 <ul className="space-y-1.5">
                   {speakingEvaluation.strengths!.map((s, i) => (
-                    <li key={i} className="text-sm text-paper font-medium flex items-start gap-2"><Check className="w-4 h-4 text-paper-2 shrink-0 mt-0.5" />{s}</li>
+                    <li key={i} className={gold || aurora ? "text-sm text-on-surface font-medium flex items-start gap-2" : "text-sm text-paper font-medium flex items-start gap-2"}><Check className={gold || aurora ? "w-4 h-4 text-secondary shrink-0 mt-0.5" : "w-4 h-4 text-paper-2 shrink-0 mt-0.5"} />{s}</li>
                   ))}
                 </ul>
               </div>
             )}
             {(speakingEvaluation.improvements?.length || 0) > 0 && (
-              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4">
-                <p className="text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"><Target className="w-4 h-4" /> Сайжруулах зүйл</p>
+              <div className={gold || aurora ? "bg-error-container/40 border-2 border-error rounded-xl p-4" : "bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4"}>
+                <p className={gold || aurora ? "text-xs font-black uppercase text-error mb-2 flex items-center gap-1.5" : "text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"}><Target className="w-4 h-4" /> Сайжруулах зүйл</p>
                 <ul className="space-y-1.5">
                   {speakingEvaluation.improvements!.map((s, i) => (
-                    <li key={i} className="text-sm text-paper font-medium flex items-start gap-2"><ArrowRight className="w-4 h-4 text-paper-2 shrink-0 mt-0.5" />{s}</li>
+                    <li key={i} className={gold || aurora ? "text-sm text-on-surface font-medium flex items-start gap-2" : "text-sm text-paper font-medium flex items-start gap-2"}><ArrowRight className={gold || aurora ? "w-4 h-4 text-error shrink-0 mt-0.5" : "w-4 h-4 text-paper-2 shrink-0 mt-0.5"} />{s}</li>
                   ))}
                 </ul>
               </div>
@@ -1510,14 +1535,14 @@ function LearnerApp() {
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => { if (!requireAccount()) return; speakGerman(target.text); }}
-            className="px-4 py-2 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold text-paper hover:bg-ink-raise transition-colors font-serif flex items-center gap-2 block-shadow cursor-pointer"
+            className={gold || aurora ? "px-4 py-2 bg-surface border-2 border-on-background rounded-lg text-xs font-bold text-primary hover:bg-surface-container transition-colors font-space flex items-center gap-2 block-shadow cursor-pointer" : "px-4 py-2 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold text-paper hover:bg-ink-raise transition-colors font-serif flex items-center gap-2 block-shadow cursor-pointer"}
           >
             <Volume2 className="w-4 h-4" /> Загвар дуудлага сонсох
           </button>
           <button
             onClick={() => toggleMic(target)}
             disabled={isRecording || speakingLoading}
-            className="px-4 py-2 bg-paper border-2 border-ink-line rounded-lg text-xs font-bold text-ink hover:scale-[1.02] transition-transform font-serif flex items-center gap-2 block-shadow cursor-pointer disabled:opacity-50"
+            className={gold || aurora ? "px-4 py-2 bg-secondary border-2 border-on-background rounded-lg text-xs font-bold text-white hover:scale-[1.02] transition-transform font-space flex items-center gap-2 block-shadow cursor-pointer disabled:opacity-50" : "px-4 py-2 bg-paper border-2 border-ink-line rounded-lg text-xs font-bold text-ink hover:scale-[1.02] transition-transform font-serif flex items-center gap-2 block-shadow cursor-pointer disabled:opacity-50"}
           >
             <RotateCcw className="w-4 h-4" /> Дахин бичих
           </button>
@@ -1547,7 +1572,7 @@ function LearnerApp() {
         <button
           onClick={() => checkComposition(text, ctx)}
           disabled={!text.trim() || writeFeedbackLoading}
-          className="flex items-center gap-2 px-5 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+          className={gold ? "flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed" : aurora ? "flex items-center gap-2 px-5 py-2.5 bg-primary text-white border-2 border-on-background rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed" : "flex items-center gap-2 px-5 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-lg font-bold text-sm cursor-pointer block-shadow hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"}
         >
           <Sparkles className="w-4 h-4" /> {writeFeedbackLoading ? 'AI шалгаж байна...' : 'AI-аар шалгуулах'}
         </button>
@@ -1561,15 +1586,17 @@ function LearnerApp() {
       <div className="w-full flex flex-col gap-4 mt-5 animate-scale-up">
 
         {/* Headline + summary */}
-        <div className="w-full border-2 border-ink-line rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow">
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center border-2 border-ink-line shrink-0 block-shadow ${
+        <div className={gold || aurora ? "w-full border-2 border-on-background rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow" : "w-full border-2 border-ink-line rounded-xl p-6 flex items-start gap-4 shadow-sm block-shadow"}>
+          <div className={gold || aurora ? `w-11 h-11 rounded-full flex items-center justify-center border-2 border-on-background shrink-0 block-shadow ${
+            writeFeedback.isCorrect ? 'bg-secondary-container' : 'bg-error-container'
+          }` : `w-11 h-11 rounded-full flex items-center justify-center border-2 border-ink-line shrink-0 block-shadow ${
             writeFeedback.isCorrect ? 'bg-ink-raise' : 'bg-ink-raise'
           }`}>
-            {writeFeedback.isCorrect ? <CheckCircle className="w-5 h-5 text-paper-2" /> : <AlertCircle className="w-5 h-5 text-paper-2" />}
+            {writeFeedback.isCorrect ? <CheckCircle className={gold || aurora ? "w-5 h-5 text-secondary" : "w-5 h-5 text-paper-2"} /> : <AlertCircle className={gold || aurora ? "w-5 h-5 text-error" : "w-5 h-5 text-paper-2"} />}
           </div>
           <div className="flex-grow">
-            <h5 className="text-lg font-black text-paper mb-1 font-sans">{writeFeedback.feedbackMessage}</h5>
-            <p className="text-sm text-paper-2 leading-relaxed font-sans">{writeFeedback.analysis}</p>
+            <h5 className={gold || aurora ? "text-lg font-black text-on-surface mb-1 font-sans" : "text-lg font-black text-paper mb-1 font-sans"}>{writeFeedback.feedbackMessage}</h5>
+            <p className={gold || aurora ? "text-sm text-on-surface-variant leading-relaxed font-sans" : "text-sm text-paper-2 leading-relaxed font-sans"}>{writeFeedback.analysis}</p>
           </div>
         </div>
 
@@ -1582,14 +1609,14 @@ function LearnerApp() {
               { label: 'Үгсийн сан', value: writeFeedback.vocabularyScore, icon: BookOpen },
             ].filter((s) => typeof s.value === 'number').map((s, i) => {
               const v = s.value as number;
-              const tone = v >= 75 ? 'text-paper-2' : v >= 50 ? 'text-paper' : 'text-paper-2';
-              const barTone = v >= 75 ? 'bg-paper' : v >= 50 ? 'bg-paper' : 'bg-paper';
+              const tone = gold ? (v >= 75 ? 'text-secondary' : v >= 50 ? 'text-amber-600' : 'text-error') : aurora ? (v >= 75 ? 'text-secondary' : v >= 50 ? 'text-yellow-600' : 'text-error') : (v >= 75 ? 'text-paper-2' : v >= 50 ? 'text-paper' : 'text-paper-2');
+              const barTone = gold ? (v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-amber-500' : 'bg-error') : aurora ? (v >= 75 ? 'bg-secondary' : v >= 50 ? 'bg-yellow-500' : 'bg-error') : (v >= 75 ? 'bg-paper' : v >= 50 ? 'bg-paper' : 'bg-paper');
               return (
-                <div key={i} className="border-2 border-ink-line rounded-xl p-4 block-shadow flex flex-col items-center text-center">
+                <div key={i} className={gold || aurora ? "border-2 border-on-background rounded-xl p-4 block-shadow flex flex-col items-center text-center" : "border-2 border-ink-line rounded-xl p-4 block-shadow flex flex-col items-center text-center"}>
                   <s.icon className={`w-5 h-5 mb-1 ${tone}`} />
-                  <span className={`text-3xl font-light font-serif ${tone}`}>{v}</span>
-                  <span className="text-[10px] font-bold uppercase text-paper-3 tracking-wide mt-0.5">{s.label}</span>
-                  <div className="w-full h-1.5 bg-ink-2 rounded-full mt-2 overflow-hidden">
+                  <span className={gold || aurora ? `text-3xl font-black font-space ${tone}` : `text-3xl font-light font-serif ${tone}`}>{v}</span>
+                  <span className={gold || aurora ? "text-[10px] font-bold uppercase text-outline tracking-wide mt-0.5" : "text-[10px] font-bold uppercase text-paper-3 tracking-wide mt-0.5"}>{s.label}</span>
+                  <div className={gold || aurora ? "w-full h-1.5 bg-surface-container-high rounded-full mt-2 overflow-hidden" : "w-full h-1.5 bg-ink-2 rounded-full mt-2 overflow-hidden"}>
                     <div className={`h-full ${barTone} rounded-full transition-all`} style={{ width: `${v}%` }} />
                   </div>
                 </div>
@@ -1601,39 +1628,39 @@ function LearnerApp() {
         {/* What you wrote vs the corrected version */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {writeFeedbackText && (
-            <div className="bg-ink-raise border-2 border-ink-line rounded-xl p-4 block-shadow">
-              <p className="text-[11px] font-serif font-bold uppercase text-paper-3 mb-1 flex items-center gap-1.5">
+            <div className={gold || aurora ? "bg-surface-container-low border-2 border-on-background rounded-xl p-4 block-shadow" : "bg-ink-raise border-2 border-ink-line rounded-xl p-4 block-shadow"}>
+              <p className={gold || aurora ? "text-[11px] font-space font-bold uppercase text-outline mb-1 flex items-center gap-1.5" : "text-[11px] font-serif font-bold uppercase text-paper-3 mb-1 flex items-center gap-1.5"}>
                 <Edit3 className="w-3.5 h-3.5" /> Таны бичсэн нь
               </p>
-              <p className="text-sm text-paper font-sans whitespace-pre-line leading-relaxed">{writeFeedbackText}</p>
+              <p className={gold || aurora ? "text-sm text-on-surface font-sans whitespace-pre-line leading-relaxed" : "text-sm text-paper font-sans whitespace-pre-line leading-relaxed"}>{writeFeedbackText}</p>
             </div>
           )}
           {writeFeedback.corrected && (
-            <div className="bg-ink-raise/30 border-2 border-ink-line rounded-xl p-4 block-shadow">
-              <p className="text-[11px] font-serif font-bold uppercase text-paper-2 mb-1 flex items-center gap-1.5">
+            <div className={gold || aurora ? "bg-secondary-container/30 border-2 border-secondary rounded-xl p-4 block-shadow" : "bg-ink-raise/30 border-2 border-ink-line rounded-xl p-4 block-shadow"}>
+              <p className={gold || aurora ? "text-[11px] font-space font-bold uppercase text-secondary mb-1 flex items-center gap-1.5" : "text-[11px] font-serif font-bold uppercase text-paper-2 mb-1 flex items-center gap-1.5"}>
                 <Sparkles className="w-3.5 h-3.5" /> Засаж сайжруулсан хувилбар
               </p>
-              <p className="text-sm text-paper font-medium font-sans whitespace-pre-line leading-relaxed">{writeFeedback.corrected}</p>
+              <p className={gold || aurora ? "text-sm text-on-surface font-medium font-sans whitespace-pre-line leading-relaxed" : "text-sm text-paper font-medium font-sans whitespace-pre-line leading-relaxed"}>{writeFeedback.corrected}</p>
             </div>
           )}
         </div>
 
         {/* Specific corrections — wrong grammar / wrong word → better wording */}
         {(writeFeedback.corrections?.length || 0) > 0 && (
-          <div className="border-2 border-ink-line rounded-xl p-4 block-shadow">
-            <p className="text-xs font-black uppercase text-paper mb-3 flex items-center gap-1.5">
-              <SpellCheck className="w-4 h-4 text-paper" /> Засварууд ({writeFeedback.corrections!.length})
+          <div className={gold || aurora ? "border-2 border-on-background rounded-xl p-4 block-shadow" : "border-2 border-ink-line rounded-xl p-4 block-shadow"}>
+            <p className={gold || aurora ? "text-xs font-black uppercase text-on-surface mb-3 flex items-center gap-1.5" : "text-xs font-black uppercase text-paper mb-3 flex items-center gap-1.5"}>
+              <SpellCheck className={gold || aurora ? "w-4 h-4 text-primary" : "w-4 h-4 text-paper"} /> Засварууд ({writeFeedback.corrections!.length})
             </p>
             <div className="flex flex-col gap-2.5">
               {writeFeedback.corrections!.map((c, i) => (
-                <div key={i} className="border-2 border-ink-line rounded-lg p-3 bg-ink-raise">
+                <div key={i} className={gold || aurora ? "border-2 border-on-background rounded-lg p-3 bg-surface-container-low" : "border-2 border-ink-line rounded-lg p-3 bg-ink-raise"}>
                   <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <span className="text-sm font-bold text-paper-2 line-through font-mono">{c.original}</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-paper-3 shrink-0" />
-                    <span className="text-sm font-bold text-paper-2 font-mono">{c.suggestion}</span>
-                    <span className="text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded bg-ink-raise border border-ink-line text-paper">{c.type}</span>
+                    <span className={gold || aurora ? "text-sm font-bold text-error line-through font-mono" : "text-sm font-bold text-paper-2 line-through font-mono"}>{c.original}</span>
+                    <ArrowRight className={gold || aurora ? "w-3.5 h-3.5 text-outline shrink-0" : "w-3.5 h-3.5 text-paper-3 shrink-0"} />
+                    <span className={gold || aurora ? "text-sm font-bold text-secondary font-mono" : "text-sm font-bold text-paper-2 font-mono"}>{c.suggestion}</span>
+                    <span className={gold || aurora ? "text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary-container border border-on-background text-on-surface" : "text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded bg-ink-raise border border-ink-line text-paper"}>{c.type}</span>
                   </div>
-                  <p className="text-xs text-paper-2 leading-relaxed">{c.explanation}</p>
+                  <p className={gold || aurora ? "text-xs text-on-surface-variant leading-relaxed" : "text-xs text-paper-2 leading-relaxed"}>{c.explanation}</p>
                 </div>
               ))}
             </div>
@@ -1644,17 +1671,17 @@ function LearnerApp() {
         {(writeFeedback.grammarFeedback || writeFeedback.vocabularyFeedback) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {[
-              { label: 'Дүрэм', text: writeFeedback.grammarFeedback, icon: SpellCheck, tint: 'bg-ink-raise' },
-              { label: 'Үгсийн сан', text: writeFeedback.vocabularyFeedback, icon: BookOpen, tint: 'bg-ink-raise' },
+              { label: 'Дүрэм', text: writeFeedback.grammarFeedback, icon: SpellCheck, tint: gold || aurora ? 'bg-error-container' : 'bg-ink-raise' },
+              { label: 'Үгсийн сан', text: writeFeedback.vocabularyFeedback, icon: BookOpen, tint: gold || aurora ? 'bg-primary-container' : 'bg-ink-raise' },
             ].filter((c) => c.text).map((c, i) => (
-              <div key={i} className="border-2 border-ink-line rounded-xl p-4 block-shadow">
-                <p className="text-xs font-black uppercase text-paper mb-1.5 flex items-center gap-1.5">
-                  <span className={`w-6 h-6 rounded-full ${c.tint} border-2 border-ink-line flex items-center justify-center`}>
+              <div key={i} className={gold || aurora ? "border-2 border-on-background rounded-xl p-4 block-shadow" : "border-2 border-ink-line rounded-xl p-4 block-shadow"}>
+                <p className={gold || aurora ? "text-xs font-black uppercase text-on-surface mb-1.5 flex items-center gap-1.5" : "text-xs font-black uppercase text-paper mb-1.5 flex items-center gap-1.5"}>
+                  <span className={gold || aurora ? `w-6 h-6 rounded-full ${c.tint} border-2 border-on-background flex items-center justify-center` : `w-6 h-6 rounded-full ${c.tint} border-2 border-ink-line flex items-center justify-center`}>
                     <c.icon className="w-3.5 h-3.5" />
                   </span>
                   {c.label}
                 </p>
-                <p className="text-sm text-paper-2 leading-relaxed font-sans">{c.text}</p>
+                <p className={gold || aurora ? "text-sm text-on-surface-variant leading-relaxed font-sans" : "text-sm text-paper-2 leading-relaxed font-sans"}>{c.text}</p>
               </div>
             ))}
           </div>
@@ -1664,21 +1691,21 @@ function LearnerApp() {
         {((writeFeedback.strengths?.length || 0) > 0 || (writeFeedback.improvements?.length || 0) > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {(writeFeedback.strengths?.length || 0) > 0 && (
-              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4">
-                <p className="text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"><ThumbsUp className="w-4 h-4" /> Сайн байгаа тал</p>
+              <div className={gold || aurora ? "bg-secondary-container/40 border-2 border-secondary rounded-xl p-4" : "bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4"}>
+                <p className={gold || aurora ? "text-xs font-black uppercase text-secondary mb-2 flex items-center gap-1.5" : "text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"}><ThumbsUp className="w-4 h-4" /> Сайн байгаа тал</p>
                 <ul className="space-y-1.5">
                   {writeFeedback.strengths!.map((s, i) => (
-                    <li key={i} className="text-sm text-paper font-medium flex items-start gap-2"><Check className="w-4 h-4 text-paper-2 shrink-0 mt-0.5" />{s}</li>
+                    <li key={i} className={gold || aurora ? "text-sm text-on-surface font-medium flex items-start gap-2" : "text-sm text-paper font-medium flex items-start gap-2"}><Check className={gold || aurora ? "w-4 h-4 text-secondary shrink-0 mt-0.5" : "w-4 h-4 text-paper-2 shrink-0 mt-0.5"} />{s}</li>
                   ))}
                 </ul>
               </div>
             )}
             {(writeFeedback.improvements?.length || 0) > 0 && (
-              <div className="bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4">
-                <p className="text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"><Target className="w-4 h-4" /> Сайжруулах зүйл</p>
+              <div className={gold || aurora ? "bg-error-container/40 border-2 border-error rounded-xl p-4" : "bg-ink-raise/40 border-2 border-ink-line rounded-xl p-4"}>
+                <p className={gold || aurora ? "text-xs font-black uppercase text-error mb-2 flex items-center gap-1.5" : "text-xs font-black uppercase text-paper-2 mb-2 flex items-center gap-1.5"}><Target className="w-4 h-4" /> Сайжруулах зүйл</p>
                 <ul className="space-y-1.5">
                   {writeFeedback.improvements!.map((s, i) => (
-                    <li key={i} className="text-sm text-paper font-medium flex items-start gap-2"><ArrowRight className="w-4 h-4 text-paper-2 shrink-0 mt-0.5" />{s}</li>
+                    <li key={i} className={gold || aurora ? "text-sm text-on-surface font-medium flex items-start gap-2" : "text-sm text-paper font-medium flex items-start gap-2"}><ArrowRight className={gold || aurora ? "w-4 h-4 text-error shrink-0 mt-0.5" : "w-4 h-4 text-paper-2 shrink-0 mt-0.5"} />{s}</li>
                   ))}
                 </ul>
               </div>
@@ -1709,7 +1736,7 @@ function LearnerApp() {
     // the visitor chooses to log in or sign up.
     if (showAuth || inviteContext) {
       return (
-        <LoginScreen
+        <ActiveLoginScreen
           inviteContext={inviteContext ?? undefined}
           onBack={inviteContext ? undefined : () => setShowAuth(false)}
         />
@@ -2062,23 +2089,23 @@ function LearnerApp() {
       />
 
       {/* Shared TopAppBar - Mobile Only */}
-      <header className="md:hidden flex justify-between items-center w-full px-4 h-16 bg-ink-raise border-b-2 border-ink-line fixed top-0 left-0 z-40 shrink-0">
-        <button 
+      <header className={gold || aurora ? 'md:hidden flex justify-between items-center w-full px-4 h-16 bg-surface border-b-2 border-on-background fixed top-0 left-0 z-40 shrink-0' : 'md:hidden flex justify-between items-center w-full px-4 h-16 bg-ink-raise border-b-2 border-ink-line fixed top-0 left-0 z-40 shrink-0'}>
+        <button
           onClick={() => setMobileMenuOpen(prev => !prev)}
-          className="text-paper p-2 border-2 border-ink-line rounded-lg bg-ink-raise hover:bg-ink-2 shadow-[2px_2px_0_0_#000000] cursor-pointer"
+          className={gold ? 'text-primary p-2 border-2 border-on-background rounded-lg bg-surface-container-low hover:bg-surface shadow-[2px_2px_0_0_#3a352a] cursor-pointer' : aurora ? 'text-primary p-2 border-2 border-on-background rounded-lg bg-surface-container-low hover:bg-surface shadow-[2px_2px_0_0_#1E293B] cursor-pointer' : 'text-paper p-2 border-2 border-ink-line rounded-lg bg-ink-raise hover:bg-ink-2 shadow-[2px_2px_0_0_#000000] cursor-pointer'}
         >
           <span className="material-symbols-outlined text-xl font-bold">menu</span>
         </button>
-        <h1 className="text-xl font-light font-serif text-paper tracking-tight flex items-center gap-2">
+        <h1 className={gold || aurora ? 'text-xl font-black text-primary tracking-tight flex items-center gap-2' : 'text-xl font-light font-serif text-paper tracking-tight flex items-center gap-2'}>
           <BrandLogo className="w-6 h-6" />
           Vivid Lingua
         </h1>
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center p-2 text-paper-2 select-none">
-            <Flame className="w-5 h-5 text-paper fill-paper-2 animate-pulse" />
-            <span className="text-xs font-black text-paper ml-1">{streak}</span>
+          <div className={gold || aurora ? 'flex items-center justify-center p-2 text-secondary select-none' : 'flex items-center justify-center p-2 text-paper-2 select-none'}>
+            <Flame className={gold || aurora ? 'w-5 h-5 text-orange-500 fill-orange-500 animate-pulse' : 'w-5 h-5 text-paper fill-paper-2 animate-pulse'} />
+            <span className={gold || aurora ? 'text-xs font-black text-on-background ml-1' : 'text-xs font-black text-paper ml-1'}>{streak}</span>
           </div>
-          <div className="p-2 text-paper select-none">
+          <div className={gold ? 'p-2 text-amber-500 select-none' : aurora ? 'p-2 text-yellow-500 select-none' : 'p-2 text-paper select-none'}>
             <span className="material-symbols-outlined fill text-lg">military_tech</span>
           </div>
         </div>
@@ -2087,41 +2114,41 @@ function LearnerApp() {
       {/* Mobile Drawer Slide menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black/50 z-45 md:hidden" onClick={() => setMobileMenuOpen(false)}>
-          <div 
-            className="w-[280px] h-full bg-ink py-8 px-4 flex flex-col gap-y-6 text-paper border-r border-ink-line animate-slide-right relative"
+          <div
+            className={gold || aurora ? 'w-[280px] h-full bg-primary py-8 px-4 flex flex-col gap-y-6 text-on-primary animate-slide-right relative' : 'w-[280px] h-full bg-ink py-8 px-4 flex flex-col gap-y-6 text-paper border-r border-ink-line animate-slide-right relative'}
             onClick={e => e.stopPropagation()}
           >
             <div className="flex justify-between items-center px-2">
-              <h1 className="text-2xl font-light font-serif flex items-center gap-2">
+              <h1 className={gold || aurora ? 'text-2xl font-black font-space flex items-center gap-2' : 'text-2xl font-light font-serif flex items-center gap-2'}>
                 <BrandLogo className="w-7 h-7" />
                 Vivid Lingua
               </h1>
-              <button 
+              <button
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-1 rounded-full border border-ink-line bg-ink-raise hover:bg-ink-raise cursor-pointer"
+                className={gold || aurora ? 'p-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 cursor-pointer' : 'p-1 rounded-full border border-ink-line bg-ink-raise hover:bg-ink-raise cursor-pointer'}
               >
-                <X className="w-5 h-5 text-paper" />
+                <X className={gold || aurora ? 'w-5 h-5 text-white' : 'w-5 h-5 text-paper'} />
               </button>
             </div>
 
             {currentUser ? (
-              <div className="bg-ink-raise p-3 rounded-xl border border-ink-line mx-2 flex gap-3 items-center cursor-pointer hover:bg-ink-raise" onClick={() => selectTab('profile')}>
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-ink-raise border border-ink-line flex-shrink-0">
+              <div className={gold || aurora ? 'bg-white/5 p-3 rounded-xl border border-white/10 mx-2 flex gap-3 items-center cursor-pointer hover:bg-white/10' : 'bg-ink-raise p-3 rounded-xl border border-ink-line mx-2 flex gap-3 items-center cursor-pointer hover:bg-ink-raise'} onClick={() => selectTab('profile')}>
+                <div className={gold ? 'w-10 h-10 rounded-full overflow-hidden bg-white/20 border border-amber-500/50 flex-shrink-0' : aurora ? 'w-10 h-10 rounded-full overflow-hidden bg-white/20 border border-purple-500/50 flex-shrink-0' : 'w-10 h-10 rounded-full overflow-hidden bg-ink-raise border border-ink-line flex-shrink-0'}>
                   <img alt="User" className="w-full h-full object-cover" src={currentUser.avatar} />
                 </div>
                 <div className="overflow-hidden">
-                  <h3 className="text-sm font-bold truncate text-paper leading-tight">{currentUser.name}</h3>
-                  <p className="text-[10px] text-paper-2 font-bold truncate leading-none mt-0.5">{currentUser.role}</p>
+                  <h3 className={gold || aurora ? 'text-sm font-bold truncate text-white leading-tight' : 'text-sm font-bold truncate text-paper leading-tight'}>{currentUser.name}</h3>
+                  <p className={gold ? 'text-[10px] text-amber-300 font-bold truncate leading-none mt-0.5' : aurora ? 'text-[10px] text-purple-300 font-bold truncate leading-none mt-0.5' : 'text-[10px] text-paper-2 font-bold truncate leading-none mt-0.5'}>{currentUser.role}</p>
                 </div>
               </div>
             ) : (
-              <div className="bg-ink-raise p-3 rounded-xl border border-ink-line mx-2 flex gap-3 items-center">
-                <div className="w-10 h-10 rounded-full bg-ink-raise flex items-center justify-center text-paper-2">
+              <div className={gold || aurora ? 'bg-white/5 p-3 rounded-xl border border-white/10 mx-2 flex gap-3 items-center' : 'bg-ink-raise p-3 rounded-xl border border-ink-line mx-2 flex gap-3 items-center'}>
+                <div className={gold || aurora ? 'w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-slate-400' : 'w-10 h-10 rounded-full bg-ink-raise flex items-center justify-center text-paper-2'}>
                   <span className="material-symbols-outlined">account_circle</span>
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-paper">Нэвтрээгүй</h3>
-                  <p className="text-[10px] text-paper-2">Сайн байна уу?</p>
+                  <h3 className={gold || aurora ? 'text-sm font-bold text-white' : 'text-sm font-bold text-paper'}>Нэвтрээгүй</h3>
+                  <p className={gold || aurora ? 'text-[10px] text-slate-400' : 'text-[10px] text-paper-2'}>Сайн байна уу?</p>
                 </div>
               </div>
             )}
@@ -2129,9 +2156,9 @@ function LearnerApp() {
             <ul className="flex flex-col gap-2 mt-4 flex-grow px-2 overflow-y-auto">
               {currentUser && (
                 <li>
-                  <button 
+                  <button
                     onClick={() => selectTab('profile')}
-                    className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'profile' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
+                    className={drawerTab(activeTab === 'profile')}
                   >
                     <Target className="w-5 h-5" />
                     <span>Хяналтын самбар</span>
@@ -2139,51 +2166,51 @@ function LearnerApp() {
                 </li>
               )}
               <li>
-                <button 
+                <button
                   onClick={() => selectTab('read')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'read' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
+                  className={drawerTab(activeTab === 'read')}
                 >
                   <BookOpen className="w-5 h-5" />
                   <span>Унших</span>
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => selectTab('listen')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'listen' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
+                  className={drawerTab(activeTab === 'listen')}
                 >
                   <Headphones className="w-5 h-5" />
                   <span>Сонсох</span>
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => selectTab('speak')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'speak' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
+                  className={drawerTab(activeTab === 'speak')}
                 >
                   <Mic className="w-5 h-5" />
                   <span>Ярих</span>
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => selectTab('write')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'write' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
+                  className={drawerTab(activeTab === 'write')}
                 >
                   <Edit3 className="w-5 h-5" />
                   <span>Бичих</span>
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => selectTab('vocab')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'vocab' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
+                  className={drawerTab(activeTab === 'vocab')}
                 >
                   <Languages className="w-5 h-5" />
                   <span className="flex-grow flex justify-between items-center pr-4">
                     <span>Үгсийн сан</span>
                     {dueCount > 0 && (
-                      <span className="bg-paper text-ink text-[10px] font-bold font-serif px-2 py-0.5 rounded-full">
+                      <span className={gold || aurora ? 'bg-red-500 text-white text-[10px] font-black font-space px-2 py-0.5 rounded-full' : 'bg-paper text-ink text-[10px] font-bold font-serif px-2 py-0.5 rounded-full'}>
                         {dueCount}
                       </span>
                     )}
@@ -2191,51 +2218,51 @@ function LearnerApp() {
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => selectTab('translate')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'translate' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
+                  className={drawerTab(activeTab === 'translate')}
                 >
-                  <Sparkles className="w-5 h-5 text-paper" />
+                  <Sparkles className={gold ? 'w-5 h-5 text-amber-400' : aurora ? 'w-5 h-5 text-purple-400' : 'w-5 h-5 text-paper'} />
                   <span>Орчуулагч</span>
                 </button>
               </li>
               <li>
-                <button 
+                <button
                   onClick={() => selectTab('exam')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'exam' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
+                  className={drawerTab(activeTab === 'exam')}
                 >
-                  <GraduationCap className="w-5 h-5 text-paper" />
+                  <GraduationCap className={gold ? 'w-5 h-5 text-amber-400' : aurora ? 'w-5 h-5 text-yellow-400' : 'w-5 h-5 text-paper'} />
                   <span>Шалгалт</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => selectTab('friends')}
-                  className={`flex items-center gap-3 py-3 w-full text-left font-bold pl-4 rounded-xl cursor-pointer ${activeTab === 'friends' ? 'text-paper border-l-4 border-paper bg-ink-raise' : 'text-paper-2 hover:text-paper hover:bg-ink-raise'}`}
+                  className={drawerTab(activeTab === 'friends')}
                 >
-                  <Swords className="w-5 h-5 text-paper" />
+                  <Swords className={gold ? 'w-5 h-5 text-amber-400' : aurora ? 'w-5 h-5 text-purple-400' : 'w-5 h-5 text-paper'} />
                   <span>Найзууд</span>
                 </button>
               </li>
             </ul>
 
-            <div className="border-t border-ink-line pt-4 px-2 flex flex-col gap-1 shrink-0">
-              <button 
+            <div className={gold || aurora ? 'border-t border-white/10 pt-4 px-2 flex flex-col gap-1 shrink-0' : 'border-t border-ink-line pt-4 px-2 flex flex-col gap-1 shrink-0'}>
+              <button
                 onClick={() => selectTab('settings')}
-                className="flex items-center gap-3 py-2 w-full text-left text-paper hover:text-paper"
+                className={gold || aurora ? 'flex items-center gap-3 py-2 w-full text-left text-on-primary-container hover:text-white' : 'flex items-center gap-3 py-2 w-full text-left text-paper hover:text-paper'}
               >
                 <Settings className="w-4 h-4" />
                 <span>Тохиргоо</span>
               </button>
               {currentUser && (
-                <button 
+                <button
                   onClick={() => {
                     logoutUser();
                     setMobileMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 py-2 w-full text-left text-paper hover:text-paper-2 cursor-pointer"
+                  className={gold || aurora ? 'flex items-center gap-3 py-2 w-full text-left text-on-primary-container hover:text-error cursor-pointer' : 'flex items-center gap-3 py-2 w-full text-left text-paper hover:text-paper-2 cursor-pointer'}
                 >
-                  <LogOut className="w-4 h-4 text-paper-3" />
+                  <LogOut className={gold || aurora ? 'w-4 h-4 text-outline' : 'w-4 h-4 text-paper-3'} />
                   <span>Гарах</span>
                 </button>
               )}
@@ -2245,25 +2272,25 @@ function LearnerApp() {
       )}
 
       {/* Main Workspace Frame */}
-      <main className="flex-grow md:ml-[280px] px-4 md:px-8 flex flex-col justify-between pt-24 md:pt-8 w-full min-h-screen relative overflow-x-hidden max-lg:overflow-y-auto max-lg:overscroll-y-contain lg:overflow-hidden bg-ink">
+      <main className={gold || aurora ? 'flex-grow md:ml-[280px] px-4 md:px-8 flex flex-col justify-between pt-24 md:pt-8 w-full min-h-screen relative overflow-x-hidden max-lg:overflow-y-auto max-lg:overscroll-y-contain lg:overflow-hidden bg-background' : 'flex-grow md:ml-[280px] px-4 md:px-8 flex flex-col justify-between pt-24 md:pt-8 w-full min-h-screen relative overflow-x-hidden max-lg:overflow-y-auto max-lg:overscroll-y-contain lg:overflow-hidden bg-ink'}>
         {/* Ambient neon flares */}
-        <div className="absolute top-10 left-10 w-96 h-96 bg-paper/[0.02] rounded-full blur-[140px] pointer-events-none"></div>
-        <div className="absolute bottom-10 right-10 w-96 h-96 bg-paper/[0.02] rounded-full blur-[140px] pointer-events-none"></div>
+        <div className={gold ? 'absolute top-10 left-10 w-96 h-96 bg-amber-900/15 rounded-full blur-[140px] pointer-events-none' : aurora ? 'absolute top-10 left-10 w-96 h-96 bg-purple-900/15 rounded-full blur-[140px] pointer-events-none' : 'absolute top-10 left-10 w-96 h-96 bg-paper/[0.02] rounded-full blur-[140px] pointer-events-none'}></div>
+        <div className={gold ? 'absolute bottom-10 right-10 w-96 h-96 bg-teal-900/10 rounded-full blur-[140px] pointer-events-none' : aurora ? 'absolute bottom-10 right-10 w-96 h-96 bg-blue-900/10 rounded-full blur-[140px] pointer-events-none' : 'absolute bottom-10 right-10 w-96 h-96 bg-paper/[0.02] rounded-full blur-[140px] pointer-events-none'}></div>
 
         <div className="w-full max-w-[1200px] mx-auto flex flex-col h-full relative z-10">
 
           {/* Unified Lesson Progress Bar - Screen 2/3 style */}
           {activeTab !== 'settings' && activeTab !== 'profile' && activeTab !== 'friends' && (
-            <div className="w-full mb-8 flex items-center gap-4 bg-ink-raise p-4 rounded-2xl border border-ink-line block-shadow">
-              <div className="h-4 flex-grow bg-ink-raise border border-ink-line rounded-full overflow-hidden relative shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-paper)_5%,transparent)]">
-                <div 
-                  className="h-full bg-paper transition-all duration-300 rounded-full relative" 
+            <div className={gold || aurora ? 'w-full mb-8 flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 block-shadow' : 'w-full mb-8 flex items-center gap-4 bg-ink-raise p-4 rounded-2xl border border-ink-line block-shadow'}>
+              <div className={gold || aurora ? 'h-4 flex-grow bg-white/5 border border-white/10 rounded-full overflow-hidden relative shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]' : 'h-4 flex-grow bg-ink-raise border border-ink-line rounded-full overflow-hidden relative shadow-[inset_0_1px_0_color-mix(in_srgb,var(--color-paper)_5%,transparent)]'}>
+                <div
+                  className={gold ? 'h-full bg-primary transition-all duration-300 rounded-full relative' : aurora ? 'h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300 rounded-full relative' : 'h-full bg-paper transition-all duration-300 rounded-full relative'}
                   style={{ width: `${lessonProgress}%` }}
                 >
-                  <div className="absolute top-0 left-0 w-full h-[2px] bg-ink-raise"></div>
+                  <div className={gold || aurora ? 'absolute top-0 left-0 w-full h-[2px] bg-white/35' : 'absolute top-0 left-0 w-full h-[2px] bg-ink-raise'}></div>
                 </div>
               </div>
-              <span className="text-xs font-serif font-bold bg-paper text-ink px-4 py-1.5 rounded-full border border-ink-line shadow-black/40">
+              <span className={gold ? 'text-xs font-space font-bold bg-primary text-on-primary px-4 py-1.5 rounded-full border border-white/20 shadow-[0_0_15px_rgba(230,184,92,0.28)]' : aurora ? 'text-xs font-space font-bold bg-gradient-to-r from-purple-500 to-blue-500 text-white px-4 py-1.5 rounded-full border border-white/20 shadow-[0_0_15px_rgba(168,85,247,0.25)]' : 'text-xs font-serif font-bold bg-paper text-ink px-4 py-1.5 rounded-full border border-ink-line shadow-black/40'}>
                 {lessonProgress}% дууссан
               </span>
             </div>
@@ -2273,7 +2300,7 @@ function LearnerApp() {
 
           {/* Tab 0: Профайл / Хяналтын самбар */}
           {activeTab === 'profile' && (
-            <ProfileTab
+            <DashboardTab
               authLoading={authLoading}
               brokenStreakNotice={brokenStreakNotice}
               setBrokenStreakNotice={setBrokenStreakNotice}
@@ -2288,7 +2315,7 @@ function LearnerApp() {
               TRAINER_WORDS={TRAINER_WORDS}
               TRACKABLE_ACTIVITY_TOTAL={TRACKABLE_ACTIVITY_TOTAL}
               billingCard={
-                <BillingCard
+                <PlanBillingCard
                   currentUser={currentUser}
                   billingInterval={billingInterval}
                   setBillingInterval={setBillingInterval}

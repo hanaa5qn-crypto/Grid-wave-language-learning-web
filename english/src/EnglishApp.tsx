@@ -3,6 +3,7 @@ import { GraduationCap, Globe, BookMarked, Sigma, ArrowRight, LogOut, Sparkles, 
 import { EnglishStatsProvider, useEnglishStats } from './stats';
 import { useEnglishAccess } from './access';
 import EnglishUpgrade from './EnglishUpgrade';
+import { useTheme } from '../../frontend/src/lib/theme';
 
 // Each exam app is its own chunk — IELTS and SAT both drag in megabyte-scale
 // generated vocab/test data, so picking one must not download the other.
@@ -10,9 +11,12 @@ const IeltsApp = lazy(() => import('./ielts/IeltsApp'));
 const SatApp = lazy(() => import('./sat/SatApp'));
 
 function ExamLoader() {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   return (
-    <div className="min-h-screen bg-ink text-paper font-sans flex items-center justify-center">
-      <Loader2 className="w-7 h-7 text-paper-2 animate-spin" />
+    <div className={gold || aurora ? "min-h-screen bg-surface text-on-surface font-sans flex items-center justify-center" : "min-h-screen bg-ink text-paper font-sans flex items-center justify-center"}>
+      <Loader2 className={gold || aurora ? "w-7 h-7 text-on-surface-variant animate-spin" : "w-7 h-7 text-paper-2 animate-spin"} />
     </div>
   );
 }
@@ -43,22 +47,25 @@ function isExam(v: string | null): v is Exam {
 
 function ExamChooser({ onPick, onSwitchLanguage }: { onPick: (e: Exam) => void; onSwitchLanguage?: () => void }) {
   const { logout } = useEnglishStats();
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   return (
-    <div className="min-h-screen bg-ink text-paper font-sans flex flex-col">
-      <header className="border-b border-ink-line/50">
+    <div className={gold || aurora ? "min-h-screen bg-surface text-on-surface font-sans flex flex-col" : "min-h-screen bg-ink text-paper font-sans flex flex-col"}>
+      <header className={gold || aurora ? "border-b border-on-background/50" : "border-b border-ink-line/50"}>
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-serif font-bold text-lg tracking-tight">
+          <div className={gold || aurora ? "flex items-center gap-2 font-space font-bold text-lg tracking-tight" : "flex items-center gap-2 font-serif font-bold text-lg tracking-tight"}>
             <BrandLogo className="w-8 h-8" />
-            <span><span className="text-paper">Vivid</span> Lingua</span>
-            <span className="ml-2 text-xs font-semibold rounded-full bg-ink-2 text-paper px-2 py-0.5">English</span>
+            <span><span className={gold || aurora ? "text-on-surface" : "text-paper"}>Vivid</span> Lingua</span>
+            <span className={gold || aurora ? "ml-2 text-xs font-semibold rounded-full bg-surface-container-high text-on-surface px-2 py-0.5" : "ml-2 text-xs font-semibold rounded-full bg-ink-2 text-paper px-2 py-0.5"}>English</span>
           </div>
           <div className="flex items-center gap-3">
             {onSwitchLanguage && (
-              <button onClick={onSwitchLanguage} className="inline-flex items-center gap-2 text-sm text-paper-2 hover:text-paper">
+              <button onClick={onSwitchLanguage} className={gold || aurora ? "inline-flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface" : "inline-flex items-center gap-2 text-sm text-paper-2 hover:text-paper"}>
                 <Globe className="w-4 h-4" /> <span className="hidden sm:inline">Switch language</span>
               </button>
             )}
-            <button onClick={logout} className="inline-flex items-center gap-2 text-sm text-paper-2 hover:text-paper">
+            <button onClick={logout} className={gold || aurora ? "inline-flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface" : "inline-flex items-center gap-2 text-sm text-paper-2 hover:text-paper"}>
               <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Гарах</span>
             </button>
           </div>
@@ -68,61 +75,61 @@ function ExamChooser({ onPick, onSwitchLanguage }: { onPick: (e: Exam) => void; 
       <main className="flex-1 flex items-center justify-center px-4">
         <div className="w-full max-w-3xl text-center py-12">
           <h1 className="text-3xl sm:text-4xl font-serif font-light tracking-tight mb-3">Which exam are you preparing for?</h1>
-          <p className="text-paper-2 text-lg mb-10">
+          <p className={gold || aurora ? "text-on-surface-variant text-lg mb-10" : "text-paper-2 text-lg mb-10"}>
             Аль шалгалтад бэлдэх вэ? Тус бүр нь өөрийн гэсэн бүрэн сургалттай.
           </p>
 
           <div className="grid sm:grid-cols-2 gap-5">
             <button
               onClick={() => onPick('ielts')}
-              className="group text-left rounded-3xl bg-ink-raise hover:bg-ink-2 p-7 transition-colors"
+              className={gold || aurora ? "group text-left rounded-3xl bg-surface-container hover:bg-surface-container-high p-7 transition-colors" : "group text-left rounded-3xl bg-ink-raise hover:bg-ink-2 p-7 transition-colors"}
             >
               <div className="flex items-center gap-3 mb-3">
-                <span className="rounded-2xl bg-ink-2 text-paper p-3"><BookMarked className="w-7 h-7" /></span>
+                <span className={gold || aurora ? "rounded-2xl bg-surface-container-high text-on-surface p-3" : "rounded-2xl bg-ink-2 text-paper p-3"}><BookMarked className="w-7 h-7" /></span>
                 <span className="text-2xl font-bold">IELTS</span>
               </div>
-              <p className="text-paper-2">
+              <p className={gold || aurora ? "text-on-surface-variant" : "text-paper-2"}>
                 Four skills — Reading, Listening, Writing &amp; Speaking — with full practice tests, band scoring, and AI feedback in Mongolian.
               </p>
-              <span className="mt-4 inline-flex items-center gap-1 text-paper font-semibold">
+              <span className={gold || aurora ? "mt-4 inline-flex items-center gap-1 text-on-surface font-semibold" : "mt-4 inline-flex items-center gap-1 text-paper font-semibold"}>
                 Start IELTS <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </span>
             </button>
 
             <button
               onClick={() => onPick('sat')}
-              className="group text-left rounded-3xl bg-ink-raise hover:bg-ink-2 p-7 transition-colors"
+              className={gold || aurora ? "group text-left rounded-3xl bg-surface-container hover:bg-surface-container-high p-7 transition-colors" : "group text-left rounded-3xl bg-ink-raise hover:bg-ink-2 p-7 transition-colors"}
             >
               <div className="flex items-center gap-3 mb-3">
-                <span className="rounded-2xl bg-ink-2 text-paper p-3"><Sigma className="w-7 h-7" /></span>
+                <span className={gold || aurora ? "rounded-2xl bg-surface-container-high text-on-surface p-3" : "rounded-2xl bg-ink-2 text-paper p-3"}><Sigma className="w-7 h-7" /></span>
                 <span className="text-2xl font-bold">SAT</span>
               </div>
-              <p className="text-paper-2">
+              <p className={gold || aurora ? "text-on-surface-variant" : "text-paper-2"}>
                 Digital SAT — Reading &amp; Writing and Math — with adaptive-style modules, full practice tests, and SAT vocabulary.
               </p>
-              <span className="mt-4 inline-flex items-center gap-1 text-paper font-semibold">
+              <span className={gold || aurora ? "mt-4 inline-flex items-center gap-1 text-on-surface font-semibold" : "mt-4 inline-flex items-center gap-1 text-paper font-semibold"}>
                 Start SAT <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </span>
             </button>
 
             <div
               aria-disabled="true"
-              className="relative text-left rounded-3xl bg-ink-raise/60 border-2 border-dashed border-ink-line p-7 opacity-80 cursor-not-allowed sm:col-span-2"
+              className={gold || aurora ? "relative text-left rounded-3xl bg-surface-container/60 border-2 border-dashed border-on-background p-7 opacity-80 cursor-not-allowed sm:col-span-2" : "relative text-left rounded-3xl bg-ink-raise/60 border-2 border-dashed border-ink-line p-7 opacity-80 cursor-not-allowed sm:col-span-2"}
             >
               <div className="flex items-center gap-3 mb-3">
-                <span className="rounded-2xl bg-ink-2 text-paper p-3"><Sparkles className="w-7 h-7" /></span>
-                <span className="text-2xl font-bold text-paper-2">Шинэ ном</span>
-                <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-ink-2 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-paper-3">
+                <span className={gold || aurora ? "rounded-2xl bg-surface-container-high text-on-surface p-3" : "rounded-2xl bg-ink-2 text-paper p-3"}><Sparkles className="w-7 h-7" /></span>
+                <span className={gold || aurora ? "text-2xl font-bold text-on-surface-variant" : "text-2xl font-bold text-paper-2"}>Шинэ ном</span>
+                <span className={gold || aurora ? "ml-auto inline-flex items-center gap-1.5 rounded-full bg-surface-container-high px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-outline" : "ml-auto inline-flex items-center gap-1.5 rounded-full bg-ink-2 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-paper-3"}>
                   <Lock className="w-3 h-3" /> Coming soon
                 </span>
               </div>
-              <p className="text-paper-2 text-left">
+              <p className={gold || aurora ? "text-on-surface-variant text-left" : "text-paper-2 text-left"}>
                 Бэлэн болоход энд нэмэгдэнэ. Удахгүй.
               </p>
             </div>
           </div>
 
-          <p className="mt-8 text-xs text-paper-2 inline-flex items-center gap-2">
+          <p className={gold || aurora ? "mt-8 text-xs text-on-surface-variant inline-flex items-center gap-2" : "mt-8 text-xs text-paper-2 inline-flex items-center gap-2"}>
             <GraduationCap className="w-4 h-4" /> Each is a complete, separate learning app tailored to the exam.
           </p>
         </div>

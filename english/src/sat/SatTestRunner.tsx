@@ -14,6 +14,7 @@ import {
 import { SatTest, SatSection, SatQuestion } from '../types';
 import { satScaledScore } from './satTests';
 import { useEnglishStats } from '../stats';
+import { useTheme } from '../../../frontend/src/lib/theme';
 
 // Map a section's module name to the scoring key satScaledScore expects.
 function sectionScoreKey(section: SatSection): 'reading' | 'math' {
@@ -86,6 +87,9 @@ function fmtTime(totalSeconds: number): string {
 
 // ---- Countdown timer (display only; does not hard-stop the module) ----------
 function ModuleTimer({ minutes, sectionKey }: { minutes: number; sectionKey: string }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const [remaining, setRemaining] = useState(minutes * 60);
   const startRef = useRef<number>(Date.now());
 
@@ -103,9 +107,9 @@ function ModuleTimer({ minutes, sectionKey }: { minutes: number; sectionKey: str
   const low = remaining <= 60;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold tabular-nums ${
-        low ? 'bg-ink-2 text-paper-2' : 'bg-ink-2 text-paper'
-      }`}
+      className={gold || aurora
+        ? `inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold tabular-nums ${low ? 'bg-surface-container-high text-on-surface-variant' : 'bg-surface-container-high text-on-surface'}`
+        : `inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold tabular-nums ${low ? 'bg-ink-2 text-paper-2' : 'bg-ink-2 text-paper'}`}
       aria-label="Time remaining in this module"
     >
       <Clock className="w-4 h-4" />
@@ -134,29 +138,32 @@ function QuestionCard({
   onPickChoice: (i: number) => void;
   onGridChange: (v: string) => void;
 }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const gridIn = isGridIn(q);
   const wasCorrect = gridIn ? gridInCorrect(q, gridValue) : mcqCorrect(q, selectedChoice);
 
   return (
-    <div className="rounded-2xl bg-ink-raise p-5 sm:p-6">
+    <div className={gold || aurora ? "rounded-2xl bg-surface-container p-5 sm:p-6" : "rounded-2xl bg-ink-raise p-5 sm:p-6"}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-bold text-paper uppercase tracking-wide">
+        <span className={gold || aurora ? "text-xs font-bold text-on-surface uppercase tracking-wide" : "text-xs font-bold text-paper uppercase tracking-wide"}>
           Question {index + 1} of {total}
         </span>
-        <span className="text-xs font-medium text-paper-2">{q.domain}</span>
+        <span className={gold || aurora ? "text-xs font-medium text-on-surface-variant" : "text-xs font-medium text-paper-2"}>{q.domain}</span>
       </div>
 
       {q.passage && (
-        <div className="rounded-xl bg-ink-raise p-4 mb-4 leading-relaxed whitespace-pre-line text-paper">
+        <div className={gold || aurora ? "rounded-xl bg-surface-container p-4 mb-4 leading-relaxed whitespace-pre-line text-on-surface" : "rounded-xl bg-ink-raise p-4 mb-4 leading-relaxed whitespace-pre-line text-paper"}>
           {q.passage}
         </div>
       )}
 
-      <p className="font-semibold text-paper mb-4 whitespace-pre-line">{q.question}</p>
+      <p className={gold || aurora ? "font-semibold text-on-surface mb-4 whitespace-pre-line" : "font-semibold text-paper mb-4 whitespace-pre-line"}>{q.question}</p>
 
       {gridIn ? (
         <div>
-          <label className="block text-sm text-paper-2 mb-2">
+          <label className={gold || aurora ? "block text-sm text-on-surface-variant mb-2" : "block text-sm text-paper-2 mb-2"}>
             Enter your answer
           </label>
           <input
@@ -166,18 +173,26 @@ function QuestionCard({
             disabled={graded}
             onChange={(e) => onGridChange(e.target.value)}
             placeholder="e.g. 12 or 3/4 or 0.5"
-            className={`w-full sm:w-64 rounded-xl border bg-ink-raise px-4 py-3 text-paper outline-none transition-colors ${
-              graded
-                ? wasCorrect
-                  ? 'border-paper/60 bg-paper text-ink'
-                  : 'border-ink-line bg-ink-2 text-paper-2'
-                : 'border-ink-line focus:border-paper'
-            }`}
+            className={gold || aurora
+              ? `w-full sm:w-64 rounded-xl border bg-surface-container px-4 py-3 text-on-surface outline-none transition-colors ${
+                  graded
+                    ? wasCorrect
+                      ? 'border-secondary bg-secondary text-white'
+                      : 'border-on-background bg-surface-container-high text-on-surface-variant'
+                    : 'border-on-background focus:border-secondary'
+                }`
+              : `w-full sm:w-64 rounded-xl border bg-ink-raise px-4 py-3 text-paper outline-none transition-colors ${
+                  graded
+                    ? wasCorrect
+                      ? 'border-paper/60 bg-paper text-ink'
+                      : 'border-ink-line bg-ink-2 text-paper-2'
+                    : 'border-ink-line focus:border-paper'
+                }`}
           />
           {graded && (
-            <p className="mt-2 text-sm font-medium text-paper-2">
+            <p className={gold || aurora ? "mt-2 text-sm font-medium text-on-surface-variant" : "mt-2 text-sm font-medium text-paper-2"}>
               {wasCorrect ? (
-                <span className="inline-flex items-center gap-1.5 text-paper">
+                <span className={gold || aurora ? "inline-flex items-center gap-1.5 text-on-surface" : "inline-flex items-center gap-1.5 text-paper"}>
                   <CheckCircle2 className="w-4 h-4" /> Correct
                 </span>
               ) : (
@@ -193,15 +208,25 @@ function QuestionCard({
           {(q.choices ?? []).map((c, ci) => {
             const picked = selectedChoice === ci;
             const isRight = ci === q.correctIndex;
-            const cls = graded
-              ? isRight
-                ? 'border-paper/60 bg-paper text-ink'
-                : picked
-                ? 'border-ink-line bg-ink-2 text-paper-2'
-                : 'border-ink-line text-paper-2'
-              : picked
-              ? 'border-paper bg-ink-2 text-paper'
-              : 'border-ink-line hover:border-paper/60 text-paper';
+            const cls = gold || aurora
+              ? (graded
+                  ? isRight
+                    ? 'border-secondary bg-secondary text-white'
+                    : picked
+                    ? 'border-on-background bg-surface-container-high text-on-surface-variant'
+                    : 'border-on-background text-on-surface-variant'
+                  : picked
+                  ? 'border-secondary bg-surface-container-high text-on-surface'
+                  : 'border-on-background hover:border-secondary/60 text-on-surface')
+              : (graded
+                  ? isRight
+                    ? 'border-paper/60 bg-paper text-ink'
+                    : picked
+                    ? 'border-ink-line bg-ink-2 text-paper-2'
+                    : 'border-ink-line text-paper-2'
+                  : picked
+                  ? 'border-paper bg-ink-2 text-paper'
+                  : 'border-ink-line hover:border-paper/60 text-paper');
             return (
               <button
                 key={ci}
@@ -211,13 +236,21 @@ function QuestionCard({
                 className={`flex items-start gap-3 text-left rounded-xl px-4 py-3 border transition-colors ${cls}`}
               >
                 <span
-                  className={`flex-shrink-0 w-7 h-7 rounded-full grid place-items-center text-sm font-bold border ${
-                    picked && !graded
-                      ? 'border-paper bg-paper text-ink'
-                      : graded && isRight
-                      ? 'border-paper/60'
-                      : 'border-ink-line'
-                  }`}
+                  className={gold || aurora
+                    ? `flex-shrink-0 w-7 h-7 rounded-full grid place-items-center text-sm font-bold border ${
+                        picked && !graded
+                          ? 'border-secondary bg-secondary text-white'
+                          : graded && isRight
+                          ? 'border-secondary/60'
+                          : 'border-on-background'
+                      }`
+                    : `flex-shrink-0 w-7 h-7 rounded-full grid place-items-center text-sm font-bold border ${
+                        picked && !graded
+                          ? 'border-paper bg-paper text-ink'
+                          : graded && isRight
+                          ? 'border-paper/60'
+                          : 'border-ink-line'
+                      }`}
                 >
                   {LETTERS[ci]}
                 </span>
@@ -231,9 +264,9 @@ function QuestionCard({
       )}
 
       {graded && (
-        <div className="mt-4 rounded-xl bg-ink-raise p-4">
-          <p className="text-xs font-bold text-paper uppercase tracking-wide mb-1">Explanation</p>
-          <p className="text-sm text-paper-2 leading-relaxed whitespace-pre-line">
+        <div className={gold || aurora ? "mt-4 rounded-xl bg-surface-container p-4" : "mt-4 rounded-xl bg-ink-raise p-4"}>
+          <p className={gold || aurora ? "text-xs font-bold text-on-surface uppercase tracking-wide mb-1" : "text-xs font-bold text-paper uppercase tracking-wide mb-1"}>Explanation</p>
+          <p className={gold || aurora ? "text-sm text-on-surface-variant leading-relaxed whitespace-pre-line" : "text-sm text-paper-2 leading-relaxed whitespace-pre-line"}>
             {q.explanation}
           </p>
         </div>
@@ -260,6 +293,9 @@ function Palette({
   graded: boolean;
   onJump: (i: number) => void;
 }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   return (
     <div className="grid grid-cols-7 sm:grid-cols-9 gap-2">
       {questions.map((q, i) => {
@@ -267,17 +303,18 @@ function Palette({
           ? (grids[q.id] ?? '').trim() !== ''
           : answers[q.id] !== undefined;
         const isCurrent = i === current;
-        let state =
-          'border-ink-line text-paper-2 bg-ink-2';
+        let state = gold || aurora
+          ? 'border-on-background text-on-surface-variant bg-surface-container-high'
+          : 'border-ink-line text-paper-2 bg-ink-2';
         if (graded) {
           const ok = isGridIn(q)
             ? gridInCorrect(q, grids[q.id] ?? '')
             : mcqCorrect(q, answers[q.id]);
-          state = ok
-            ? 'border-paper/60 bg-paper text-ink'
-            : 'border-ink-line bg-ink-2 text-paper-2';
+          state = gold || aurora
+            ? (ok ? 'border-secondary bg-secondary text-white' : 'border-on-background bg-surface-container-high text-on-surface-variant')
+            : (ok ? 'border-paper/60 bg-paper text-ink' : 'border-ink-line bg-ink-2 text-paper-2');
         } else if (answered) {
-          state = 'border-paper bg-ink-2 text-paper';
+          state = gold || aurora ? 'border-secondary bg-surface-container-high text-on-surface' : 'border-paper bg-ink-2 text-paper';
         }
         return (
           <button
@@ -291,7 +328,7 @@ function Palette({
           >
             {i + 1}
             {flagged[q.id] && !graded && (
-              <Flag className="w-3 h-3 absolute -top-1 -right-1 text-paper fill-paper" />
+              <Flag className={gold || aurora ? "w-3 h-3 absolute -top-1 -right-1 text-on-surface fill-paper" : "w-3 h-3 absolute -top-1 -right-1 text-paper fill-paper"} />
             )}
           </button>
         );
@@ -314,6 +351,9 @@ function ModuleResult({
   onReview: () => void;
   onRetry: () => void;
 }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   // satScaledScore expects a raw score out of the full-length curve (54 RW /
   // 44 Math). Scale proportionally so a shorter module isn't graded against
   // the full-length maximum (identity when total matches that curve max).
@@ -322,18 +362,18 @@ function ModuleResult({
   const scaledRaw = total > 0 ? Math.round((correct * curveMax) / total) : 0;
   const scaled = satScaledScore(scaledRaw, key);
   return (
-    <div className="rounded-2xl bg-ink-2 text-paper p-5 sm:p-6">
+    <div className={gold || aurora ? "rounded-2xl bg-surface-container-high text-on-surface p-5 sm:p-6" : "rounded-2xl bg-ink-2 text-paper p-5 sm:p-6"}>
       <p className="text-sm font-semibold opacity-80">{sectionLabel(section)} · graded</p>
       <div className="flex flex-wrap items-end gap-x-8 gap-y-3 mt-2">
         <div>
           <p className="text-xs uppercase tracking-wide opacity-80">Raw score</p>
-          <p className="text-3xl font-serif font-light tabular-nums">
+          <p className={gold || aurora ? "text-3xl font-space font-light tabular-nums" : "text-3xl font-serif font-light tabular-nums"}>
             {correct}<span className="text-xl opacity-70"> / {total}</span>
           </p>
         </div>
         <div>
           <p className="text-xs uppercase tracking-wide opacity-80">Estimated section score</p>
-          <p className="text-3xl font-serif font-light tabular-nums">{scaled}</p>
+          <p className={gold || aurora ? "text-3xl font-space font-light tabular-nums" : "text-3xl font-serif font-light tabular-nums"}>{scaled}</p>
         </div>
       </div>
       <p className="text-xs mt-3 opacity-80">
@@ -344,14 +384,14 @@ function ModuleResult({
         <button
           type="button"
           onClick={onReview}
-          className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-semibold"
+          className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-5 py-2.5 text-sm font-semibold" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-semibold"}
         >
           <ListChecks className="w-4 h-4" /> Review answers
         </button>
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center gap-2 rounded-full border border-ink-line/40 px-5 py-2.5 text-sm font-semibold"
+          className={gold || aurora ? "inline-flex items-center gap-2 rounded-full border border-on-background/40 px-5 py-2.5 text-sm font-semibold" : "inline-flex items-center gap-2 rounded-full border border-ink-line/40 px-5 py-2.5 text-sm font-semibold"}
         >
           <RotateCcw className="w-4 h-4" /> Retry module
         </button>
@@ -368,6 +408,9 @@ export default function SatTestRunner({
   test: SatTest;
   onExit: () => void;
 }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const { recordStudy, recordTestResult } = useEnglishStats();
   const sections = test.sections;
   const [activeSection, setActiveSection] = useState(0);
@@ -395,11 +438,11 @@ export default function SatTestRunner({
       <div className="max-w-3xl">
         <button
           onClick={onExit}
-          className="inline-flex items-center gap-2 text-paper-2 mb-4"
+          className={gold || aurora ? "inline-flex items-center gap-2 text-on-surface-variant mb-4" : "inline-flex items-center gap-2 text-paper-2 mb-4"}
         >
           <ChevronLeft className="w-4 h-4" /> Back to tests
         </button>
-        <div className="rounded-2xl bg-ink-raise p-6 text-paper-2">
+        <div className={gold || aurora ? "rounded-2xl bg-surface-container p-6 text-on-surface-variant" : "rounded-2xl bg-ink-raise p-6 text-paper-2"}>
           This test has no questions yet.
         </div>
       </div>
@@ -480,15 +523,15 @@ export default function SatTestRunner({
       {/* Persistent Back button — always returns to the tests hub. */}
       <button
         onClick={onExit}
-        className="inline-flex items-center gap-2 text-paper-2 hover:text-paper mb-4"
+        className={gold || aurora ? "inline-flex items-center gap-2 text-on-surface-variant hover:text-on-surface mb-4" : "inline-flex items-center gap-2 text-paper-2 hover:text-paper mb-4"}
       >
         <ChevronLeft className="w-4 h-4" /> Back to tests
       </button>
 
       <div className="flex flex-wrap items-start justify-between gap-3 mb-2">
         <div>
-          <h2 className="text-2xl font-bold text-paper">{test.title}</h2>
-          <p className="text-sm text-paper-2">{test.source}</p>
+          <h2 className={gold || aurora ? "text-2xl font-bold text-on-surface" : "text-2xl font-bold text-paper"}>{test.title}</h2>
+          <p className={gold || aurora ? "text-sm text-on-surface-variant" : "text-sm text-paper-2"}>{test.source}</p>
         </div>
         <ModuleTimer minutes={section.minutes} sectionKey={`${activeSection}`} />
       </div>
@@ -503,11 +546,17 @@ export default function SatTestRunner({
               key={i}
               type="button"
               onClick={() => switchSection(i)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
-                active
-                  ? 'bg-paper text-ink border-paper'
-                  : 'border-ink-line text-paper-2 hover:text-paper'
-              }`}
+              className={gold || aurora
+                ? `inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
+                    active
+                      ? 'bg-secondary text-white border-secondary'
+                      : 'border-on-background text-on-surface-variant hover:text-on-surface'
+                  }`
+                : `inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
+                    active
+                      ? 'bg-paper text-ink border-paper'
+                      : 'border-ink-line text-paper-2 hover:text-paper'
+                  }`}
             >
               {sectionLabel(s)}
               {done && <CheckCircle2 className="w-4 h-4" />}
@@ -517,7 +566,7 @@ export default function SatTestRunner({
       </div>
 
       {/* Module meta + progress. */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-4 text-sm text-paper-2">
+      <div className={gold || aurora ? "flex flex-wrap items-center justify-between gap-2 mb-4 text-sm text-on-surface-variant" : "flex flex-wrap items-center justify-between gap-2 mb-4 text-sm text-paper-2"}>
         <span>
           {section.module} · Module {section.moduleNumber} · {questions.length} questions · {section.minutes} min
         </span>
@@ -540,8 +589,8 @@ export default function SatTestRunner({
       )}
 
       {/* Question palette. */}
-      <div className="rounded-2xl bg-ink-raise p-4 mb-5">
-        <p className="text-xs font-bold text-paper-2 uppercase tracking-wide mb-3">
+      <div className={gold || aurora ? "rounded-2xl bg-surface-container p-4 mb-5" : "rounded-2xl bg-ink-raise p-4 mb-5"}>
+        <p className={gold || aurora ? "text-xs font-bold text-on-surface-variant uppercase tracking-wide mb-3" : "text-xs font-bold text-paper-2 uppercase tracking-wide mb-3"}>
           Question navigator
         </p>
         <Palette
@@ -574,7 +623,7 @@ export default function SatTestRunner({
             type="button"
             onClick={() => setCurrent((c) => Math.max(0, c - 1))}
             disabled={current === 0}
-            className="inline-flex items-center gap-2 rounded-full border border-ink-line px-4 py-2 text-sm font-medium disabled:opacity-40"
+            className={gold || aurora ? "inline-flex items-center gap-2 rounded-full border border-on-background px-4 py-2 text-sm font-medium disabled:opacity-40" : "inline-flex items-center gap-2 rounded-full border border-ink-line px-4 py-2 text-sm font-medium disabled:opacity-40"}
           >
             <ArrowLeft className="w-4 h-4" /> Prev
           </button>
@@ -582,7 +631,7 @@ export default function SatTestRunner({
             type="button"
             onClick={() => setCurrent((c) => Math.min(questions.length - 1, c + 1))}
             disabled={current === questions.length - 1}
-            className="inline-flex items-center gap-2 rounded-full border border-ink-line px-4 py-2 text-sm font-medium disabled:opacity-40"
+            className={gold || aurora ? "inline-flex items-center gap-2 rounded-full border border-on-background px-4 py-2 text-sm font-medium disabled:opacity-40" : "inline-flex items-center gap-2 rounded-full border border-ink-line px-4 py-2 text-sm font-medium disabled:opacity-40"}
           >
             Next <ArrowRight className="w-4 h-4" />
           </button>
@@ -594,11 +643,17 @@ export default function SatTestRunner({
             onClick={() =>
               setFlagged((f) => ({ ...f, [q.id]: !f[q.id] }))
             }
-            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium ${
-              flagged[q.id]
-                ? 'border-paper text-paper'
-                : 'border-ink-line text-paper-2'
-            }`}
+            className={gold || aurora
+              ? `inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium ${
+                  flagged[q.id]
+                    ? 'border-secondary text-on-surface'
+                    : 'border-on-background text-on-surface-variant'
+                }`
+              : `inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium ${
+                  flagged[q.id]
+                    ? 'border-paper text-paper'
+                    : 'border-ink-line text-paper-2'
+                }`}
           >
             <Flag className={`w-4 h-4 ${flagged[q.id] ? 'fill-paper' : ''}`} />
             {flagged[q.id] ? 'Flagged' : 'Flag'}
@@ -608,8 +663,8 @@ export default function SatTestRunner({
 
       {/* Submit / next-module controls. */}
       {!isGraded ? (
-        <div className="mt-6 rounded-2xl bg-ink-2 p-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-paper-2">
+        <div className={gold || aurora ? "mt-6 rounded-2xl bg-surface-container-high p-5 flex flex-wrap items-center justify-between gap-3" : "mt-6 rounded-2xl bg-ink-2 p-5 flex flex-wrap items-center justify-between gap-3"}>
+          <p className={gold || aurora ? "text-sm text-on-surface-variant" : "text-sm text-paper-2"}>
             {answeredCount === questions.length
               ? 'All questions answered. Submit to see your scaled section score.'
               : `${questions.length - answeredCount} unanswered — you can still submit.`}
@@ -617,21 +672,21 @@ export default function SatTestRunner({
           <button
             type="button"
             onClick={submitModule}
-            className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 font-semibold"
+            className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-6 py-2.5 font-semibold" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 font-semibold"}
           >
             <CheckCircle2 className="w-5 h-5" /> Submit module
           </button>
         </div>
       ) : (
         activeSection < sections.length - 1 && (
-          <div className="mt-6 rounded-2xl bg-ink-2 p-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-paper-2">
+          <div className={gold || aurora ? "mt-6 rounded-2xl bg-surface-container-high p-5 flex flex-wrap items-center justify-between gap-3" : "mt-6 rounded-2xl bg-ink-2 p-5 flex flex-wrap items-center justify-between gap-3"}>
+            <p className={gold || aurora ? "text-sm text-on-surface-variant" : "text-sm text-paper-2"}>
               Module complete. Continue to the next module.
             </p>
             <button
               type="button"
               onClick={() => switchSection(activeSection + 1)}
-              className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 font-semibold"
+              className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-6 py-2.5 font-semibold" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 font-semibold"}
             >
               Next module: {sectionLabel(sections[activeSection + 1])}
               <ArrowRight className="w-5 h-5" />

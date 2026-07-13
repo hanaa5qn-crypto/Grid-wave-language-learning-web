@@ -19,6 +19,7 @@ import { ProLockedTab, PartProgress } from './quizKit';
 import { Task1Visual, Task1Chart } from './Task1Visual';
 import { useEnglishStats } from '../../stats';
 import { IELTS_GEN_WRITING } from './ieltsWritingGenerated';
+import { useTheme } from '../../../../frontend/src/lib/theme';
 
 export interface IeltsWritingPrompt {
   id: string;
@@ -201,6 +202,9 @@ export default function IeltsWritingTab({
   onUpgrade: () => void;
 }) {
   const { recordStudy } = useEnglishStats();
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   // Two-level navigation: a null active test shows the test-card grid; otherwise
   // we're inside a test, stepping through its parts (Task 1 → Task 2).
   const [activeTest, setActiveTest] = useState<WritingTest | null>(null);
@@ -286,10 +290,10 @@ export default function IeltsWritingTab({
     return (
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
         <div>
-          <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
-            <Edit3 className="w-6 h-6 text-paper" /> Writing practice
+          <h2 className={gold || aurora ? "text-2xl font-space font-light tracking-tight text-on-surface flex items-center gap-2" : "text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2"}>
+            <Edit3 className={gold || aurora ? "w-6 h-6 text-on-surface" : "w-6 h-6 text-paper"} /> Writing practice
           </h2>
-          <p className="text-paper-2 mt-1">
+          <p className={gold || aurora ? "text-on-surface-variant mt-1" : "text-paper-2 mt-1"}>
             Тест сонгоод Task 1 → Task 2-ыг дараалан бичиж, AI-аас Монгол хэлээр үнэлгээ аваарай.
           </p>
         </div>
@@ -299,19 +303,19 @@ export default function IeltsWritingTab({
             <button
               key={test.id}
               onClick={() => openTest(test)}
-              className="text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors"
+              className={gold || aurora ? "text-left rounded-2xl bg-surface-container hover:bg-surface-container-high p-5 transition-colors" : "text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors"}
             >
               <div className="flex items-center gap-2 mb-2">
-                <span className="rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold">
+                <span className={gold || aurora ? "rounded-full bg-surface-container-high text-on-surface px-2.5 py-0.5 text-xs font-bold" : "rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold"}>
                   Тест {i + 1}
                 </span>
-                <span className="text-xs text-paper-2">{test.parts.length} хэсэг</span>
+                <span className={gold || aurora ? "text-xs text-on-surface-variant" : "text-xs text-paper-2"}>{test.parts.length} хэсэг</span>
               </div>
-              <h3 className="font-bold text-paper">{test.title}</h3>
-              <ul className="mt-2 space-y-1 text-sm text-paper-2">
+              <h3 className={gold || aurora ? "font-bold text-on-surface" : "font-bold text-paper"}>{test.title}</h3>
+              <ul className={gold || aurora ? "mt-2 space-y-1 text-sm text-on-surface-variant" : "mt-2 space-y-1 text-sm text-paper-2"}>
                 {test.parts.map((part) => (
                   <li key={part.id}>
-                    <span className="font-semibold text-paper">Task {part.task}:</span> {part.title}
+                    <span className={gold || aurora ? "font-semibold text-on-surface" : "font-semibold text-paper"}>Task {part.task}:</span> {part.title}
                   </li>
                 ))}
               </ul>
@@ -333,14 +337,14 @@ export default function IeltsWritingTab({
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       <button
         onClick={backToTests}
-        className="inline-flex items-center gap-1.5 text-sm font-semibold text-paper-2 hover:text-paper"
+        className={gold || aurora ? "inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-on-surface" : "inline-flex items-center gap-1.5 text-sm font-semibold text-paper-2 hover:text-paper"}
       >
         <ChevronLeft className="w-4 h-4" /> Бүх тест рүү буцах
       </button>
 
       <div className="space-y-3">
-        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
-          <Edit3 className="w-6 h-6 text-paper" /> {activeTest.title}
+        <h2 className={gold || aurora ? "text-2xl font-space font-light tracking-tight text-on-surface flex items-center gap-2" : "text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2"}>
+          <Edit3 className={gold || aurora ? "w-6 h-6 text-on-surface" : "w-6 h-6 text-paper"} /> {activeTest.title}
         </h2>
         <PartProgress
           steps={parts.map((part) => `Task ${part.task}`)}
@@ -349,41 +353,41 @@ export default function IeltsWritingTab({
         />
       </div>
 
-      <div className="rounded-2xl bg-ink-raise p-5 space-y-3">
+      <div className={gold || aurora ? "rounded-2xl bg-surface-container p-5 space-y-3" : "rounded-2xl bg-ink-raise p-5 space-y-3"}>
         <div className="flex items-center gap-2">
-          <span className="rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold">
+          <span className={gold || aurora ? "rounded-full bg-surface-container-high text-on-surface px-2.5 py-0.5 text-xs font-bold" : "rounded-full bg-ink-2 text-paper px-2.5 py-0.5 text-xs font-bold"}>
             {prompt!.label}
           </span>
-          <span className="text-xs text-paper-2">Хамгийн багадаа {prompt!.minWords} үг</span>
+          <span className={gold || aurora ? "text-xs text-on-surface-variant" : "text-xs text-paper-2"}>Хамгийн багадаа {prompt!.minWords} үг</span>
         </div>
-        <p className="leading-relaxed text-paper">{prompt!.prompt}</p>
+        <p className={gold || aurora ? "leading-relaxed text-on-surface" : "leading-relaxed text-paper"}>{prompt!.prompt}</p>
         {prompt!.chart && <Task1Visual chart={prompt!.chart} />}
         {prompt!.visual && (
-          <div className="rounded-xl bg-ink-2 p-4 text-sm text-paper flex gap-2">
-            <BarChart3 className="w-4 h-4 text-paper shrink-0 mt-0.5" />
+          <div className={gold || aurora ? "rounded-xl bg-surface-container-high p-4 text-sm text-on-surface flex gap-2" : "rounded-xl bg-ink-2 p-4 text-sm text-paper flex gap-2"}>
+            <BarChart3 className={gold || aurora ? "w-4 h-4 text-on-surface shrink-0 mt-0.5" : "w-4 h-4 text-paper shrink-0 mt-0.5"} />
             <span><span className="font-semibold">Visual: </span>{prompt!.visual}</span>
           </div>
         )}
       </div>
 
       <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm font-bold text-paper">
-          <PenLine className="w-4 h-4 text-paper" /> Таны хариулт
+        <label className={gold || aurora ? "flex items-center gap-2 text-sm font-bold text-on-surface" : "flex items-center gap-2 text-sm font-bold text-paper"}>
+          <PenLine className={gold || aurora ? "w-4 h-4 text-on-surface" : "w-4 h-4 text-paper"} /> Таны хариулт
         </label>
         <textarea
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           rows={12}
           placeholder="Эндээс бичиж эхэлнэ үү…"
-          className="w-full rounded-2xl bg-ink-raise border border-ink-line p-4 text-paper placeholder:text-paper-2 focus:outline-none focus:border-paper leading-relaxed resize-y"
+          className={gold || aurora ? "w-full rounded-2xl bg-surface-container border border-on-background p-4 text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-secondary leading-relaxed resize-y" : "w-full rounded-2xl bg-ink-raise border border-ink-line p-4 text-paper placeholder:text-paper-2 focus:outline-none focus:border-paper leading-relaxed resize-y"}
         />
         <div className="flex items-center justify-between text-sm">
-          <span className="text-paper-2">
-            <span className="font-bold text-paper">{words}</span>
+          <span className={gold || aurora ? "text-on-surface-variant" : "text-paper-2"}>
+            <span className={gold || aurora ? "font-bold text-on-surface" : "font-bold text-paper"}>{words}</span>
             {' '}/ {prompt!.minWords} үг
           </span>
           {!meetsMin && words > 0 && (
-            <span className="text-paper-2">Цөөн байна — үргэлжлүүлээрэй.</span>
+            <span className={gold || aurora ? "text-on-surface-variant" : "text-paper-2"}>Цөөн байна — үргэлжлүүлээрэй.</span>
           )}
         </div>
       </div>
@@ -392,14 +396,14 @@ export default function IeltsWritingTab({
         <button
           onClick={getFeedback}
           disabled={loading || words === 0}
-          className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold disabled:opacity-40"
+          className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-6 py-3 font-bold disabled:opacity-40" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold disabled:opacity-40"}
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           {loading ? 'Үнэлж байна…' : 'Get AI feedback / AI үнэлгээ авах'}
         </button>
         <button
           onClick={() => setShowModel((s) => !s)}
-          className="inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"
+          className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-surface-container-high text-on-surface px-5 py-2.5 font-semibold hover:bg-surface-container-high" : "inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"}
         >
           {showModel ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           {showModel ? 'Жишээ хариулт нуух' : 'Show model answer'}
@@ -407,7 +411,7 @@ export default function IeltsWritingTab({
       </div>
 
       {error && (
-        <div className="rounded-2xl bg-ink-2 text-paper-2 p-4 flex items-start gap-2">
+        <div className={gold || aurora ? "rounded-2xl bg-surface-container-high text-on-surface-variant p-4 flex items-start gap-2" : "rounded-2xl bg-ink-2 text-paper-2 p-4 flex items-start gap-2"}>
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -416,22 +420,22 @@ export default function IeltsWritingTab({
       {review && <AiReviewCard review={review} />}
 
       {showModel && (
-        <div className="rounded-2xl bg-ink-raise p-5">
-          <h3 className="text-sm font-bold text-paper-2 uppercase tracking-wide mb-2">
+        <div className={gold || aurora ? "rounded-2xl bg-surface-container p-5" : "rounded-2xl bg-ink-raise p-5"}>
+          <h3 className={gold || aurora ? "text-sm font-bold text-on-surface-variant uppercase tracking-wide mb-2" : "text-sm font-bold text-paper-2 uppercase tracking-wide mb-2"}>
             Band 9 жишээ хариулт
           </h3>
-          <article className="leading-relaxed whitespace-pre-line text-paper">
+          <article className={gold || aurora ? "leading-relaxed whitespace-pre-line text-on-surface" : "leading-relaxed whitespace-pre-line text-paper"}>
             {prompt!.modelAnswer}
           </article>
         </div>
       )}
 
       {/* --- Part navigation --------------------------------------------------- */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-line pt-5">
+      <div className={gold || aurora ? "flex flex-wrap items-center justify-between gap-3 border-t border-on-background pt-5" : "flex flex-wrap items-center justify-between gap-3 border-t border-ink-line pt-5"}>
         {partIndex > 0 ? (
           <button
             onClick={() => goToPart(partIndex - 1)}
-            className="inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"
+            className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-surface-container-high text-on-surface px-5 py-2.5 font-semibold hover:bg-surface-container-high" : "inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"}
           >
             <ArrowLeft className="w-4 h-4" /> Өмнөх хэсэг
           </button>
@@ -441,14 +445,14 @@ export default function IeltsWritingTab({
         {nextPart ? (
           <button
             onClick={() => goToPart(partIndex + 1)}
-            className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold"
+            className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-6 py-3 font-bold" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold"}
           >
             Дараагийн хэсэг — Task {nextPart.task} <ArrowRight className="w-4 h-4" />
           </button>
         ) : (
           <button
             onClick={backToTests}
-            className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold"
+            className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-6 py-3 font-bold" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-3 font-bold"}
           >
             <Check className="w-4 h-4" /> Тест дуусгах
           </button>

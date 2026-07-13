@@ -355,25 +355,27 @@ export function SettingsTab({
                     </button>
                   </div>
 
-                  <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
-                    <div>
-                      <h5 className="text-sm font-bold">Цайвар горим</h5>
-                      <p className="text-[11px] text-paper-3">Цайвар болон бараан дэлгэцийн горим солих.</p>
+                  <div className="p-3 border-2 border-ink-line rounded-xl select-none block-shadow">
+                    <h5 className="text-sm font-bold">Дэлгэцийн загвар</h5>
+                    <p className="text-[11px] text-paper-3 mb-2">Бараан, Цайвар, Алтан, Аврора загвараас сонгоно.</p>
+                    <div className="flex gap-2">
+                      {(['dark', 'light', 'gold', 'aurora'] as Theme[]).map(t => (
+                        <button
+                          key={t}
+                          onClick={() => {
+                            setTheme(t);
+                            setThemeState(t);
+                          }}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                            theme === t
+                              ? 'bg-paper text-ink border-paper'
+                              : 'bg-ink-2 text-paper-2 border-ink-line'
+                          }`}
+                        >
+                          {t === 'dark' ? 'Бараан' : t === 'light' ? 'Цайвар' : t === 'gold' ? 'Алтан' : 'Аврора'}
+                        </button>
+                      ))}
                     </div>
-                    <button
-                      onClick={() => {
-                        const next: Theme = theme === 'light' ? 'dark' : 'light';
-                        setTheme(next);
-                        setThemeState(next);
-                      }}
-                      className={`w-12 h-6 rounded-full transition-colors relative border border-ink-line block-shadow cursor-pointer ${
-                        theme === 'light' ? 'bg-paper' : 'bg-ink-2'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
-                        theme === 'light' ? 'left-6' : 'left-1'
-                      }`}></div>
-                    </button>
                   </div>
 
                   <div className="flex justify-between items-center p-3 border-2 border-ink-line rounded-xl select-none block-shadow">

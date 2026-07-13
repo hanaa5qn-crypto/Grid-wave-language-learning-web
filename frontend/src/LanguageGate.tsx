@@ -4,6 +4,7 @@ import AccountScreen from './AccountScreen';
 import ProgressSyncBanner from './ProgressSyncBanner';
 import { saveTrackChoice, subscribeToProfileUpdates, logOutUser } from './auth';
 import { UserProfile } from './profiles';
+import { useTheme } from './lib/theme';
 
 // Each track is its own chunk: picking German must not download the English
 // exams (and their megabyte-scale vocab data), and vice versa.
@@ -11,9 +12,16 @@ const App = lazy(() => import('./App'));
 const EnglishApp = lazy(() => import('../../english/src/EnglishApp'));
 
 function GateLoader() {
+  // gold + aurora share the M3-token chrome (amber under html.gold, violet
+  // under html.aurora); this gate had no aurora original so aurora reuses it.
+  const themeName = useTheme();
+  const gold = themeName === 'gold' || themeName === 'aurora';
   return (
-    <div className="min-h-screen bg-ink text-paper font-sans flex items-center justify-center">
-      <Loader2 className="w-7 h-7 text-paper-2 animate-spin" />
+    <div className={gold
+      ? 'min-h-screen bg-background text-on-background font-sans flex items-center justify-center'
+      : 'min-h-screen bg-ink text-paper font-sans flex items-center justify-center'}
+    >
+      <Loader2 className={gold ? 'w-7 h-7 text-on-surface-variant animate-spin' : 'w-7 h-7 text-paper-2 animate-spin'} />
     </div>
   );
 }
@@ -37,19 +45,31 @@ function TrackCard({
   flag: string; title: string; native: string; blurb: string;
   onPick: () => void; delay: string;
 }) {
+  // gold + aurora share the M3-token chrome (amber under html.gold, violet
+  // under html.aurora); this gate had no aurora original so aurora reuses it.
+  const themeName = useTheme();
+  const gold = themeName === 'gold' || themeName === 'aurora';
   return (
     <button
       onClick={onPick}
       style={{ animationDelay: delay }}
-      className="animate-scale-up group flex flex-col items-start gap-4 rounded-3xl bg-ink-raise/60 border border-ink-line p-7 text-left transition-all duration-300 hover:-translate-y-1 hover:border-paper/60 hover:bg-ink-raise focus:outline-none focus-visible:border-paper/80"
+      className={gold
+        ? 'animate-scale-up group flex flex-col items-start gap-4 rounded-3xl bg-surface-container border border-surface-variant p-7 text-left transition-all duration-300 hover:-translate-y-1 hover:border-primary/60 hover:bg-surface-container-high focus:outline-none focus-visible:border-primary/80'
+        : 'animate-scale-up group flex flex-col items-start gap-4 rounded-3xl bg-ink-raise/60 border border-ink-line p-7 text-left transition-all duration-300 hover:-translate-y-1 hover:border-paper/60 hover:bg-ink-raise focus:outline-none focus-visible:border-paper/80'}
     >
       <span className="text-5xl transition-transform duration-300 group-hover:scale-110" aria-hidden="true">{flag}</span>
       <span className="flex flex-col gap-1">
-        <span className="text-2xl font-serif font-light tracking-tight text-paper">{title}</span>
-        <span className="text-[0.7rem] uppercase tracking-[0.2em] font-medium text-paper-3">{native}</span>
+        <span className={gold ? 'text-2xl font-space font-extrabold tracking-tight text-on-surface' : 'text-2xl font-serif font-light tracking-tight text-paper'}>{title}</span>
+        <span className={gold
+          ? 'text-[0.7rem] uppercase tracking-[0.2em] font-medium text-on-surface-variant'
+          : 'text-[0.7rem] uppercase tracking-[0.2em] font-medium text-paper-3'}
+        >{native}</span>
       </span>
-      <span className="text-sm leading-relaxed text-paper-2">{blurb}</span>
-      <span className="mt-1 inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] font-medium text-paper-3 transition-colors group-hover:text-paper">
+      <span className={gold ? 'text-sm leading-relaxed text-on-surface-variant' : 'text-sm leading-relaxed text-paper-2'}>{blurb}</span>
+      <span className={gold
+        ? 'mt-1 inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] font-medium text-on-surface-variant transition-colors group-hover:text-primary'
+        : 'mt-1 inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] font-medium text-paper-3 transition-colors group-hover:text-paper'}
+      >
         Эхлэх · Start
         <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">→</span>
       </span>
@@ -60,15 +80,28 @@ function TrackCard({
 // First-screen chooser shown right after login (or after a reset). Asks the user
 // what they want to learn before either track boots.
 function Chooser({ onPick }: { onPick: (track: Track) => void }) {
+  // gold + aurora share the M3-token chrome (amber under html.gold, violet
+  // under html.aurora); this gate had no aurora original so aurora reuses it.
+  const themeName = useTheme();
+  const gold = themeName === 'gold' || themeName === 'aurora';
   return (
-    <div className="min-h-screen bg-ink text-paper font-sans flex flex-col items-center justify-center px-4 py-12">
+    <div className={gold
+      ? 'min-h-screen bg-background text-on-background font-sans flex flex-col items-center justify-center px-4 py-12'
+      : 'min-h-screen bg-ink text-paper font-sans flex flex-col items-center justify-center px-4 py-12'}
+    >
       <div className="animate-fade-in w-full max-w-2xl">
         <div className="text-center mb-12">
-          <p className="text-[0.7rem] uppercase tracking-[0.28em] font-medium text-paper-3 mb-6">Vivid Lingua</p>
-          <h1 className="font-serif font-light tracking-tight text-4xl sm:text-5xl text-paper mb-4">
+          <p className={gold
+            ? 'text-[0.7rem] uppercase tracking-[0.28em] font-medium text-on-surface-variant mb-6'
+            : 'text-[0.7rem] uppercase tracking-[0.28em] font-medium text-paper-3 mb-6'}
+          >Vivid Lingua</p>
+          <h1 className={gold
+            ? 'font-space font-extrabold tracking-tight text-4xl sm:text-5xl text-on-background mb-4'
+            : 'font-serif font-light tracking-tight text-4xl sm:text-5xl text-paper mb-4'}
+          >
             What do you want to learn?
           </h1>
-          <p className="text-paper-2 text-base">Юу сурахыг хүсэж байна вэ?</p>
+          <p className={gold ? 'text-on-surface-variant text-base' : 'text-paper-2 text-base'}>Юу сурахыг хүсэж байна вэ?</p>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
@@ -90,7 +123,7 @@ function Chooser({ onPick }: { onPick: (track: Track) => void }) {
           />
         </div>
 
-        <p className="mt-10 text-center text-xs text-paper-3">
+        <p className={gold ? 'mt-10 text-center text-xs text-on-surface-variant' : 'mt-10 text-center text-xs text-paper-3'}>
           You can switch anytime · Дараа нь сольж болно
         </p>
       </div>
@@ -111,6 +144,10 @@ export default function LanguageGate() {
 }
 
 function GateBody() {
+  // gold + aurora share the M3-token chrome (amber under html.gold, violet
+  // under html.aurora); this gate had no aurora original so aurora reuses it.
+  const themeName = useTheme();
+  const gold = themeName === 'gold' || themeName === 'aurora';
   const [track, setTrack] = useState<Track | null>(null);
   // Profile-first flow: after login, the account/settings screen is shown once
   // before the language chooser. `setupDone` flips true after the user continues
@@ -204,7 +241,9 @@ function GateBody() {
           onClick={reset}
           title="Хэл солих / Switch language"
           aria-label="Switch language"
-          className="fixed right-3 top-20 md:top-3 z-[130] inline-flex items-center gap-1.5 rounded-full border border-ink-line bg-ink-raise/90 backdrop-blur px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-paper-2 shadow-black/40 hover:border-paper/60 hover:bg-ink-2 hover:text-paper transition-colors"
+          className={gold
+            ? 'fixed right-3 top-20 md:top-3 z-[130] inline-flex items-center gap-1.5 rounded-full border border-surface-variant bg-surface-container/90 backdrop-blur px-3 py-1.5 text-xs font-semibold text-on-surface shadow-lg hover:bg-surface-container-high transition-colors'
+            : 'fixed right-3 top-20 md:top-3 z-[130] inline-flex items-center gap-1.5 rounded-full border border-ink-line bg-ink-raise/90 backdrop-blur px-3 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-paper-2 shadow-black/40 hover:border-paper/60 hover:bg-ink-2 hover:text-paper transition-colors'}
         >
           <span aria-hidden="true">🌐</span> Хэл солих
         </button>

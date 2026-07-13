@@ -9,6 +9,7 @@
 // =============================================================================
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
+import { useTheme } from '../../../../frontend/src/lib/theme';
 
 export type Task1Chart =
   | {
@@ -41,6 +42,9 @@ function niceScale(max: number): { ceil: number; step: number } {
 }
 
 function BarChart({ unit, years, series }: Extract<Task1Chart, { kind: 'bar' }>) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const W = 640;
   const H = 340;
   const M = { top: 16, right: 16, bottom: 52, left: 60 };
@@ -124,7 +128,7 @@ function BarChart({ unit, years, series }: Extract<Task1Chart, { kind: 'bar' }>)
         <line x1={M.left} x2={W - M.right} y1={y(0)} y2={y(0)} stroke={AXIS_TEXT} strokeWidth={1.5} />
       </svg>
 
-      <figcaption className="mt-2 flex items-center justify-center gap-4 text-xs text-paper-2">
+      <figcaption className={gold || aurora ? "mt-2 flex items-center justify-center gap-4 text-xs text-on-surface-variant" : "mt-2 flex items-center justify-center gap-4 text-xs text-paper-2"}>
         {years.map((yr, i) => (
           <span key={yr} className="inline-flex items-center gap-1.5">
             <span
@@ -134,24 +138,27 @@ function BarChart({ unit, years, series }: Extract<Task1Chart, { kind: 'bar' }>)
             {yr}
           </span>
         ))}
-        <span className="text-paper-3">({unit})</span>
+        <span className={gold || aurora ? "text-outline" : "text-paper-3"}>({unit})</span>
       </figcaption>
     </figure>
   );
 }
 
 function ProcessDiagram({ stages }: Extract<Task1Chart, { kind: 'process' }>) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   return (
     <ol className="flex flex-wrap items-stretch gap-2 m-0 list-none p-0">
       {stages.map((stage, i) => (
         <li key={i} className="flex items-center gap-2">
-          <span className="flex items-center gap-2 rounded-xl bg-ink-2 px-3 py-2 text-sm text-paper">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-paper text-ink text-xs font-bold">
+          <span className={gold || aurora ? "flex items-center gap-2 rounded-xl bg-surface-container-high px-3 py-2 text-sm text-on-surface" : "flex items-center gap-2 rounded-xl bg-ink-2 px-3 py-2 text-sm text-paper"}>
+            <span className={gold || aurora ? "flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-white text-xs font-bold" : "flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-paper text-ink text-xs font-bold"}>
               {i + 1}
             </span>
             {stage}
           </span>
-          {i < stages.length - 1 && <ChevronRight className="w-4 h-4 text-paper-2 shrink-0" />}
+          {i < stages.length - 1 && <ChevronRight className={gold || aurora ? "w-4 h-4 text-on-surface-variant shrink-0" : "w-4 h-4 text-paper-2 shrink-0"} />}
         </li>
       ))}
     </ol>
@@ -159,8 +166,11 @@ function ProcessDiagram({ stages }: Extract<Task1Chart, { kind: 'process' }>) {
 }
 
 export function Task1Visual({ chart }: { chart: Task1Chart }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   return (
-    <div className="rounded-xl bg-ink-2 p-4">
+    <div className={gold || aurora ? "rounded-xl bg-surface-container-high p-4" : "rounded-xl bg-ink-2 p-4"}>
       {chart.kind === 'bar' ? <BarChart {...chart} /> : <ProcessDiagram {...chart} />}
     </div>
   );

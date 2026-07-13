@@ -405,26 +405,28 @@ export default function AccountScreen({
         {/* Account essentials */}
         <section className="rounded-2xl bg-ink-raise border border-ink-line p-5 sm:p-6 space-y-3">
           <h2 className="text-xs font-serif font-bold uppercase tracking-wide text-paper-3">Бүртгэл</h2>
-          <div className="flex items-center justify-between rounded-xl bg-ink-2 border border-ink-line px-4 py-3">
-            <div>
-              <p className="text-sm font-bold text-paper">Light mode</p>
-              <p className="text-[11px] text-paper-3">Switch between light and dark theme</p>
+          <div className="rounded-xl bg-ink-2 border border-ink-line px-4 py-3">
+            <p className="text-sm font-bold text-paper">Дэлгэцийн загвар</p>
+            <p className="text-[11px] text-paper-3 mb-2">Бараан, Цайвар, Алтан, Аврора загвараас сонгоно.</p>
+            <div className="flex gap-2">
+              {(['dark', 'light', 'gold', 'aurora'] as Theme[]).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => {
+                    setTheme(t);
+                    setThemeState(t);
+                  }}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                    theme === t
+                      ? 'bg-paper text-ink border-paper'
+                      : 'bg-ink-raise text-paper-2 border-ink-line'
+                  }`}
+                >
+                  {t === 'dark' ? 'Бараан' : t === 'light' ? 'Цайвар' : t === 'gold' ? 'Алтан' : 'Аврора'}
+                </button>
+              ))}
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                const next: Theme = theme === 'light' ? 'dark' : 'light';
-                setTheme(next);
-                setThemeState(next);
-              }}
-              className={`w-12 h-6 rounded-full transition-colors relative border border-ink-line ${
-                theme === 'light' ? 'bg-paper' : 'bg-ink-2'
-              }`}
-            >
-              <div className={`w-4 h-4 bg-white rounded-full absolute top-[3px] transition-all ${
-                theme === 'light' ? 'left-6' : 'left-1'
-              }`}></div>
-            </button>
           </div>
           {profile.email && (
             <div className="flex items-center justify-between rounded-xl bg-ink-2 border border-ink-line px-4 py-3">

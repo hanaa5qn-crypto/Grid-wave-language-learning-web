@@ -15,6 +15,7 @@
 import React, {
   createContext, useCallback, useContext, useEffect, useRef, useState,
 } from 'react';
+import { useTheme } from '../../frontend/src/lib/theme';
 import { subscribeToAuthedProfile, subscribeToProfileUpdates, updateProfileFields, logOutUser, publishAuthedProfile, notifyProgressSyncIssue } from '../../frontend/src/auth';
 import { runUnitsMigration } from '../../frontend/src/keyMigrations';
 import { calculateStreakWithGrace, localDateKey } from '../../frontend/src/learning';
@@ -126,6 +127,9 @@ export function EnglishStatsProvider({
   children: React.ReactNode;
   onSwitchLanguage?: () => void;
 }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -509,24 +513,24 @@ export function EnglishStatsProvider({
       {guestPromptOpen && (
         <div className="fixed inset-0 z-[210] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4"
           onClick={() => setGuestPromptOpen(false)}>
-          <div className="bg-ink-raise border border-ink-line/40 rounded-2xl p-6 max-w-sm w-full space-y-4 text-paper shadow-[0_0_40px_rgba(0,0,0,0.5)]"
+          <div className={gold || aurora ? "bg-surface-container border border-on-background/40 rounded-2xl p-6 max-w-sm w-full space-y-4 text-on-surface shadow-[0_0_40px_rgba(0,0,0,0.5)]" : "bg-ink-raise border border-ink-line/40 rounded-2xl p-6 max-w-sm w-full space-y-4 text-paper shadow-[0_0_40px_rgba(0,0,0,0.5)]"}
             onClick={(e) => e.stopPropagation()}>
             <div className="flex flex-col items-center text-center gap-3">
-              <span className="w-14 h-14 rounded-2xl bg-ink-2 border border-ink-line flex items-center justify-center text-paper-2">
+              <span className={gold || aurora ? "w-14 h-14 rounded-2xl bg-surface-container-high border border-on-background flex items-center justify-center text-on-surface-variant" : "w-14 h-14 rounded-2xl bg-ink-2 border border-ink-line flex items-center justify-center text-paper-2"}>
                 <Lock className="w-7 h-7" />
               </span>
               <h3 className="text-lg font-serif font-light">Create a free account</h3>
-              <p className="text-sm text-paper-2 font-medium">
+              <p className={gold || aurora ? "text-sm text-on-surface-variant font-medium" : "text-sm text-paper-2 font-medium"}>
                 Guests can look around, but you'll need a free account to answer questions, take tests, or run the placement. Signing up unlocks a 3-day full-access trial.
               </p>
             </div>
             <div className="flex flex-col gap-2">
               <button onClick={goSignup}
-                className="w-full px-4 py-2.5 rounded-xl bg-paper text-ink text-sm font-bold cursor-pointer hover:bg-paper-bright transition-colors">
+                className={gold || aurora ? "w-full px-4 py-2.5 rounded-xl bg-secondary text-white text-sm font-bold cursor-pointer hover:bg-secondary/90 transition-colors" : "w-full px-4 py-2.5 rounded-xl bg-paper text-ink text-sm font-bold cursor-pointer hover:bg-paper-bright transition-colors"}>
                 Sign up
               </button>
               <button onClick={() => setGuestPromptOpen(false)}
-                className="w-full px-4 py-2.5 rounded-xl bg-ink-2 text-paper-2 border border-ink-line text-sm font-bold cursor-pointer hover:bg-ink-raise transition-colors">
+                className={gold || aurora ? "w-full px-4 py-2.5 rounded-xl bg-surface-container-high text-on-surface-variant border border-on-background text-sm font-bold cursor-pointer hover:bg-surface-container transition-colors" : "w-full px-4 py-2.5 rounded-xl bg-ink-2 text-paper-2 border border-ink-line text-sm font-bold cursor-pointer hover:bg-ink-raise transition-colors"}>
                 Keep looking
               </button>
             </div>
@@ -536,7 +540,7 @@ export function EnglishStatsProvider({
       {/* Settings is a true overlay ON TOP of the track, so opening it mid-lesson
           keeps the underlying tab + in-progress lesson state intact. */}
       {settingsOpen && profile && (
-        <div className="fixed inset-0 z-[200] bg-ink overflow-y-auto">
+        <div className={gold || aurora ? "fixed inset-0 z-[200] bg-surface overflow-y-auto" : "fixed inset-0 z-[200] bg-ink overflow-y-auto"}>
           <AccountScreen
             mode="settings"
             profile={profile}
