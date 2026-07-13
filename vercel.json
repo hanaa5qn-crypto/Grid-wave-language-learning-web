@@ -7,6 +7,17 @@
   "outputDirectory": "dist",
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "vivid-lingua(-git-main)?(-gipfel-s-projects)?\\.vercel\\.app"
+        }
+      ],
+      "destination": "https://www.gridwave.me/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
