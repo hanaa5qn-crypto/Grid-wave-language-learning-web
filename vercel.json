@@ -5,6 +5,19 @@
   "installCommand": "npm install --include=dev",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "vivid-lingua(-git-main)?(-gipfel-s-projects)?\\.vercel\\.app"
+        }
+      ],
+      "destination": "https://www.gridwave.me/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
