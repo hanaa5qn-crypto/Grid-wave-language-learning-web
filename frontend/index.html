@@ -9,9 +9,13 @@
     <script>
       // Runs before the app bundle to avoid a flash of the wrong theme.
       try {
-        if (localStorage.getItem('theme') === 'light') {
-          document.documentElement.classList.add('light');
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#fdfcfa');
+        var t = localStorage.getItem('theme');
+        if (t === 'light' || t === 'gold' || t === 'aurora') {
+          document.documentElement.classList.add(t);
+          var tc = { light: '#fdfcfa', aurora: '#060512' }[t];
+          if (tc) {
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', tc);
+          }
         }
       } catch {}
     </script>

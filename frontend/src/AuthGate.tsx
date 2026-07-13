@@ -3,8 +3,11 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 import { getAuthInstance, isFirebaseConfigured } from './firebase';
 import LoginScreen from './LoginScreen';
+import GoldLoginScreen from './GoldLoginScreen';
+import AuroraLoginScreen from './AuroraLoginScreen';
 import HeroPage from './HeroPage';
 import AppErrorBoundary from './components/AppErrorBoundary';
+import { useTheme } from './lib/theme';
 
 // Code-split at the routing seam: a signed-out visitor on the hero page must
 // not download the learner tracks, the admin dashboard, or the legal pages.
@@ -85,6 +88,8 @@ function AuthFlow() {
   // lets us tell a deliberate login from a silent session-restore on reload, so
   // we only reset the saved track for the former.
   const interactiveEntry = useRef(false);
+  const uiTheme = useTheme();
+  const ActiveLoginScreen = uiTheme === 'gold' ? GoldLoginScreen : uiTheme === 'aurora' ? AuroraLoginScreen : LoginScreen;
 
   useEffect(() => {
     if (!isFirebaseConfigured) { setReady(true); return; }
@@ -135,7 +140,7 @@ function AuthFlow() {
 
   if (view === 'login') {
     return (
-      <LoginScreen
+      <ActiveLoginScreen
         initialMode={loginMode}
         onBack={() => setView('hero')}
         onGuest={continueAsGuest}

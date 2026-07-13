@@ -29,6 +29,7 @@ import {
 import {
   playTts, pauseTts, resumeTts, stopTts, type TtsState,
 } from '../../frontend/src/utils/tts';
+import { useTheme } from '../../frontend/src/lib/theme';
 
 // Lesson destinations the result screen can hand back to the dashboard (a
 // subset of DashboardTab's DashDest — kept local to avoid a circular import).
@@ -62,6 +63,9 @@ export default function EnglishPlacementTest({
   /** Open the upgrade / plans view (free accounts unlocking the full path). */
   onUpgrade?: () => void;
 }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const [phase, setPhase] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [question, setQuestion] = useState<EnPlacementQuestion | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
@@ -154,13 +158,13 @@ export default function EnglishPlacementTest({
     return (
       <Shell onSkip={skip}>
         <div className="text-center max-w-xl mx-auto">
-          <span className="inline-flex items-center gap-2 rounded-full bg-ink-2 border border-ink-line px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-paper-2">
+          <span className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-surface-container-high border border-on-background px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-on-surface-variant" : "inline-flex items-center gap-2 rounded-full bg-ink-2 border border-ink-line px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-paper-2"}>
             <Sparkles className="w-4 h-4" /> Түвшин тогтоох тест
           </span>
-          <h1 className="text-3xl sm:text-4xl font-serif font-light tracking-tight text-paper mt-5">
+          <h1 className={gold || aurora ? "text-3xl sm:text-4xl font-space font-light tracking-tight text-on-surface mt-5" : "text-3xl sm:text-4xl font-serif font-light tracking-tight text-paper mt-5"}>
             Find your English level
           </h1>
-          <p className="text-paper-2 mt-3 leading-relaxed">
+          <p className={gold || aurora ? "text-on-surface-variant mt-3 leading-relaxed" : "text-paper-2 mt-3 leading-relaxed"}>
             Унших, сонсох {EN_PLACEMENT_TOTAL} асуултаар таны түвшинг A1-ээс C2 хүртэл тодорхойлно.
             Тест дунд түвшнээс хүндээр эхэлж, зөв хариулах тутам нэг шатаар хүндэрч, алдвал
             хөнгөрнө — ингэснээр таны бодит түвшинг хурдан бөгөөд нарийн олно. Үр дүн нь
@@ -169,13 +173,13 @@ export default function EnglishPlacementTest({
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
             <button
               onClick={startQuiz}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-paper-bright"
+              className={gold || aurora ? "inline-flex items-center justify-center gap-2 rounded-full bg-secondary text-white px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-secondary/90" : "inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-paper-bright"}
             >
               Тест эхлүүлэх <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={skip}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-ink-line text-paper-2 hover:text-paper hover:border-paper/60 px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm"
+              className={gold || aurora ? "inline-flex items-center justify-center gap-2 rounded-full border border-on-background text-on-surface-variant hover:text-on-surface hover:border-paper/60 px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm" : "inline-flex items-center justify-center gap-2 rounded-full border border-ink-line text-paper-2 hover:text-paper hover:border-paper/60 px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm"}
             >
               Дараа нь · түвшингээ өөрөө сонгох
             </button>
@@ -207,11 +211,11 @@ export default function EnglishPlacementTest({
     return (
       <Shell>
         <div className="text-center max-w-xl mx-auto">
-          <span className="inline-flex items-center gap-2 rounded-full bg-ink-2 border border-ink-line px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-paper-2">
+          <span className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-surface-container-high border border-on-background px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-on-surface-variant" : "inline-flex items-center gap-2 rounded-full bg-ink-2 border border-ink-line px-4 py-1.5 text-xs font-medium uppercase tracking-[0.18em] text-paper-2"}>
             <TrendingUp className="w-4 h-4" /> Таны түвшин
           </span>
-          <div className="text-7xl font-serif font-light text-paper mt-6">{result.level}</div>
-          <p className="text-paper-2 mt-3">
+          <div className={gold || aurora ? "text-7xl font-space font-light text-on-surface mt-6" : "text-7xl font-serif font-light text-paper mt-6"}>{result.level}</div>
+          <p className={gold || aurora ? "text-on-surface-variant mt-3" : "text-paper-2 mt-3"}>
             {result.totalCorrect}/{result.totalQuestions} зөв ({pct}%). Энэ түвшнээр таны өдөр
             тутмын даалгавар, хичээлийн зам, зөвлөмжийг тохирууллаа.
           </p>
@@ -220,13 +224,13 @@ export default function EnglishPlacementTest({
               const sc = result.skillScores[s] ?? { correct: 0, total: 0 };
               const p = sc.total > 0 ? Math.round((sc.correct / sc.total) * 100) : 0;
               return (
-                <div key={s} className="rounded-2xl bg-ink-raise border border-ink-line p-4">
-                  <p className="flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-paper-3 font-medium">
+                <div key={s} className={gold || aurora ? "rounded-2xl bg-surface-container border border-on-background p-4" : "rounded-2xl bg-ink-raise border border-ink-line p-4"}>
+                  <p className={gold || aurora ? "flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-outline font-medium" : "flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-paper-3 font-medium"}>
                     {SKILL_META[s].icon} {SKILL_META[s].label}
                   </p>
-                  <p className="text-xl font-serif font-light text-paper mt-1">{sc.correct}/{sc.total}</p>
-                  <div className="w-full h-1.5 bg-ink-2 rounded-full mt-2 overflow-hidden">
-                    <div className="h-full bg-paper rounded-full" style={{ width: `${p}%` }} />
+                  <p className={gold || aurora ? "text-xl font-space font-light text-on-surface mt-1" : "text-xl font-serif font-light text-paper mt-1"}>{sc.correct}/{sc.total}</p>
+                  <div className={gold || aurora ? "w-full h-1.5 bg-surface-container-high rounded-full mt-2 overflow-hidden" : "w-full h-1.5 bg-ink-2 rounded-full mt-2 overflow-hidden"}>
+                    <div className={gold || aurora ? "h-full bg-secondary rounded-full" : "h-full bg-paper rounded-full"} style={{ width: `${p}%` }} />
                   </div>
                 </div>
               );
@@ -237,12 +241,12 @@ export default function EnglishPlacementTest({
           {lessonItems.length > 0 && (
             <div className="mt-8 text-left">
               <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-paper-2" />
-                <h3 className="text-xs font-medium uppercase tracking-[0.15em] text-paper-2">
+                <Sparkles className={gold || aurora ? "w-4 h-4 text-on-surface-variant" : "w-4 h-4 text-paper-2"} />
+                <h3 className={gold || aurora ? "text-xs font-medium uppercase tracking-[0.15em] text-on-surface-variant" : "text-xs font-medium uppercase tracking-[0.15em] text-paper-2"}>
                   {result.level} түвшинд тохирох хичээлүүд
                 </h3>
                 {lessonsLocked && (
-                  <span className="ml-auto inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.15em] text-paper border border-paper/40 rounded-full px-2 py-0.5">
+                  <span className={gold || aurora ? "ml-auto inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.15em] text-on-surface border border-paper/40 rounded-full px-2 py-0.5" : "ml-auto inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.15em] text-paper border border-paper/40 rounded-full px-2 py-0.5"}>
                     <Lock className="w-3 h-3" /> Pro
                   </span>
                 )}
@@ -254,43 +258,47 @@ export default function EnglishPlacementTest({
                     key={l.dest}
                     disabled={lessonsLocked}
                     onClick={() => goLesson(l.dest)}
-                    className={`flex items-center gap-3 text-left px-4 py-3 rounded-xl border transition-colors ${
+                    className={gold || aurora ? `flex items-center gap-3 text-left px-4 py-3 rounded-xl border transition-colors ${
+                      lessonsLocked
+                        ? 'bg-surface border-on-background opacity-60 cursor-not-allowed'
+                        : 'bg-surface-container border-on-background hover:border-paper/50'
+                    }` : `flex items-center gap-3 text-left px-4 py-3 rounded-xl border transition-colors ${
                       lessonsLocked
                         ? 'bg-ink border-ink-line opacity-60 cursor-not-allowed'
                         : 'bg-ink-raise border-ink-line hover:border-paper/50'
                     }`}
                   >
-                    <span className="p-2 rounded-lg bg-ink-2 border border-ink-line text-paper-2 shrink-0">
+                    <span className={gold || aurora ? "p-2 rounded-lg bg-surface-container-high border border-on-background text-on-surface-variant shrink-0" : "p-2 rounded-lg bg-ink-2 border border-ink-line text-paper-2 shrink-0"}>
                       {LESSON_META[l.dest].icon}
                     </span>
                     <span className="overflow-hidden">
-                      <span className="block text-[10px] uppercase tracking-[0.18em] text-paper-3">{LESSON_META[l.dest].label}</span>
-                      <span className="block text-sm font-medium text-paper truncate">{l.title}</span>
+                      <span className={gold || aurora ? "block text-[10px] uppercase tracking-[0.18em] text-outline" : "block text-[10px] uppercase tracking-[0.18em] text-paper-3"}>{LESSON_META[l.dest].label}</span>
+                      <span className={gold || aurora ? "block text-sm font-medium text-on-surface truncate" : "block text-sm font-medium text-paper truncate"}>{l.title}</span>
                     </span>
                     {lessonsLocked
-                      ? <Lock className="w-4 h-4 text-paper-3 ml-auto shrink-0" />
-                      : <ArrowRight className="w-4 h-4 text-paper-3 ml-auto shrink-0" />}
+                      ? <Lock className={gold || aurora ? "w-4 h-4 text-outline ml-auto shrink-0" : "w-4 h-4 text-paper-3 ml-auto shrink-0"} />
+                      : <ArrowRight className={gold || aurora ? "w-4 h-4 text-outline ml-auto shrink-0" : "w-4 h-4 text-paper-3 ml-auto shrink-0"} />}
                   </button>
                 ))}
               </div>
 
               {lessonsLocked && (
-                <div className="mt-4 rounded-2xl border border-ink-line bg-ink-raise p-4 text-center space-y-3">
-                  <p className="text-sm text-paper-2 leading-relaxed">
+                <div className={gold || aurora ? "mt-4 rounded-2xl border border-on-background bg-surface-container p-4 text-center space-y-3" : "mt-4 rounded-2xl border border-ink-line bg-ink-raise p-4 text-center space-y-3"}>
+                  <p className={gold || aurora ? "text-sm text-on-surface-variant leading-relaxed" : "text-sm text-paper-2 leading-relaxed"}>
                     Таны {result.level} түвшний бүрэн хичээлийн төлөвлөгөө{' '}
-                    <span className="text-paper font-medium">Pro</span>-д нээлттэй. Үнэгүй эрхээр
+                    <span className={gold || aurora ? "text-on-surface font-medium" : "text-paper font-medium"}>Pro</span>-д нээлттэй. Үнэгүй эрхээр
                     A1 түвшний хичээл болон үгийн сангаар эхэлж болно.
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2.5 justify-center">
                     <button
                       onClick={() => (onUpgrade ? onUpgrade() : onFinish(result))}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 text-sm font-bold hover:bg-paper-bright"
+                      className={gold || aurora ? "inline-flex items-center justify-center gap-2 rounded-full bg-secondary text-white px-6 py-2.5 text-sm font-bold hover:bg-secondary/90" : "inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 text-sm font-bold hover:bg-paper-bright"}
                     >
                       <Crown className="w-4 h-4" /> Pro-оор бүгдийг нээх
                     </button>
                     <button
                       onClick={() => goLesson('read')}
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-ink-line text-paper-2 hover:text-paper hover:border-paper/60 px-6 py-2.5 text-sm font-medium"
+                      className={gold || aurora ? "inline-flex items-center justify-center gap-2 rounded-full border border-on-background text-on-surface-variant hover:text-on-surface hover:border-paper/60 px-6 py-2.5 text-sm font-medium" : "inline-flex items-center justify-center gap-2 rounded-full border border-ink-line text-paper-2 hover:text-paper hover:border-paper/60 px-6 py-2.5 text-sm font-medium"}
                     >
                       Үнэгүй хувилбараар эхлэх
                     </button>
@@ -302,7 +310,7 @@ export default function EnglishPlacementTest({
 
           <button
             onClick={() => onFinish(result)}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-8 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-paper-bright mt-8"
+            className={gold || aurora ? "inline-flex items-center justify-center gap-2 rounded-full bg-secondary text-white px-8 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-secondary/90 mt-8" : "inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-8 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-paper-bright mt-8"}
           >
             Сургалт руу орох <ArrowRight className="w-4 h-4" />
           </button>
@@ -318,7 +326,7 @@ export default function EnglishPlacementTest({
       <Shell onSkip={skip}>
         <div className="max-w-2xl mx-auto">
           {/* Progress + timer */}
-          <div className="flex items-center justify-between text-xs text-paper-2 mb-3">
+          <div className={gold || aurora ? "flex items-center justify-between text-xs text-on-surface-variant mb-3" : "flex items-center justify-between text-xs text-paper-2 mb-3"}>
             <span className="flex items-center gap-1.5 uppercase tracking-[0.15em] font-medium">
               {SKILL_META[question.skill].icon} {SKILL_META[question.skill].label}
             </span>
@@ -327,14 +335,14 @@ export default function EnglishPlacementTest({
               <span>{answeredCount + 1} / {EN_PLACEMENT_TOTAL}</span>
             </span>
           </div>
-          <div className="w-full h-1.5 bg-ink-2 rounded-full overflow-hidden mb-6">
-            <div className="h-full bg-paper rounded-full transition-all" style={{ width: `${progress}%` }} />
+          <div className={gold || aurora ? "w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden mb-6" : "w-full h-1.5 bg-ink-2 rounded-full overflow-hidden mb-6"}>
+            <div className={gold || aurora ? "h-full bg-secondary rounded-full transition-all" : "h-full bg-paper rounded-full transition-all"} style={{ width: `${progress}%` }} />
           </div>
 
           {/* Reading passage, or the listening player for listening */}
           {question.skill === 'read' && question.passage && (
-            <div className="rounded-2xl bg-ink-raise border border-ink-line p-5 mb-5 max-h-64 overflow-y-auto">
-              <p className="text-paper-2 text-sm leading-relaxed whitespace-pre-line">{question.passage}</p>
+            <div className={gold || aurora ? "rounded-2xl bg-surface-container border border-on-background p-5 mb-5 max-h-64 overflow-y-auto" : "rounded-2xl bg-ink-raise border border-ink-line p-5 mb-5 max-h-64 overflow-y-auto"}>
+              <p className={gold || aurora ? "text-on-surface-variant text-sm leading-relaxed whitespace-pre-line" : "text-paper-2 text-sm leading-relaxed whitespace-pre-line"}>{question.passage}</p>
             </div>
           )}
           {question.skill === 'listen' && question.transcript && (
@@ -342,34 +350,38 @@ export default function EnglishPlacementTest({
               {ttsState === 'playing' ? (
                 <button
                   onClick={pauseTts}
-                  className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-medium hover:bg-paper-bright"
+                  className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-5 py-2.5 text-sm font-medium hover:bg-secondary/90" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-medium hover:bg-paper-bright"}
                 >
                   <Pause className="w-4 h-4" /> Түр зогсоох
                 </button>
               ) : (
                 <button
                   onClick={() => (ttsState === 'paused' ? resumeTts() : playListen(question.transcript!))}
-                  className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-medium hover:bg-paper-bright"
+                  className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-5 py-2.5 text-sm font-medium hover:bg-secondary/90" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2.5 text-sm font-medium hover:bg-paper-bright"}
                 >
                   <Play className="w-4 h-4" /> {ttsState === 'paused' ? 'Үргэлжлүүлэх' : 'Сонсох'}
                 </button>
               )}
               <button
                 onClick={() => playListen(question.transcript!)}
-                className="inline-flex items-center gap-2 rounded-full bg-ink-2 border border-ink-line text-paper px-5 py-2.5 text-sm font-medium hover:bg-ink-raise"
+                className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-surface-container-high border border-on-background text-on-surface px-5 py-2.5 text-sm font-medium hover:bg-surface-container" : "inline-flex items-center gap-2 rounded-full bg-ink-2 border border-ink-line text-paper px-5 py-2.5 text-sm font-medium hover:bg-ink-raise"}
               >
                 <RotateCcw className="w-4 h-4" /> Эхнээс
               </button>
             </div>
           )}
 
-          <h2 className="text-lg font-medium text-paper mb-4">{question.question}</h2>
+          <h2 className={gold || aurora ? "text-lg font-medium text-on-surface mb-4" : "text-lg font-medium text-paper mb-4"}>{question.question}</h2>
           <div className="space-y-2.5">
             {question.choices.map((choice, i) => (
               <button
                 key={i}
                 onClick={() => setSelected(i)}
-                className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-colors ${
+                className={gold || aurora ? `w-full text-left px-4 py-3 rounded-xl border text-sm transition-colors ${
+                  selected === i
+                    ? 'bg-secondary text-white border-secondary font-medium'
+                    : 'bg-surface-container border-on-background text-on-surface hover:border-paper/50'
+                }` : `w-full text-left px-4 py-3 rounded-xl border text-sm transition-colors ${
                   selected === i
                     ? 'bg-paper text-ink border-paper font-medium'
                     : 'bg-ink-raise border-ink-line text-paper hover:border-paper/50'
@@ -383,7 +395,7 @@ export default function EnglishPlacementTest({
           <button
             onClick={submitAnswer}
             disabled={selected === null}
-            className="w-full mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-paper-bright disabled:opacity-40 disabled:cursor-not-allowed"
+            className={gold || aurora ? "w-full mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-secondary text-white px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-secondary/90 disabled:opacity-40 disabled:cursor-not-allowed" : "w-full mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-7 py-3 font-medium uppercase tracking-[0.15em] text-sm hover:bg-paper-bright disabled:opacity-40 disabled:cursor-not-allowed"}
           >
             {answeredCount + 1 >= EN_PLACEMENT_TOTAL ? 'Дуусгах' : 'Дараагийнх'} <ArrowRight className="w-4 h-4" />
           </button>
@@ -397,14 +409,17 @@ export default function EnglishPlacementTest({
 
 // Full-screen monochrome shell consistent with the rest of the English track.
 function Shell({ children, onSkip }: { children: React.ReactNode; onSkip?: () => void }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   return (
-    <div className="fixed inset-0 z-[150] bg-ink text-paper font-sans overflow-y-auto">
+    <div className={gold || aurora ? "fixed inset-0 z-[150] bg-surface text-on-surface font-sans overflow-y-auto" : "fixed inset-0 z-[150] bg-ink text-paper font-sans overflow-y-auto"}>
       <div className="min-h-full flex flex-col">
         {onSkip && (
           <div className="flex justify-end p-4">
             <button
               onClick={onSkip}
-              className="inline-flex items-center gap-1.5 text-xs text-paper-3 hover:text-paper uppercase tracking-[0.15em]"
+              className={gold || aurora ? "inline-flex items-center gap-1.5 text-xs text-outline hover:text-on-surface uppercase tracking-[0.15em]" : "inline-flex items-center gap-1.5 text-xs text-paper-3 hover:text-paper uppercase tracking-[0.15em]"}
             >
               Алгасах <X className="w-4 h-4" />
             </button>

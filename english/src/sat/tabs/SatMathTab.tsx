@@ -9,6 +9,7 @@
 // =============================================================================
 import React, { useMemo, useState } from 'react';
 import { Sigma } from 'lucide-react';
+import { useTheme } from '../../../../frontend/src/lib/theme';
 import { SAT_TESTS } from '../satTests';
 import { SatQuestion, SatDomain } from '../../types';
 import {
@@ -196,6 +197,9 @@ const MATH_DRILLS: SatQuestion[] = [
 const DIFFICULTIES: Array<'Easy' | 'Medium' | 'Hard'> = ['Easy', 'Medium', 'Hard'];
 
 export default function SatMathTab({ allContent, onUpgrade }: { allContent: boolean; onUpgrade: () => void }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const [domain, setDomain] = useState<SatDomain | 'all'>('all');
   const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard' | 'all'>('all');
   const [showCompleted, setShowCompleted] = useState(false);
@@ -254,10 +258,10 @@ export default function SatMathTab({ allContent, onUpgrade }: { allContent: bool
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
-          <Sigma className="w-6 h-6 text-paper" /> Math
+        <h2 className={gold || aurora ? "text-2xl font-space font-light tracking-tight text-on-surface flex items-center gap-2" : "text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2"}>
+          <Sigma className={gold || aurora ? "w-6 h-6 text-on-surface" : "w-6 h-6 text-paper"} /> Math
         </h2>
-        <p className="text-paper-2 mt-1">
+        <p className={gold || aurora ? "text-on-surface-variant mt-1" : "text-paper-2 mt-1"}>
           Дөрвөн домэйнаар ангилсан {all.length} дасгал — сонголттой болон нөхөх
           (grid-in) бодлогууд, бодолтын тайлбартай.
         </p>
@@ -268,7 +272,7 @@ export default function SatMathTab({ allContent, onUpgrade }: { allContent: bool
       <CompletedToggle show={showCompleted} onChange={setShowCompleted} />
 
       {groups.length === 0 ? (
-        <p className="text-paper-2">
+        <p className={gold || aurora ? "text-on-surface-variant" : "text-paper-2"}>
           {visible.length > 0 && !showCompleted
             ? 'Бүгдийг зөв хийсэн — Хийсэн харуулах дээр дарж дахин үзнэ үү.'
             : 'Энэ домэйнд бодлого алга байна.'}

@@ -11,6 +11,7 @@ import { CheckCircle2, XCircle, RotateCcw, Lock, ChevronDown } from 'lucide-reac
 import { SatQuestion } from '../../types';
 import { useEnglishStats } from '../../stats';
 import { enSatKey } from '../../englishLearning';
+import { useTheme } from '../../../../frontend/src/lib/theme';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
@@ -33,18 +34,21 @@ export function gateFreePractice<Q extends { domain: string }>(
 // taste; the rest is replaced by this Pro upsell panel. Keeps the placement
 // result screen's "locked for free" claim truthful on the SAT track too.
 export function FreePracticeLock({ hiddenCount, onUpgrade }: { hiddenCount: number; onUpgrade: () => void }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   return (
-    <div className="rounded-2xl border border-ink-line bg-ink-raise p-6 text-center space-y-3">
-      <span className="inline-flex w-12 h-12 rounded-xl bg-ink-2 border border-ink-line items-center justify-center text-paper-2">
+    <div className={gold || aurora ? "rounded-2xl border border-on-background bg-surface-container p-6 text-center space-y-3" : "rounded-2xl border border-ink-line bg-ink-raise p-6 text-center space-y-3"}>
+      <span className={gold || aurora ? "inline-flex w-12 h-12 rounded-xl bg-surface-container-high border border-on-background items-center justify-center text-on-surface-variant" : "inline-flex w-12 h-12 rounded-xl bg-ink-2 border border-ink-line items-center justify-center text-paper-2"}>
         <Lock className="w-6 h-6" />
       </span>
-      <h3 className="text-lg font-serif font-light text-paper">Үлдсэн {hiddenCount} дасгал Pro-д</h3>
-      <p className="text-sm text-paper-2 leading-relaxed max-w-sm mx-auto">
+      <h3 className={gold || aurora ? "text-lg font-space font-light text-on-surface" : "text-lg font-serif font-light text-paper"}>Үлдсэн {hiddenCount} дасгал Pro-д</h3>
+      <p className={gold || aurora ? "text-sm text-on-surface-variant leading-relaxed max-w-sm mx-auto" : "text-sm text-paper-2 leading-relaxed max-w-sm mx-auto"}>
         Үнэгүй эрхээр эхний хэсгийг туршиж үзээрэй. Бүх домэйны бүрэн дасгалыг Pro болон Max багцаар нээнэ.
       </p>
       <button
         onClick={onUpgrade}
-        className="inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 text-sm font-bold hover:bg-paper-bright"
+        className={gold || aurora ? "inline-flex items-center justify-center gap-2 rounded-full bg-secondary text-white px-6 py-2.5 text-sm font-bold hover:bg-secondary/90" : "inline-flex items-center justify-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 text-sm font-bold hover:bg-paper-bright"}
       >
         <Lock className="w-4 h-4" /> Pro-оор нээх
       </button>
@@ -84,13 +88,18 @@ export function sortMistakesFirst<Q extends { id: number }>(
 // already answered correctly (hidden by default so a tab reads as "what's
 // left to do").
 export function CompletedToggle({ show, onChange }: { show: boolean; onChange: (v: boolean) => void }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   return (
     <button
       type="button"
       onClick={() => onChange(!show)}
       className={[
         'rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
-        show ? 'bg-paper text-ink' : 'bg-ink-2 text-paper-2 hover:text-paper',
+        gold || aurora
+          ? (show ? 'bg-secondary text-white' : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface')
+          : (show ? 'bg-paper text-ink' : 'bg-ink-2 text-paper-2 hover:text-paper'),
       ].join(' ')}
     >
       Хийсэн харуулах
@@ -123,6 +132,9 @@ export function gridInCorrect(q: SatQuestion, value: string): boolean {
 // A single self-grading SAT question (passage + MCQ or grid-in) with a worked
 // explanation shown after answering.
 export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q, index }) => {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const { recordStudy, recordPracticeDone, requireAccount, profile } = useEnglishStats();
   const gridIn = isGridIn(q);
   // Persisted "answered before" state — survives reloads and future sessions.
@@ -144,42 +156,42 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
   }
 
   return (
-    <div className="rounded-2xl bg-ink-raise p-4 sm:p-5">
+    <div className={gold || aurora ? "rounded-2xl bg-surface-container p-4 sm:p-5" : "rounded-2xl bg-ink-raise p-4 sm:p-5"}>
       <div className="flex items-center justify-between mb-3">
-        <span className="flex items-center gap-2 text-paper-2 font-semibold text-sm">
+        <span className={gold || aurora ? "flex items-center gap-2 text-on-surface-variant font-semibold text-sm" : "flex items-center gap-2 text-paper-2 font-semibold text-sm"}>
           {index + 1}.
           {!submitted && mistakeBefore && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-ink-2 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+            <span className={gold || aurora ? "inline-flex items-center gap-1 rounded-full bg-surface-container-high text-on-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider" : "inline-flex items-center gap-1 rounded-full bg-ink-2 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"}>
               <XCircle className="w-3 h-3" /> Буруу — дахин хийх
             </span>
           )}
           {doneBefore && !mistakeBefore && !submitted && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-ink-2 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+            <span className={gold || aurora ? "inline-flex items-center gap-1 rounded-full bg-surface-container-high text-on-surface px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider" : "inline-flex items-center gap-1 rounded-full bg-ink-2 text-paper px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"}>
               <CheckCircle2 className="w-3 h-3" /> Хийсэн
             </span>
           )}
         </span>
         <span className="flex items-center gap-2">
           {q.difficulty && (
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-ink-2 text-paper-2">
+            <span className={gold || aurora ? "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant" : "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-ink-2 text-paper-2"}>
               {q.difficulty}
             </span>
           )}
-          <span className="text-xs font-medium text-paper-2">{q.domain}</span>
+          <span className={gold || aurora ? "text-xs font-medium text-on-surface-variant" : "text-xs font-medium text-paper-2"}>{q.domain}</span>
         </span>
       </div>
 
       {q.passage && (
-        <div className="rounded-xl bg-ink-raise p-4 mb-4 leading-relaxed whitespace-pre-line text-paper">
+        <div className={gold || aurora ? "rounded-xl bg-surface-container p-4 mb-4 leading-relaxed whitespace-pre-line text-on-surface" : "rounded-xl bg-ink-raise p-4 mb-4 leading-relaxed whitespace-pre-line text-paper"}>
           {q.passage}
         </div>
       )}
 
-      <p className="font-semibold text-paper mb-4 whitespace-pre-line">{q.question}</p>
+      <p className={gold || aurora ? "font-semibold text-on-surface mb-4 whitespace-pre-line" : "font-semibold text-paper mb-4 whitespace-pre-line"}>{q.question}</p>
 
       {gridIn ? (
         <div>
-          <label className="block text-sm text-paper-2 mb-2">
+          <label className={gold || aurora ? "block text-sm text-on-surface-variant mb-2" : "block text-sm text-paper-2 mb-2"}>
             Enter your answer
           </label>
           <input
@@ -189,19 +201,30 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
             disabled={submitted}
             onChange={(e) => setGrid(e.target.value)}
             placeholder="e.g. 12 or 3/4 or 0.5"
-            className={[
-              'w-full sm:w-64 rounded-xl border bg-ink-raise px-4 py-3 text-paper outline-none transition-colors',
-              submitted
-                ? wasCorrect
-                  ? 'border-paper bg-paper text-ink'
-                  : 'border-ink-line bg-ink-2 text-paper-2'
-                : 'border-ink-line focus:border-paper',
-            ].join(' ')}
+            className={
+              gold || aurora
+                ? [
+                    'w-full sm:w-64 rounded-xl border bg-surface-container px-4 py-3 text-on-surface outline-none transition-colors',
+                    submitted
+                      ? wasCorrect
+                        ? 'border-secondary bg-secondary text-white'
+                        : 'border-on-background bg-surface-container-high text-on-surface-variant'
+                      : 'border-on-background focus:border-secondary',
+                  ].join(' ')
+                : [
+                    'w-full sm:w-64 rounded-xl border bg-ink-raise px-4 py-3 text-paper outline-none transition-colors',
+                    submitted
+                      ? wasCorrect
+                        ? 'border-paper bg-paper text-ink'
+                        : 'border-ink-line bg-ink-2 text-paper-2'
+                      : 'border-ink-line focus:border-paper',
+                  ].join(' ')
+            }
           />
           {submitted && (
-            <p className="mt-2 text-sm font-medium text-paper-2">
+            <p className={gold || aurora ? "mt-2 text-sm font-medium text-on-surface-variant" : "mt-2 text-sm font-medium text-paper-2"}>
               {wasCorrect ? (
-                <span className="inline-flex items-center gap-1.5 text-paper">
+                <span className={gold || aurora ? "inline-flex items-center gap-1.5 text-on-surface" : "inline-flex items-center gap-1.5 text-paper"}>
                   <CheckCircle2 className="w-4 h-4" /> Correct
                 </span>
               ) : (
@@ -219,13 +242,21 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
             const isAnswer = ci === q.correctIndex;
             const cls = [
               'flex items-start gap-3 rounded-xl border px-4 py-2.5 text-left transition-colors',
-              submitted && isAnswer
-                ? 'border-paper bg-paper text-ink'
-                : submitted && isPicked
-                  ? 'border-ink-line bg-ink-2 text-paper-2'
-                  : isPicked
-                    ? 'border-paper bg-ink-2 text-paper'
-                    : 'border-ink-line text-paper hover:border-paper/60',
+              gold || aurora
+                ? (submitted && isAnswer
+                    ? 'border-secondary bg-secondary text-white'
+                    : submitted && isPicked
+                      ? 'border-on-background bg-surface-container-high text-on-surface-variant'
+                      : isPicked
+                        ? 'border-secondary bg-surface-container-high text-on-surface'
+                        : 'border-on-background text-on-surface hover:border-secondary/60')
+                : (submitted && isAnswer
+                    ? 'border-paper bg-paper text-ink'
+                    : submitted && isPicked
+                      ? 'border-ink-line bg-ink-2 text-paper-2'
+                      : isPicked
+                        ? 'border-paper bg-ink-2 text-paper'
+                        : 'border-ink-line text-paper hover:border-paper/60'),
             ].join(' ');
             return (
               <button
@@ -256,7 +287,7 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
               recordStudy();
               recordPracticeDone(enSatKey(q.id), wasCorrect); // correct→done+clears mistake, wrong→flagged for retry
             }}
-            className="inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2 text-sm font-semibold disabled:opacity-40"
+            className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-5 py-2 text-sm font-semibold disabled:opacity-40" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-5 py-2 text-sm font-semibold disabled:opacity-40"}
           >
             <CheckCircle2 className="w-4 h-4" /> Check answer
           </button>
@@ -264,7 +295,7 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
           <button
             type="button"
             onClick={reset}
-            className="inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2 text-sm font-semibold hover:bg-ink-raise"
+            className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-surface-container-high text-on-surface px-5 py-2 text-sm font-semibold hover:bg-surface-container" : "inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2 text-sm font-semibold hover:bg-ink-raise"}
           >
             <RotateCcw className="w-4 h-4" /> Try again
           </button>
@@ -272,11 +303,11 @@ export const SatPracticeCard: React.FC<{ q: SatQuestion; index: number }> = ({ q
       </div>
 
       {submitted && q.explanation && (
-        <div className="mt-3 rounded-xl bg-ink-raise p-4">
-          <p className="text-xs font-bold text-paper uppercase tracking-wide mb-1">
+        <div className={gold || aurora ? "mt-3 rounded-xl bg-surface-container p-4" : "mt-3 rounded-xl bg-ink-raise p-4"}>
+          <p className={gold || aurora ? "text-xs font-bold text-on-surface uppercase tracking-wide mb-1" : "text-xs font-bold text-paper uppercase tracking-wide mb-1"}>
             Тайлбар · Explanation
           </p>
-          <p className="text-sm text-paper-2 leading-relaxed whitespace-pre-line">
+          <p className={gold || aurora ? "text-sm text-on-surface-variant leading-relaxed whitespace-pre-line" : "text-sm text-paper-2 leading-relaxed whitespace-pre-line"}>
             {q.explanation}
           </p>
         </div>
@@ -295,6 +326,9 @@ export function DomainFilter<T extends string>({
   active: T | 'all';
   onChange: (d: T | 'all') => void;
 }) {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   const options: (T | 'all')[] = ['all', ...domains];
   return (
     <div className="flex flex-wrap gap-2">
@@ -307,9 +341,9 @@ export function DomainFilter<T extends string>({
             onClick={() => onChange(opt)}
             className={[
               'rounded-full px-4 py-1.5 text-sm font-semibold transition-colors',
-              on
-                ? 'bg-paper text-ink'
-                : 'bg-ink-2 text-paper-2 hover:text-paper',
+              gold || aurora
+                ? (on ? 'bg-secondary text-white' : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface')
+                : (on ? 'bg-paper text-ink' : 'bg-ink-2 text-paper-2 hover:text-paper'),
             ].join(' ')}
           >
             {opt === 'all' ? 'Бүгд' : opt}
@@ -337,18 +371,21 @@ export const DomainSection: React.FC<{
   open: boolean;
   children: React.ReactNode;
 }> = ({ domain, count, breakdown, open, children }) => {
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
   return (
     <details open={open} className="group">
-      <summary className="list-none [&::-webkit-details-marker]:hidden flex items-center gap-2 cursor-pointer text-lg font-bold text-paper">
-        <span className="h-5 w-1.5 rounded-full bg-paper" />
+      <summary className={gold || aurora ? "list-none [&::-webkit-details-marker]:hidden flex items-center gap-2 cursor-pointer text-lg font-bold text-on-surface" : "list-none [&::-webkit-details-marker]:hidden flex items-center gap-2 cursor-pointer text-lg font-bold text-paper"}>
+        <span className={gold || aurora ? "h-5 w-1.5 rounded-full bg-secondary" : "h-5 w-1.5 rounded-full bg-paper"} />
         {domain}
-        <span className="text-sm font-normal text-paper-2">· {count}</span>
+        <span className={gold || aurora ? "text-sm font-normal text-on-surface-variant" : "text-sm font-normal text-paper-2"}>· {count}</span>
         {breakdown && (
-          <span className="text-xs font-normal text-paper-2/70">
+          <span className={gold || aurora ? "text-xs font-normal text-on-surface-variant/70" : "text-xs font-normal text-paper-2/70"}>
             E {breakdown.Easy} · M {breakdown.Medium} · H {breakdown.Hard}
           </span>
         )}
-        <ChevronDown className="w-4 h-4 ml-auto shrink-0 text-paper-2 transition-transform group-open:rotate-180" />
+        <ChevronDown className={gold || aurora ? "w-4 h-4 ml-auto shrink-0 text-on-surface-variant transition-transform group-open:rotate-180" : "w-4 h-4 ml-auto shrink-0 text-paper-2 transition-transform group-open:rotate-180"} />
       </summary>
       <div className="space-y-4 mt-4">{children}</div>
     </details>

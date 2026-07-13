@@ -11,6 +11,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Check, Loader2, Sparkles, ExternalLink, RefreshCw } from 'lucide-react';
 import { PLANS, type EffectivePlan, type PlanId } from '../../frontend/src/plans';
 import { getIdToken } from './access';
+import { useTheme } from '../../frontend/src/lib/theme';
 
 type Interval = 'month' | 'year';
 
@@ -29,6 +30,9 @@ export default function EnglishUpgrade({
   const [bylReady, setBylReady] = useState(false);
   const [busy, setBusy] = useState<PlanId | null>(null);
   const [msg, setMsg] = useState<{ type: 'info' | 'error' | 'success'; text: string } | null>(null);
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
 
   // Probe which payment provider is live whenever the modal opens.
   useEffect(() => {
@@ -102,12 +106,12 @@ export default function EnglishUpgrade({
       aria-modal="true"
     >
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-ink-raise p-6 sm:p-8 shadow-2xl"
+        className={gold || aurora ? "relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-surface-container p-6 sm:p-8 shadow-2xl" : "relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-ink-raise p-6 sm:p-8 shadow-2xl"}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full bg-ink-2 p-2 text-paper-2 hover:text-paper"
+          className={gold || aurora ? "absolute right-4 top-4 rounded-full bg-surface-container-high p-2 text-on-surface-variant hover:text-on-surface" : "absolute right-4 top-4 rounded-full bg-ink-2 p-2 text-paper-2 hover:text-paper"}
           aria-label="Хаах"
         >
           <X className="h-5 w-5" />
@@ -115,19 +119,21 @@ export default function EnglishUpgrade({
 
         <div className="flex items-center gap-2">
           <Sparkles className="h-6 w-6 text-primary" />
-          <h2 className="text-2xl font-serif font-light tracking-tight text-paper">Бүх эрхийг нээ</h2>
+          <h2 className={gold || aurora ? "text-2xl font-space font-light tracking-tight text-on-surface" : "text-2xl font-serif font-light tracking-tight text-paper"}>Бүх эрхийг нээ</h2>
         </div>
-        <p className="mt-1 text-paper-2">
+        <p className={gold || aurora ? "mt-1 text-on-surface-variant" : "mt-1 text-paper-2"}>
           Нэг захиалга — Англи (IELTS/SAT) ба Герман хоёуланд. Бүх дасгал шалгалт, бүх үгийн сан, Max дээр хязгааргүй AI.
         </p>
 
         {/* Month / year toggle */}
-        <div className="mt-5 inline-flex rounded-full border border-ink-line bg-ink p-1">
+        <div className={gold || aurora ? "mt-5 inline-flex rounded-full border border-on-background bg-surface p-1" : "mt-5 inline-flex rounded-full border border-ink-line bg-ink p-1"}>
           {(['month', 'year'] as Interval[]).map((iv) => (
             <button
               key={iv}
               onClick={() => setIntervalState(iv)}
-              className={`rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
+              className={gold || aurora ? `rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
+                interval === iv ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'
+              }` : `rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
                 interval === iv ? 'bg-primary text-on-primary' : 'text-paper-2 hover:text-paper'
               }`}
             >
@@ -142,22 +148,22 @@ export default function EnglishUpgrade({
             const price = interval === 'year' ? plan.defaultYearAmountMnt : plan.defaultAmountMnt;
             const isCurrent = currentPlan === id || (id === 'pro' && alreadyMax);
             return (
-              <div key={id} className="flex flex-col rounded-2xl border border-ink-line bg-ink p-5">
+              <div key={id} className={gold || aurora ? "flex flex-col rounded-2xl border border-on-background bg-surface p-5" : "flex flex-col rounded-2xl border border-ink-line bg-ink p-5"}>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-paper">{plan.nameMn}</h3>
+                  <h3 className={gold || aurora ? "text-lg font-bold text-on-surface" : "text-lg font-bold text-paper"}>{plan.nameMn}</h3>
                   {id === 'max' && (
                     <span className="rounded-full bg-primary-container px-2.5 py-0.5 text-[10px] font-bold uppercase text-on-primary-container">
                       Хязгааргүй AI
                     </span>
                   )}
                 </div>
-                <p className="mt-1 text-2xl font-serif font-light text-paper">
+                <p className={gold || aurora ? "mt-1 text-2xl font-space font-light text-on-surface" : "mt-1 text-2xl font-serif font-light text-paper"}>
                   {fmtMnt(price)}
-                  <span className="text-sm text-paper-2">/{interval === 'year' ? 'жил' : 'сар'}</span>
+                  <span className={gold || aurora ? "text-sm text-on-surface-variant" : "text-sm text-paper-2"}>/{interval === 'year' ? 'жил' : 'сар'}</span>
                 </p>
                 <ul className="mt-3 flex-1 space-y-1.5">
                   {plan.featuresMn.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-paper-2">
+                    <li key={f} className={gold || aurora ? "flex items-start gap-2 text-sm text-on-surface-variant" : "flex items-start gap-2 text-sm text-paper-2"}>
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {f}
                     </li>
                   ))}
@@ -177,7 +183,13 @@ export default function EnglishUpgrade({
 
         {msg && (
           <div
-            className={`mt-5 rounded-xl p-3 text-sm ${
+            className={gold || aurora ? `mt-5 rounded-xl p-3 text-sm ${
+              msg.type === 'error'
+                ? 'bg-surface-container-high text-on-surface'
+                : msg.type === 'success'
+                  ? 'bg-secondary-container text-on-secondary-container'
+                  : 'bg-surface-container-high text-on-surface-variant'
+            }` : `mt-5 rounded-xl p-3 text-sm ${
               msg.type === 'error'
                 ? 'bg-ink-2 text-paper'
                 : msg.type === 'success'
@@ -200,7 +212,7 @@ export default function EnglishUpgrade({
         )}
 
         {!bylReady && (
-          <p className="mt-4 flex items-center gap-1.5 text-xs text-paper-3">
+          <p className={gold || aurora ? "mt-4 flex items-center gap-1.5 text-xs text-outline" : "mt-4 flex items-center gap-1.5 text-xs text-paper-3"}>
             <ExternalLink className="h-3.5 w-3.5" /> Туршилтын горим: бэкенд төлбөрийн систем идэвхжээгүй үед симуляци ажиллана.
           </p>
         )}

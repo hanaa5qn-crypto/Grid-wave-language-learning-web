@@ -11,6 +11,7 @@ import IeltsTestRunner from '../IeltsTestRunner';
 import { IeltsTest } from '../../types';
 import { FREE_TESTS } from '../../access';
 import { useEnglishStats } from '../../stats';
+import { useTheme } from '../../../../frontend/src/lib/theme';
 
 // Format a saved attempt's date compactly for the card footer.
 function fmtDate(iso: string): string {
@@ -27,6 +28,9 @@ export default function IeltsTestsTab({
 }) {
   const { requireAccount, profile } = useEnglishStats();
   const [selected, setSelected] = useState<IeltsTest | null>(null);
+  const uiTheme = useTheme();
+  const gold = uiTheme === 'gold';
+  const aurora = uiTheme === 'aurora';
 
   // testHistoryEn is newest-first; the first entry for a test id is its last
   // attempt. IELTS logs per-paper ids ("<test.id>:reading" / ":listening").
@@ -41,10 +45,10 @@ export default function IeltsTestsTab({
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2">
-          <ClipboardList className="w-6 h-6 text-paper" /> Practice Tests
+        <h2 className={gold || aurora ? "text-2xl font-space font-light tracking-tight text-on-surface flex items-center gap-2" : "text-2xl font-serif font-light tracking-tight text-paper flex items-center gap-2"}>
+          <ClipboardList className={gold || aurora ? "w-6 h-6 text-on-surface" : "w-6 h-6 text-paper"} /> Practice Tests
         </h2>
-        <p className="text-paper-2 mt-1">
+        <p className={gold || aurora ? "text-on-surface-variant mt-1" : "text-paper-2 mt-1"}>
           Бүрэн дөрвөн ур чадварын дасгал шалгалт — Reading, Listening, Writing, Speaking.
         </p>
       </div>
@@ -61,21 +65,21 @@ export default function IeltsTestsTab({
                 if (!requireAccount()) return; // guests browse the catalogue; taking a test needs an account
                 setSelected(t);
               }}
-              className={`group text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors ${locked ? 'opacity-80' : ''}`}
+              className={gold || aurora ? `group text-left rounded-2xl bg-surface-container hover:bg-surface-container-high p-5 transition-colors ${locked ? 'opacity-80' : ''}` : `group text-left rounded-2xl bg-ink-raise hover:bg-ink-2 p-5 transition-colors ${locked ? 'opacity-80' : ''}`}
             >
               <div className="flex items-center gap-2 mb-2">
                 <span className="rounded-full bg-primary-container text-on-primary-container px-2.5 py-0.5 text-xs font-bold">
                   {t.module}
                 </span>
-                <span className="text-xs text-paper-2">{t.source}</span>
+                <span className={gold || aurora ? "text-xs text-on-surface-variant" : "text-xs text-paper-2"}>{t.source}</span>
                 {locked && (
-                  <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-ink-2 px-2.5 py-0.5 text-xs font-bold text-paper-2">
+                  <span className={gold || aurora ? "ml-auto inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-0.5 text-xs font-bold text-on-surface-variant" : "ml-auto inline-flex items-center gap-1 rounded-full bg-ink-2 px-2.5 py-0.5 text-xs font-bold text-paper-2"}>
                     <Lock className="w-3 h-3" /> Pro
                   </span>
                 )}
               </div>
-              <h3 className="text-lg font-bold text-paper">{t.title}</h3>
-              <div className="flex flex-wrap gap-3 mt-3 text-sm text-paper-2">
+              <h3 className={gold || aurora ? "text-lg font-bold text-on-surface" : "text-lg font-bold text-paper"}>{t.title}</h3>
+              <div className={gold || aurora ? "flex flex-wrap gap-3 mt-3 text-sm text-on-surface-variant" : "flex flex-wrap gap-3 mt-3 text-sm text-paper-2"}>
                 <span className="inline-flex items-center gap-1.5">
                   <BookOpen className="w-4 h-4" /> {t.reading.length} passages
                 </span>
@@ -90,7 +94,7 @@ export default function IeltsTestsTab({
                 </span>
               </div>
               {attempt && (
-                <span className="mt-3 flex items-center gap-1.5 text-xs text-paper-2">
+                <span className={gold || aurora ? "mt-3 flex items-center gap-1.5 text-xs text-on-surface-variant" : "mt-3 flex items-center gap-1.5 text-xs text-paper-2"}>
                   <History className="w-3.5 h-3.5" />
                   Сүүлийн оролдлого:{attempt.label && ` ${attempt.label} —`} {attempt.correct}/{attempt.total}
                   {attempt.band !== undefined && ` · Band ${attempt.band.toFixed(1)}`}

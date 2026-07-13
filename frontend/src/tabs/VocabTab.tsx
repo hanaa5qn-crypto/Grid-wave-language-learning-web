@@ -9,6 +9,7 @@ import {
   reviewSrs, srsWordKey, orderTrainerWords, compareWordsByLevel,
 } from '../learning';
 import { localDateKey, activityKey } from '../utils/profileMetrics';
+import { useTheme } from '../lib/theme';
 
 // How many cards a "Дахин давтах" (don't know) word waits before reappearing
 // in the same session.
@@ -50,6 +51,10 @@ export function VocabTab({
   applyMetricProfile,
   speakGerman,
 }: VocabTabProps) {
+  const themeName = useTheme();
+  const gold = themeName === 'gold';
+  const aurora = themeName === 'aurora';
+
   // Trainer CEFR filter. Defaults to the learner's placement-test level (when
   // the result is unlocked); they can switch freely after.
   const initialLevel: CEFRLevel | 'all' = placementSuggestedLevel ?? 'all';
@@ -179,10 +184,12 @@ export function VocabTab({
           <div className="mt-4 animate-fade-in">
 
             {/* Sub-view toggle: flashcard Trainer vs in-app Dictionary */}
-            <div className="flex w-full sm:w-auto sm:inline-flex p-1.5 bg-ink-raise border-2 border-ink-line rounded-2xl block-shadow mb-6">
+            <div className={gold || aurora ? "flex w-full sm:w-auto sm:inline-flex p-1.5 bg-surface-container border-2 border-on-background rounded-2xl block-shadow mb-6" : "flex w-full sm:w-auto sm:inline-flex p-1.5 bg-ink-raise border-2 border-ink-line rounded-2xl block-shadow mb-6"}>
               <button
                 onClick={() => setVocabView('trainer')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-serif text-sm transition-all cursor-pointer ${
+                className={gold || aurora ? `flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-space text-sm transition-all cursor-pointer ${
+                  vocabView === 'trainer' ? 'bg-secondary text-white border-2 border-on-background block-shadow-green' : 'text-on-surface-variant hover:bg-white/60'
+                }` : `flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-serif text-sm transition-all cursor-pointer ${
                   vocabView === 'trainer' ? 'bg-paper text-ink border-2 border-ink-line block-shadow-green' : 'text-paper-2 hover:bg-ink-raise'
                 }`}
               >
@@ -191,7 +198,9 @@ export function VocabTab({
               </button>
               <button
                 onClick={() => setVocabView('browse')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-serif text-sm transition-all cursor-pointer ${
+                className={gold || aurora ? `flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-space text-sm transition-all cursor-pointer ${
+                  vocabView === 'browse' ? 'bg-secondary text-white border-2 border-on-background block-shadow-green' : 'text-on-surface-variant hover:bg-white/60'
+                }` : `flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold font-serif text-sm transition-all cursor-pointer ${
                   vocabView === 'browse' ? 'bg-paper text-ink border-2 border-ink-line block-shadow-green' : 'text-paper-2 hover:bg-ink-raise'
                 }`}
               >
@@ -204,12 +213,14 @@ export function VocabTab({
             <>
             {/* Trainer level filter (A1 → C2) + placement-based suggestion */}
             <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="text-xs font-serif font-bold text-paper-3 uppercase tracking-wider mr-1">Түвшин:</span>
+              <span className={gold || aurora ? "text-xs font-space font-bold text-outline uppercase tracking-wider mr-1" : "text-xs font-serif font-bold text-paper-3 uppercase tracking-wider mr-1"}>Түвшин:</span>
               {LEVEL_OPTIONS.map((lvl) => (
                 <button
                   key={lvl}
                   onClick={() => selectTrainerLevel(lvl)}
-                  className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                  className={gold || aurora ? `px-3.5 py-1.5 border-2 border-on-background rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                    trainerLevel === lvl ? 'bg-secondary text-white' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
+                  }` : `px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
                     trainerLevel === lvl ? 'bg-paper text-ink' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
                   }`}
                 >
@@ -220,15 +231,15 @@ export function VocabTab({
                 </button>
               ))}
               {placementSuggestedLevel && (
-                <span className="text-xs font-bold text-paper-2 font-sans ml-1">
+                <span className={gold || aurora ? "text-xs font-bold text-secondary font-sans ml-1" : "text-xs font-bold text-paper-2 font-sans ml-1"}>
                   ★ Түвшин тогтоох шалгалтын дүнгээр танд {placementSuggestedLevel} түвшний үгсийг санал болгож байна
                 </span>
               )}
             </div>
 
             {vocabList.length === 0 ? (
-              <div className="rounded-2xl border-2 border-ink-line p-10 block-shadow text-center">
-                <p className="font-bold text-paper-2 font-sans">
+              <div className={gold || aurora ? "rounded-2xl border-2 border-on-background p-10 block-shadow text-center" : "rounded-2xl border-2 border-ink-line p-10 block-shadow text-center"}>
+                <p className={gold || aurora ? "font-bold text-on-surface-variant font-sans" : "font-bold text-paper-2 font-sans"}>
                   Энэ түвшинд дасгал хийх үг алга. Өөр түвшин сонгоно уу.
                 </p>
               </div>
@@ -243,19 +254,29 @@ export function VocabTab({
                   onClick={() => setVocabFlipped(prev => !prev)}
                   className="w-full max-w-2xl aspect-[4/3] sm:aspect-video perspective-1000 cursor-pointer"
                 >
-                  <div className="relative w-full h-full transform-style-3d border-2 border-ink-line rounded-2xl block-shadow">
+                  <div className={gold || aurora ? "relative w-full h-full transform-style-3d border-2 border-on-background rounded-2xl block-shadow" : "relative w-full h-full transform-style-3d border-2 border-ink-line rounded-2xl block-shadow"}>
 
                     {/* FRONT of the card (displays German word) - Backface hidden layout */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-ink-2 text-paper rounded-2xl flex flex-col items-center justify-between p-8 transition-transform duration-500 transform-style-3d ${
+                    <div className={gold || aurora ? `absolute inset-0 w-full h-full backface-hidden bg-surface-container-high text-on-surface rounded-2xl flex flex-col items-center justify-between p-8 transition-transform duration-500 transform-style-3d ${
+                      vocabFlipped ? '[transform:rotateY(-180deg)]' : '[transform:rotateY(0deg)]'
+                    }` : `absolute inset-0 w-full h-full backface-hidden bg-ink-2 text-paper rounded-2xl flex flex-col items-center justify-between p-8 transition-transform duration-500 transform-style-3d ${
                       vocabFlipped ? '[transform:rotateY(-180deg)]' : '[transform:rotateY(0deg)]'
                     }`}>
-                      <span className="text-xs font-serif font-bold text-paper-2 uppercase tracking-wider px-3 py-1 bg-ink-raise border border-ink-line rounded-full">
+                      <span className={gold || aurora ? "text-xs font-space font-bold text-on-surface-variant uppercase tracking-wider px-3 py-1 bg-surface-container border border-on-background rounded-full" : "text-xs font-serif font-bold text-paper-2 uppercase tracking-wider px-3 py-1 bg-ink-raise border border-ink-line rounded-full"}>
                         Шинэ үг
                       </span>
 
                       <div className="flex flex-col items-center gap-4">
                         {vocabList[currentVocabIndex].article && (
-                          <span className={`text-base font-black lowercase tracking-widest px-4 py-1 rounded-full border-2 border-ink-line block-shadow ${
+                          <span className={gold ? `text-base font-black lowercase tracking-widest px-4 py-1 rounded-full border-2 border-on-background block-shadow ${
+                            vocabList[currentVocabIndex].article === 'der' ? 'bg-teal-100 text-teal-700' :
+                            vocabList[currentVocabIndex].article === 'die' ? 'bg-orange-100 text-orange-700' :
+                            'bg-amber-100 text-amber-700'
+                          }` : aurora ? `text-base font-black lowercase tracking-widest px-4 py-1 rounded-full border-2 border-on-background block-shadow ${
+                            vocabList[currentVocabIndex].article === 'der' ? 'bg-blue-100 text-blue-700' :
+                            vocabList[currentVocabIndex].article === 'die' ? 'bg-rose-100 text-rose-700' :
+                            'bg-amber-100 text-amber-700'
+                          }` : `text-base font-black lowercase tracking-widest px-4 py-1 rounded-full border-2 border-ink-line block-shadow ${
                             vocabList[currentVocabIndex].article === 'der' ? 'bg-ink-raise text-paper-2' :
                             vocabList[currentVocabIndex].article === 'die' ? 'bg-ink-raise text-paper-2' :
                             'bg-ink-raise text-paper-2'
@@ -263,7 +284,7 @@ export function VocabTab({
                             {vocabList[currentVocabIndex].article}
                           </span>
                         )}
-                        <h2 className="text-4xl sm:text-5xl font-black text-paper text-center font-sans tracking-tight">
+                        <h2 className={gold || aurora ? "text-4xl sm:text-5xl font-black text-primary text-center font-sans tracking-tight" : "text-4xl sm:text-5xl font-black text-paper text-center font-sans tracking-tight"}>
                           {vocabList[currentVocabIndex].german}
                         </h2>
 
@@ -273,7 +294,7 @@ export function VocabTab({
                             const w = vocabList[currentVocabIndex];
                             speakGerman(w.article ? `${w.article} ${w.german}` : w.german);
                           }}
-                          className="p-4 rounded-full bg-ink-raise hover:bg-ink-2 border-2 border-ink-line hover:scale-110 text-paper-2 transition-all block-shadow cursor-pointer flex items-center justify-center"
+                          className={gold || aurora ? "p-4 rounded-full bg-surface-container hover:bg-surface-container-high border-2 border-on-background hover:scale-110 text-secondary transition-all block-shadow cursor-pointer flex items-center justify-center" : "p-4 rounded-full bg-ink-raise hover:bg-ink-2 border-2 border-ink-line hover:scale-110 text-paper-2 transition-all block-shadow cursor-pointer flex items-center justify-center"}
                         >
                           <Volume2 className="w-8 h-8 font-black stroke-[2.5px]" />
                         </button>
@@ -284,30 +305,32 @@ export function VocabTab({
                           e.stopPropagation();
                           setVocabFlipped(true);
                         }}
-                        className="mb-2 px-6 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
+                        className={gold || aurora ? "mb-2 px-6 py-2.5 bg-secondary text-white border-2 border-on-background rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all" : "mb-2 px-6 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"}
                       >
                         Хариултыг харах ↺
                       </button>
                     </div>
 
                     {/* BACK of the card (displays Mongolian definitions & explanations) */}
-                    <div className={`absolute inset-0 w-full h-full backface-hidden bg-ink-2 text-paper rounded-2xl flex flex-col items-center justify-between p-8 border-2 border-ink-line shadow-black/40 transition-transform duration-500 transform-style-3d ${
+                    <div className={gold || aurora ? `absolute inset-0 w-full h-full backface-hidden bg-surface-container-high text-on-surface rounded-2xl flex flex-col items-center justify-between p-8 border-2 border-secondary shadow-[0_4px_16px_rgba(0,108,73,0.1)] transition-transform duration-500 transform-style-3d ${
+                      vocabFlipped ? '[transform:rotateY(0deg)]' : '[transform:rotateY(180deg)]'
+                    }` : `absolute inset-0 w-full h-full backface-hidden bg-ink-2 text-paper rounded-2xl flex flex-col items-center justify-between p-8 border-2 border-ink-line shadow-black/40 transition-transform duration-500 transform-style-3d ${
                       vocabFlipped ? '[transform:rotateY(0deg)]' : '[transform:rotateY(180deg)]'
                     }`}>
-                      <span className="text-xs font-serif font-bold text-paper-2 bg-ink-raise px-3 py-1 border border-ink-line rounded-full uppercase tracking-wider">
+                      <span className={gold || aurora ? "text-xs font-space font-bold text-secondary bg-secondary-container px-3 py-1 border border-on-background rounded-full uppercase tracking-wider" : "text-xs font-serif font-bold text-paper-2 bg-ink-raise px-3 py-1 border border-ink-line rounded-full uppercase tracking-wider"}>
                         {vocabList[currentVocabIndex].category}
                       </span>
 
                       <div className="flex flex-col items-center gap-6 w-full max-w-md">
-                        <h2 className="text-3xl font-extrabold text-paper text-center font-sans tracking-tight">
+                        <h2 className={gold || aurora ? "text-3xl font-extrabold text-primary text-center font-sans tracking-tight" : "text-3xl font-extrabold text-paper text-center font-sans tracking-tight"}>
                           {vocabList[currentVocabIndex].mongolian}
                         </h2>
 
-                        <div className="w-full bg-ink-raise p-4 rounded-xl border-2 border-ink-line block-shadow text-center">
-                          <p className="text-sm leading-normal text-paper-2 italic mb-2 font-sans font-bold">
+                        <div className={gold || aurora ? "w-full bg-surface-container-low p-4 rounded-xl border-2 border-on-background block-shadow text-center" : "w-full bg-ink-raise p-4 rounded-xl border-2 border-ink-line block-shadow text-center"}>
+                          <p className={gold || aurora ? "text-sm leading-normal text-on-surface-variant italic mb-2 font-sans font-bold" : "text-sm leading-normal text-paper-2 italic mb-2 font-sans font-bold"}>
                             "{vocabList[currentVocabIndex].exampleGerman}"
                           </p>
-                          <p className="text-sm font-bold text-paper-2 leading-normal font-sans">
+                          <p className={gold || aurora ? "text-sm font-bold text-secondary leading-normal font-sans" : "text-sm font-bold text-paper-2 leading-normal font-sans"}>
                             {vocabList[currentVocabIndex].exampleMongolian}
                           </p>
                         </div>
@@ -318,7 +341,7 @@ export function VocabTab({
                           e.stopPropagation();
                           setVocabFlipped(false);
                         }}
-                        className="mb-2 px-6 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"
+                        className={gold ? "mb-2 px-6 py-2.5 bg-primary text-on-primary border-2 border-on-background rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all" : aurora ? "mb-2 px-6 py-2.5 bg-primary text-white border-2 border-on-background rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all" : "mb-2 px-6 py-2.5 bg-paper text-ink border-2 border-ink-line rounded-xl font-bold font-sans text-sm shadow-[0_4px_18px_-2px_rgba(0,0,0,0.35)] cursor-pointer hover:scale-105 transition-all"}
                       >
                         Үгийг харах ↺
                       </button>
@@ -333,14 +356,14 @@ export function VocabTab({
                 }`}>
                   <button
                     onClick={() => handleVocabAction(false)}
-                    className="flex-1 basis-0 flex items-center justify-center gap-2 border-2 border-ink-line text-paper hover:bg-ink-raise0 hover:text-paper py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-orange cursor-pointer transition-all active:scale-95"
+                    className={gold || aurora ? "flex-1 basis-0 flex items-center justify-center gap-2 border-2 border-orange-500 text-orange-400 hover:bg-orange-500 hover:text-white py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-orange cursor-pointer transition-all active:scale-95" : "flex-1 basis-0 flex items-center justify-center gap-2 border-2 border-ink-line text-paper hover:bg-ink-raise0 hover:text-paper py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-orange cursor-pointer transition-all active:scale-95"}
                   >
                     <RotateCcw className="w-5 h-5 font-black" />
                     Дахин давтах
                   </button>
                   <button
                     onClick={() => handleVocabAction(true)}
-                    className="flex-1 basis-0 flex items-center justify-center gap-2 bg-paper border-2 border-ink-line text-ink hover:bg-paper-bright py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-green cursor-pointer transition-all active:scale-95"
+                    className={gold || aurora ? "flex-1 basis-0 flex items-center justify-center gap-2 bg-secondary border-2 border-on-background text-white hover:bg-on-secondary-fixed-variant py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-green cursor-pointer transition-all active:scale-95" : "flex-1 basis-0 flex items-center justify-center gap-2 bg-paper border-2 border-ink-line text-ink hover:bg-paper-bright py-4 px-6 rounded-xl font-bold font-sans text-lg block-shadow-green cursor-pointer transition-all active:scale-95"}
                   >
                     <CheckCircle className="w-5 h-5 font-black fill-current" />
                     Мэднэ
@@ -352,8 +375,8 @@ export function VocabTab({
               {/* Right Sidebar: Progression Circular SVG & upcoming word panels */}
               <aside className="lg:col-span-4 flex flex-col gap-6">
                 {/* SVGs Progress tracking ring list items */}
-                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow flex flex-col items-center">
-                  <h3 className="text-lg font-bold text-paper mb-6 w-full font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
+                <div className={gold || aurora ? "rounded-xl border-2 border-on-background p-6 block-shadow flex flex-col items-center" : "rounded-xl border-2 border-ink-line p-6 block-shadow flex flex-col items-center"}>
+                  <h3 className={gold || aurora ? "text-lg font-bold text-primary mb-6 w-full font-space pb-2 border-b border-outline-variant uppercase tracking-wider" : "text-lg font-bold text-paper mb-6 w-full font-serif pb-2 border-b border-ink-line uppercase tracking-wider"}>
                     Өнөөдрийн явц
                   </h3>
 
@@ -361,14 +384,14 @@ export function VocabTab({
                     {/* SVG circular calculation */}
                     <svg className="w-full h-full transform -rotate-90">
                       <circle
-                        className="text-paper-2 stroke-current"
+                        className={gold || aurora ? "text-surface-container stroke-current" : "text-paper-2 stroke-current"}
                         cx="80"
                         cy="80"
                         fill="transparent"
                         r="60"
                         strokeWidth="10"                      ></circle>
                       <circle
-                        className="text-paper-2 stroke-current progress-ring__circle transition-all duration-500"
+                        className={gold || aurora ? "text-secondary stroke-current progress-ring__circle transition-all duration-500" : "text-paper-2 stroke-current progress-ring__circle transition-all duration-500"}
                         cx="80"
                         cy="80"
                         fill="transparent"
@@ -381,28 +404,28 @@ export function VocabTab({
 
                     {/* Central counter summary text */}
                     <div className="absolute flex flex-col items-center justify-center text-center">
-                      <span className="text-3xl font-extrabold text-paper font-serif">
+                      <span className={gold || aurora ? "text-3xl font-extrabold text-primary font-space" : "text-3xl font-extrabold text-paper font-serif"}>
                         {vocabMemorizedCount}/{vocabTotalCount}
                       </span>
-                      <span className="text-xs font-bold text-paper-3 uppercase font-serif">Цээжилсэн үг</span>
+                      <span className={gold || aurora ? "text-xs font-bold text-outline uppercase font-space" : "text-xs font-bold text-paper-3 uppercase font-serif"}>Цээжилсэн үг</span>
                     </div>
                   </div>
 
-                  <div className="flex justify-between w-full mt-4 text-xs font-serif font-bold border-t border-ink-line pt-4">
-                    <div className="flex items-center gap-2 text-paper-2">
-                      <div className="w-3 h-3 rounded-full bg-paper"></div>
+                  <div className={gold || aurora ? "flex justify-between w-full mt-4 text-xs font-space font-bold border-t border-slate-100 pt-4" : "flex justify-between w-full mt-4 text-xs font-serif font-bold border-t border-ink-line pt-4"}>
+                    <div className={gold || aurora ? "flex items-center gap-2 text-on-surface-variant" : "flex items-center gap-2 text-paper-2"}>
+                      <div className={gold || aurora ? "w-3 h-3 rounded-full bg-secondary" : "w-3 h-3 rounded-full bg-paper"}></div>
                       <span>Мэдэхгүй</span>
                     </div>
-                    <div className="flex items-center gap-2 text-paper-2">
-                      <div className="w-3 h-3 rounded-full bg-ink-raise"></div>
+                    <div className={gold || aurora ? "flex items-center gap-2 text-on-surface-variant" : "flex items-center gap-2 text-paper-2"}>
+                      <div className={gold || aurora ? "w-3 h-3 rounded-full bg-secondary-container" : "w-3 h-3 rounded-full bg-ink-raise"}></div>
                       <span>Цээжилсэн</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Carousel Upcoming Cards lists previews */}
-                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                  <h3 className="text-lg font-bold text-paper mb-4 font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
+                <div className={gold || aurora ? "rounded-xl border-2 border-on-background p-6 block-shadow" : "rounded-xl border-2 border-ink-line p-6 block-shadow"}>
+                  <h3 className={gold || aurora ? "text-lg font-bold text-primary mb-4 font-space pb-2 border-b border-slate-100 uppercase tracking-wider" : "text-lg font-bold text-paper mb-4 font-serif pb-2 border-b border-ink-line uppercase tracking-wider"}>
                     Дараагийн үгс
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -417,7 +440,11 @@ export function VocabTab({
                             setVocabFlipped(false);
                             setCurrentVocabIndex(idx);
                           }}
-                          className={`px-3 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                          className={gold || aurora ? `px-3 py-1.5 border-2 border-on-background rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                            idx === currentVocabIndex
+                              ? 'bg-primary-container text-white border-on-background'
+                              : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
+                          }` : `px-3 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
                             idx === currentVocabIndex
                               ? 'bg-ink-raise text-paper border-ink-line'
                               : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
@@ -427,23 +454,23 @@ export function VocabTab({
                         </button>
                       );
                     })}
-                    <span className="px-3 py-1.5 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold text-paper-2 blur-[0.5px] opacity-70">
+                    <span className={gold || aurora ? "px-3 py-1.5 bg-surface-container border-2 border-on-background rounded-lg text-xs font-bold text-on-surface-variant blur-[0.5px] opacity-70" : "px-3 py-1.5 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold text-paper-2 blur-[0.5px] opacity-70"}>
                       ...
                     </span>
                   </div>
                 </div>
 
                 {/* Resource card — opens the in-app dictionary (Browse) */}
-                <div className="rounded-xl border-2 border-ink-line p-6 block-shadow">
-                  <h3 className="text-lg font-bold text-paper mb-2 font-serif pb-2 border-b border-ink-line uppercase tracking-wider">
+                <div className={gold || aurora ? "rounded-xl border-2 border-on-background p-6 block-shadow" : "rounded-xl border-2 border-ink-line p-6 block-shadow"}>
+                  <h3 className={gold || aurora ? "text-lg font-bold text-primary mb-2 font-space pb-2 border-b border-slate-100 uppercase tracking-wider" : "text-lg font-bold text-paper mb-2 font-serif pb-2 border-b border-ink-line uppercase tracking-wider"}>
                     Нэмэлт эх сурвалж
                   </h3>
-                  <p className="text-xs text-paper-2 mb-4 leading-normal font-sans">
+                  <p className={gold || aurora ? "text-xs text-on-surface-variant mb-4 leading-normal font-sans" : "text-xs text-paper-2 mb-4 leading-normal font-sans"}>
                     Илүү олон герман үг, жишээ өгүүлбэрийг апп дотроос шууд хайж, түвшингээр шүүж үзээрэй.
                   </p>
                   <button
                     onClick={() => setVocabView('browse')}
-                    className="w-full flex items-center justify-center gap-2 bg-paper text-ink border-2 border-ink-line py-3 px-4 rounded-xl font-bold font-sans text-sm block-shadow-green cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
+                    className={gold || aurora ? "w-full flex items-center justify-center gap-2 bg-secondary text-white border-2 border-on-background py-3 px-4 rounded-xl font-bold font-sans text-sm block-shadow-green cursor-pointer hover:scale-[1.02] active:scale-95 transition-all" : "w-full flex items-center justify-center gap-2 bg-paper text-ink border-2 border-ink-line py-3 px-4 rounded-xl font-bold font-sans text-sm block-shadow-green cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"}
                   >
                     <Library className="w-4 h-4" />
                     Толь бичиг нээх ({DICTIONARY.length})
@@ -461,14 +488,14 @@ export function VocabTab({
             <div className="flex flex-col gap-6 pb-24">
 
               {/* Header + search + filters */}
-              <div className="rounded-2xl border-2 border-ink-line p-6 block-shadow flex flex-col gap-5">
+              <div className={gold || aurora ? "rounded-2xl border-2 border-on-background p-6 block-shadow flex flex-col gap-5" : "rounded-2xl border-2 border-ink-line p-6 block-shadow flex flex-col gap-5"}>
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div>
-                    <h2 className="text-2xl font-light text-paper font-serif flex items-center gap-2">
-                      <Library className="w-6 h-6 text-paper-2" />
+                    <h2 className={gold || aurora ? "text-2xl font-black text-on-background font-space flex items-center gap-2" : "text-2xl font-light text-paper font-serif flex items-center gap-2"}>
+                      <Library className={gold || aurora ? "w-6 h-6 text-secondary" : "w-6 h-6 text-paper-2"} />
                       Герман–Монгол толь бичиг
                     </h2>
-                    <p className="text-xs text-paper-2 font-sans mt-1">
+                    <p className={gold || aurora ? "text-xs text-on-surface-variant font-sans mt-1" : "text-xs text-paper-2 font-sans mt-1"}>
                       Нийт {DICTIONARY.length} үг · хайж, төрөл болон түвшингээр шүүнэ
                     </p>
                   </div>
@@ -476,18 +503,18 @@ export function VocabTab({
 
                 {/* Search box */}
                 <div className="relative">
-                  <Search className="w-5 h-5 text-paper-3 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Search className={gold || aurora ? "w-5 h-5 text-outline absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" : "w-5 h-5 text-paper-3 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"} />
                   <input
                     type="text"
                     value={dictSearch}
                     onChange={(e) => setDictSearch(e.target.value)}
                     placeholder="Герман эсвэл монгол үгээр хайх..."
-                    className="w-full bg-ink-raise border-2 border-ink-line rounded-xl pl-12 pr-10 py-3 text-md font-bold text-paper focus:border-ink-line outline-none transition-all placeholder:text-paper-3 placeholder:font-normal shadow-inner"
+                    className={gold || aurora ? "w-full bg-surface-container-low border-2 border-on-background rounded-xl pl-12 pr-10 py-3 text-md font-bold text-on-surface focus:border-secondary outline-none transition-all placeholder:text-outline placeholder:font-normal shadow-inner" : "w-full bg-ink-raise border-2 border-ink-line rounded-xl pl-12 pr-10 py-3 text-md font-bold text-paper focus:border-ink-line outline-none transition-all placeholder:text-paper-3 placeholder:font-normal shadow-inner"}
                   />
                   {dictSearch && (
                     <button
                       onClick={() => setDictSearch('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-paper-3 hover:text-paper cursor-pointer"
+                      className={gold || aurora ? "absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-background cursor-pointer" : "absolute right-3 top-1/2 -translate-y-1/2 text-paper-3 hover:text-paper cursor-pointer"}
                       title="Цэвэрлэх"
                     >
                       <X className="w-5 h-5" />
@@ -501,7 +528,9 @@ export function VocabTab({
                     <button
                       key={c.value}
                       onClick={() => setDictClass(c.value)}
-                      className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                      className={gold || aurora ? `px-3.5 py-1.5 border-2 border-on-background rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                        dictClass === c.value ? 'bg-primary-container text-white' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
+                      }` : `px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
                         dictClass === c.value ? 'bg-ink-raise text-paper' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
                       }`}
                     >
@@ -512,12 +541,14 @@ export function VocabTab({
 
                 {/* Level filter chips */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-serif font-bold text-paper-3 uppercase tracking-wider mr-1">Түвшин:</span>
+                  <span className={gold || aurora ? "text-xs font-space font-bold text-outline uppercase tracking-wider mr-1" : "text-xs font-serif font-bold text-paper-3 uppercase tracking-wider mr-1"}>Түвшин:</span>
                   {LEVEL_OPTIONS.map((lvl) => (
                     <button
                       key={lvl}
                       onClick={() => setDictLevel(lvl)}
-                      className={`px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                      className={gold || aurora ? `px-3.5 py-1.5 border-2 border-on-background rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
+                        dictLevel === lvl ? 'bg-secondary text-white' : 'bg-surface-container hover:bg-surface-container-high text-on-surface-variant'
+                      }` : `px-3.5 py-1.5 border-2 border-ink-line rounded-lg text-xs font-bold tracking-tight transition-all cursor-pointer block-shadow ${
                         dictLevel === lvl ? 'bg-paper text-ink' : 'bg-ink-raise hover:bg-ink-2 text-paper-2'
                       }`}
                     >
@@ -529,17 +560,17 @@ export function VocabTab({
 
               {/* Results count */}
               <div className="flex items-center justify-between px-1">
-                <span className="text-sm font-bold text-paper-2 font-serif">
+                <span className={gold || aurora ? "text-sm font-bold text-on-surface-variant font-space" : "text-sm font-bold text-paper-2 font-serif"}>
                   {filteredDictionary.length} үг олдлоо
                 </span>
               </div>
 
               {/* Word cards grid */}
               {filteredDictionary.length === 0 ? (
-                <div className="rounded-2xl border-2 border-ink-line p-12 block-shadow text-center">
-                  <HelpCircle className="w-12 h-12 text-paper-3 mx-auto mb-3" />
-                  <p className="text-paper-2 font-bold font-sans">Тохирох үг олдсонгүй.</p>
-                  <p className="text-xs text-paper-3 mt-1">Хайлт эсвэл шүүлтүүрээ өөрчилж үзнэ үү.</p>
+                <div className={gold || aurora ? "rounded-2xl border-2 border-on-background p-12 block-shadow text-center" : "rounded-2xl border-2 border-ink-line p-12 block-shadow text-center"}>
+                  <HelpCircle className={gold || aurora ? "w-12 h-12 text-outline mx-auto mb-3" : "w-12 h-12 text-paper-3 mx-auto mb-3"} />
+                  <p className={gold || aurora ? "text-on-surface-variant font-bold font-sans" : "text-paper-2 font-bold font-sans"}>Тохирох үг олдсонгүй.</p>
+                  <p className={gold || aurora ? "text-xs text-outline mt-1" : "text-xs text-paper-3 mt-1"}>Хайлт эсвэл шүүлтүүрээ өөрчилж үзнэ үү.</p>
                 </div>
               ) : (
                 <>
@@ -547,11 +578,19 @@ export function VocabTab({
                     {filteredDictionary.slice(0, dictVisible).map((w, idx) => (
                       <div
                         key={`${w.german}-${idx}`}
-                        className="rounded-xl border-2 border-ink-line p-5 block-shadow flex flex-col gap-3 hover:-translate-y-0.5 transition-transform"
+                        className={gold || aurora ? "rounded-xl border-2 border-on-background p-5 block-shadow flex flex-col gap-3 hover:-translate-y-0.5 transition-transform" : "rounded-xl border-2 border-ink-line p-5 block-shadow flex flex-col gap-3 hover:-translate-y-0.5 transition-transform"}
                       >
                         <div className="flex items-start justify-between gap-2">
                           {w.article ? (
-                            <span className={`text-sm font-black lowercase tracking-widest px-3 py-0.5 rounded-full border-2 border-ink-line ${
+                            <span className={gold ? `text-sm font-black lowercase tracking-widest px-3 py-0.5 rounded-full border-2 border-on-background ${
+                              w.article === 'der' ? 'bg-teal-100 text-teal-700' :
+                              w.article === 'die' ? 'bg-orange-100 text-orange-700' :
+                              'bg-amber-100 text-amber-700'
+                            }` : aurora ? `text-sm font-black lowercase tracking-widest px-3 py-0.5 rounded-full border-2 border-on-background ${
+                              w.article === 'der' ? 'bg-blue-100 text-blue-700' :
+                              w.article === 'die' ? 'bg-rose-100 text-rose-700' :
+                              'bg-amber-100 text-amber-700'
+                            }` : `text-sm font-black lowercase tracking-widest px-3 py-0.5 rounded-full border-2 border-ink-line ${
                               w.article === 'der' ? 'bg-ink-raise text-paper-2' :
                               w.article === 'die' ? 'bg-ink-raise text-paper-2' :
                               'bg-ink-raise text-paper-2'
@@ -559,27 +598,27 @@ export function VocabTab({
                               {w.article}
                             </span>
                           ) : (
-                            <span className="text-[11px] font-serif font-bold text-paper-2 bg-ink-raise px-2.5 py-1 border border-ink-line rounded-full uppercase tracking-wider">
+                            <span className={gold || aurora ? "text-[11px] font-space font-bold text-secondary bg-secondary-container px-2.5 py-1 border border-on-background rounded-full uppercase tracking-wider" : "text-[11px] font-serif font-bold text-paper-2 bg-ink-raise px-2.5 py-1 border border-ink-line rounded-full uppercase tracking-wider"}>
                               {WORD_CLASS_LABELS.find((c) => c.value === w.wordClass)?.label || ''}
                             </span>
                           )}
-                          <span className="text-[11px] font-serif font-extrabold text-paper-2 bg-ink-raise px-2.5 py-1 border border-ink-line rounded-full">
+                          <span className={gold || aurora ? "text-[11px] font-space font-extrabold text-on-surface-variant bg-surface-container px-2.5 py-1 border border-on-background rounded-full" : "text-[11px] font-serif font-extrabold text-paper-2 bg-ink-raise px-2.5 py-1 border border-ink-line rounded-full"}>
                             {w.level}
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <h3 className="text-2xl font-black text-paper font-sans tracking-tight leading-tight truncate">
+                            <h3 className={gold || aurora ? "text-2xl font-black text-primary font-sans tracking-tight leading-tight truncate" : "text-2xl font-black text-paper font-sans tracking-tight leading-tight truncate"}>
                               {w.german}
                             </h3>
                             {w.phonetic && (
-                              <p className="text-xs text-paper-2/70 font-mono mt-0.5">{w.phonetic}</p>
+                              <p className={gold || aurora ? "text-xs text-on-surface-variant/70 font-mono mt-0.5" : "text-xs text-paper-2/70 font-mono mt-0.5"}>{w.phonetic}</p>
                             )}
                           </div>
                           <button
                             onClick={() => speakGerman(w.article ? `${w.article} ${w.german}` : w.german)}
-                            className="shrink-0 p-2.5 rounded-full bg-ink-raise hover:bg-ink-2 border-2 border-ink-line hover:scale-110 text-paper-2 transition-all cursor-pointer"
+                            className={gold || aurora ? "shrink-0 p-2.5 rounded-full bg-surface-container hover:bg-surface-container-high border-2 border-on-background hover:scale-110 text-secondary transition-all cursor-pointer" : "shrink-0 p-2.5 rounded-full bg-ink-raise hover:bg-ink-2 border-2 border-ink-line hover:scale-110 text-paper-2 transition-all cursor-pointer"}
                             title="Дуудлага сонсох"
                           >
                             <Volume2 className="w-5 h-5 stroke-[2.5px]" />
@@ -588,25 +627,25 @@ export function VocabTab({
 
                         {/* Meaning: Mongolian once translated, otherwise the English gloss. */}
                         {w.mongolian.trim() ? (
-                          <p className="text-base font-bold text-paper-2 font-sans">{w.mongolian}</p>
+                          <p className={gold || aurora ? "text-base font-bold text-on-surface-variant font-sans" : "text-base font-bold text-paper-2 font-sans"}>{w.mongolian}</p>
                         ) : (
-                          <p className="text-base font-bold text-paper-2 font-sans">
+                          <p className={gold || aurora ? "text-base font-bold text-on-surface-variant font-sans" : "text-base font-bold text-paper-2 font-sans"}>
                             {w.english}
-                            <span className="ml-1.5 text-[10px] font-serif font-bold text-paper-3 align-middle">EN</span>
+                            <span className={gold || aurora ? "ml-1.5 text-[10px] font-space font-bold text-outline align-middle" : "ml-1.5 text-[10px] font-serif font-bold text-paper-3 align-middle"}>EN</span>
                           </p>
                         )}
                         {w.wordClass === 'noun' && w.plural && (
-                          <p className="text-xs text-paper-2/80 font-sans -mt-1">
+                          <p className={gold || aurora ? "text-xs text-on-surface-variant/80 font-sans -mt-1" : "text-xs text-paper-2/80 font-sans -mt-1"}>
                             Олон тоо: <span className="font-bold">die {w.plural}</span>
                           </p>
                         )}
 
                         {w.exampleGerman.trim() && (
-                          <div className="mt-auto bg-ink-raise p-3 rounded-lg border border-ink-line">
-                            <p className="text-xs leading-normal text-paper-2 italic font-sans font-semibold mb-1">
+                          <div className={gold || aurora ? "mt-auto bg-surface-container p-3 rounded-lg border border-on-background" : "mt-auto bg-ink-raise p-3 rounded-lg border border-ink-line"}>
+                            <p className={gold || aurora ? "text-xs leading-normal text-on-surface-variant italic font-sans font-semibold mb-1" : "text-xs leading-normal text-paper-2 italic font-sans font-semibold mb-1"}>
                               „{w.exampleGerman}“
                             </p>
-                            <p className="text-xs text-paper-2/80 leading-normal font-sans">
+                            <p className={gold || aurora ? "text-xs text-on-surface-variant/80 leading-normal font-sans" : "text-xs text-paper-2/80 leading-normal font-sans"}>
                               {w.exampleMongolian}
                             </p>
                           </div>
@@ -620,7 +659,7 @@ export function VocabTab({
                     <div className="flex justify-center mt-2">
                       <button
                         onClick={() => setDictVisible((n) => n + 24)}
-                        className="flex items-center gap-2 border-2 border-ink-line text-paper hover:bg-ink-raise py-3 px-8 rounded-xl font-bold font-sans text-sm block-shadow cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
+                        className={gold || aurora ? "flex items-center gap-2 border-2 border-on-background text-on-surface hover:bg-surface-container-high py-3 px-8 rounded-xl font-bold font-sans text-sm block-shadow cursor-pointer hover:scale-[1.02] active:scale-95 transition-all" : "flex items-center gap-2 border-2 border-ink-line text-paper hover:bg-ink-raise py-3 px-8 rounded-xl font-bold font-sans text-sm block-shadow cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"}
                       >
                         <ChevronRight className="w-4 h-4 rotate-90" />
                         Цааш үзэх ({filteredDictionary.length - dictVisible})
@@ -630,7 +669,7 @@ export function VocabTab({
                 </>
               )}
 
-              <p className="text-center text-[11px] text-paper-3 font-sans mt-2">
+              <p className={gold || aurora ? "text-center text-[11px] text-outline font-sans mt-2" : "text-center text-[11px] text-paper-3 font-sans mt-2"}>
                 Vocabeo.com-ийн загвараар бүтээв
               </p>
             </div>
