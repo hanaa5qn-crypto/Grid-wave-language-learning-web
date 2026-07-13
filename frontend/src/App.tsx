@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import {
   TabType,
-  SpeakingEvaluation, WritingFeedback, WritingCorrection,
+  SpeakingEvaluation, WritingFeedback, WritingCorrection, SpeakTarget,
 } from './types';
 import { useBylCheckout } from './useBylCheckout';
 import { DICTIONARY } from './data';
@@ -30,7 +30,7 @@ import LoginScreen from './LoginScreen';
 import LandingPage from './LandingPage';
 import { track, trackVisitOncePerDay } from './analytics';
 import {
-  subscribeToAuthedProfile, logOutUser, updateProfileFields,
+  subscribeToAuthedProfile, subscribeToProfileUpdates, logOutUser, updateProfileFields, notifyProgressSyncIssue,
 } from './auth';
 import { isFirebaseConfigured, getStorageInstance, getAuthInstance } from './firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -38,11 +38,13 @@ import {
   countDueWords,
   compareWordsByLevel, suggestedWordLevel,
   buildUnitsForLevel, unitProgress, isUnitPassed, isUnitUnlocked, lockedItemIds, Unit, UnitActivity, UNIT_PASS_RATIO,
+  newlyPassedUnitIds,
   addMistake, clearMistake, resolveMistakes, MistakeRef,
   buildTodaySession, TodaySession,
   localDateKey as learningLocalDateKey,
 } from './learning';
 import { buildInflectedLookup } from './inflect';
+import { runKeyMigrations, runUnitsMigration } from './keyMigrations';
 import {
   PLANS, PLAN_ORDER, PlanId, effectivePlan, isFounder as isFounderProfile,
   canUseAi, canAccessAllContent, canInteract, isLessonLocked,
@@ -84,6 +86,11 @@ const STUDY_SAVE_THRESHOLD_SECONDS = 120;
 
 // Trainer deck, easiest first (A1 → C2) so beginners meet beginner words.
 const TRAINER_WORDS = DICTIONARY.filter((w) => w.mongolian.trim().length > 0).sort(compareWordsByLevel);
+
+// Key migrations (audit §5.2 #6) run once per page load — the gate field on
+// the profile makes any later re-run a no-op anyway, so a module-level flag
+// is enough to avoid re-deriving the migration on every auth event.
+let keyMigrationsAttempted = false;
 
 // Short Mongolian part-of-speech labels shown inside the library vocabulary
 // tooltips (the dictionary-backed hover popups on each German passage).
@@ -190,7 +197,7 @@ function LearnerApp() {
     if (!isFirebaseConfigured) { setAuthLoading(false); return; }
     const unsubscribe = subscribeToAuthedProfile((profile) => {
       if (profile) {
-        const normalizedProfile = normalizeProfileMetrics(profile);
+        let normalizedProfile = normalizeProfileMetrics(profile);
         // The saved streak is a snapshot from the last study session; the
         // recomputed one reflects the days actually missed since. When it has
         // collapsed to 0, tell the learner and persist the reset so Firestore
@@ -200,6 +207,33 @@ function LearnerApp() {
           updateProfileFields({ streak: normalizedProfile.streak }).catch((err) => {
             console.warn('Could not persist streak reset to Firestore:', err);
           });
+        }
+        // One-time key migrations (audit §5.2 #5 & #6) — skipped internally for
+        // guest/fallback profiles; each is a no-op once its own gate is set.
+        if (!keyMigrationsAttempted) {
+          keyMigrationsAttempted = true;
+          const { profile: migratedProfile, patch } = runKeyMigrations(
+            normalizedProfile, TRAINER_WORDS, SPEAKING_LIBRARY, WRITING_LIBRARY,
+          );
+          normalizedProfile = migratedProfile;
+          if (Object.keys(patch).length > 0) {
+            updateProfileFields(patch).catch((err) => {
+              console.warn('Could not persist key migration:', err);
+            });
+          }
+          // audit fix 7: one-time pinning of ALL currently-passed German units
+          // (every level, not just the target) as `unit:` ratchet facts, so the
+          // next content drop cannot re-lock them.
+          const completed = new Set(normalizedProfile.completedActivityIds ?? []);
+          const passedAllLevels = (['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as Level[])
+            .flatMap((lvl) => newlyPassedUnitIds(buildUnitsForLevel(lvl), completed));
+          const unitsResult = runUnitsMigration(normalizedProfile, 'units-v1', 'completedActivityIds', passedAllLevels);
+          normalizedProfile = normalizeProfileMetrics(unitsResult.profile);
+          if (Object.keys(unitsResult.patch).length > 0) {
+            updateProfileFields(unitsResult.patch).catch((err) => {
+              console.warn('Could not persist unit-pass migration:', err);
+            });
+          }
         }
         setCurrentUser(normalizedProfile);
         setStreak(normalizedProfile.streak);
@@ -229,6 +263,26 @@ function LearnerApp() {
       setAuthLoading(false);
     });
     return unsubscribe;
+  }, []);
+
+  // audit fix 7 detection on profile reconciles: background snapshots (fix 4)
+  // arrive on the updates channel only — if a remote device's completions push
+  // a unit over the pass threshold, persist the `unit:` fact from here too.
+  // Loop-safe: the persist publishes optimistically, this listener re-fires,
+  // finds nothing newly passed, and stops.
+  useEffect(() => {
+    if (isTest || !isFirebaseConfigured) return;
+    return subscribeToProfileUpdates((profile) => {
+      if (!profile || profile.isGuest || profile.isFallback) return;
+      const completed = new Set(profile.completedActivityIds ?? []);
+      const passedNow = newlyPassedUnitIds(buildUnitsForLevel((profile.targetLevel || 'A1') as Level), completed);
+      if (passedNow.length === 0) return;
+      updateProfileFields({
+        completedActivityIds: [...(profile.completedActivityIds ?? []), ...passedNow],
+      }).catch((err) => {
+        console.warn('Could not persist unit pass facts:', err);
+      });
+    });
   }, []);
 
   // Active Lesson Mode / Standard mode toggler (Screen 1 quick core lesson overlay)
@@ -310,10 +364,12 @@ function LearnerApp() {
   const [speakingLoading, setSpeakingLoading] = useState(false);
   const [voiceSupportMessage, setVoiceSupportMessage] = useState('');
   const recognitionRef = useRef<any>(null);
-  // The German sentence the AI judge currently grades against. Library items and
-  // the detailed lesson share one judge, so this ref carries whichever target is
-  // active into the async record/evaluate callbacks (which can't see render scope).
-  const speakTargetRef = useRef<string>(SPEAKING_LIBRARY[0]?.modelAnswer ?? '');
+  // The German sentence the AI judge currently grades against, plus its library
+  // item id (audit §5.2 #5 — completion keys are id-based, not text-based).
+  // Library items and the detailed lesson share one judge, so this ref carries
+  // whichever target is active into the async record/evaluate callbacks (which
+  // can't see render scope).
+  const speakTargetRef = useRef<SpeakTarget>({ id: SPEAKING_LIBRARY[0]?.id ?? 0, text: SPEAKING_LIBRARY[0]?.modelAnswer ?? '' });
 
   // Real-audio recording (the "voice AI" path): capture the actual mic audio,
   // re-encode to WAV in the browser, and send the bytes to Gemini to listen to.
@@ -356,6 +412,14 @@ function LearnerApp() {
 
   const applyMetricProfile = (profile: UserProfile, save = true) => {
     const prev = currentUserRef.current;
+    // audit fix 7 ratchet: any unit this change pushes over the pass threshold
+    // gets its `unit:` fact appended here, so it persists in the SAME ledger
+    // write (arrayUnion) — and, for guests, in the same in-memory update.
+    const completedSet = new Set(profile.completedActivityIds ?? []);
+    const passedNow = newlyPassedUnitIds(buildUnitsForLevel(profile.targetLevel as Level), completedSet);
+    if (passedNow.length > 0) {
+      profile = { ...profile, completedActivityIds: [...(profile.completedActivityIds ?? []), ...passedNow] };
+    }
     const normalizedProfile = normalizeProfileMetrics(profile);
     currentUserRef.current = normalizedProfile;
     studySecondsRef.current = normalizedProfile.studySecondsByDate ?? {};
@@ -380,6 +444,7 @@ function LearnerApp() {
       if (Object.keys(patch).length > 0) {
         updateProfileFields(patch).catch((err) => {
           console.warn('Could not save progress to Firestore:', err);
+          notifyProgressSyncIssue(); // audit §4.2 #3: surface the retry toast
         });
       }
     }
@@ -436,6 +501,7 @@ function LearnerApp() {
         lastActiveAt: nextProfile.lastActiveAt,
       }).catch((err) => {
         console.warn('Could not save study time to Firestore:', err);
+        notifyProgressSyncIssue(); // audit §4.2 #3
       });
     }
   };
@@ -453,14 +519,25 @@ function LearnerApp() {
       const profile = currentUserRef.current;
       if (!profile || pendingStudySaveSecondsRef.current <= 0) return;
       pendingStudySaveSecondsRef.current = 0;
-      // Whole map (not a dotted path): pending seconds may straddle midnight,
-      // and only the German track writes studySecondsByDate anyway.
-      updateProfileFields({
-        studySecondsByDate: profile.studySecondsByDate ?? {},
+      // audit §4.2 #2: dotted per-date writes, never the whole map — a whole-map
+      // flush from a stale tab would replace every date on the server. Pending
+      // seconds are at most a couple of minutes old, so only today and (across
+      // midnight) yesterday can be dirty.
+      const secondsByDate = profile.studySecondsByDate ?? {};
+      const flushPatch: Record<string, unknown> = {
         learningCurve: profile.learningCurve,
         lastActiveAt: profile.lastActiveAt,
-      }).catch((err) => {
+      };
+      const todayKey = localDateKey();
+      const yesterdayKey = localDateKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+      for (const dateKey of [todayKey, yesterdayKey]) {
+        if (secondsByDate[dateKey] !== undefined) {
+          flushPatch[`studySecondsByDate.${dateKey}`] = secondsByDate[dateKey];
+        }
+      }
+      updateProfileFields(flushPatch).catch((err) => {
         console.warn('Could not save study time to Firestore:', err);
+        notifyProgressSyncIssue(); // audit §4.2 #3
       });
     };
 
@@ -793,7 +870,7 @@ function LearnerApp() {
 
   // Evaluation trigger: Speaking (TEXT path) — used by the type-to-test box and
   // as a fallback when real audio recording isn't available.
-  const evaluateSpeechText = async (text: string, target: string = speakTargetRef.current) => {
+  const evaluateSpeechText = async (text: string, target: SpeakTarget = speakTargetRef.current) => {
     if (!text.trim()) return;
     if (!requireAccount()) return; // visitors can't submit a speaking answer
     setSpeakingLoading(true);
@@ -802,13 +879,13 @@ function LearnerApp() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(await aiAuthHeaders()) },
         body: JSON.stringify({
-          sentence: target,
+          sentence: target.text,
           spokenText: text
         })
       });
       const data = await response.json();
       setSpeakingEvaluation(data);
-      if (data.isCorrect) recordStudyActivity(activityKey('speak', target));
+      if (data.isCorrect) recordStudyActivity(activityKey('speak', target.id));
     } catch (e) {
       console.error(e);
       // Heuristic fallback
@@ -818,7 +895,7 @@ function LearnerApp() {
         feedbackMessage: 'Сайн байна! Гэхдээ...'
       });
       if (text.toLowerCase().includes('wie geht') || text.toLowerCase().includes('ihnen')) {
-        recordStudyActivity(activityKey('speak', target));
+        recordStudyActivity(activityKey('speak', target.id));
       }
     } finally {
       setSpeakingLoading(false);
@@ -828,13 +905,13 @@ function LearnerApp() {
 
   // Evaluation trigger: Speaking (AUDIO path) — the real "voice AI". Sends the
   // actual recorded audio to Gemini so it can hear pronunciation and accent.
-  const evaluateSpeechAudio = async (blob: Blob, target: string = speakTargetRef.current) => {
+  const evaluateSpeechAudio = async (blob: Blob, target: SpeakTarget = speakTargetRef.current) => {
     setSpeakingLoading(true);
     setVoiceSupportMessage('AI таны дуу хоолойг сонсож, дүн шинжилгээ хийж байна...');
     try {
       const wavBlob = await audioBlobToWavBlob(blob);
       const bodyData: any = {
-        sentence: target,
+        sentence: target.text,
         mimeType: 'audio/wav',
       };
 
@@ -865,7 +942,7 @@ function LearnerApp() {
       });
       const data = await response.json();
       setSpeakingEvaluation(data);
-      if (data.isCorrect) recordStudyActivity(activityKey('speak', target));
+      if (data.isCorrect) recordStudyActivity(activityKey('speak', target.id));
       if (data.transcript) setSpeakingTextEntered(data.transcript);
       setVoiceSupportMessage('Шинжилгээ бэлэн боллоо! Доороос үр дүнгээ хараарай.');
     } catch (e) {
@@ -878,9 +955,10 @@ function LearnerApp() {
   };
 
   // Begin capturing real microphone audio via MediaRecorder. `target` is the
-  // German model sentence to grade against; stored on a ref so the async onstop
-  // callback evaluates the same item even if the user navigates afterwards.
-  const startAudioRecording = async (target: string = speakTargetRef.current) => {
+  // library item (id + German model sentence) to grade against; stored on a
+  // ref so the async onstop callback evaluates the same item even if the user
+  // navigates afterwards.
+  const startAudioRecording = async (target: SpeakTarget = speakTargetRef.current) => {
     speakTargetRef.current = target;
     setSpeakingEvaluation(null);
     setSpeakingTextEntered('');
@@ -934,8 +1012,8 @@ function LearnerApp() {
   };
 
   // Toggle Microphone recording (real-audio voice-AI pipeline). `target` is the
-  // German model sentence the AI judge grades the recording against.
-  const toggleMic = (target: string = speakTargetRef.current) => {
+  // library item the AI judge grades the recording against.
+  const toggleMic = (target: SpeakTarget = speakTargetRef.current) => {
     if (!isRecording && !requireAccount()) return; // visitors can't record/submit
     if (isRecording) {
       stopAudioRecording();
@@ -965,10 +1043,11 @@ function LearnerApp() {
 
   // Evaluation trigger: free writing (library + every exam writing task). Sends
   // the learner's text plus the task context to the AI, which flags wrong grammar
-  // / wrong words and recommends better wording. `ctx` is the active item.
+  // / wrong words and recommends better wording. `ctx` is the active item; `id`
+  // is its permanent identity used for the completion key (audit §5.2 #5).
   const checkComposition = async (
     text: string,
-    ctx: { prompt: string; points: string[]; modelAnswer: string; level: string },
+    ctx: { id: number; prompt: string; points: string[]; modelAnswer: string; level: string },
   ) => {
     if (!text.trim()) return;
     if (!requireAccount()) return; // visitors can't submit a writing answer
@@ -989,7 +1068,7 @@ function LearnerApp() {
       });
       const data = await response.json();
       setWriteFeedback(data);
-      if (data.isCorrect) recordStudyActivity(activityKey(`write:${ctx.level}`, ctx.prompt));
+      if (data.isCorrect) recordStudyActivity(activityKey(`write:${ctx.level}`, ctx.id));
     } catch (e) {
       console.error('Composition evaluation failed:', e);
       setWriteFeedback({
@@ -1250,13 +1329,14 @@ function LearnerApp() {
     ) : null;
 
   // ---------------------------------------------------------------------------
-  // Shared AI speaking-judge UI. `target` is the German model sentence the recording
-  // (or typed text) is graded against. Reused by every library item AND the detailed
-  // lesson, so importing new speaking resources gets the AI judge automatically.
-  // Free/Pro accounts spend monthly teaser uses; once exhausted, the upgrade
-  // card replaces the judge until next month.
+  // Shared AI speaking-judge UI. `target` is the active library item (id +
+  // German model sentence the recording/typed text is graded against — the id
+  // is what the completion key is built from, audit §5.2 #5). Reused by every
+  // library item AND the detailed lesson, so importing new speaking resources
+  // gets the AI judge automatically. Free/Pro accounts spend monthly teaser
+  // uses; once exhausted, the upgrade card replaces the judge until next month.
   // ---------------------------------------------------------------------------
-  const renderSpeakingJudge = (target: string) => !aiUsable ? renderPlanLockCard(
+  const renderSpeakingJudge = (target: SpeakTarget) => !aiUsable ? renderPlanLockCard(
     'Дуут AI багш',
     aiLockDesc('Ярианы дасгалын AI үнэлгээ (дуудлага, оноо, зөвлөмж)'),
     'max',
@@ -1327,7 +1407,7 @@ function LearnerApp() {
     </div>
   );
 
-  const renderSpeakingReport = (target: string) => (
+  const renderSpeakingReport = (target: SpeakTarget) => (
     // AI voice-coach report — pronunciation, accent, grammar, vocabulary
     !speakingEvaluation ? null : (
       <div className="w-full flex flex-col gap-4 animate-scale-up">
@@ -1429,7 +1509,7 @@ function LearnerApp() {
         {/* Actions */}
         <div className="flex flex-wrap gap-3">
           <button
-            onClick={() => { if (!requireAccount()) return; speakGerman(target); }}
+            onClick={() => { if (!requireAccount()) return; speakGerman(target.text); }}
             className="px-4 py-2 bg-ink-raise border-2 border-ink-line rounded-lg text-xs font-bold text-paper hover:bg-ink-raise transition-colors font-serif flex items-center gap-2 block-shadow cursor-pointer"
           >
             <Volume2 className="w-4 h-4" /> Загвар дуудлага сонсох
@@ -1449,11 +1529,13 @@ function LearnerApp() {
   // ---------------------------------------------------------------------------
   // Shared AI writing checker. Reused by the writing library AND every exam
   // writing task, so importing new writing resources gets the AI check
-  // automatically. `text` is the learner's input; `ctx` is the active item.
+  // automatically. `text` is the learner's input; `ctx` is the active item —
+  // `ctx.id` is its permanent identity used for the completion key (audit
+  // §5.2 #5).
   // ---------------------------------------------------------------------------
   const renderWritingChecker = (
     text: string,
-    ctx: { prompt: string; points: string[]; modelAnswer: string; level: string },
+    ctx: { id: number; prompt: string; points: string[]; modelAnswer: string; level: string },
   ) => !aiUsable ? renderPlanLockCard(
     'AI бичгийн засвар',
     aiLockDesc('Бичсэн зохиолын AI үнэлгээ, засвар, оноо'),

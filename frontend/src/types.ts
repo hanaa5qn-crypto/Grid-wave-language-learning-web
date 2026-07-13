@@ -1,5 +1,14 @@
 export type TabType = 'read' | 'listen' | 'speak' | 'write' | 'vocab' | 'settings' | 'translate' | 'exam' | 'profile' | 'friends';
 
+// The AI speaking judge's active grading target: a SPEAKING_LIBRARY item's
+// permanent id (audit §5.2 #5 — completion keys are id-based, not text-based)
+// plus the German text to grade against/read aloud. Shared by App.tsx (owns
+// the judge) and every caller that renders it (SpeakTab.tsx, ExamTab.tsx).
+export interface SpeakTarget {
+  id: number;
+  text: string;
+}
+
 export interface SpeakingEvaluation {
   isCorrect: boolean;
   feedbackMessage: string;

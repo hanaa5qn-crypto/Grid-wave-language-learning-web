@@ -14,12 +14,35 @@ import {
   onAuthStateChanged,
   type Unsubscribe,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, type UpdateData } from 'firebase/firestore';
+import { arrayUnion, doc, onSnapshot, setDoc, updateDoc, type DocumentSnapshot, type UpdateData } from 'firebase/firestore';
 import { getAuthInstance, getDb } from './firebase';
 import { UserProfile, createCustomProfile, stripServerOwnedFields, SERVER_OWNED_PROFILE_FIELDS } from './profiles';
 
 function profileRef(uid: string) {
   return doc(getDb(), 'users', uid);
+}
+
+// Progress-ledger fields (audit §4.2). The append-only sets only ever grow, so
+// they are written with arrayUnion (merge-safe across tabs/devices); the map
+// ledgers are written one dotted path per changed key. While a fallback
+// profile is active NONE of these may be written — a blank in-memory copy
+// would wipe the real server-side progress.
+const APPEND_ONLY_LEDGER_FIELDS = [
+  'completedActivityIds', 'completedActivityIdsEn', 'vocabLearnedEn', 'studyDays', 'studyDaysEn',
+  // Gate names for one-time key migrations (audit §5.2 #6, keyMigrations.ts) —
+  // append-only so a slow tab can never un-set a migration another tab ran.
+  'keyMigrations',
+] as const;
+const MAP_LEDGER_FIELDS = ['studySecondsByDate', 'studySecondsByDateEn', 'srsByWord'] as const;
+const LEDGER_FIELDS = [
+  ...APPEND_ONLY_LEDGER_FIELDS, ...MAP_LEDGER_FIELDS, 'mistakeIds', 'mistakeIdsEn', 'testHistoryEn',
+] as const;
+
+// Fired when progress could not be loaded (fallback profile active) or a
+// ledger write failed. ProgressSyncBanner listens and offers a retry.
+export const PROGRESS_SYNC_ISSUE_EVENT = 'vl-progress-sync-issue';
+export function notifyProgressSyncIssue(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(PROGRESS_SYNC_ISSUE_EVENT));
 }
 
 // When a brand-new user signs up, Firebase fires the auth-state listener the
@@ -87,7 +110,18 @@ export async function saveProfileProgress(profile: UserProfile): Promise<void> {
   // Never echo back entitlement/usage fields — they are server-owned and
   // rejected by Firestore rules. Stripping them also avoids a stale local
   // value (e.g. aiUsage updated server-side meanwhile) failing the whole save.
-  await setDoc(profileRef(user.uid), stripServerOwnedFields(profile), { merge: true });
+  const payload = stripServerOwnedFields(profile) as unknown as Record<string, unknown>;
+  delete payload.isFallback; // in-memory flag, never persisted (audit §4.2 #1)
+  // A whole-profile setDoc replaces arrays wholesale. The append-only ledgers
+  // are persisted solely through updateProfileFields' arrayUnion path, so drop
+  // them here — merge:true keeps the server copy intact. (audit §4.2 #2)
+  for (const field of APPEND_ONLY_LEDGER_FIELDS) delete payload[field];
+  if (profile.isFallback || sharedProfile?.isFallback) {
+    // audit §4.2 #1: never write ledgers computed from a blank fallback profile.
+    for (const field of LEDGER_FIELDS) delete payload[field];
+    notifyProgressSyncIssue();
+  }
+  await setDoc(profileRef(user.uid), payload, { merge: true });
 }
 
 // Field-level profile patch. Unlike saveProfileProgress (which writes the whole
@@ -104,33 +138,99 @@ export async function updateProfileFields(
   // Never write entitlement/usage fields — they are server-owned and rejected
   // by Firestore rules. A dotted path counts by its first segment.
   const stripped: Record<string, unknown> = {};
+  const fallbackActive = !!sharedProfile?.isFallback;
   for (const [key, value] of Object.entries(patch)) {
     if (value === undefined) continue; // Firestore rejects undefined values
     const root = key.split('.')[0];
     if ((SERVER_OWNED_PROFILE_FIELDS as readonly string[]).includes(root)) continue;
+    if (root === 'isFallback') continue; // in-memory flag, never persisted
+    // audit §4.2 #1: the fallback profile is a blank stand-in for progress that
+    // failed to load — persisting any ledger computed from it would wipe the
+    // real progress. Refuse those fields and surface the retry banner instead.
+    if (fallbackActive && (LEDGER_FIELDS as readonly string[]).includes(root)) {
+      console.warn(`Blocked ledger write "${key}" while the fallback profile is active`);
+      notifyProgressSyncIssue();
+      continue;
+    }
     stripped[key] = value;
   }
   if (Object.keys(stripped).length === 0) return;
+  // Snapshot BEFORE publishing: toMergeSafePatch diffs against what the shared
+  // cache held prior to this patch.
+  const prevShared = sharedProfile as unknown as Record<string, unknown> | null;
   // Keep the shared cache + update-channel subscribers (paywall, language gate)
   // in sync, same as saveProfileProgress — otherwise they render a stale
   // login-time snapshot until the next full reload.
   if (sharedProfile) {
     publishAuthedProfile(mergePatch(sharedProfile as unknown as Record<string, unknown>, expandDottedPaths(stripped)) as unknown as UserProfile);
   }
+  const write = toMergeSafePatch(stripped, prevShared);
+  if (Object.keys(write).length === 0) return;
   try {
-    await updateDoc(profileRef(user.uid), stripped as UpdateData<UserProfile>);
+    await updateDoc(profileRef(user.uid), write as UpdateData<UserProfile>);
   } catch (err) {
     // updateDoc fails when the document doesn't exist yet (e.g. the signup
     // profile write was skipped) — fall back to a merge write so the doc is
     // created and progress is never lost. setDoc does NOT interpret dotted
     // keys as nested field paths (only updateDoc does), so expand them first
     // or `studySecondsByDate.2026-07-02` becomes a literal top-level field.
+    // (arrayUnion sentinels pass through expandDottedPaths untouched and are
+    // honored by setDoc.)
     if ((err as { code?: string }).code === 'not-found') {
-      await setDoc(profileRef(user.uid), expandDottedPaths(stripped), { merge: true });
+      await setDoc(profileRef(user.uid), expandDottedPaths(write), { merge: true });
     } else {
       throw err;
     }
   }
+}
+
+// audit §4.2 #2 — translate whole-container ledger values into merge-safe ops:
+//   • append-only sets → arrayUnion(...items): a concurrent writer (second tab,
+//     other device) can only ADD, so a stale in-memory copy can never erase
+//     completions recorded elsewhere. A diff that would REMOVE entries is
+//     logged and not written.
+//   • map ledgers (study seconds, SRS) → one dotted path per changed key, so
+//     sibling dates/words already on the server are never replaced.
+// In-memory state (the published profile above) keeps the caller's plain
+// values; only the Firestore patch changes shape.
+function toMergeSafePatch(
+  stripped: Record<string, unknown>,
+  prevShared: Record<string, unknown> | null,
+): Record<string, unknown> {
+  const write: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(stripped)) {
+    if ((APPEND_ONLY_LEDGER_FIELDS as readonly string[]).includes(key) && Array.isArray(value)) {
+      const prev = Array.isArray(prevShared?.[key]) ? (prevShared![key] as unknown[]) : [];
+      const removed = prev.filter((item) => !value.includes(item));
+      if (removed.length > 0) {
+        console.warn(`Not persisting removal of ${removed.length} "${key}" entries (append-only ledger):`, removed);
+      }
+      if (value.length > 0) write[key] = arrayUnion(...value);
+      continue;
+    }
+    if ((MAP_LEDGER_FIELDS as readonly string[]).includes(key) && isPlainObject(value)) {
+      // Firestore dotted paths cannot address keys containing '.' — fall back
+      // to the whole-map write for such maps (no key format today has one).
+      if (Object.keys(value).some((k) => k.includes('.'))) {
+        console.warn(`Map ledger "${key}" has a dotted key; writing the whole map`);
+        write[key] = value;
+        continue;
+      }
+      const prev = isPlainObject(prevShared?.[key]) ? (prevShared![key] as Record<string, unknown>) : {};
+      for (const [mapKey, mapValue] of Object.entries(value)) {
+        if (JSON.stringify(prev[mapKey]) !== JSON.stringify(mapValue)) {
+          write[`${key}.${mapKey}`] = mapValue;
+        }
+      }
+      continue;
+    }
+    write[key] = value;
+  }
+  return write;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 // `{'a.b': 1}` → `{a: {b: 1}}`. Sibling dotted keys sharing a prefix merge into
@@ -217,6 +317,12 @@ let sharedProfile: UserProfile | null | undefined;
 let watcherStarted = false;
 // Ignore a slow profile load that resolves after a newer auth event.
 let loadSeq = 0;
+// The live users/{uid} onSnapshot subscription (audit §4.2 #4). One per auth
+// event; torn down on the next auth event / logout / retry.
+let currentSnapUnsub: (() => void) | null = null;
+// Bound the retry's wait on a first snapshot so the banner button can never
+// spin forever (offline with no cache never errors AND never delivers).
+const RETRY_TIMEOUT_MS = 8000;
 
 // Update the shared cache and notify update-channel subscribers. Call with the
 // full profile (including server-owned fields) — stripping happens only at the
@@ -232,57 +338,168 @@ function emitAuthEvent(profile: UserProfile | null): void {
   for (const listener of [...updateListeners]) listener(profile);
 }
 
-async function loadProfileFor(user: { uid: string; email: string | null }): Promise<UserProfile> {
-  try {
-    const snap = await getDoc(profileRef(user.uid));
-    if (snap.exists()) return snap.data() as UserProfile;
-    // Account exists but has no profile doc yet (e.g. created elsewhere) —
-    // create a sensible default so the user isn't stuck.
-    const fallback = createCustomProfile(
-      user.email ?? '',
-      (user.email ?? 'Суралцагч').split('@')[0],
-      'A1',
-      'Ерөнхий сургалт',
-    );
-    await setDoc(profileRef(user.uid), stripServerOwnedFields(fallback));
-    return fallback;
-  } catch (err) {
-    console.warn('Could not load Firestore profile; using an in-memory fallback:', err);
-    return createCustomProfile(
-      user.email ?? '',
-      (user.email ?? 'Суралцагч').split('@')[0],
-      'A1',
-      'Ерөнхий сургалт',
-    );
+function defaultProfileFor(user: { email: string | null }): UserProfile {
+  return createCustomProfile(
+    user.email ?? '',
+    (user.email ?? 'Суралцагч').split('@')[0],
+    'A1',
+    'Ерөнхий сургалт',
+  );
+}
+
+function teardownSnapshot(): void {
+  if (currentSnapUnsub) {
+    currentSnapUnsub();
+    currentSnapUnsub = null;
   }
+}
+
+// audit §4.2 #4: a subsequent remote snapshot may race a local optimistic
+// append that hasn't landed on the server yet — union the append-only ledgers
+// with the current cache so an in-flight completion is never hidden; take the
+// incoming server value for everything else (scalars, maps, mistakeIds,
+// testHistoryEn). In-memory only — this NEVER triggers a Firestore write.
+function reconcileRemote(incoming: UserProfile, current: UserProfile | null): UserProfile {
+  if (!current) return incoming;
+  const merged = { ...(incoming as unknown as Record<string, unknown>) };
+  const cur = current as unknown as Record<string, unknown>;
+  for (const field of APPEND_ONLY_LEDGER_FIELDS) {
+    const inc = merged[field];
+    const old = cur[field];
+    if (Array.isArray(inc) || Array.isArray(old)) {
+      merged[field] = [...new Set([
+        ...(Array.isArray(inc) ? inc : []),
+        ...(Array.isArray(old) ? old : []),
+      ])];
+    }
+  }
+  return merged as unknown as UserProfile;
+}
+
+// Subscribe to users/{uid} for the given auth event (`seq`). The FIRST snapshot
+// (or, for a fresh signup, the pre-emitted pending profile) goes out on the
+// auth channel — the German App resets tab state ONLY there — every subsequent
+// snapshot publishes on the updates channel only. Returns a promise the retry
+// path awaits: true once a good first snapshot emitted, false on error/timeout.
+// The `loadSeq` guard makes a late snapshot from a torn-down subscription inert
+// and forces a stale load to report the LIVE state, not its own outcome.
+function attachProfileSnapshot(
+  user: { uid: string; email: string | null },
+  seq: number,
+  opts: { alreadyEmitted?: boolean; timeoutMs?: number } = {},
+): Promise<boolean> {
+  let hasEmitted = !!opts.alreadyEmitted;
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const settle = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      // A load that lost the race to a newer auth event must report the live
+      // state, never its own — a stale "success" that never reached
+      // sharedProfile must not dismiss the retry banner.
+      resolve(seq === loadSeq ? ok : (!!sharedProfile && !sharedProfile.isFallback));
+    };
+    if (hasEmitted) settle(true); // signup fast-path already emitted a profile
+
+    const onNext = (snap: DocumentSnapshot) => {
+      if (seq !== loadSeq) { settle(true); return; } // torn-down / superseded
+      if (!hasEmitted) {
+        // FIRST snapshot this auth event → auth-channel emit (tab-state reset
+        // happens ONLY here). Accepted even with pending writes so a queued
+        // offline profile still boots the app.
+        hasEmitted = true;
+        if (!snap.exists()) {
+          // Doc-missing on first load: create a default and emit it. merge:true
+          // so a spurious "missing" read can never erase a doc that does exist.
+          const profile = defaultProfileFor(user);
+          setDoc(profileRef(user.uid), stripServerOwnedFields(profile), { merge: true })
+            .catch((err) => console.warn('Could not create default profile:', err));
+          emitAuthEvent(profile);
+        } else {
+          emitAuthEvent(snap.data() as UserProfile);
+        }
+        settle(true);
+        return;
+      }
+      // SUBSEQUENT snapshot → updates channel only (never resets tab state).
+      // Echo guard: a pending-write snapshot is our own local write coming back;
+      // sharedProfile is already optimistically ahead, so re-publishing it can
+      // only regress and risks a write loop — skip entirely.
+      if (snap.metadata.hasPendingWrites) return;
+      // A doc-missing snapshot AFTER we had data is a deletion — ignore it
+      // rather than publishing a blank over real progress.
+      if (!snap.exists()) { console.warn('Profile doc disappeared; ignoring snapshot'); return; }
+      publishAuthedProfile(reconcileRemote(snap.data() as UserProfile, sharedProfile ?? null));
+    };
+
+    const onError = (err: unknown) => {
+      // Firestore snapshot errors are TERMINAL — the listener stops. Recovery is
+      // a fresh subscription via retryProfileLoad().
+      if (seq !== loadSeq) { settle(false); return; }
+      console.warn('Profile snapshot error:', err);
+      notifyProgressSyncIssue();
+      if (!hasEmitted) {
+        // No profile yet this auth event → blank fallback (audit §4.2 #1): mark
+        // it so ledger writes are refused until a retry succeeds.
+        hasEmitted = true;
+        emitAuthEvent({ ...defaultProfileFor(user), isFallback: true });
+      } else if (sharedProfile) {
+        // Already had a real profile → keep its data but mark fallback so ledger
+        // writes lock and the banner shows; never publish a blank over progress.
+        publishAuthedProfile({ ...sharedProfile, isFallback: true });
+      }
+      settle(false);
+    };
+
+    currentSnapUnsub = onSnapshot(profileRef(user.uid), onNext, onError);
+    if (opts.timeoutMs) timer = setTimeout(() => settle(false), opts.timeoutMs);
+  });
+}
+
+// Re-subscribe after a terminal snapshot error (ProgressSyncBanner's retry
+// action). The dead subscription is torn down and a fresh one attached; on its
+// first good snapshot the server profile replaces the fallback via an
+// auth-event emit — same effect as a reload — which clears isFallback for every
+// subscriber. Resolves false while the read keeps failing or times out. The
+// loadSeq guard keeps the staleness guarantee (see attachProfileSnapshot).
+export async function retryProfileLoad(): Promise<boolean> {
+  const user = getAuthInstance().currentUser;
+  if (!user) return false;
+  const seq = ++loadSeq;
+  teardownSnapshot();
+  return attachProfileSnapshot(user, seq, { timeoutMs: RETRY_TIMEOUT_MS });
 }
 
 function startProfileWatcher(): void {
   if (watcherStarted) return;
   watcherStarted = true;
-  // Lives for the whole page — intentionally never unsubscribed.
-  onAuthStateChanged(getAuthInstance(), async (user) => {
+  // The auth listener lives for the whole page; the per-user profile SNAPSHOT
+  // subscription it creates is torn down and recreated on every auth event, so
+  // a late snapshot from a previous user can never emit (loadSeq guard).
+  onAuthStateChanged(getAuthInstance(), (user) => {
     const seq = ++loadSeq;
+    teardownSnapshot();
     if (!user) {
       emitAuthEvent(null);
       return;
     }
 
-    // Fresh sign-up: use the profile we just built (avoids the write/read race).
+    // Fresh sign-up: emit the profile we just built (avoids the write/read
+    // race), then STILL attach the snapshot so the account gets live updates.
     if (pendingSignupProfile) {
       const profile = pendingSignupProfile;
       pendingSignupProfile = null;
-      try {
-        await setDoc(profileRef(user.uid), stripServerOwnedFields(profile), { merge: true });
-      } catch {
-        // already written by signUpWithProfile; ignore
-      }
-      if (seq === loadSeq) emitAuthEvent(profile);
+      // Best-effort ensure the doc exists (signUpWithProfile already wrote it).
+      setDoc(profileRef(user.uid), stripServerOwnedFields(profile), { merge: true })
+        .catch(() => { /* already written by signUpWithProfile */ });
+      emitAuthEvent(profile);
+      void attachProfileSnapshot(user, seq, { alreadyEmitted: true });
       return;
     }
 
-    const profile = await loadProfileFor(user);
-    if (seq === loadSeq) emitAuthEvent(profile);
+    void attachProfileSnapshot(user, seq);
   });
 }
 

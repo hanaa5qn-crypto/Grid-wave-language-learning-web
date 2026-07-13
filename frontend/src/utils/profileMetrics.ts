@@ -55,9 +55,20 @@ export function calculateStreak(studyDays: string[] = [], today = new Date()): n
   return calculateStreakWithGrace(studyDays, today).streak;
 }
 
+// Unit-pass ratchet facts (`unit:de:...`, audit fix 7) live in the same ledger
+// as real activities but are NOT activities — every count over the ledger must
+// filter them out or progress/lesson totals inflate.
+export function isUnitPassFact(id: string): boolean {
+  return id.startsWith('unit:');
+}
+
+export function countRealActivities(completedActivityIds: string[] = []): number {
+  return new Set(completedActivityIds.filter((id) => !isUnitPassFact(id))).size;
+}
+
 export function calculateProgress(completedActivityIds: string[] = []): number {
   if (TRACKABLE_ACTIVITY_TOTAL <= 0) return 0;
-  const uniqueCompleted = new Set(completedActivityIds).size;
+  const uniqueCompleted = countRealActivities(completedActivityIds);
   return Math.min(100, Math.round((uniqueCompleted / TRACKABLE_ACTIVITY_TOTAL) * 100));
 }
 
@@ -82,7 +93,7 @@ export function normalizeProfileMetrics(profile: UserProfile): UserProfile {
     studySecondsByDate,
     streak,
     progress,
-    completedLessons: completedActivityIds.length,
+    completedLessons: countRealActivities(completedActivityIds),
     learningCurve: buildLearningCurve(studySecondsByDate),
     // Ensure all custom profile fields are present
     srsByWord: profile.srsByWord ?? {},

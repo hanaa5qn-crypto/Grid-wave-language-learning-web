@@ -24,7 +24,7 @@ interface WriteTabProps {
   // Shared AI writing checker (also used by the exam tab) — stays in LearnerApp.
   renderWritingChecker: (
     text: string,
-    ctx: { prompt: string; points: string[]; modelAnswer: string; level: string },
+    ctx: { id: number; prompt: string; points: string[]; modelAnswer: string; level: string },
   ) => React.ReactNode;
   resetWritingFeedback: () => void;
 }
@@ -143,7 +143,7 @@ export function WriteTab({
 
                       {/* AI writing check — flags wrong grammar / words and recommends
                           better wording. Data-driven, so new imports get it automatically. */}
-                      {renderWritingChecker(libWriteText, { prompt: item.prompt, points: item.points, modelAnswer: item.modelAnswer, level: item.level })}
+                      {renderWritingChecker(libWriteText, { id: item.id, prompt: item.prompt, points: item.points, modelAnswer: item.modelAnswer, level: item.level })}
 
                       {/* Prev/next lesson */}
                       {idxInFiltered >= 0 && filtered.length > 1 && (

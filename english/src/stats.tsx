@@ -15,7 +15,8 @@
 import React, {
   createContext, useCallback, useContext, useEffect, useRef, useState,
 } from 'react';
-import { subscribeToAuthedProfile, updateProfileFields, logOutUser, publishAuthedProfile } from '../../frontend/src/auth';
+import { subscribeToAuthedProfile, subscribeToProfileUpdates, updateProfileFields, logOutUser, publishAuthedProfile, notifyProgressSyncIssue } from '../../frontend/src/auth';
+import { runUnitsMigration } from '../../frontend/src/keyMigrations';
 import { calculateStreakWithGrace, localDateKey } from '../../frontend/src/learning';
 import type { UserProfile } from '../../frontend/src/profiles';
 import AccountScreen from '../../frontend/src/AccountScreen';
@@ -24,6 +25,7 @@ import { ensureSignupTrial } from '../../frontend/src/promo';
 import { Lock } from 'lucide-react';
 import {
   addEnglishMistake, clearEnglishMistake, appendTestHistory, EN_LEVEL_ORDER,
+  buildEnglishUnits, newlyPassedEnUnitIds,
   type EnglishPlacementResult, type EnglishTestHistoryEntry,
 } from './englishLearning';
 
@@ -106,6 +108,10 @@ const StatsContext = createContext<EnglishStats>({
   requireAccount: () => false,
 });
 
+// One-time `unit:` ratchet pinning (audit fix 7) — attempted once per page
+// load; the 'units-v1-en' gate in keyMigrations makes later runs no-ops.
+let enUnitsMigrationAttempted = false;
+
 // Shared with AuthGate — the localStorage flag that marks a guest session.
 const GUEST_KEY = 'vivid-lingua-guest';
 
@@ -145,6 +151,22 @@ export function EnglishStatsProvider({
   // Single source of truth for "who is signed in" — shared with the German app.
   useEffect(() => {
     const unsub = subscribeToAuthedProfile((p) => {
+      // audit fix 7: one-time pinning of ALL currently-passed English units
+      // (every level, not just the target) as `unit:` ratchet facts. Skipped
+      // internally for guests/fallback; the gate makes re-runs no-ops.
+      if (p && !enUnitsMigrationAttempted) {
+        enUnitsMigrationAttempted = true;
+        const completed = new Set(p.completedActivityIdsEn ?? []);
+        const passedAllLevels = EN_LEVEL_ORDER
+          .flatMap((lvl) => newlyPassedEnUnitIds(buildEnglishUnits(lvl), completed));
+        const unitsResult = runUnitsMigration(p, 'units-v1-en', 'completedActivityIdsEn', passedAllLevels);
+        p = unitsResult.profile;
+        if (Object.keys(unitsResult.patch).length > 0) {
+          updateProfileFields(unitsResult.patch).catch((err) => {
+            console.warn('Could not persist English unit-pass migration:', err);
+          });
+        }
+      }
       profileRef.current = p;
       setProfile(p);
       setLoading(false);
@@ -170,6 +192,25 @@ export function EnglishStatsProvider({
     return unsub;
   }, []);
 
+  // audit fix 7 detection on profile reconciles: background snapshots (fix 4)
+  // arrive on the updates channel only — if a remote device's completions push
+  // a unit over the pass threshold, persist the `unit:` fact from here too.
+  // Loop-safe: the persist publishes optimistically, this listener re-fires,
+  // finds nothing newly passed, and stops.
+  useEffect(() => {
+    return subscribeToProfileUpdates((profile) => {
+      if (!profile || profile.isGuest || profile.isFallback) return;
+      const completed = new Set(profile.completedActivityIdsEn ?? []);
+      const passedNow = newlyPassedEnUnitIds(buildEnglishUnits(profile.targetLevelEn || 'A1'), completed);
+      if (passedNow.length === 0) return;
+      updateProfileFields({
+        completedActivityIdsEn: [...(profile.completedActivityIdsEn ?? []), ...passedNow],
+      }).catch((err) => {
+        console.warn('Could not persist English unit pass facts:', err);
+      });
+    });
+  }, []);
+
   const canTrack = (p: UserProfile | null): p is UserProfile => !!p && !p.isGuest;
 
   // Add today to the ENGLISH study days (studyDaysEn). Called when a learner
@@ -191,6 +232,7 @@ export function EnglishStatsProvider({
     setProfile(next);
     updateProfileFields({ studyDaysEn, lastActiveAt: next.lastActiveAt }).catch((err) => {
       console.warn('Could not save English study day to Firestore:', err);
+      notifyProgressSyncIssue(); // audit §4.2 #3: surface the retry toast
     });
   }, []);
 
@@ -199,6 +241,15 @@ export function EnglishStatsProvider({
   const patchProfile = useCallback((patch: Partial<UserProfile>) => {
     const p = profileRef.current;
     if (!canTrack(p)) return;
+    // audit fix 7 ratchet: a completion patch that pushes a unit over the pass
+    // threshold appends its `unit:` fact into the SAME write (arrayUnion).
+    if (patch.completedActivityIdsEn) {
+      const completedSet = new Set(patch.completedActivityIdsEn);
+      const passedNow = newlyPassedEnUnitIds(buildEnglishUnits(p.targetLevelEn || 'A1'), completedSet);
+      if (passedNow.length > 0) {
+        patch = { ...patch, completedActivityIdsEn: [...patch.completedActivityIdsEn, ...passedNow] };
+      }
+    }
     const next: UserProfile = { ...p, ...patch, lastActiveAt: new Date().toISOString() };
     profileRef.current = next;
     setProfile(next);
@@ -206,6 +257,7 @@ export function EnglishStatsProvider({
     // can't clobber concurrent German-track writes on the shared document.
     updateProfileFields({ ...patch, lastActiveAt: next.lastActiveAt }).catch((err) => {
       console.warn('Could not save English learning state to Firestore:', err);
+      notifyProgressSyncIssue(); // audit §4.2 #3
     });
   }, []);
 
@@ -322,6 +374,7 @@ export function EnglishStatsProvider({
         lastActiveAt: next.lastActiveAt,
       }).catch((err) => {
         console.warn('Could not save English study time to Firestore:', err);
+        notifyProgressSyncIssue(); // audit §4.2 #3
       });
     }
   }, []);
@@ -335,13 +388,22 @@ export function EnglishStatsProvider({
       const p = profileRef.current;
       if (!canTrack(p) || pendingSaveSecondsRef.current <= 0) return;
       pendingSaveSecondsRef.current = 0;
-      // Whole map (not a dotted path): pending seconds may straddle midnight,
-      // and only the English track writes studySecondsByDateEn anyway.
-      updateProfileFields({
-        studySecondsByDateEn: p.studySecondsByDateEn ?? {},
-        lastActiveAt: p.lastActiveAt,
-      }).catch((err) => {
+      // audit §4.2 #2: dotted per-date writes, never the whole map — a whole-map
+      // flush from a stale tab would replace every date on the server. Pending
+      // seconds are at most a couple of minutes old, so only today and (across
+      // midnight) yesterday can be dirty.
+      const secondsByDate = p.studySecondsByDateEn ?? {};
+      const flushPatch: Record<string, unknown> = { lastActiveAt: p.lastActiveAt };
+      const todayKey = localDateKey();
+      const yesterdayKey = localDateKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+      for (const dateKey of [todayKey, yesterdayKey]) {
+        if (secondsByDate[dateKey] !== undefined) {
+          flushPatch[`studySecondsByDateEn.${dateKey}`] = secondsByDate[dateKey];
+        }
+      }
+      updateProfileFields(flushPatch).catch((err) => {
         console.warn('Could not save English study time to Firestore:', err);
+        notifyProgressSyncIssue(); // audit §4.2 #3
       });
     };
 

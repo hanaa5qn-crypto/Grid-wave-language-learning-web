@@ -127,7 +127,9 @@ export function VocabTab({
         [key]: nextEntry
       };
 
-      const actId = activityKey('vocab', word.rank ?? `${word.german}-${word.mongolian}`);
+      // audit §5.2 #6: reuse the collision-free SRS key instead of the old
+      // rank-based one — same instability, same fix.
+      const actId = activityKey('vocab', key);
       const nextCompleted = knows
         ? Array.from(new Set([...(profile.completedActivityIds ?? []), actId]))
         : (profile.completedActivityIds ?? []);

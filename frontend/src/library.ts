@@ -715,6 +715,13 @@ export const LISTENING_LIBRARY: ListeningItem[] = [
 
 // =============================================================================
 // WRITING_LIBRARY — 50+ бичих даалгавар (загвар хариулттай)
+// -----------------------------------------------------------------------------
+// `id` is the item's PERMANENT identity — completion/mistake keys are built
+// from it (`write:<level>:<id>`, audit §5.2 #5). Never renumber an existing
+// id and never reuse one freed by deleting an item; either invalidates every
+// learner's saved progress for that item. Duplicate ids within this array
+// (post-WRITING_EXTRA push, see bottom of file) are asserted in
+// tests/speakwrite-keys.test.ts.
 // =============================================================================
 export const WRITING_LIBRARY: WritingItem[] = [
   { id: 1, level: 'A1', topic: 'Танилцуулга', title: 'Sich vorstellen', titleMn: 'Өөрийгөө танилцуулах',
@@ -981,6 +988,13 @@ export const WRITING_LIBRARY: WritingItem[] = [
 
 // =============================================================================
 // SPEAKING_LIBRARY — 50+ ярих дасгал (загвар хариулт + TTS)
+// -----------------------------------------------------------------------------
+// `id` is the item's PERMANENT identity — completion/mistake keys are built
+// from it (`speak:<id>`, audit §5.2 #5). Never renumber an existing id and
+// never reuse one freed by deleting an item; either invalidates every
+// learner's saved progress for that item. Duplicate ids within this array
+// (post-SPEAKING_EXTRA push, see bottom of file) are asserted in
+// tests/speakwrite-keys.test.ts.
 // =============================================================================
 export const SPEAKING_LIBRARY: SpeakingItem[] = [
   { id: 1, level: 'A1', topic: 'Танилцуулга', title: 'Sich vorstellen', titleMn: 'Өөрийгөө танилцуулах',

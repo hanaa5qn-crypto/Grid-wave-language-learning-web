@@ -72,9 +72,31 @@ export function suggestedWordLevel(placementLevel: string | undefined): CEFRLeve
   return null;
 }
 
-// Same identity the existing activity log uses for vocabulary words.
+// Slugify a string for use inside a Firestore-safe composite key: trimmed,
+// lowercased, whitespace collapsed to '-', and dots removed — Firestore's
+// dotted-path writes (auth.ts's toMergeSafePatch) can't address a map key
+// containing '.', and German text is full of dot-heavy abbreviations like
+// "z. B.". Exported so other key-stability fixes can reuse the same rule.
+export function slugForKey(value: string): string {
+  return value.trim().toLowerCase().replace(/\./g, '').replace(/\s+/g, '-');
+}
+
+// Collision-free vocab SRS identity (audit §5.2 #6). The old key —
+// `String(word.rank ?? german-mongolian)` — collided on 83 of the 6420
+// trainer words sharing a rank, and ranks could be silently renumbered by
+// re-running `vocab:gen`, re-pointing a learner's SRS state at a different
+// word. `german|wordClass` alone still collides on 29 entries (case-only
+// pairs like "sie"/"Sie", plus true duplicate dictionary entries) — adding
+// mongolian + english as tie-breakers gives zero collisions across the full
+// dictionary (verified in tests/srs-keys.test.ts). Legacy keys are migrated
+// forward by keyMigrations.ts; this function is never applied to old data.
 export function srsWordKey(word: VocabularyWord): string {
-  return String(word.rank ?? `${word.german}-${word.mongolian}`);
+  return [
+    slugForKey(word.german),
+    word.wordClass ?? '',
+    slugForKey(word.mongolian),
+    slugForKey(word.english ?? ''),
+  ].join('|');
 }
 
 export function reviewSrs(entry: SrsEntry | undefined, knew: boolean, today = new Date()): SrsEntry {
@@ -253,11 +275,14 @@ export function buildUnitsForLevel(level: Level): Unit[] {
       ...chunk(listening, UNIT_LISTENING, u).map((i: ListeningItem): UnitActivity => ({
         activityId: activityKey('library:listen', i.id), tab: 'listen', itemId: i.id, title: i.title, titleMn: i.titleMn,
       })),
+      // speak/write ids, not text (audit §5.2 #5) — text edits used to silently
+      // invalidate completions; legacy text-derived keys are migrated forward
+      // by keyMigrations.ts's 'speakwrite-v1' shim.
       ...chunk(speaking, UNIT_SPEAKING, u).map((i: SpeakingItem): UnitActivity => ({
-        activityId: activityKey('speak', i.modelAnswer), tab: 'speak', itemId: i.id, title: i.title, titleMn: i.titleMn,
+        activityId: activityKey('speak', i.id), tab: 'speak', itemId: i.id, title: i.title, titleMn: i.titleMn,
       })),
       ...chunk(writing, UNIT_WRITING, u).map((i: WritingItem): UnitActivity => ({
-        activityId: activityKey(`write:${i.level}`, i.prompt), tab: 'write', itemId: i.id, title: i.title, titleMn: i.titleMn,
+        activityId: activityKey(`write:${i.level}`, i.id), tab: 'write', itemId: i.id, title: i.title, titleMn: i.titleMn,
       })),
     ];
     if (activities.length === 0) continue;
@@ -271,9 +296,33 @@ export function unitProgress(unit: Unit, completed: Set<string>): { done: number
   return { done, total: unit.activities.length };
 }
 
+// Ratchet fact recording that a unit passed (audit fix 7). Lives in the same
+// completedActivityIds ledger as real activities, under its own `unit:` prefix
+// so progress math / session picking / mistake resolution ignore it.
+export function unitPassId(level: string, index: number): string {
+  return `unit:de:${level}:${index}`;
+}
+
 export function isUnitPassed(unit: Unit, completed: Set<string>): boolean {
+  // audit fix 7 ratchet: once the pass fact is in the ledger the unit can
+  // never un-pass — units are positional slices (buildUnitsForLevel), so
+  // adding content re-chunks membership and could otherwise drop a passed
+  // unit below the live threshold, re-locking everything after it.
+  if (completed.has(unitPassId(unit.level, unit.index))) return true;
   const { done, total } = unitProgress(unit, completed);
   return total > 0 && done / total >= UNIT_PASS_RATIO;
+}
+
+// Units currently passing the LIVE ≥70% threshold whose ratchet fact is not in
+// the ledger yet — the ids the caller should persist (arrayUnion) right away.
+export function newlyPassedUnitIds(units: Unit[], completed: Set<string>): string[] {
+  return units
+    .filter((unit) => {
+      if (completed.has(unitPassId(unit.level, unit.index))) return false;
+      const { done, total } = unitProgress(unit, completed);
+      return total > 0 && done / total >= UNIT_PASS_RATIO;
+    })
+    .map((unit) => unitPassId(unit.level, unit.index));
 }
 
 // Unit 1 is always open; unit N unlocks once unit N-1 is passed.
@@ -376,7 +425,7 @@ export function buildTodaySession(
   return {
     reading: pickNext(READING_LIBRARY, targetLevel, (i) => completed.has(activityKey('library:read', i.id))),
     listening: pickNext(LISTENING_LIBRARY, targetLevel, (i) => completed.has(activityKey('library:listen', i.id))),
-    speaking: pickNext(SPEAKING_LIBRARY, targetLevel, (i) => completed.has(activityKey('speak', i.modelAnswer))),
+    speaking: pickNext(SPEAKING_LIBRARY, targetLevel, (i) => completed.has(activityKey('speak', i.id))),
     dueWordCount: countDueWords(trainerWords, srs, todayKey),
   };
 }

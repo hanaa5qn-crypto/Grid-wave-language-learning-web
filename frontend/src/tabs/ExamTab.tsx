@@ -3,7 +3,7 @@ import {
   Volume2, BookOpen, Headphones, Mic, Edit3, Languages, Lightbulb,
   ArrowRight, ArrowLeft, GraduationCap, Lock, Sparkles,
 } from 'lucide-react';
-import { TabType } from '../types';
+import { TabType, SpeakTarget } from '../types';
 import {
   ReadingItem, ListeningItem, WritingItem, SpeakingItem, shuffleQuiz,
 } from '../library';
@@ -30,10 +30,10 @@ interface ExamTabProps {
   renderPlanLockCard: (title: string, description: string, requiredPlan: 'pro' | 'max') => React.ReactNode;
   renderWritingChecker: (
     text: string,
-    ctx: { prompt: string; points: string[]; modelAnswer: string; level: string },
+    ctx: { id: number; prompt: string; points: string[]; modelAnswer: string; level: string },
   ) => React.ReactNode;
-  renderSpeakingJudge: (target: string) => React.ReactNode;
-  renderSpeakingReport: (target: string) => React.ReactNode;
+  renderSpeakingJudge: (target: SpeakTarget) => React.ReactNode;
+  renderSpeakingReport: (target: SpeakTarget) => React.ReactNode;
   resetSpeakingJudge: () => void;
   resetWritingFeedback: () => void;
 }
@@ -342,7 +342,7 @@ export function ExamTab({
                     )}
 
                     {/* AI writing check for the exam writing task. */}
-                    {renderWritingChecker(examItemWrite, { prompt: w.prompt, points: w.points, modelAnswer: w.modelAnswer, level: w.level })}
+                    {renderWritingChecker(examItemWrite, { id: w.id, prompt: w.prompt, points: w.points, modelAnswer: w.modelAnswer, level: w.level })}
                   </>
                 );
               })()}
@@ -380,8 +380,8 @@ export function ExamTab({
                     <p className="text-[11px] text-paper-2 mt-4 italic">Зөвлөмж: эхлээд өөрөө чангаар хэлж үзээд, дараа нь загвартай харьцуулаарай.</p>
 
                     {/* AI judge for exam speaking — graded against this item's model answer. */}
-                    {renderSpeakingJudge(sp.modelAnswer)}
-                    {renderSpeakingReport(sp.modelAnswer)}
+                    {renderSpeakingJudge({ id: sp.id, text: sp.modelAnswer })}
+                    {renderSpeakingReport({ id: sp.id, text: sp.modelAnswer })}
                   </>
                 );
               })()}

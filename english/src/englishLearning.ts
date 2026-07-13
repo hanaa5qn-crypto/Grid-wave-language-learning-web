@@ -225,9 +225,33 @@ export function enUnitProgress(unit: EnUnit, completed: Set<string>): { done: nu
   const done = unit.activities.reduce((s, a) => s + (completed.has(a.activityId) ? 1 : 0), 0);
   return { done, total: unit.activities.length };
 }
+// Ratchet fact recording that a unit passed (audit fix 7). English units are
+// scoped by CEFR level only — buildEnglishUnits has no exam dimension (the
+// reading/listening pool is shared across IELTS/SAT) — so the id shape is
+// `unit:en:<level>:<index>`. Same `unit:` prefix rule as German: progress math
+// and session picking ignore these.
+export function enUnitPassId(level: string, index: number): string {
+  return `unit:en:${level}:${index}`;
+}
+
 export function enUnitPassed(unit: EnUnit, completed: Set<string>): boolean {
+  // audit fix 7 ratchet: a ledgered pass fact can never un-pass, even when
+  // content growth re-chunks the unit below the live threshold.
+  if (completed.has(enUnitPassId(unit.level, unit.index))) return true;
   const { done, total } = enUnitProgress(unit, completed);
   return total > 0 && done / total >= EN_UNIT_PASS_RATIO;
+}
+
+// Units currently passing the LIVE threshold whose ratchet fact is not in the
+// ledger yet — the ids the caller should persist (arrayUnion) right away.
+export function newlyPassedEnUnitIds(units: EnUnit[], completed: Set<string>): string[] {
+  return units
+    .filter((unit) => {
+      if (completed.has(enUnitPassId(unit.level, unit.index))) return false;
+      const { done, total } = enUnitProgress(unit, completed);
+      return total > 0 && done / total >= EN_UNIT_PASS_RATIO;
+    })
+    .map((unit) => enUnitPassId(unit.level, unit.index));
 }
 export function enUnitUnlocked(units: EnUnit[], index: number, completed: Set<string>): boolean {
   if (index <= 0) return true;

@@ -55,7 +55,8 @@ export default function DashboardTab({ onNavigate }: { onNavigate?: (dest: DashD
 
   const targetLevel = profile?.targetLevelEn || 'A1';
   const completedIds = profile?.completedActivityIdsEn ?? [];
-  const completedCount = new Set(completedIds).size;
+  // Exclude `unit:` ratchet facts (audit fix 7) — they are not activities.
+  const completedCount = new Set(completedIds.filter((id) => !id.startsWith('unit:'))).size;
 
   // First-run placement: a real account with no level chosen and not dismissed.
   const needsPlacement =

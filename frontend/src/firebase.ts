@@ -5,7 +5,13 @@
 // and means the app boots fine even before you've pasted your config.
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  type Firestore,
+} from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import { firebaseConfig, isFirebaseConfigured } from './firebaseConfig';
 
@@ -18,7 +24,21 @@ function ensureInitialized() {
   if (!app) {
     app = initializeApp(firebaseConfig);
     authInstance = getAuth(app);
-    dbInstance = getFirestore(app);
+    // audit fix #3: durable IndexedDB cache — a failed login-time read falls
+    // back to cached data instead of a blank profile, and queued writes survive
+    // tab closes. The multi-tab manager lets several open tabs share one cache.
+    // Capacitor's webviews (WKWebView / Android System WebView) both ship
+    // IndexedDB, so this works in the mobile wrappers too; if a browser can't
+    // support it (e.g. some private modes), fall back to the default memory
+    // cache instead of crashing.
+    try {
+      dbInstance = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      });
+    } catch (err) {
+      console.warn('Firestore persistent cache unavailable; using memory cache:', err);
+      dbInstance = getFirestore(app);
+    }
     storageInstance = getStorage(app);
   }
 }

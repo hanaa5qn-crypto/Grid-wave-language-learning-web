@@ -68,6 +68,16 @@ export interface UserProfile {
   // Guest/visitor session: an in-memory, non-persisted profile so visitors can
   // sample the app (free tier) without an account. Never written to Firestore.
   isGuest?: boolean;
+  // Blank in-memory stand-in returned when the login-time profile read failed
+  // (network flicker / offline). Like isGuest, never persisted to Firestore;
+  // while set, all progress-ledger writes are refused so the blank copy can
+  // never wipe the real server-side progress. (audit §4.2 #1)
+  isFallback?: boolean;
+  // Names of one-time progress-ledger key migrations already applied to this
+  // account (e.g. 'srs-v2' — audit §5.2 #6, frontend/src/keyMigrations.ts).
+  // Append-only ledger (arrayUnion-written, see auth.ts) so re-running a
+  // migration is always a safe no-op once its name is in this list.
+  keyMigrations?: string[];
   // Daily study goal in minutes (set during onboarding)
   dailyGoalMinutes?: number;
   // Streak freeze: how many 1-day grace days the user has available

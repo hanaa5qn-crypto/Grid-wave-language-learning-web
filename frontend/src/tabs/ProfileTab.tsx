@@ -56,7 +56,8 @@ export function ProfileTab({
     const unresolvedMistakes = resolveMistakes(currentUser.mistakeIds ?? []);
     const currentUnits = buildUnitsForLevel(currentUser.targetLevel as Level);
 
-    const completedCount = completedActivityIds.length;
+    // Exclude `unit:` ratchet facts (audit fix 7) — they are not activities.
+    const completedCount = completedActivityIds.filter((id) => !id.startsWith('unit:')).length;
     const lastStudyDay = studyDays[studyDays.length - 1];
     // We draw an SVG line chart representing study hours (learningCurve)
     const maxHours = Math.max(...currentUser.learningCurve.map(c => c.hours), 4);

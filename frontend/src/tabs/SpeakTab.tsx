@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Volume2, Lightbulb, ArrowLeft, ArrowRight, Shield,
 } from 'lucide-react';
-import { TabType } from '../types';
+import { TabType, SpeakTarget } from '../types';
 import { SPEAKING_LIBRARY, Level, SpeakingItem } from '../library';
 import { UserProfile } from '../profiles';
 import ExternalResourcesPanel from '../components/ExternalResourcesPanel';
@@ -24,8 +24,8 @@ interface SpeakTabProps {
   speakGerman: (text: string, speedMultiplier?: number) => void;
   renderRichGerman: (text: string) => React.ReactNode;
   // Shared AI speaking judge (also used by the exam tab) — stays in LearnerApp.
-  renderSpeakingJudge: (target: string) => React.ReactNode;
-  renderSpeakingReport: (target: string) => React.ReactNode;
+  renderSpeakingJudge: (target: SpeakTarget) => React.ReactNode;
+  renderSpeakingReport: (target: SpeakTarget) => React.ReactNode;
   resetSpeakingJudge: () => void;
 }
 
@@ -154,8 +154,8 @@ export function SpeakTab({
 
                       {/* AI judge — graded against this item's model answer. Every imported
                           speaking resource gets it automatically because it is data-driven. */}
-                      {renderSpeakingJudge(item.modelAnswer)}
-                      {renderSpeakingReport(item.modelAnswer)}
+                      {renderSpeakingJudge({ id: item.id, text: item.modelAnswer })}
+                      {renderSpeakingReport({ id: item.id, text: item.modelAnswer })}
 
                       {/* Prev/next lesson */}
                       {idxInFiltered >= 0 && filtered.length > 1 && (

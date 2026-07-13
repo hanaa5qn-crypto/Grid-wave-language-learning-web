@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import AccountScreen from './AccountScreen';
+import ProgressSyncBanner from './ProgressSyncBanner';
 import { saveTrackChoice, subscribeToProfileUpdates, logOutUser } from './auth';
 import { UserProfile } from './profiles';
 
@@ -98,7 +99,18 @@ function Chooser({ onPick }: { onPick: (track: Track) => void }) {
 }
 
 // Gate that decides which language track to render and persists the choice.
+// Wraps the gate body so the progress-sync retry toast (audit §4.2 #1/#3) is
+// mounted once for BOTH tracks and every gate screen.
 export default function LanguageGate() {
+  return (
+    <>
+      <GateBody />
+      <ProgressSyncBanner />
+    </>
+  );
+}
+
+function GateBody() {
   const [track, setTrack] = useState<Track | null>(null);
   // Profile-first flow: after login, the account/settings screen is shown once
   // before the language chooser. `setupDone` flips true after the user continues
