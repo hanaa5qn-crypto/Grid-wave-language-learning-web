@@ -11,10 +11,10 @@ npm run dev          # dev server: tsx backend/server.ts + Vite middleware, http
 npm run lint         # type-check ONLY — this repo's "lint" is `tsc --noEmit` (no ESLint)
 npm test             # vitest run (jsdom)
 npm run test:watch   # vitest watch
-npm run build        # vite build (frontend → dist) + esbuild bundle (backend → dist/server.cjs)
+npm run build        # vite build (frontend → dist) + prerender public pages (scripts/prerender.tsx) + esbuild bundle (backend → dist/server.cjs)
 npm start            # production: NODE_ENV=production node dist/server.cjs
 npm run cap:android  # build + Capacitor sync/open (also cap:ios, cap:sync)
-npm run vocab:gen    # regenerate vocab data (scripts/generateVocabeo.ts)
+npm run vocab:gen    # regenerate vocab data (scripts/generateVocabeo.ts; vocab:stub for stub-only)
 ```
 
 Run a single test file / one test:
@@ -32,6 +32,8 @@ Notes:
 
 ### One process, two halves
 `backend/server.ts` is a single Express app. In dev it lazy-imports Vite in middleware mode and serves the SPA; in prod (`NODE_ENV=production`) it serves the static `dist/` build with an `index.html` SPA fallback. `npm run build` bundles the backend to `dist/server.cjs` via esbuild. On Vercel the app runs serverless (the `app.listen` is skipped when `VERCEL` is set without `PORT`).
+
+SEO: `scripts/prerender.tsx` runs after `vite build` and snapshots the public marketing routes (hero, terms, privacy, contact) into static HTML that the client bundle hydrates over. App routes (`/admin`, `/teacher`, in-app tabs) are deliberately NOT prerendered and are blocked in robots.txt; `vercel.app` alias domains 301 to `www.gridwave.me`.
 
 ### Entry / track-selection flow (where languages are wired)
 `frontend/src/main.tsx` → `AuthGate` (Firebase auth) → `frontend/src/LanguageGate.tsx` (the track chooser; the chosen track persists in `localStorage` under `TRACK_KEY` and mirrors onto the user profile for the admin split). LanguageGate then renders:
@@ -56,6 +58,13 @@ The `users/{uid}` doc holds both client-writable progress and **server-owned** e
 
 Current server-owned set: `billing`, `placementCredits`, `aiUsage`, `promo`, `redeemedCodes`. When you add an entitlement/anti-abuse field, add it to **both** lists or a client can tamper with it. Other collections (`teacherCodes`, `commissions`, `analytics`, `payments`, `subscriptions`) are admin-only and written solely by the backend; admin is a server-set custom claim (`admin:true`), never email-based.
 
+### Progress-write invariants (data-loss protection)
+`docs/backend-audit.md` is the living spec; each shipped fix carries an "IMPLEMENTED" note. Load-bearing rules:
+- All profile writes go through `updateProfileFields` (`frontend/src/auth.ts`); the completion ledgers + `keyMigrations` are **append-only via `arrayUnion`** — never overwrite them with a full array.
+- `unit:`-prefixed ids in completion ledgers are ratchet facts (unit passed), not activities — any consumer counting activity must ignore them.
+- `keyMigrations` entries (`srs-v2`, `speakwrite-v1`, `units-v1`, `units-v1-en`) gate one-time client migrations; new migrations follow the `keyMigrations.ts` caller-supplies-data pattern.
+- `auth.ts` must never import track content (keeps it out of every bundle split).
+
 ### Payments
 Three providers behind one flow (`backend/routes/payments.ts` + `lib/payments/byl.ts`): **`byl`** (real — QPay/SocialPay/Pocket hosted checkout, confirmed by polling + an HMAC-SHA256 webhook against the raw request body), **`dummy`** (dev/preview one-click simulation, excluded from revenue), and **`promo`** (100%-off teacher code → free grant, no gateway). Byl's API is always the source of truth for activation. Teacher promo codes give a per-person-per-code discount + commission; see `lib/promo.ts` and the `redeemedCodes` ledger.
 
@@ -65,9 +74,13 @@ Writing/speaking/composition are graded by `@google/genai` (Gemini via Vertex) t
 ### Mobile
 Capacitor (`cap:*` scripts) wraps the built SPA for Android/iOS; native bits in `frontend/src/native.ts`.
 
+### Ops scripts
+`scripts/` holds one-off admin/ops tools run with `tsx` (not part of the app): `deployFirestoreRules.ts`, `deployStorageRules.ts`, `setAdminClaims.ts`, `bylSmokeTest.ts`, `auditDummyPayments.ts`, vocab generators.
+
 ## Conventions
 
 - **Separate concerns; do not grow monoliths.** Keep backend route handlers thin and put logic in `backend/lib/*`. Put each frontend feature/screen/tab in its own file under `components/`, `tabs/`, or `pages/`. `frontend/src/App.tsx` (~5k lines, German app) and `AdminDashboard.tsx` are legacy monoliths — **extract** new work into new files rather than adding to them.
 - **React 19, no `@types/react`.** Class components must `declare` their `state`/`props` fields (typing gotcha). Auth/routing is intercepted at `AuthGate` (root), so new top-level routes belong there.
-- **Design system "Aurora Atelier".** Use the semantic tokens (`bg-ink`, `bg-ink-raise`, `bg-ink-2`, `text-paper`, `text-paper-2`, `border-ink-line`, …), Tailwind v4 via `@tailwindcss/vite`. Watch the `@layer` cascade gotcha in `frontend/src/index.css`. UI copy is Mongolian.
+- **Design system "Aurora Atelier" + multi-theme.** Base tokens are semantic (`bg-ink`, `bg-ink-raise`, `bg-ink-2`, `text-paper`, `text-paper-2`, `border-ink-line`, …), Tailwind v4 via `@tailwindcss/vite`. Watch the `@layer` cascade gotcha in `frontend/src/index.css`. UI copy is Mongolian.
+- **Theming.** Four themes: `dark` (default, no class), `light`, `gold`, `aurora` — `frontend/src/lib/theme.ts` sets a class on `<html>` that flips CSS custom properties in `index.css`; components subscribe with `useTheme()` (`useSyncExternalStore`, no provider). Gold/aurora use M3-style tokens (`bg-surface*`, `text-on-surface*`, `border-outline*`, `font-space`); themed components branch per className: `gold || aurora ? "<M3 tokens>" : "<original>"`. Keep the dark/light branch byte-identical when adding themed variants. Theme-variant components exist side by side (e.g. `LoginScreen`/`GoldLoginScreen`/`AuroraLoginScreen`, `BillingCard`/`Gold…`/`Aurora…`).
 - **Testing.** Pure `lib/` + frontend `*.ts` logic is unit-tested directly; Express routes are tested with `supertest` over an in-memory Firestore mock (`tests/promo-route.test.ts` is the template — the mock enforces Firestore's reads-before-writes-in-a-transaction rule, so order route transactions accordingly).
