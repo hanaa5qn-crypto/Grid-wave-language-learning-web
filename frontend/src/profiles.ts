@@ -137,7 +137,7 @@ export interface UserProfile {
   // (IELTS/SAT). The track is currently a client-side choice (localStorage), so
   // this isn't written yet — it's the hook the admin English/German views filter
   // on once track tagging is wired up. Until then a track view shows no rows.
-  track?: 'en' | 'de';
+  track?: 'en' | 'de' | 'edu';
   billing?: {
     plan?: string;
     status?: string;

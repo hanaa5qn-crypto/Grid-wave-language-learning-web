@@ -1,0 +1,394 @@
+{
+  "basics": [
+    {
+      "q": "A jobs report comes in exactly as forecast. According to the lesson, how does the market typically react?",
+      "choices": [
+        "With a sharp move, since any new data is a surprise",
+        "With little movement, since the number was already priced in",
+        "Always bullish, since good data is good news",
+        "Always bearish, since traders fade good news"
+      ],
+      "answer": 1,
+      "why": "Markets trade the surprise versus consensus, so a result that matches the forecast is typically already priced in and often barely moves price.",
+      "card": "What actually moves markets"
+    },
+    {
+      "q": "Per the lesson, why do growth stocks like the Nasdaq (NQ) react especially hard to shifts in the expected rate path?",
+      "choices": [
+        "Far-future profits get discounted more when rates rise",
+        "They pay the highest dividends of any index",
+        "The Fed sets NQ's price directly",
+        "They contain no exposure to borrowing costs"
+      ],
+      "answer": 0,
+      "why": "Higher rates raise the discount rate applied to far-future profits, so long-duration growth stocks typically feel rate-path shifts hardest.",
+      "card": "Interest rates 101"
+    },
+    {
+      "q": "Which inflation measure does the lesson say matters most to the Fed's own decisions?",
+      "choices": [
+        "Headline CPI alone",
+        "Yesterday's inflation report",
+        "Core inflation and PCE",
+        "The forecast/consensus figure"
+      ],
+      "answer": 2,
+      "why": "Core inflation and PCE strip out volatile items and reflect the Fed's own preferred gauge, so they typically outweigh a single headline CPI beat or miss.",
+      "card": "Inflation 101"
+    },
+    {
+      "q": "According to the lesson, what combination of labor and inflation data is described as 'hawkish'?",
+      "choices": [
+        "Weak jobs and cooling inflation",
+        "Weak jobs and hot inflation",
+        "Strong jobs and cooling inflation",
+        "Strong jobs and sticky/hot inflation"
+      ],
+      "answer": 3,
+      "why": "A labor market running hot alongside sticky inflation typically argues for higher-for-longer rates, which the lesson labels a hawkish combination.",
+      "card": "Employment & growth"
+    },
+    {
+      "q": "Per the lesson, what typically happens to gold when real yields rise?",
+      "choices": [
+        "Gold typically rallies, since it becomes a safer store of value",
+        "Gold typically falls, since non-yielding gold gets less attractive",
+        "Gold is unaffected by real yields",
+        "Gold always moves with the stock market instead"
+      ],
+      "answer": 1,
+      "why": "Gold pays no yield of its own, so rising real yields raise the opportunity cost of holding it and typically pressure its price lower.",
+      "card": "Yields & the dollar"
+    },
+    {
+      "q": "The lesson describes one exception where gold and the US dollar can rise together. What is it?",
+      "choices": [
+        "A genuine fear shock, where both are bid as safe havens",
+        "A rate cut cycle",
+        "A strong jobs report",
+        "Every risk-off move, without exception"
+      ],
+      "answer": 0,
+      "why": "In a genuine fear shock, gold and the dollar are typically both bought as safe havens even as equities fall, breaking the usual relationship.",
+      "card": "Risk-on / risk-off"
+    },
+    {
+      "q": "Per the lesson, what added effect does a stronger US dollar have on dollar-priced gold?",
+      "choices": [
+        "Makes gold cheaper for foreign buyers, boosting demand",
+        "Only affects gold priced in euros, not dollars",
+        "Makes gold more expensive for foreign buyers, compounding the pressure",
+        "Has no effect on foreign demand for gold"
+      ],
+      "answer": 2,
+      "why": "A stronger dollar typically makes dollar-priced gold pricier for foreign buyers, adding to the drag from rising real yields.",
+      "card": "Yields & the dollar"
+    },
+    {
+      "q": "The lesson says markets react to the expected path of rates, not just today's level. Which tools does it point to?",
+      "choices": [
+        "Only the unemployment rate",
+        "Historical CPI averages",
+        "The VIX and safe-haven flows",
+        "The dot plot and terminal rate"
+      ],
+      "answer": 3,
+      "why": "The dot plot and terminal rate are typically the clearest signals of where the Fed expects rates to end up, not just where they sit today.",
+      "card": "Interest rates 101"
+    }
+  ],
+  "markets": [
+    {
+      "q": "A trader sizes an ES futures position using only the minimum day-trade margin deposit. What are they overlooking?",
+      "choices": [
+        "The true notional exposure can be roughly 500x larger than that margin deposit",
+        "The contract's tick value in dollars",
+        "The contract's quarterly expiration schedule",
+        "Whether the contract is cash-settled or physically settled"
+      ],
+      "answer": 0,
+      "why": "Margin is a small performance bond, not the real notional exposure, so sizing off it typically understates true dollar risk.",
+      "card": "Futures 101: margin, leverage, and contract specs"
+    },
+    {
+      "q": "Why does a 1-point move in NQ and a 1-point move in ES not represent the same dollar risk?",
+      "choices": [
+        "NQ expires monthly while ES expires quarterly",
+        "They have different tick values ($20 vs $50 per point) and different notional sizes",
+        "ES is cash-settled while NQ is not",
+        "NQ requires physical delivery"
+      ],
+      "answer": 1,
+      "why": "Different tick values and contract sizes mean the same point move produces different dollar swings, so position sizing should typically follow dollar risk, not contract count.",
+      "card": "Futures 101: margin, leverage, and contract specs"
+    },
+    {
+      "q": "Which window is typically the busiest liquidity period of the entire trading day?",
+      "choices": [
+        "The Sydney-Tokyo overlap",
+        "The hour before the 9:30 AM ET cash open",
+        "The London-New York overlap (roughly 8:00-11:30 AM ET)",
+        "The 11:30 AM-2:00 PM ET lunch lull"
+      ],
+      "answer": 2,
+      "why": "European and American desks trading at once typically packs over half of global volume into this overlap window.",
+      "card": "Trading sessions and why the New York open matters"
+    },
+    {
+      "q": "What is a common beginner mistake around the New York cash open?",
+      "choices": [
+        "Waiting 15-30 minutes before acting on a pre-market bias",
+        "Checking whether a move happened on London or NY liquidity",
+        "Avoiding trades during the lunch lull",
+        "Chasing the first 5 minutes of the 9:30 AM open or forcing trades during the lunch lull"
+      ],
+      "answer": 3,
+      "why": "The first minutes after the open are typically noisy as algorithms sweep resting stops, and the lunch lull typically sees moves that rarely hold.",
+      "card": "Trading sessions and why the New York open matters"
+    },
+    {
+      "q": "Why is using the standard 4th-decimal pip size on a JPY pair a common beginner mistake?",
+      "choices": [
+        "JPY pairs don't have pips at all",
+        "JPY pairs move at the 2nd decimal, misreading position size and risk by ~100x",
+        "JPY pairs are quoted in cents, not pips",
+        "JPY pairs only trade during the Tokyo session"
+      ],
+      "answer": 1,
+      "why": "Since yen is a much lower-value unit, JPY pairs are typically quoted with pips at the second decimal rather than the fourth, so using the wrong pip size distorts risk calculations.",
+      "card": "Reading FX pairs: base/quote, pips, and what actually moves them"
+    },
+    {
+      "q": "If the Bank of Japan surprises with a hawkish rate move while the Fed holds or cuts, what typically happens to USD/JPY?",
+      "choices": [
+        "It typically stays flat since BoJ moves don't affect USD/JPY",
+        "It typically rallies sharply higher",
+        "It can drop hard as carry-trade positions unwind",
+        "It typically only reacts to Fed data, not BoJ data"
+      ],
+      "answer": 2,
+      "why": "A hawkish BoJ surprise next to a soft Fed can trigger a sudden unwind of yen-funded carry trades, typically dropping USD/JPY quickly.",
+      "card": "Fed vs the world: ECB, BoE, BoJ and policy divergence"
+    },
+    {
+      "q": "Why does a bond's yield fall when its price rises in the secondary market?",
+      "choices": [
+        "The same fixed coupon becomes a smaller percentage return at the higher price",
+        "Bond issuers reduce the coupon rate when demand rises",
+        "Rising prices always trigger Fed rate cuts",
+        "Yield and price move independently of each other"
+      ],
+      "answer": 0,
+      "why": "A bond's coupon is fixed at issue, so a higher price makes that same payment a smaller percentage return, mechanically lowering yield.",
+      "card": "Bonds 101: why yields move the opposite way from prices"
+    },
+    {
+      "q": "Why can't the NYSE TICK index or the A/D line be used to gauge sentiment before the market opens?",
+      "choices": [
+        "They are proprietary and require a paid subscription",
+        "They only measure options activity, not equities",
+        "They update every hour regardless of market hours",
+        "They require the cash equity market to be open, so they can't update pre-market"
+      ],
+      "answer": 3,
+      "why": "TICK and breadth measures like the A/D line depend on live cash-session trading, so they typically can't update before the 9:30 AM ET open; the VIX futures curve is the internal that genuinely trades near 24 hours.",
+      "card": "Market internals: breadth, TICK, and the VIX curve"
+    }
+  ],
+  "events": [
+    {
+      "q": "Why does the FOMC decision act as the 'first domino' in the transmission chain the impact map traces?",
+      "choices": [
+        "It resets Fed rate-path expectations, which flow into yields, USD, stocks, and gold",
+        "It sets the exact closing price for the US dollar for the following week",
+        "It directly buys or sells stocks to stabilize the market",
+        "It replaces GDP as the primary growth indicator"
+      ],
+      "answer": 0,
+      "why": "The FOMC decision is usually the first domino because it typically resets Fed rate-path expectations, which flow into yields, the dollar, stocks, and gold.",
+      "card": "FOMC Decision"
+    },
+    {
+      "q": "On a HOTTER THAN EXPECTED CPI print, what typically happens to yields and the US dollar?",
+      "choices": [
+        "Both typically fall as rate cuts get priced in",
+        "Both typically rise as rate cuts get priced out",
+        "They typically move in opposite directions",
+        "Neither reacts, since CPI rarely moves markets"
+      ],
+      "answer": 1,
+      "why": "A hotter-than-expected CPI print typically gets rate cuts priced out, pushing yields and the dollar up together.",
+      "card": "CPI"
+    },
+    {
+      "q": "According to the lesson, how is PPI typically treated when the prior CPI report was not ambiguous?",
+      "choices": [
+        "As the single most important release of the month, always",
+        "As confirmation the Fed will immediately cut rates",
+        "Often as a footnote in calm regimes",
+        "As a replacement for the monthly jobs report"
+      ],
+      "answer": 2,
+      "why": "PPI typically acts as a tiebreaker only when CPI was ambiguous; otherwise it's often treated as just a footnote in calm regimes.",
+      "card": "PPI"
+    },
+    {
+      "q": "Why can equities be 'genuinely torn' when NFP shows strong jobs and hot wages?",
+      "choices": [
+        "Because NFP is released on a different day than the unemployment rate",
+        "Because the report excludes average hourly earnings",
+        "Because the unemployment rate is never released with NFP",
+        "Because strong jobs and hot wages argue for a tighter Fed while also showing strength"
+      ],
+      "answer": 3,
+      "why": "Strong jobs and hot wages typically argue for a tighter Fed even as they signal genuine economic strength, leaving equities torn between the two effects.",
+      "card": "NFP (Payrolls)"
+    },
+    {
+      "q": "Why doesn't the equity reaction to a rising unemployment rate happen automatically, per the lesson?",
+      "choices": [
+        "A rising rate can flag recession risk, offsetting the lift from rate-cut hopes",
+        "The report is only published once a year",
+        "The Sahm Rule bans any market reaction",
+        "The unemployment rate is never released alongside NFP"
+      ],
+      "answer": 0,
+      "why": "A rising unemployment rate typically pulls rate-cut expectations forward, which is supportive for valuations, but it can also flag recession risk that offsets the relief.",
+      "card": "Unemployment Rate"
+    },
+    {
+      "q": "Why does only the advance GDP estimate typically move markets, according to the lesson?",
+      "choices": [
+        "It is the only estimate released by the BEA rather than the BLS",
+        "It is the most current read, unlike the two later revisions",
+        "It is announced by the Fed Chair during the FOMC press conference",
+        "It replaces the FOMC statement each quarter"
+      ],
+      "answer": 1,
+      "why": "The advance estimate is the most current read on growth, so it's typically the version that reliably moves markets, unlike the two later revisions.",
+      "card": "GDP"
+    },
+    {
+      "q": "In a geopolitical shock, what unusual combination can occur across gold, the dollar, and equities?",
+      "choices": [
+        "Gold and equities both rise while the dollar falls",
+        "Gold, the dollar, and equities all fall together",
+        "Gold and the dollar can rise together while equities fall",
+        "Only equities react, since gold and USD move through the rate-path channel"
+      ],
+      "answer": 2,
+      "why": "Geopolitical shocks typically move risk sentiment directly, making them the one case where gold and the dollar can rise together as safe havens while equities fall.",
+      "card": "Geopolitical Shock"
+    },
+    {
+      "q": "Why doesn't a PCE release typically cause as large a surprise as CPI or PPI?",
+      "choices": [
+        "PCE is not tied to the Fed's inflation target",
+        "PCE is released before CPI and PPI each month",
+        "The Fed does not consider PCE when setting rates",
+        "Much of what PCE will show is often already anticipated from CPI and PPI"
+      ],
+      "answer": 3,
+      "why": "Because CPI and PPI components typically help forecast PCE in advance, much of the print is often already anticipated by the time it's released.",
+      "card": "PCE"
+    }
+  ],
+  "craft": [
+    {
+      "q": "In professional position sizing, what happens to position size when you tighten your stop-loss while keeping dollar risk the same?",
+      "choices": [
+        "Position size increases (you can size up)",
+        "Position size decreases",
+        "Position size stays exactly the same",
+        "The dollar risk automatically doubles"
+      ],
+      "answer": 0,
+      "why": "A tighter stop means less price distance per unit, so more contracts fit within the same fixed dollar risk - stop distance and position size typically move opposite each other.",
+      "card": "Position sizing: risking a fixed percent, not a feeling"
+    },
+    {
+      "q": "The lesson's example of a sizing mistake involves confusing the contract multiplier between which two futures contracts?",
+      "choices": [
+        "ES and GC",
+        "NQ and MNQ",
+        "EUR/USD and GBP/USD",
+        "USD/JPY and GC"
+      ],
+      "answer": 1,
+      "why": "NQ and its micro contract MNQ have different point values, so mixing up which multiplier applies can end up risking roughly 10x the intended amount.",
+      "card": "Position sizing: risking a fixed percent, not a feeling"
+    },
+    {
+      "q": "What two components does expectancy combine to determine whether a trading system is profitable over time?",
+      "choices": [
+        "Number of trades per day and account size",
+        "Average win size alone",
+        "Win rate and average win/loss size measured in R",
+        "The trader's emotional state and journal entries"
+      ],
+      "answer": 2,
+      "why": "Expectancy is win rate times average win in R plus loss rate times average loss in R, so profitability typically depends on that combination, not win rate alone.",
+      "card": "R-multiples and expectancy: grading trades on a common scale"
+    },
+    {
+      "q": "What habit can make expectancy negative even though a trader feels successful, per the lesson?",
+      "choices": [
+        "Sizing positions based on account equity percentage",
+        "Using R-multiples to compare trades",
+        "Keeping a trading journal",
+        "Cutting winners early and letting losers run"
+      ],
+      "answer": 3,
+      "why": "Cutting winners short while letting losers run turns a planned 1R stop into a much larger real loss, which can quietly make expectancy negative despite a high win rate.",
+      "card": "R-multiples and expectancy: grading trades on a common scale"
+    },
+    {
+      "q": "Per the psychology lesson, why does loss aversion push traders to hold losers and cut winners short?",
+      "choices": [
+        "A loss feels roughly twice as painful as an equivalent gain feels good",
+        "Winning streaks are rarer than losing streaks",
+        "Traders naturally prefer larger position sizes",
+        "A trading journal removes emotional cues"
+      ],
+      "answer": 0,
+      "why": "Loss aversion is typically driven by a loss hurting about twice as much as an equal gain feels good, biasing traders toward holding losers and cutting winners early.",
+      "card": "Trading psychology: why your own brain is the risk"
+    },
+    {
+      "q": "What typically happens to the bid-ask spread right around a high-impact news release or during thin, low-volume sessions?",
+      "choices": [
+        "It narrows as more traders step in",
+        "It widens sharply as liquidity providers pull back",
+        "It disappears entirely",
+        "It stays the same regardless of volume"
+      ],
+      "answer": 1,
+      "why": "Liquidity providers typically pull orders around high-impact news or in thin sessions to avoid getting caught on the wrong side of a fast move, widening the spread.",
+      "card": "Spreads, slippage, and order execution"
+    },
+    {
+      "q": "What's the beginner mistake the seasonality lesson warns about with a stat like 'Santa Claus rally, 78% of the time'?",
+      "choices": [
+        "Ignoring the pattern completely every year",
+        "Trading only during the opening range",
+        "Treating it as a guaranteed trade for this specific year, ignoring the failure rate",
+        "Waiting for the economic calendar to confirm it first"
+      ],
+      "answer": 2,
+      "why": "A seasonal stat still fails a meaningful share of the time (the other roughly 20-25%), so treating it as guaranteed for one specific year ignores its real failure rate.",
+      "card": "Seasonality and time-of-day patterns"
+    },
+    {
+      "q": "Per the calendar lesson, what does price typically react to for a scheduled economic release?",
+      "choices": [
+        "The actual number in isolation",
+        "The previous month's original (unrevised) figure",
+        "Whether the release is red, orange, or gray on the calendar",
+        "The gap between the forecast and the actual reading"
+      ],
+      "answer": 3,
+      "why": "An in-line print is typically already priced in, so price reacts to the surprise - the gap between forecast and actual - rather than the actual figure alone.",
+      "card": "Reading the economic calendar without getting burned"
+    }
+  ]
+}

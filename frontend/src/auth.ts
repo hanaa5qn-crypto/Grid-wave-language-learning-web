@@ -280,7 +280,7 @@ function mergePatch(base: Record<string, unknown>, patch: Record<string, unknown
 // by track. No-op for guests (no session) and best-effort — a failed write must
 // never block entering the track. `track` isn't a server-owned field, so the
 // owner-write Firestore rule allows it.
-export async function saveTrackChoice(track: 'en' | 'de'): Promise<void> {
+export async function saveTrackChoice(track: 'en' | 'de' | 'edu'): Promise<void> {
   const user = getAuthInstance().currentUser;
   if (!user) return;
   try {

@@ -1,0 +1,1214 @@
+{
+  "sections": [
+    {
+      "id": "overview",
+      "name": "Overview",
+      "sub": "Cards & workflow",
+      "cards": [
+        {
+          "id": "economic-calendar",
+          "title": "Economic calendar",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "High-impact releases such as CPI, NFP, GDP, and retail sales can rapidly reprice rates and currencies."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Compare the actual result with forecast and previous values.",
+                "Focus on the size and direction of the surprise.",
+                "Expect wider spreads and volatility near release time."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "central-banks",
+          "title": "Central banks",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Markets price the expected path of interest rates—not only the latest rate decision."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Hawkish signals favor tighter policy or higher rates.",
+                "Dovish signals favor easier policy or lower rates.",
+                "Watch guidance, voting splits, and inflation concerns."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "intermarket-confirmation",
+          "title": "Intermarket confirmation",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Related markets can confirm or challenge the bias shown on the dashboard."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Rising yields can pressure growth equities and support USD.",
+                "Rising VIX often signals weaker risk appetite.",
+                "Oil and gold can reflect inflation or geopolitical stress."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "risk-before-conviction",
+          "title": "Risk before conviction",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A strong narrative is not an entry signal. Price can move against a valid long-term thesis."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Define invalidation before entering a trade.",
+                "Reduce size around red-folder events.",
+                "Stand aside when rule and AI signals conflict."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "morning-workflow",
+          "title": "A repeatable four-step review",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Morning workflow"
+            },
+            {
+              "type": "list",
+              "items": [
+                "Check event risk. Note the time of every high-impact release.",
+                "Read the bias. Review daily and weekly direction, confidence, and conflicts.",
+                "Confirm the environment. Compare yields, DXY, VIX, oil, and overnight sessions.",
+                "Wait for price. Use your trading plan for entry, invalidation, and position size."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "dashboard-reminder",
+          "title": "Remember",
+          "blocks": [
+            {
+              "type": "callout",
+              "text": "Remember: the dashboard is an informational context tool, not a trade signal. No setup is mandatory, and no score removes uncertainty."
+            }
+          ]
+        },
+        {
+          "id": "primary-references",
+          "title": "Primary references",
+          "blocks": [
+            {
+              "type": "list",
+              "items": [
+                "Federal Reserve — https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+                "BLS release calendar — https://www.bls.gov/schedule/",
+                "BEA release calendar — https://www.bea.gov/news/schedule",
+                "Sahm Rule at FRED — https://fred.stlouisfed.org/series/SAHMCURRENT",
+                "ISM calendar — https://www.ismworld.org/supply-management-news-and-reports/reports/rob-report-calendar/"
+              ]
+            },
+            {
+              "type": "p",
+              "text": "Always confirm the official calendar because holidays can change release dates."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "impact",
+      "name": "Impact map",
+      "sub": "Interactive",
+      "cards": [
+        {
+          "id": "impact-map",
+          "title": "How each release moves NQ · ES · Gold",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Markets move on the surprise vs. what was priced in, not the number itself. A common—not guaranteed—chain is: surprise → Fed rate-path repricing → yields & dollar → asset prices. Pick an event, toggle the scenario, and follow the arrows. They show a typical historical response, not a forecast. Green = that quantity rises, red = it falls."
+            },
+            {
+              "type": "widget",
+              "id": "impact-map"
+            }
+          ]
+        },
+        {
+          "id": "impact-cheat-sheet",
+          "title": "Cheat sheet — channel → market defaults",
+          "blocks": [
+            {
+              "type": "table",
+              "head": [
+                "If…",
+                "NQ",
+                "ES",
+                "Gold",
+                "Because"
+              ],
+              "rows": [
+                [
+                  "Yields ↑ (hawkish repricing)",
+                  "▼▼",
+                  "▼",
+                  "▼",
+                  "Higher discount rate hits long-duration tech hardest; gold pays no yield, so rising real yields raise its opportunity cost."
+                ],
+                [
+                  "USD ↑",
+                  "▼",
+                  "▼",
+                  "▼",
+                  "Strong dollar squeezes multinational earnings and makes dollar-priced gold dearer for foreign buyers."
+                ],
+                [
+                  "Risk-off (fear shock)",
+                  "▼▼",
+                  "▼",
+                  "▲▲",
+                  "The one regime where gold and the dollar rise together while equities fall — safe-haven flows."
+                ],
+                [
+                  "Yields ↓ (dovish repricing)",
+                  "▲▲",
+                  "▲",
+                  "▲",
+                  "Mirror image: cheaper money re-rates tech valuations first; gold rallies as real yields fall."
+                ],
+                [
+                  "Strong growth, inflation calm",
+                  "▲/▼",
+                  "▲",
+                  "—",
+                  "Earnings tailwind favours ES; NQ depends on whether yields rise with it. The regime decides."
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "id": "reaction-game",
+          "title": "Call the reaction",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Given a surprise, guess how each market typically reacts."
+            },
+            {
+              "type": "widget",
+              "id": "reaction-game"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "basics",
+      "name": "Finance basics",
+      "sub": "Start here",
+      "cards": [
+        {
+          "id": "what-moves-markets",
+          "title": "What actually moves markets",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Markets trade the surprise, not the headline number. Every release has a forecast/consensus already priced in — the surprise is the actual result minus that forecast. A number that matches expectations often barely moves price, while a small miss against a crowded expectation can move it hard."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Compare actual vs. forecast, not actual vs. last month.",
+                "Bigger surprise, further from consensus, tends to mean a bigger reaction.",
+                "\"Priced in\" news can even move price the opposite way once it's confirmed."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "interest-rates-101",
+          "title": "Interest rates 101",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The Fed funds rate is the short-term interest rate the Federal Reserve targets for overnight bank lending; it ripples out to mortgages, credit cards, and business loans. Higher rates make borrowing and saving cash more attractive, which typically cools spending and investment. They also raise the discount rate used to value future cash flows, so long-duration assets — growth stocks like the Nasdaq (NQ), which price in profits many years out — tend to react hardest to rate-path shifts."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Higher rates: typically a headwind for growth-heavy indices like NQ.",
+                "Markets react to the expected path of rates, not just today's level.",
+                "Watch the dot plot and terminal rate for that path."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "inflation-101",
+          "title": "Inflation 101",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "CPI tracks the price of a broad consumer basket; core inflation strips out volatile food and energy; PCE is the Fed's own preferred gauge and weights spending slightly differently. The Fed targets roughly 2% inflation over time. Hotter inflation prints typically push traders to expect a longer, higher rate path; cooler prints typically pull that expectation down — which is why inflation data feeds straight into the rate-path repricing shown on the impact map."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Hot inflation → typically hawkish repricing → yields and USD up, growth stocks pressured.",
+                "Cool inflation → typically dovish repricing → the mirror image.",
+                "Core/PCE matter more to the Fed than a single headline CPI beat or miss."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "employment-growth",
+          "title": "Employment & growth",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The Fed has a dual mandate: stable prices and maximum employment. NFP (nonfarm payrolls) and the unemployment rate are the headline labor readings; GDP is the broadest growth scorecard. A labor market that runs hot alongside sticky inflation typically argues for higher-for-longer rates; a cooling labor market typically strengthens the case for cuts — growth data is the other half of the inflation story, not a separate one."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Strong jobs + hot inflation: hawkish combination.",
+                "Weak jobs + cooling inflation: dovish combination.",
+                "GDP is backward-looking and revised; jobs and inflation data move markets faster."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "yields-and-the-dollar",
+          "title": "Yields & the dollar",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Nominal yield minus expected inflation is the real yield — the return investors actually keep. Rising real yields raise the opportunity cost of holding gold, which pays no yield at all, so gold tends to fall when real yields climb and rally when they fall. The DXY dollar index tends to move with the same rate-path expectations: a stronger dollar also makes dollar-priced gold more expensive for foreign buyers, compounding the pressure."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Yields up + USD up: typically the toughest combination for gold and growth stocks alike.",
+                "Gold holds no yield of its own — it competes directly with real yields.",
+                "See the cheat sheet on the impact map for the full read."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "risk-on-risk-off",
+          "title": "Risk-on / risk-off",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Risk-on is a market mood where traders favor stocks and other higher-risk assets; risk-off is the opposite — traders sell risk and move toward safe havens like the dollar, gold, or Treasuries. VIX, the market's fear gauge, tends to rise in risk-off moves. A genuine fear shock is the one regime where gold and the dollar can rise together while equities fall — both being bid as safe havens at the same time."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Risk-off: equities down, VIX up, safe havens bid.",
+                "Fear shocks are the exception where gold and USD move the same direction.",
+                "Sentiment can override the \"normal\" rates story for short stretches."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "events",
+      "name": "Events explained",
+      "sub": "FOMC, CPI, NFP…",
+      "cards": [
+        {
+          "id": "fomc-decision",
+          "title": "FOMC Decision",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: The Federal Open Market Committee (FOMC) is the Federal Reserve body that sets the target for the federal funds rate — the US policy rate. It meets eight times a year, and each meeting produces a policy statement, the rate decision, and, quarterly, a Summary of Economic Projections known as the dot plot, followed by a press conference with the Fed Chair."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: Federal Reserve. Eight scheduled meetings a year; the decision and statement typically land in the early afternoon ET, with the Chair's press conference roughly 30 minutes later."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: The FOMC decision is usually the first domino in the transmission chain the impact map traces — it resets Fed rate-path expectations, which flow into yields and the dollar and from there into stocks and gold."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: HAWKISH SURPRISE — the path gets repriced higher (fewer or later cuts), yields and USD rise, risk appetite falls. DOVISH SURPRISE — cuts get priced in sooner, yields and USD fall, risk appetite rises."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "cpi",
+          "title": "CPI",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: The Consumer Price Index tracks the price change of a broad consumer basket — the headline gauge of US inflation. Core CPI strips out volatile food and energy to show the underlying trend."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: Bureau of Labor Statistics (BLS). Monthly, typically released around 8:30 ET."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: Sticky inflation keeps the Fed hawkish, so CPI feeds straight into rate-path repricing — one of the most closely watched releases on the calendar."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: HOTTER THAN EXPECTED — cuts get priced out, yields and USD jump, growth stocks are usually pressured fastest. COOLER THAN EXPECTED — cuts get pulled forward, yields and USD ease, growth stocks often rally first."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "ppi",
+          "title": "PPI",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: The Producer Price Index measures prices received by domestic producers — an early read on pipeline inflation pressure before it may reach consumers. Some components feed directly into estimates of core PCE."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: BLS. Monthly, typically released around 8:30 ET, a few days after CPI."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: When CPI was ambiguous, PPI can act as the tiebreaker for the inflation narrative; in calm regimes it's often treated as a footnote."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: HOTTER THAN EXPECTED — a mildly hawkish nudge to the rate path. COOLER THAN EXPECTED — a mildly dovish nudge, often compounding a cool CPI."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "nfp-payrolls",
+          "title": "NFP (Payrolls)",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: Nonfarm Payrolls is the headline monthly jobs report — the net number of jobs added outside farm work — released together with the unemployment rate and average hourly earnings in the same report."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: BLS. Monthly, typically the first Friday of the month, around 8:30 ET."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: Labor-market strength is half of the Fed's dual mandate; strong jobs and hot wages argue for a tighter Fed while weak jobs argue for cuts, though the equity reaction depends heavily on which regime the market is trading."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: STRONG JOBS / HOT WAGES — hawkish repricing; equities can be genuinely torn between earnings strength and higher discount rates. WEAK JOBS — cuts usually get pulled forward and risk assets often rally, unless the miss is severe enough to trigger a growth scare."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "unemployment-rate",
+          "title": "Unemployment Rate",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: The share of the labor force that is jobless and actively looking for work, drawn from the household survey. Often read through the Sahm Rule, a rule-of-thumb recession signal based on how far the rate has risen from its recent low."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: BLS, released alongside NFP each month, around 8:30 ET."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: It cuts both ways — a rising rate can pull rate cuts forward (supportive for valuations) while also flagging recession risk (negative for earnings), so the equity reaction isn't automatic."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: RISES MORE THAN EXPECTED — cut bets rise, yields and USD fall, but recession worry can offset the relief. FALLS / TIGHTER — a mildly hawkish signal that wage pressure persists."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "gdp",
+          "title": "GDP",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: Gross Domestic Product is the broadest scorecard of economic growth — the total value of goods and services produced in the economy."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: Bureau of Economic Analysis (BEA). Quarterly, released as an advance estimate followed by two later revisions, typically around 8:30 ET."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: Growth is the earnings side of the equity story and the other half of the Fed's dual mandate; only the advance estimate reliably moves markets, since it's the most current read."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: BEAT (STRONG GROWTH) — an earnings tailwind for stocks, but it also gives the Fed less reason to cut, which can cap the boost to growth stocks. MISS (WEAK GROWTH) — dents earnings expectations while pulling cut bets forward."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "retail-sales",
+          "title": "Retail Sales",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: Measures total consumer spending at retailers. The US consumer is roughly two-thirds of GDP, so this is a direct, timely read on the economy's biggest growth engine; the \"control group\" subset feeds straight into the official GDP consumption calculation."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: US Census Bureau. Monthly, typically released around 8:30 ET."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: A resilient consumer argues the Fed can stay patient; a cracking consumer is one of the clearest early paths from \"soft landing\" toward recession."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: BEAT (RESILIENT CONSUMER) — mildly hawkish, since there's less need for the Fed to cut. MISS (CONSUMER CRACKING) — cut bets rise, but so does concern about consumer-facing earnings."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "ism-pmi",
+          "title": "ISM / PMI",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: A diffusion-index survey of purchasing managers across manufacturing and services; a reading above 50 signals expansion, below 50 signals contraction. Services ISM matters most today since the US economy is services-heavy."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: Institute for Supply Management (ISM). Monthly — manufacturing is usually released first, services a couple of business days later, around 10:00 ET."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: It's one of the timeliest growth and inflation reads available — the prices-paid sub-index acts almost like a mini inflation print — arriving well ahead of the more backward-looking GDP."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: BEAT / EXPANSION — growth optimism lifts risk appetite and yields together. MISS / CONTRACTION — cut bets rise as yields fall on the growth worry."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "jobless-claims",
+          "title": "Jobless Claims",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: Initial jobless claims count the number of people filing for unemployment benefits for the first time in a given week — one of the timeliest official labor-market indicators available."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: US Department of Labor. Weekly, typically released on Thursdays, around 8:30 ET."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: A single week is noisy, but a sustained trend in the four-week average can offer early evidence of labor-market cracks, often weeks before NFP or the unemployment rate confirm it."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: CLAIMS SPIKE — a mild dovish creep in rate-path expectations, more meaningful if it becomes a trend. CLAIMS LOW / FALL — a small hawkish drip that underwrites the higher-for-longer case week after week."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "consumer-confidence",
+          "title": "Consumer Confidence",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: Household surveys of sentiment about the economy and personal finances; sentiment tends to lead actual spending. The two main versions are the Conference Board index and the University of Michigan (UMich) survey, the latter of which also asks about inflation expectations."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: Conference Board and University of Michigan. Monthly, typically released around 10:00 ET."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: The headline reading is usually a modest market mover on its own, but the UMich inflation-expectations component is watched closely because expected inflation can become self-fulfilling through wage demands."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: BEAT (CONFIDENT) — a mildly hawkish signal, unless inflation expectations are also easing. MISS (GLOOMY) — a mildly dovish signal, strongest when paired with falling inflation expectations."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "fed-speakers",
+          "title": "Fed Speakers",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: Public remarks from Federal Reserve officials — speeches, interviews, testimony — ranging from the Chair down to regional bank presidents who may or may not currently be voting members."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: Federal Reserve officials. Ongoing through the week, aside from a communications blackout in the roughly ten days before each FOMC meeting."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: The rate path is repriced continuously, not just on meeting days, so any shift in tone from a voting member — especially a surprising one — can move yields, the dollar, and stocks much like a scheduled release would."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: HAWKISH REMARKS — the path gets repriced higher; impact scales with how senior and how surprising the speaker is. DOVISH REMARKS — the path gets repriced lower, usually led first by growth stocks."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "geopolitical-shock",
+          "title": "Geopolitical Shock",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: Unscheduled events — war, strikes, tariffs, oil-supply threats — that change risk perception without warning and without a consensus forecast to measure the surprise against."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: No single publisher and no calendar; can happen at any time."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: These shocks move risk sentiment directly rather than through the usual rate-path channel, and are the one case where gold and the dollar can rise together while equities fall — both being bid as safe havens at once."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: ESCALATION — risk appetite drops sharply; the dollar and gold often catch a safe-haven bid. DE-ESCALATION — the safe-haven trade unwinds and risk assets, led by the highest-beta names, often rally in relief."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        },
+        {
+          "id": "pce",
+          "title": "PCE",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "What it is: The Personal Consumption Expenditures price index is the Fed's own preferred inflation gauge. It covers a broader basket than CPI, updates its weights more often, and is the index the Fed's official longer-run 2% target is actually stated against; core PCE (ex food and energy) is the number the Fed leans on most for the underlying trend."
+            },
+            {
+              "type": "p",
+              "text": "Who publishes / when: Bureau of Economic Analysis (BEA). Monthly, typically released near month-end around 8:30 ET, a few weeks after CPI and PPI."
+            },
+            {
+              "type": "p",
+              "text": "Why markets care: CPI and PPI are watched partly because their components help economists forecast what PCE will show, so by the time PCE prints much of it is often already anticipated — but a genuine surprise still moves rate-path expectations."
+            },
+            {
+              "type": "p",
+              "text": "Hot vs cool reading: PCE isn't modeled as its own node on the impact map, but it moves through the same chain as CPI: a HOTTER THAN EXPECTED print reads hawkish (yields and USD up, cuts pushed out) and a COOLER THAN EXPECTED print reads dovish (yields and USD down, cuts pulled forward) — the exact vocabulary CPI uses on the map."
+            },
+            {
+              "type": "p",
+              "text": "See it on the impact map →"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "markets",
+      "name": "Markets 101",
+      "sub": "Futures, FX, sessions",
+      "cards": [
+        {
+          "id": "futures-101",
+          "title": "Futures 101: margin, leverage, and contract specs",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A futures contract is a standardized agreement to buy or sell an instrument at a set price on a future date, and instead of paying the full contract value you post a small margin deposit as a performance bond. Because a 5-10% margin deposit controls the full notional value of the contract, you're trading with 10-20x leverage — a small index move produces an outsized dollar swing. NQ and ES tick $5 and $12.50 per tick respectively (both cash-settled, expiring quarterly Mar/Jun/Sep/Dec), while Gold (GC) ticks $10 per 100-oz contract and physically settles, so retail traders typically roll or close it well before expiry rather than take delivery."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: before trading any instrument, know its tick value and notional size — a 1-point NQ move ($20) is not the same risk as a 1-point ES move ($50), so position size by dollar risk, not by contract count alone.",
+                "Why it matters for pre-market bias: your directional call only matters if your position size respects leverage — a correct bias sized too large against a wide overnight range typically gets stopped out by noise before the thesis plays out.",
+                "Common beginner mistake: sizing off the minimum day-trade margin (e.g. a $500 deposit) instead of the true notional exposure (e.g. ~$250k on one ES contract), so a routine 0.5% move can wipe an account that looked adequately funded on paper."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "trading-sessions",
+          "title": "Trading sessions and why the New York open matters",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The trading day passes through four regional sessions — Sydney, Tokyo, London, and New York — each with a different mix of active institutions and a different liquidity profile. The London-New York overlap (roughly 8:00-11:30 AM ET) is typically the busiest window of the whole day, packing over half of global volume into a few hours as European and American desks trade at once. The New York cash open at 9:30 AM ET matters even more for index futures like NQ and ES: it's when U.S. pension funds, mutual funds, and market makers actually commit real money, which either confirms or invalidates whatever direction price drifted toward on thin overnight or London liquidity. The first several minutes after 9:30 tend to be the noisiest part of the day, as algorithms sweep resting stop orders before a real trend sets in — so a pre-market bias should be treated as a hypothesis until New York liquidity shows up to confirm or reject it."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: check whether a move happened on Tokyo/London liquidity or after the 9:30 ET cash open — the same-size move means less overnight and more once New York desks are active.",
+                "Why it matters for pre-market bias: a bias set going into the open should be treated as tentative until price survives the first 15-30 minutes of NY trading, since early whipsaws often reverse.",
+                "Common beginner mistake: chasing the first 5 minutes of the 9:30 AM open, or forcing breakout trades during the 11:30 AM-2:00 PM \"lunch lull\" when volume dries up and moves rarely hold."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "session-clock",
+          "title": "Session clock",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "All times shown in ET (America/New_York) — the clock this dashboard runs on."
+            },
+            {
+              "type": "widget",
+              "id": "session-clock"
+            }
+          ]
+        },
+        {
+          "id": "fx-pairs",
+          "title": "Reading FX pairs: base/quote, pips, and what actually moves them",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A currency pair like EUR/USD always shows one unit of the base currency (left, EUR) priced in the quote currency (right, USD) — at 1.1600, one euro buys $1.16. Price moves are measured in pips, the fourth decimal for most pairs but the second decimal for JPY pairs, since yen is a much lower-value unit. Day to day, these pairs are pushed around by interest-rate differentials: money typically flows toward the currency offering the better yield, so a central bank turning hawkish tends to pull its currency higher while a dovish shift tends to weaken it. The carry trade — borrowing cheap, low-yield yen to fund positions in higher-yielding currencies — has historically kept USD/JPY biased in one direction for long stretches, and a sudden Bank of Japan rate move can force a rapid, violent unwind."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: check whether the base or quote currency's central bank moved more hawkish/dovish overnight — that relative shift, not the absolute rate level, is what typically drives the pair's direction.",
+                "Why it matters for pre-market bias: a widening rate differential (or carry-trade unwind risk, especially in USD/JPY) can set a directional bias for EUR/USD, GBP/USD or USD/JPY before New York even opens, independent of that day's data releases.",
+                "Common beginner mistake: using the standard 4th-decimal pip size on a JPY pair (which moves at the 2nd decimal) — this misreads position size and dollar risk by a factor of 100."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "fed-vs-world",
+          "title": "Fed vs the world: ECB, BoE, BoJ and policy divergence",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "The Fed isn't the only central bank that moves currencies: the ECB targets euro-area inflation near 2% (and famously stays quiet about internal votes to keep a unified message), the Bank of England's MPC sets the UK bank rate around wage and energy pressures, and the Bank of Japan is normalizing rates after decades of ultra-loose policy. When these banks move at a different pace or direction than the Fed, that's policy divergence — and because capital chases the highest yield, a widening or narrowing gap between US Treasury yields and German Bunds, UK Gilts, or Japanese government bonds is what actually pushes EUR/USD, GBP/USD, and USD/JPY, often more than the day's Fed headline alone. USD/JPY is the special case: because Japan's rates stayed so low for so long, huge carry trade positions (borrow cheap yen, buy higher-yielding dollar assets) build up, and a hawkish BoJ surprise landing next to a Fed hold or cut can trigger a sudden unwind that drops USD/JPY hard."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: before the open, check overnight ECB/BoE/BoJ statements and bond-yield spreads (Bund-Treasury, Gilt-Treasury, JGB-Treasury) alongside Fed data — a widening spread in the dollar's favor tends to support the dollar leg; a narrowing one tends to weigh on it.",
+                "Why it matters for bias: EUR/USD, GBP/USD and USD/JPY don't just trade off Fed news — a hawkish ECB or BoE tone, or a BoJ rate surprise, can move these pairs independently of what the Fed did that morning, so a pre-market bias built only on Fed data misses half the picture on these three instruments.",
+                "Common beginner mistake: assuming all dollar pairs react the same way to Fed news. USD/JPY carries extra carry-trade risk — a BoJ hawkish surprise next to a soft Fed can cause a fast, outsized USD/JPY drop that wouldn't happen the same way in EUR/USD or GBP/USD."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bonds-101",
+          "title": "Bonds 101: why yields move the opposite way from prices",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "A bond pays a fixed coupon set at issue, so when its price rises in the secondary market the same fixed payment is now a smaller percentage return, and yield falls; when its price drops, that fixed payment is a bigger percentage return, and yield rises — price and yield are mechanically locked in opposite directions. Traders watch the 2-year Treasury yield as a real-time gauge of Fed rate expectations, and the 10-year Treasury yield as the benchmark long-term rate used to discount future cash flows for stocks and mortgages worldwide. When the 2-year yield rises above the 10-year (an inverted yield curve), it typically signals markets expect the Fed to cut rates later because growth is slowing — a pattern that has preceded every US recession since the mid-1970s. Because Treasuries are the global risk-free benchmark, moves in yields ripple into equities (via the discount rate) and into currencies (via rate differentials) well before those markets fully react."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: rising 10-year yields typically pressure long-duration growth names (Nasdaq/NQ) harder than value-heavy indices, since their cash flows sit further in the future and get discounted more; falling yields typically ease that pressure.",
+                "Why it matters for pre-market bias: check the overnight 10-year and 2-year yield move before scoring NQ/ES — a sharp yield spike overnight is a headwind for equity bias even if futures are green, and rising US yields relative to other countries typically supports the dollar (EUR/USD, GBP/USD bearish; USD/JPY bullish).",
+                "Common beginner mistake: reading a bond yield chart going up and assuming the bond's price is also going up — it's the opposite. Also assuming correlations (e.g. \"yields up = dollar up\") are fixed rules; in risk-off panics, safe-haven demand can push yields down and the dollar up at the same time, breaking the usual pattern."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "market-internals",
+          "title": "Market internals: breadth, TICK, and the VIX curve",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Market internals measure what's happening underneath an index's headline move rather than the index price itself. The advance/decline line tracks whether a rally or selloff is broad-based (most stocks participating) or narrow (a handful of mega-caps carrying the tape) using yesterday's cumulative trend, since it can't update before the cash open. The NYSE TICK index shows real-time buying versus selling pressure once the market opens, useful for confirming whether institutions are actually pressing into an overnight gap. The VIX futures term structure — contango (normal, upward-sloping) versus backwardation (inverted, stressed) — is the one internal that trades nearly 24 hours and can genuinely be read pre-market to gauge the market's risk temperature."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: check the prior session's A/D line trend and the current VIX futures curve shape before the open; TICK only becomes useful once the cash session starts and you can watch it confirm or deny an overnight gap.",
+                "Why it matters for bias: a rising index with a flat or falling A/D line, or a VIX curve that's suddenly flipped into backwardation, is a warning that a bullish or bearish score built on price/calendar factors alone may be fragile or overdue for a snapback.",
+                "Common beginner mistake: expecting live $TICK or $ADD to update pre-market (they can't — the cash equity market is closed), or treating any single ±1000 TICK print as an automatic reversal signal without checking breadth and the VIX curve for confirmation."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "craft",
+      "name": "Trading craft",
+      "sub": "Risk, psychology",
+      "cards": [
+        {
+          "id": "position-sizing",
+          "title": "Position sizing: risking a fixed percent, not a feeling",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Professional position sizing works backward: you decide the dollar amount you're willing to lose first (typically 1-2% of account equity), then divide that by your stop distance to get the number of shares or contracts. The stop distance is the price gap between your entry and your stop-loss, converted to dollars per unit (for futures, multiplied by the contract's point value). This keeps every trade's downside the same fixed slice of the account, no matter how wide or tight the stop is."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: a tighter stop lets you size up (more contracts) for the same dollar risk; a wider stop forces a smaller size — the stop distance and position size always move opposite each other.",
+                "Why it matters for pre-market bias: your directional bias tells you which side to be on, but position sizing is what actually determines how much account damage a wrong bias does — a strong bias with sloppy sizing still blows up the account.",
+                "Common beginner mistake: sizing up because a setup \"feels\" high-conviction, or forgetting the futures contract multiplier (NQ vs MNQ) and ending up risking 10x the intended amount."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "position-size-calculator",
+          "title": "Position-size calculator",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Wires the fixed-percent math from the lesson above — updates live as you type."
+            },
+            {
+              "type": "widget",
+              "id": "position-size-calculator"
+            },
+            {
+              "type": "p",
+              "text": "Educational tool only — not financial advice."
+            }
+          ]
+        },
+        {
+          "id": "r-multiples-expectancy",
+          "title": "R-multiples and expectancy: grading trades on a common scale",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "An R-multiple expresses any trade's outcome as a multiple of what you risked (1R), so a $500 risk that returns $1,500 is +3R regardless of account size — this lets you compare trades and strategies on one scale. Expectancy then averages that scale across many trades: (win rate x average win in R) plus (loss rate x average loss in R). A system winning only 40% of the time with 2R average wins against 1R average losses nets +0.2R per trade, while a system winning 70% of the time with small wins and big losses can still be net negative — win rate alone says nothing about long-run profitability."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: a positive expectancy system in R-terms will make money over enough trades even with a losing majority, because the math is about size of wins vs losses, not how often you're right.",
+                "Why it matters for pre-market bias: a correct directional call is only half the equation — if the reward-to-risk on that setup is poor, a high hit rate on your bias can still lose money over time.",
+                "Common beginner mistake: chasing a high win rate by cutting winners early and letting losers run (turning a plan's 1R stop into a much larger real loss), which quietly makes expectancy negative even while \"feeling\" successful."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "trading-psychology",
+          "title": "Trading psychology: why your own brain is the risk",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "FOMO, revenge trading, loss aversion, and overconfidence are predictable behavioral patterns, not personal failings — FOMO chases a move that already happened, revenge trading tries to instantly win back a loss with a bigger bet, loss aversion holds losers too long and cuts winners too early because a loss hurts roughly twice as much as an equal gain feels good, and overconfidence follows a winning streak into oversized positions. A written trading plan works by moving your entry, exit, and sizing rules to a calm moment before the trade, so panic or greed has nothing left to decide in the heat of the moment. A trading journal works the other direction: logging trades plus your emotional state turns invisible patterns into visible, measurable ones you can fix."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: if your journal shows a cluster of losing trades right after a prior loss, or entries taken minutes after a sharp move, that's revenge trading or FOMO showing up as data, not just a bad morning.",
+                "Why it matters for pre-market bias: a bias score is meant to replace exactly this kind of in-the-moment emotional call — chasing a move that already happened before the NY open, or overriding a rule-based direction because a headline feels dramatic, defeats the point of scoring bias ahead of time.",
+                "Common beginner mistake: widening or canceling a stop-loss as price approaches it rather than admitting the trade was wrong — this turns a small planned loss into an uncontrolled one."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "spreads-slippage-execution",
+          "title": "Spreads, slippage, and order execution",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Every quote is really two prices: the bid (what buyers will pay) and the ask (what sellers want), and the gap between them — the spread — is the cost market makers charge for standing ready to trade. That gap widens sharply around high-impact news and during thin, low-volume sessions because liquidity providers pull orders to avoid getting caught on the wrong side of a fast move. A market order fills you immediately but at whatever price is available, so in a fast market it can execute far from the price you saw, a gap known as slippage; a limit order guarantees your price but not that you'll get filled at all."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: if you plan to act right at the open or right after a release, expect the effective spread to be several times its normal size — factor that into stop and target placement, not just direction.",
+                "Why it matters for pre-market bias: a bias score is a direction call, not an entry price — on high-volatility mornings (CPI, NFP, FOMC) the realistic entry cost is higher, so the same score may need a wider confidence buffer before it's tradeable.",
+                "Beginner mistake: buying and seeing an instant \"loss\" because the platform marks the position at the lower bid while entry was at the higher ask — that's the spread, not a bad trade, but traders new to this often panic-exit."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "seasonality-time-of-day",
+          "title": "Seasonality and time-of-day patterns",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "Markets show real statistical tendencies tied to the calendar — a Santa Claus rally in late December, a weak September, a soft \"sell in May\" summer stretch — driven by things like year-end portfolio window dressing, tax-loss harvesting, and thinner institutional volume around holidays. Within a single day, the same logic applies on a smaller clock: the open is the most volatile window as overnight news gets priced in, midday typically goes quiet as institutional desks step back, and the final half hour often sees sharp reversals as short-sellers cover and retail buyers chase dips before the close. None of these patterns fire every time — they're historical tilts with real failure rates, not switches that flip on schedule."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: treat the first 15-30 minutes after the open as noise to let settle (the \"opening range\") rather than a trend to trade, and expect thinner, choppier price action during known seasonally weak stretches (September) or holiday weeks.",
+                "Why it matters for pre-market bias: seasonality is a soft background context, not a scoring factor — a bullish rule/AI score during a historically weak week deserves slightly less confidence, and vice versa, but it should never override what calendar data and price action are actually saying that morning.",
+                "Common beginner mistake: treating a well-known seasonal stat (e.g. \"Santa Claus rally, 78% of the time\") as a guaranteed trade for this specific year, ignoring that the other ~20-25% of the time it fails outright — and that chasing these edges after transaction costs often erases whatever statistical advantage existed."
+              ]
+            }
+          ]
+        },
+        {
+          "id": "reading-economic-calendar",
+          "title": "Reading the economic calendar without getting burned",
+          "blocks": [
+            {
+              "type": "p",
+              "text": "An economic calendar lists scheduled releases with an impact rating (red/high, orange or yellow/medium, gray/low) so you know which prints can actually move price versus which are noise. Every event shows three numbers — previous, forecast, and actual — and price typically reacts to the gap between forecast and actual, not the actual number in isolation, because an in-line print is already priced in. Two traps sit underneath this: the calendar's release times shift by an hour on your local clock during the window when the US and UK/EU switch to daylight saving on different dates, and agencies frequently revise the previous month's figure at the same time they publish the new one, which can partially or fully offset a headline beat or miss."
+            },
+            {
+              "type": "list",
+              "items": [
+                "Practical read: before the session, scan the day's red-folder events for your instruments, confirm the calendar's timezone converter matches your local clock (double-check during DST transition weeks), and treat the 30 minutes before and 15-30 minutes after each one as a widened-spread, low-conviction zone rather than a normal execution window.",
+                "Why it matters for pre-market bias: a rule/AI bias set before a scheduled red-folder event is a conditional read, not a settled call — hold it loosely until the release and its revision to the prior figure are both in, since a big revision can flip the market's initial direction on its own.",
+                "Common beginner mistake: reacting to the headline actual-vs-forecast number alone and chasing the first spike, when the more experienced read is to check the revision to last month's figure and wait for the initial algorithmic whipsaw to settle before trusting the direction."
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "glossary",
+      "name": "Glossary",
+      "sub": "Hawkish, dovish…",
+      "cards": []
+    }
+  ],
+  "glossary": [
+    {
+      "term": "2s10s (yield curve spread)",
+      "def": "The gap between the 2-year and 10-year Treasury yields, used as a shorthand for the yield curve's shape. A sustained inversion (2-year above 10-year) typically signals markets expect an economic slowdown and future Fed rate cuts."
+    },
+    {
+      "term": "Advance/decline (A/D) line",
+      "def": "A cumulative running total of (advancing stocks minus declining stocks) plotted over time, used to gauge whether a market move is broad-based or narrow. A rising index with a flat or falling A/D line (bearish divergence) typically warns of a fragile, narrowing rally."
+    },
+    {
+      "term": "Basis point",
+      "def": "One-hundredth of a percentage point (0.01%). Rate moves are usually quoted in basis points — a \"25bp hike\" raises rates by 0.25%. Bigger-than-expected bp moves typically signal a stronger hawkish or dovish surprise."
+    },
+    {
+      "term": "Bid-ask spread",
+      "def": "The gap between the highest price buyers are offering (bid) and the lowest price sellers will accept (ask); it typically widens in thin markets and around news, making entries and exits more expensive."
+    },
+    {
+      "term": "Carry trade",
+      "def": "A strategy of borrowing in a low-yielding currency (typically the yen) to fund purchases of higher-yielding assets in another currency. When rate expectations flip suddenly — a hawkish BoJ surprise, for example — the trade unwinds fast, typically causing a sharp, disorderly move against the funding currency's pairs (notably USD/JPY)."
+    },
+    {
+      "term": "Contango / backwardation (VIX futures)",
+      "def": "Contango is the normal state where longer-dated VIX futures trade above near-term ones (occurs most of the time); backwardation is the inverted, stressed state where near-term futures trade at a premium, typically signaling acute market panic. Backwardation often precedes sharp bounces as the curve normalizes and fear recedes."
+    },
+    {
+      "term": "Contract multiplier",
+      "def": "The dollar value assigned to each one-point move in a futures contract (e.g. $20/point for NQ, $2/point for MNQ). Getting this wrong when sizing a position typically causes real risk to be many times larger than intended."
+    },
+    {
+      "term": "Contract roll",
+      "def": "Closing a position in the expiring front-month futures contract and opening the same position in the next active month as liquidity shifts ahead of expiry; missing the roll on a physically-settled contract like Gold typically risks unwanted delivery obligations."
+    },
+    {
+      "term": "Core inflation",
+      "def": "Inflation measured after stripping out volatile food and energy prices, to show the underlying trend. The Fed watches core CPI and core PCE most closely; a hot core reading typically argues for a longer, higher rate path."
+    },
+    {
+      "term": "Coupon",
+      "def": "The fixed interest payment a bond pays, set at issuance and unchanged for the bond's life. Because it never changes, a rising bond price mechanically pushes the yield down, and a falling price pushes it up."
+    },
+    {
+      "term": "CPI",
+      "def": "The Consumer Price Index, the headline US inflation gauge tracking a broad consumer basket, published monthly by the BLS. Hotter-than-expected CPI typically lifts yields and the dollar and pressures growth stocks and gold."
+    },
+    {
+      "term": "Data revision",
+      "def": "A government agency's restatement of a prior period's economic figure, published alongside the current month's release. A large revision can offset or reverse a headline beat/miss, so the market's initial reaction sometimes fades once traders digest the revised prior figure."
+    },
+    {
+      "term": "Dot plot",
+      "def": "The Fed's quarterly chart of each policymaker's expected rate path (the Summary of Economic Projections). Dots shifted higher than expected typically read hawkish; shifted lower typically read dovish."
+    },
+    {
+      "term": "Dovish",
+      "def": "Leaning toward easier policy — lower rates or holding them low longer — usually to support growth or employment. Dovish surprises typically pull yields and the dollar down and lift stocks and gold."
+    },
+    {
+      "term": "Drawdown",
+      "def": "The decline from a recent peak to a subsequent low in a price or account balance, usually shown as a percentage. Larger drawdowns typically coincide with risk-off periods and rising volatility."
+    },
+    {
+      "term": "Dual mandate",
+      "def": "The Fed's twin legal goals: stable prices (roughly 2% inflation) and maximum employment. Inflation and jobs data are read together against this mandate to judge the likely direction of rates."
+    },
+    {
+      "term": "Duration",
+      "def": "A measure of how sensitive an asset's price is to interest-rate changes; longer-duration assets, like long bonds or growth stocks, move more per rate change. Rising rates typically hit long-duration assets hardest."
+    },
+    {
+      "term": "DXY",
+      "def": "The US Dollar Index, tracking the dollar's value against a basket of major currencies, mostly the euro. DXY typically rises with hawkish rate-path repricing and falls with dovish repricing."
+    },
+    {
+      "term": "Expectancy",
+      "def": "The average R-multiple outcome per trade over a large sample, calculated as (win rate x average win) plus (loss rate x average loss). A system typically needs positive expectancy to be profitable long-run, regardless of how often it wins."
+    },
+    {
+      "term": "Fed funds rate",
+      "def": "The short-term interest rate the Federal Reserve targets for overnight bank lending; it ripples out to mortgages, credit cards, and business loans economy-wide. Its expected path moves markets more than its level alone."
+    },
+    {
+      "term": "FOMC",
+      "def": "The Federal Open Market Committee, the Fed body that sets the federal funds rate. It meets eight times a year, releasing a statement, a rate decision, and, quarterly, the dot plot."
+    },
+    {
+      "term": "Forecast/consensus",
+      "def": "The average expectation among economists or traders for an upcoming data release, against which the actual result is compared. Markets typically react to the gap between actual and consensus, not the number alone."
+    },
+    {
+      "term": "Forward guidance",
+      "def": "A central bank's public signal about the likely future path of policy, separate from the rate decision itself. A hike paired with dovish forward guidance often sends a currency lower even though the rate itself just rose, since markets trade the future path, not just the headline."
+    },
+    {
+      "term": "GDP",
+      "def": "Gross Domestic Product, the broadest measure of a country's economic output, released quarterly with later revisions. Strong GDP typically supports earnings but can also reduce the case for rate cuts."
+    },
+    {
+      "term": "Hard landing",
+      "def": "A scenario where the Fed cools inflation but growth slows sharply into recession rather than gently. Typically bearish for stocks and supportive of bonds and safe havens as growth fears dominate."
+    },
+    {
+      "term": "Hawkish",
+      "def": "Leaning toward tighter policy — higher rates or keeping them high longer — usually to fight inflation. Hawkish surprises typically lift yields and the dollar and pressure stocks and gold."
+    },
+    {
+      "term": "Initial balance",
+      "def": "The price range established in the first 15-30 minutes after a major session opens (notably the 9:30 AM ET cash open) — beginners often mistake this early, stop-hunting volatility for a real trend, when it typically settles before the day's actual direction takes hold."
+    },
+    {
+      "term": "Interest rate differential",
+      "def": "The gap between one country's benchmark yield and another's (e.g. US 10-year vs German Bund). A widening differential in the dollar's favor typically draws foreign capital into dollar assets, strengthening the currency."
+    },
+    {
+      "term": "Inversion",
+      "def": "When shorter-dated yields rise above longer-dated ones on the yield curve, historically viewed as an early recession warning. An inverting curve typically coincides with growing growth concerns."
+    },
+    {
+      "term": "ISM/PMI",
+      "def": "Purchasing-managers' index surveys of manufacturing and services activity; readings above 50 signal expansion, below 50 contraction. Beats typically lift risk appetite and yields together; misses typically do the reverse."
+    },
+    {
+      "term": "Jobless claims",
+      "def": "The weekly count of new unemployment-benefit filings, one of the timeliest labor-market indicators. A rising trend typically nudges rate expectations more dovish; falling claims typically support a hawkish, resilient-labor read."
+    },
+    {
+      "term": "Leverage",
+      "def": "The ratio of a contract's full notional value to the margin required to control it; higher leverage typically means small price moves produce proportionally larger account swings, both up and down."
+    },
+    {
+      "term": "Liquidity",
+      "def": "How easily an asset can be bought or sold without moving its price, or the amount of cash and credit available in the system. Thin liquidity around events typically means sharper, choppier moves."
+    },
+    {
+      "term": "Margin",
+      "def": "A performance-bond deposit (not a loan) required to open and hold a futures position, typically 5-10% of contract notional value; falling below the maintenance margin triggers a margin call and forced liquidation."
+    },
+    {
+      "term": "Market order vs. limit order",
+      "def": "A market order guarantees an immediate fill but not the price; a limit order guarantees the price but not that it fills — traders typically favor limit orders around news to avoid slippage, at the risk of missing the move entirely."
+    },
+    {
+      "term": "NFP",
+      "def": "Nonfarm Payrolls, the headline monthly US jobs report measuring net jobs added outside farm work, released alongside the unemployment rate. Strong NFP typically reads hawkish; weak NFP typically reads dovish."
+    },
+    {
+      "term": "NYSE TICK index ($TICK)",
+      "def": "A real-time reading of the number of NYSE-listed stocks trading on an uptick minus those on a downtick, used to gauge intraday buying/selling pressure once the market is open. Readings beyond roughly ±1000 are rare and typically flag short-term exhaustion or, in a strong trend, powerful one-sided momentum."
+    },
+    {
+      "term": "Opening range",
+      "def": "The high-low price band set in the first 15-30 minutes after the open, when volatility is highest and market-on-open orders are still clearing. Traders typically wait for it to establish before trusting a breakout as a real directional move rather than open-driven noise."
+    },
+    {
+      "term": "PCE",
+      "def": "Personal Consumption Expenditures price index, the Fed's own preferred inflation gauge, with a broader basket than CPI. Hotter PCE typically reads hawkish for rates; cooler PCE typically reads dovish."
+    },
+    {
+      "term": "Pip",
+      "def": "The smallest standard price increment in FX — the 4th decimal place for most pairs (0.0001) but the 2nd decimal for JPY pairs (0.01); used to measure and size every FX move."
+    },
+    {
+      "term": "Power hour",
+      "def": "The final hour of the U.S. equity cash session (3:00-4:00 PM ET), when funds rebalance and square positions into the close — it often sharply extends or reverses the day's earlier trend, which is why pre-market bias calls should be re-checked against how the prior day's power hour resolved."
+    },
+    {
+      "term": "PPI",
+      "def": "Producer Price Index, measuring prices received by producers — an early read on inflation before it reaches consumers. A hot PPI typically nudges the rate path slightly more hawkish, especially alongside a hot CPI."
+    },
+    {
+      "term": "Priced in",
+      "def": "Information the market has already absorbed into current prices ahead of an official release. News that is fully priced in typically causes little reaction, or can even move price the opposite way once confirmed."
+    },
+    {
+      "term": "QE (Quantitative easing)",
+      "def": "Central-bank asset purchases that add liquidity and push rates down, typically used once policy rates are already low. Usually supportive for risk assets and a headwind for the currency."
+    },
+    {
+      "term": "QT (Quantitative tightening)",
+      "def": "The reverse of QE — the central bank lets its bond holdings shrink or sells them, removing liquidity from the system. Typically a mild headwind for risk assets and supportive of the currency and yields."
+    },
+    {
+      "term": "R-multiple",
+      "def": "A trade's profit or loss expressed as a multiple of the initial dollar risk (1R), e.g. a $1,000 gain on a $500 risk is +2R. It standardizes outcomes across different position sizes and instruments, so traders typically use it to compare setups rather than raw dollar P&L."
+    },
+    {
+      "term": "Real yield",
+      "def": "A bond's yield minus expected inflation — the return investors actually keep. Rising real yields typically raise the opportunity cost of holding gold, so gold tends to fall as real yields climb."
+    },
+    {
+      "term": "Red folder",
+      "def": "Trader slang for a scheduled event flagged as high-impact on an economic calendar, often literally marked in red. Traders typically reduce position size or widen stops around red-folder events."
+    },
+    {
+      "term": "Retail sales",
+      "def": "A monthly measure of total consumer spending at retailers, a timely read on the economy's largest growth driver. A resilient print typically argues the Fed can stay patient; a weak print typically raises recession concern."
+    },
+    {
+      "term": "Revision",
+      "def": "A later correction to a previously reported economic figure, common with GDP and payrolls, as more complete data arrives. Large revisions can matter more than the original print if they change the underlying trend."
+    },
+    {
+      "term": "Risk-on/risk-off",
+      "def": "A market-mood shorthand — risk-on means traders favor stocks and other higher-risk assets; risk-off means traders sell risk and move toward safe havens. Shock events typically flip this switch fast."
+    },
+    {
+      "term": "Safe haven",
+      "def": "An asset traders buy for perceived safety during stress, commonly the US dollar, gold, or government bonds. Safe havens typically rise together during a genuine risk-off shock even as stocks fall."
+    },
+    {
+      "term": "Session overlap",
+      "def": "A window where two regional trading sessions are both open at once (e.g. London and New York, 8:00-11:30 AM ET) — these hours typically carry the day's heaviest volume and tightest spreads, and the direction that emerges tends to be more reliable than moves made in a single quiet session."
+    },
+    {
+      "term": "Slippage",
+      "def": "The difference between the price expected when an order is submitted and the price it actually fills at, typically caused by fast-moving or illiquid markets; it tends to spike right around scheduled news releases."
+    },
+    {
+      "term": "Soft landing",
+      "def": "A scenario where inflation cools without triggering a recession — growth slows just enough. Historically the market-friendliest outcome, typically supportive for both stocks and bonds."
+    },
+    {
+      "term": "Sovereign bond yield spread (Bund/Gilt/JGB)",
+      "def": "The gap between a country's government bond yield (German Bund, UK Gilt, Japanese JGB) and the equivalent US Treasury yield. A widening spread in the dollar's favor typically pulls capital toward the dollar and pressures the paired currency lower; a narrowing spread typically does the opposite."
+    },
+    {
+      "term": "Spread",
+      "def": "The difference between two related rates or prices, such as the gap between two bond yields or a bid-ask spread. Widening spreads typically signal rising stress or falling liquidity."
+    },
+    {
+      "term": "Stagflation",
+      "def": "A rare combination of stagnant growth and high inflation together, leaving the Fed with no easy policy lever. Typically the toughest regime for both stocks and bonds at once."
+    },
+    {
+      "term": "Surprise",
+      "def": "The gap between an actual data result and its forecast/consensus — actual minus expected. Markets typically trade the size and direction of the surprise, not the raw number itself."
+    },
+    {
+      "term": "Terminal rate",
+      "def": "The peak level markets expect the Fed funds rate to reach in a hiking cycle before pausing or cutting. A terminal rate priced higher than expected typically reads hawkish for yields and the dollar."
+    },
+    {
+      "term": "Unemployment rate",
+      "def": "The share of the labor force without a job and actively seeking one, drawn from the household survey. A rising rate typically pulls rate-cut expectations forward but can also flag recession risk."
+    },
+    {
+      "term": "VIX",
+      "def": "The CBOE Volatility Index, often called the market's \"fear gauge,\" derived from S&P 500 options pricing. VIX typically rises in risk-off moves and falls as risk appetite recovers."
+    },
+    {
+      "term": "Volatility",
+      "def": "The size and speed of price swings in a market, whether up or down. Volatility typically rises around high-impact events and risk-off shocks, and falls in calm, trending conditions."
+    },
+    {
+      "term": "Window dressing",
+      "def": "The practice of institutional fund managers buying recent winners and selling losers near quarter- or year-end so their holdings look better on client reports. It's one of the cited drivers behind seasonal patterns like the Santa Claus rally, since it adds a temporary wave of buying pressure unrelated to fundamentals."
+    },
+    {
+      "term": "Yield",
+      "def": "The return an investor earns on a bond, usually expressed as an annual percentage. Rising yields typically make borrowing costlier and pressure long-duration assets like growth stocks and gold."
+    },
+    {
+      "term": "Yield curve",
+      "def": "A plot of bond yields across maturities, from short-term to long-term. Its shape — normal, flat, or inverted — is watched as a signal of growth and rate-path expectations."
+    }
+  ]
+}

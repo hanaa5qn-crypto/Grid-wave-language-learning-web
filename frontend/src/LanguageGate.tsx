@@ -10,6 +10,7 @@ import { useTheme } from './lib/theme';
 // exams (and their megabyte-scale vocab data), and vice versa.
 const App = lazy(() => import('./App'));
 const EnglishApp = lazy(() => import('../../english/src/EnglishApp'));
+const EducationApp = lazy(() => import('../../education/src/EducationApp'));
 
 function GateLoader() {
   // gold + aurora share the M3-token chrome (amber under html.gold, violet
@@ -26,16 +27,16 @@ function GateLoader() {
   );
 }
 
-// localStorage key shared by both tracks. 'de' => German app, 'en' => English app.
+// localStorage key shared by all tracks. 'de' => German app, 'en' => English app.
 const TRACK_KEY = 'vivid-lingua-track';
 // Marks that the profile-first setup screen has been completed this login, so a
 // reload before picking a track doesn't show it again. Cleared by AuthGate on a
 // fresh interactive login so the next login shows it once.
 const SETUP_KEY = 'vivid-lingua-setup-done';
-type Track = 'de' | 'en';
+type Track = 'de' | 'en' | 'edu';
 
 function isTrack(value: string | null): value is Track {
-  return value === 'de' || value === 'en';
+  return value === 'de' || value === 'en' || value === 'edu';
 }
 
 // One selectable language card.
@@ -120,6 +121,14 @@ function Chooser({ onPick }: { onPick: (track: Track) => void }) {
             blurb="Ace IELTS & the SAT. Vocabulary, practice exams and AI feedback in Mongolian."
             onPick={() => onPick('en')}
             delay="160ms"
+          />
+          <TrackCard
+            flag="📊"
+            title="Market Analysis"
+            native="Эдийн засаг · Markets"
+            blurb="Fundamental market analysis. Rates, inflation, FOMC, CPI — how news moves markets."
+            onPick={() => onPick('edu')}
+            delay="240ms"
           />
         </div>
 
@@ -256,6 +265,9 @@ function GateBody() {
         <EnglishApp onSwitchLanguage={reset} />
       </Suspense>
     );
+  }
+  if (track === 'edu') {
+    return <Suspense fallback={<GateLoader />}><EducationApp onSwitchLanguage={reset} /></Suspense>;
   }
   return <Chooser onPick={pick} />;
 }

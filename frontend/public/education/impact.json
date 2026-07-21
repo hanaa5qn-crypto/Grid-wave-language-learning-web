@@ -1,0 +1,1172 @@
+{
+  "events": [
+    {
+      "id": "fomc",
+      "name": "FOMC Decision",
+      "sub": "8×/yr · 14:00 ET + presser",
+      "meta": "Rate decision 14:00 ET · Powell presser 14:30 · dot plot quarterly (SEP)",
+      "hotLabel": "HAWKISH SURPRISE",
+      "coolLabel": "DOVISH SURPRISE",
+      "hot": {
+        "ev": "Hawkish",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ prices higher-for-longer"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲"
+          },
+          "risk": {
+            "d": "down",
+            "t": "▼ appetite"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "down",
+            "a": "▼▼",
+            "n": "Long-duration tech repriced by higher discount rates"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Broad pressure; banks/value cushion the index"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼▼",
+            "n": "Real yields up + strong USD = double hit"
+          }
+        },
+        "why": "The decision itself is usually fully priced by Fed funds futures, so the surprise comes from the dot plot, statement wording changes and Powell's tone. A hawkish surprise forces the market to reprice the entire rate path upward: yields and the dollar jump, and equities get re-discounted at higher rates. Nasdaq's long-duration growth stocks lose the most present value. Gold suffers twice — it pays no yield (opportunity cost rises with real yields) and it's priced in a now-stronger dollar.",
+        "exp": "Check CME FedWatch before the meeting. If a hold is heavily priced, the decision alone may have limited impact — markets often react more to deviations in the dots, statement language and the Chair's guidance. \"Expected hawkish\" is not the same as a hawkish surprise.",
+        "nuance": "Classic whipsaw: the 14:00 statement move often fully reverses during the 14:30 presser. The durable move frequently establishes only after Powell's Q&A — the first 30 minutes are a machine fight, not information."
+      },
+      "cool": {
+        "ev": "Dovish",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ prices cuts sooner"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼"
+          },
+          "risk": {
+            "d": "up",
+            "t": "▲ appetite"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "up",
+            "a": "▲▲",
+            "n": "Lower discount rates re-rate tech first and fastest"
+          },
+          "ES": {
+            "d": "up",
+            "a": "▲",
+            "n": "Broad relief rally, led by growth sectors"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲▲",
+            "n": "Falling real yields + softer USD"
+          }
+        },
+        "why": "A cut, lower dots or a Powell who validates market cut-pricing sends the rate path down. Yields and the dollar fall, future earnings are discounted at lower rates (NQ rips first), and gold rallies as the real-yield drag lifts. Risk appetite broadens the move across ES.",
+        "exp": "Same framing as the hawkish case: the market trades the gap between the outcome and FedWatch pricing. A cut that was 100% priced can even sell off — 'buy the rumour, sell the news' — if the guidance isn't as dovish as hoped.",
+        "nuance": "\"Dovish for bad reasons\" is a trap: if the Fed turns dovish because growth is deteriorating fast, equities can sell off anyway as recession maths takes over. In that mode gold outperforms indices — watch whether cuts are 'insurance' or 'panic'."
+      }
+    },
+    {
+      "id": "cpi",
+      "name": "CPI",
+      "sub": "Monthly · 08:30 ET",
+      "meta": "Consumer Price Index · core m/m is often closely watched for the near-term inflation trend",
+      "hotLabel": "HOTTER THAN EXPECTED",
+      "coolLabel": "COOLER THAN EXPECTED",
+      "hot": {
+        "ev": "Hot print",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ cuts priced out"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲ fast"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "down",
+            "a": "▼▼",
+            "n": "Rate-sensitive growth shares often react strongly to an upside core surprise"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Sold, but less violently than NQ"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼",
+            "n": "Real yields dominate — not the inflation-hedge logic, not today"
+          }
+        },
+        "why": "Sticky inflation forces the Fed to stay hawkish for longer. Within seconds the market reprices cuts out of the curve: yields and DXY spike and index futures gap. Core m/m is the figure that matters — a 0.1pp upside surprise there can move NQ over 1% in minutes because it directly rewrites the rate path.",
+        "exp": "Three numbers print at once: headline y/y, core y/y, core m/m — trade the core m/m surprise vs consensus. Know the whisper number too: if consensus is 0.3% but positioning fears 0.4%, an in-line 0.3% trades like a dovish relief rally. The reaction maps to the surprise, not the level.",
+        "nuance": "The gold paradox: gold is the classic long-run inflation hedge, yet on CPI day it trades off real yields — hot CPI → yields up → gold DOWN intraday. Don't buy gold on a hot print expecting the hedge logic to work same-day; it works over quarters, not minutes."
+      },
+      "cool": {
+        "ev": "Cool print",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ cuts priced in"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼ fast"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "up",
+            "a": "▲▲",
+            "n": "Rate-cut hopes re-rate tech instantly"
+          },
+          "ES": {
+            "d": "up",
+            "a": "▲",
+            "n": "Broad disinflation relief rally"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲",
+            "n": "Real yields fall, USD softens"
+          }
+        },
+        "why": "A downside miss can pull expected rate cuts forward. Yields and the dollar may drop, tech multiples can expand, and gold may catch a real-yield tailwind. The size and durability of the reaction depend on positioning and the broader growth regime.",
+        "exp": "Same mechanics: core m/m vs consensus and vs whisper. A 0.2% print against 0.3% expected is a genuine dovish surprise; a 0.3% in-line print after a hot-CPI scare can still rally as relief.",
+        "nuance": "Check what drove the miss. Disinflation from falling energy is clean and bullish; cooling because demand is collapsing (cyclical components rolling over) can morph into a growth scare within days, unwinding the rally."
+      }
+    },
+    {
+      "id": "ppi",
+      "name": "PPI",
+      "sub": "Monthly · 08:30 ET",
+      "meta": "Producer Price Index · pipeline inflation, feeds core PCE components",
+      "hotLabel": "HOTTER THAN EXPECTED",
+      "coolLabel": "COOLER THAN EXPECTED",
+      "hot": {
+        "ev": "Hot print",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ mildly hawkish"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲ modest"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲ modest"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "down",
+            "a": "▼",
+            "n": "Same direction as hot CPI, roughly a third of the size"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Mild pressure"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼",
+            "n": "Real-yield drag, smaller move"
+          }
+        },
+        "why": "PPI measures prices received by domestic producers and can signal pipeline price pressure, although pass-through to consumers varies. Specific PPI components such as healthcare services, airfares and portfolio-management fees feed estimates of core PCE. The Fed's official 2% longer-run target is headline PCE inflation, while core PCE is monitored to assess the underlying trend.",
+        "exp": "Core PPI m/m and the components used in PCE estimates often receive the most attention. The reaction varies by inflation regime and can be larger when PPI materially changes economists' estimates after CPI.",
+        "nuance": "In calm inflation regimes markets sometimes ignore PPI entirely. Ask: did this month's CPI already settle the debate? If yes, PPI is a footnote. If CPI was ambiguous, PPI becomes the tiebreaker and trades bigger than usual."
+      },
+      "cool": {
+        "ev": "Cool print",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ mildly dovish"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼ modest"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼ modest"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "up",
+            "a": "▲",
+            "n": "Mild relief, amplifies a cool CPI"
+          },
+          "ES": {
+            "d": "up",
+            "a": "▲",
+            "n": "Mild relief"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲",
+            "n": "Small real-yield tailwind"
+          }
+        },
+        "why": "Soft producer prices signal easing pipeline pressure and nudge core-PCE estimates lower — a mild dovish repricing of yields and the dollar that supports equities and gold.",
+        "exp": "Trade the core PPI m/m surprise. A cool PPI right after a cool CPI compounds the disinflation narrative and can extend the CPI-day move rather than just echoing it.",
+        "nuance": "PPI is noisy and heavily revised. One soft print means little; the market really moves when PPI confirms a trend the CPI already suggested."
+      }
+    },
+    {
+      "id": "nfp",
+      "name": "NFP (Payrolls)",
+      "sub": "Monthly, usually Fri · 08:30 ET",
+      "meta": "Nonfarm payrolls + unemployment rate + average hourly earnings, all at once",
+      "hotLabel": "STRONG JOBS / HOT WAGES",
+      "coolLabel": "WEAK JOBS",
+      "hot": {
+        "ev": "Strong",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ hawkish repricing"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "down",
+            "a": "▼",
+            "n": "Higher-for-longer repricing hits tech multiples"
+          },
+          "ES": {
+            "d": "mixed",
+            "a": "▲/▼",
+            "n": "Torn: strong economy = earnings, but higher rates = lower multiple"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼",
+            "n": "Yields and USD both up"
+          }
+        },
+        "why": "A tight labour market keeps wage pressure and services inflation alive, so the Fed stays hawkish: yields and the dollar rise, and NQ sells off. ES is genuinely torn — payroll strength supports earnings while the rate repricing compresses the multiple. Which force wins is a regime question, not a formula.",
+        "exp": "Three surprises at once: headline payrolls vs consensus, unemployment rate, and average hourly earnings m/m. Revisions to the prior two months often move markets as much as the beat — a +250k print with −100k of downward revisions is not a strong report. Hot wages (AHE) are the most hawkish component.",
+        "nuance": "Regime decides everything. Inflation-fight regime: good news = bad news (strong jobs → hawkish → stocks down). Recession-scare regime: good news = good news (strong jobs → soft landing → stocks up). Know which regime you're in before 08:30, or don't trade the print."
+      },
+      "cool": {
+        "ev": "Weak",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ cuts pulled forward"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼"
+          },
+          "risk": {
+            "d": "down",
+            "t": "▼ if very weak"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "up",
+            "a": "▲",
+            "n": "Usually rallies on cut hopes — unless the miss is severe"
+          },
+          "ES": {
+            "d": "mixed",
+            "a": "▲/▼",
+            "n": "Mild miss = relief; big miss = growth scare"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲",
+            "n": "Wins both ways: lower real yields, or safe haven"
+          }
+        },
+        "why": "A softer labour market lets the market pull Fed cuts forward: yields and the dollar fall and equities usually rally. But there's a tipping point — a slightly-soft print is 'cuts without recession' (bullish), while a very weak print flips the narrative to growth scare and risk-off, where indices fall despite lower yields.",
+        "exp": "Magnitude and composition matter more than direction alone. A modest miss may support rate-cut expectations, while a broad deterioration in payrolls, unemployment and wages may raise recession concerns. Gold may benefit from lower real yields or safe-haven demand, but the response is not guaranteed.",
+        "nuance": "The same direction of surprise produces the opposite equity reaction at different magnitudes. If the print is dramatically weak, do not buy the 'dovish' dip in NQ reflexively — check whether ES, credit and VIX are trading recession, not relief."
+      }
+    },
+    {
+      "id": "unemp",
+      "name": "Unemployment Rate",
+      "sub": "With NFP · 08:30 ET",
+      "meta": "Household survey · watched through the Sahm-rule recession lens",
+      "hotLabel": "RISES MORE THAN EXPECTED",
+      "coolLabel": "FALLS / TIGHTER",
+      "hot": {
+        "ev": "Rising",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ cut bets rise"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼"
+          },
+          "risk": {
+            "d": "down",
+            "t": "▼ recession worry"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "mixed",
+            "a": "▲/▼",
+            "n": "Lower yields help, recession fear hurts — magnitude decides"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Cyclical earnings exposed to a cooling economy"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲",
+            "n": "May benefit from cut expectations and safe-haven demand"
+          }
+        },
+        "why": "Rising unemployment cuts both ways: it can pull Fed cuts forward (supportive for valuations) but also signal recession risk (negative for earnings). The Sahm Rule is triggered when the three-month average unemployment rate rises at least 0.50 percentage points above the minimum three-month average from the prior 12 months. It is a recession indicator, not a stand-alone trading signal.",
+        "exp": "The rate is reported in 0.1 percentage-point increments, but even a surprise should be read with participation, payrolls and wages. Unemployment can rise because more people entered the workforce or because employment weakened. Conflicting household and establishment surveys can produce a two-sided reaction.",
+        "nuance": "Don't treat 'unemployment up = Fed cuts = buy NQ' as automatic. Once recession probability dominates, lower yields stop helping equities. Watch whether cut pricing is rising alongside falling equities — that combination is the growth-scare signature."
+      },
+      "cool": {
+        "ev": "Tighter",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ hawkish drip"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲ modest"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲ modest"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "down",
+            "a": "▼",
+            "n": "Mildly hawkish repricing"
+          },
+          "ES": {
+            "d": "mixed",
+            "a": "—",
+            "n": "Tight labour = resilient economy; roughly offsetting"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼",
+            "n": "Modest real-yield headwind"
+          }
+        },
+        "why": "A tighter-than-expected labour market means wage pressure persists, so the Fed has cover to stay restrictive. The repricing is usually modest unless it lands alongside hot wages in the same NFP report — then the components compound.",
+        "exp": "Read it with the other two NFP numbers, never alone. Unemployment down + AHE hot + payrolls beat = maximum hawkish combination; unemployment down with cooling wages barely moves markets.",
+        "nuance": "The unemployment rate is a lagging indicator — it confirms trends late. Jobless claims (weekly) will usually have told you the direction weeks earlier."
+      }
+    },
+    {
+      "id": "gdp",
+      "name": "GDP",
+      "sub": "Quarterly · 08:30 ET",
+      "meta": "Advance estimate moves markets; 2nd and 3rd estimates rarely do",
+      "hotLabel": "BEAT (STRONG GROWTH)",
+      "coolLabel": "MISS (WEAK GROWTH)",
+      "hot": {
+        "ev": "Beat",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ less need to cut"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲"
+          },
+          "risk": {
+            "d": "up",
+            "t": "▲ growth optimism"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "mixed",
+            "a": "▲/▼",
+            "n": "Earnings tailwind vs higher yields — regime decides"
+          },
+          "ES": {
+            "d": "up",
+            "a": "▲",
+            "n": "Earnings are the direct claim on GDP; ES benefits most"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼",
+            "n": "Higher real yields + risk-on flows"
+          }
+        },
+        "why": "Strong growth is an earnings tailwind — ES benefits most because S&P earnings are effectively a levered claim on nominal GDP. But strong growth also lets the Fed stay tight, so yields rise and cap NQ's multiple expansion. Gold slips on both higher real yields and risk-on rotation out of havens.",
+        "exp": "Only the advance estimate (first of three) reliably moves markets. Watch composition, not just the headline: consumer spending and final sales to domestic purchasers matter; inventory swings inflate one quarter and reverse the next. A headline beat driven by inventories is a fade.",
+        "nuance": "GDP is the most backward-looking major release — it describes last quarter. Markets trade it mainly when it challenges the current narrative (e.g. a strong print during a growth scare). Otherwise the reaction fades within the hour."
+      },
+      "cool": {
+        "ev": "Miss",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ cuts pulled forward"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼"
+          },
+          "risk": {
+            "d": "down",
+            "t": "▼ recession worry"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "mixed",
+            "a": "▲/▼",
+            "n": "Lower yields cushion; deep miss = growth scare"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Direct earnings-expectations hit"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲",
+            "n": "Lower real yields + haven bid"
+          }
+        },
+        "why": "A growth miss pulls cut expectations forward (supportive) while denting earnings expectations (negative). Mild misses often produce 'bad enough for cuts' relief rallies; big misses read as recession and take everything down except gold and bonds.",
+        "exp": "Compare against both consensus and the Atlanta Fed's GDPNow running estimate — if GDPNow already drifted down to the printed number, the 'miss' was priced and the reaction will be muted.",
+        "nuance": "Watch the deflator inside the report: a weak real GDP print with a hot price deflator is stagflation-flavoured — the worst mix, because it hurts earnings without freeing the Fed to cut."
+      }
+    },
+    {
+      "id": "retail",
+      "name": "Retail Sales",
+      "sub": "Monthly · 08:30 ET",
+      "meta": "Consumer ≈ two-thirds of US GDP · control group feeds GDP math",
+      "hotLabel": "BEAT (RESILIENT CONSUMER)",
+      "coolLabel": "MISS (CONSUMER CRACKING)",
+      "hot": {
+        "ev": "Beat",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ less need to cut"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "down",
+            "a": "▼",
+            "n": "Mild — hawkish repricing outweighs the growth read"
+          },
+          "ES": {
+            "d": "mixed",
+            "a": "▲/▼",
+            "n": "Consumer strength = earnings, but rates push back"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼",
+            "n": "Modest real-yield headwind"
+          }
+        },
+        "why": "The US consumer is roughly two-thirds of GDP, so resilient spending means the economy runs hot and the Fed feels less pressure to cut. The 'control group' subset feeds directly into the GDP consumption calculation, making it the highest-signal line in the report.",
+        "exp": "Three cuts of the data: headline, ex-autos, and control group — economists and rates traders key off the control group. Revisions are frequent and large; a beat with big prior downward revisions is a wash.",
+        "nuance": "Retail sales are nominal. During high inflation a 'hot' number partly just measures higher prices, not stronger volumes. Deflate mentally: 0.4% m/m sales with 0.4% CPI is flat real spending."
+      },
+      "cool": {
+        "ev": "Miss",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ cut bets rise"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼"
+          },
+          "risk": {
+            "d": "down",
+            "t": "▼ demand worry"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "mixed",
+            "a": "▲/▼",
+            "n": "Cut hopes vs consumption worry"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Consumer-facing earnings exposed directly"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲",
+            "n": "Lower yields + defensive bid"
+          }
+        },
+        "why": "A cracking consumer is the clearest path from 'soft landing' to recession, because consumption is the engine of US growth. Cut expectations rise, but so does earnings risk for the consumer-heavy S&P.",
+        "exp": "One soft month after strong ones reads as noise or weather; two or three consecutive soft control-group prints is a demand trend the market will trade aggressively.",
+        "nuance": "Watch the divergence trade: weak goods spending with strong services (or vice versa) rotates sectors rather than moving the whole index — the headline can mislead about index-level impact."
+      }
+    },
+    {
+      "id": "ism",
+      "name": "ISM / PMI",
+      "sub": "Usually Mfg 1st, Svc 3rd biz day · 10:00 ET",
+      "meta": "Diffusion index: >50 expansion, <50 contraction · prices-paid = mini inflation print",
+      "hotLabel": "BEAT / EXPANSION",
+      "coolLabel": "MISS / CONTRACTION",
+      "hot": {
+        "ev": "Beat",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ mildly hawkish"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲"
+          },
+          "risk": {
+            "d": "up",
+            "t": "▲ growth read"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "mixed",
+            "a": "—/▼",
+            "n": "Yield push-back vs growth optimism"
+          },
+          "ES": {
+            "d": "up",
+            "a": "▲",
+            "n": "Cyclicals lead on the expansion signal"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼",
+            "n": "Risk-on + higher yields"
+          }
+        },
+        "why": "ISM is a diffusion survey: above 50 means expansion is broadening. Services ISM matters more than manufacturing now — the US economy is services-heavy and services are where sticky inflation lives. A strong print lifts growth expectations (good for ES cyclicals) while nudging yields up (drag on NQ).",
+        "exp": "The 50 line is psychological: a 'beat' that stays below 50 is a less-bad signal, not expansion. Watch two sub-indices before the headline: new orders (leading component) and prices paid — a jump in prices paid trades like a mini hot-CPI at 10:00.",
+        "nuance": "This is a 10:00 ET release into a market that's already open and positioned — moves can be sharper than 08:30 releases of equal importance because there's less time to hedge. Manufacturing ISM below 45 historically flags recession regardless of the 'beat/miss'."
+      },
+      "cool": {
+        "ev": "Miss",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ cut bets rise"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼"
+          },
+          "risk": {
+            "d": "down",
+            "t": "▼ growth worry"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "mixed",
+            "a": "▲/▼",
+            "n": "Lower yields cushion the growth worry"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Cyclicals sold on the contraction read"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲",
+            "n": "Lower yields + haven bid"
+          }
+        },
+        "why": "A miss — especially a slide below 50 — signals slowing activity. Yields fall as cut bets build, cushioning rate-sensitive NQ, while cyclical-heavy ES takes the earnings-expectations hit more directly.",
+        "exp": "Direction of travel beats level: 52 falling from 55 worries markets more than 49 rising from 47. Prices paid falling alongside a headline miss is the dovish jackpot — weak growth AND easing inflation.",
+        "nuance": "Regional Fed surveys (Empire, Philly Fed) print earlier in the month and lead ISM — if they already collapsed, an ISM miss is partially priced and the reaction shrinks."
+      }
+    },
+    {
+      "id": "claims",
+      "name": "Jobless Claims",
+      "sub": "Weekly Thu · 08:30 ET",
+      "meta": "Initial claims · one of the timeliest labour indicators · watch the 4-week average",
+      "hotLabel": "CLAIMS SPIKE",
+      "coolLabel": "CLAIMS LOW / FALL",
+      "hot": {
+        "ev": "Spike",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ cut bets creep up"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼ modest"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼ modest"
+          },
+          "risk": {
+            "d": "down",
+            "t": "▼ mild"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "mixed",
+            "a": "—",
+            "n": "Small on one print; grows if a trend forms"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Mild — labour cracks pressure the cyclical story"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲",
+            "n": "Mild bid on lower yields"
+          }
+        },
+        "why": "Claims are weekly and noisy, but they are among the timeliest official labour-market indicators. A sustained rise in the four-week average can provide early evidence of weakening layoffs and hiring conditions, potentially affecting rate expectations.",
+        "exp": "Single prints are often less informative than the trend. A four-week average drifting higher deserves attention, while rising continuing claims can suggest that unemployed workers are taking longer to find work. Seasonal effects and revisions still matter.",
+        "nuance": "Beware seasonal distortions: holiday weeks, auto-plant retooling in July, and hurricanes routinely produce fake spikes that reverse. Check whether the Labor Department flagged special factors before trading it."
+      },
+      "cool": {
+        "ev": "Low",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ hawkish drip"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲ modest"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲ modest"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "down",
+            "a": "▼",
+            "n": "Tiny hawkish drip, rarely tradeable alone"
+          },
+          "ES": {
+            "d": "mixed",
+            "a": "—",
+            "n": "Resilient labour ≈ resilient earnings; offsetting"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼",
+            "n": "Mild real-yield headwind"
+          }
+        },
+        "why": "Persistently low claims mean layoffs aren't happening, the labour market stays tight, and the Fed keeps its hawkish cover. Individually small, but week after week of low claims quietly underwrites the higher-for-longer path.",
+        "exp": "In quiet weeks the market barely reacts. Claims matter most in the week before NFP, when traders use them to lean their payroll expectations one way or the other.",
+        "nuance": "Low claims can persist deep into a slowdown — companies stop hiring before they start firing. Pair claims with job openings (JOLTS) for the full labour picture."
+      }
+    },
+    {
+      "id": "conf",
+      "name": "Consumer Confidence",
+      "sub": "CB ~last Tue · UMich Fri · 10:00 ET",
+      "meta": "Sentiment leads spending · UMich inflation expectations are the hidden market-mover",
+      "hotLabel": "BEAT (CONFIDENT)",
+      "coolLabel": "MISS (GLOOMY)",
+      "hot": {
+        "ev": "Beat",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ slight"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲ mild"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲ mild"
+          },
+          "risk": {
+            "d": "up",
+            "t": "▲ mild"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "mixed",
+            "a": "—/▲",
+            "n": "Mild risk-on, mild yield drag — usually small"
+          },
+          "ES": {
+            "d": "up",
+            "a": "▲",
+            "n": "Consumer optimism supports the spending outlook"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼",
+            "n": "Mild risk-on headwind"
+          }
+        },
+        "why": "Sentiment leads spending: confident consumers keep the economy's engine running. The headline effect is usually modest — but the University of Michigan survey hides a genuine market-mover: its 1-year and 5–10-year inflation-expectation readings. The Fed watches expectations obsessively because expected inflation drives wage demands and becomes self-fulfilling.",
+        "exp": "Read the inflation-expectations line before the headline. A confidence beat with 5–10yr inflation expectations jumping to new highs trades HAWKISH (yields up, NQ down) — the opposite of what the headline suggests.",
+        "nuance": "Confidence surveys are heavily coloured by petrol prices and headlines, and increasingly by politics. Treat the level sceptically; trade only meaningful surprises in the inflation-expectation components."
+      },
+      "cool": {
+        "ev": "Miss",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ slight"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼ mild"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼ mild"
+          },
+          "risk": {
+            "d": "down",
+            "t": "▼ mild"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "mixed",
+            "a": "—",
+            "n": "Offsetting forces, usually small"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Mild — future spending worry"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲",
+            "n": "Mild defensive bid"
+          }
+        },
+        "why": "Gloomy consumers eventually spend less, so a big miss chips at the growth outlook and nudges cut bets up. Alone it's rarely a big market day — it compounds when it lands in a week of soft data.",
+        "exp": "A miss with FALLING inflation expectations is dovish twice over and gives the biggest reaction; a miss with rising inflation expectations is stagflation-flavoured and helps nothing except gold.",
+        "nuance": "Sentiment has decoupled from actual spending repeatedly — consumers say they're miserable and spend anyway. Retail sales is the ground truth; confidence is the mood music."
+      }
+    },
+    {
+      "id": "fedspeak",
+      "name": "Fed Speakers",
+      "sub": "Through the week",
+      "meta": "Chair > Vice Chair / NY Fed > voters > non-voters · blackout ~10 days pre-FOMC",
+      "hotLabel": "HAWKISH REMARKS",
+      "coolLabel": "DOVISH REMARKS",
+      "hot": {
+        "ev": "Hawkish",
+        "nodes": {
+          "policy": {
+            "d": "up",
+            "t": "▲ path repriced"
+          },
+          "yields": {
+            "d": "up",
+            "t": "▲"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "down",
+            "a": "▼",
+            "n": "Scales with speaker seniority and novelty"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Milder version of the NQ move"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼",
+            "n": "Yields + USD headwind"
+          }
+        },
+        "why": "The rate path is repriced continuously, not just on meeting days — so any voting member shifting stance moves Fed funds futures, and everything downstream follows. Impact scales with hierarchy: the Chair moves markets with a phrase, regional non-voters barely register.",
+        "exp": "The surprise is deviation from that speaker's KNOWN stance. A famous hawk being hawkish is nothing; a famous dove turning hawkish is a genuine signal. Markets keep a mental map of each member's position — trade changes to the map, not restatements of it.",
+        "nuance": "The official communications blackout begins at 12:00 a.m. ET on the second Saturday before a scheduled FOMC meeting and ends at 11:59 p.m. ET the day after it concludes. During that period, participants refrain from publicly discussing monetary policy. Financial reporting may still influence expectations, but it is not official Fed guidance."
+      },
+      "cool": {
+        "ev": "Dovish",
+        "nodes": {
+          "policy": {
+            "d": "down",
+            "t": "▼ path repriced"
+          },
+          "yields": {
+            "d": "down",
+            "t": "▼"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼"
+          }
+        },
+        "mkts": {
+          "NQ": {
+            "d": "up",
+            "a": "▲",
+            "n": "Cut-pricing rallies re-rate tech first"
+          },
+          "ES": {
+            "d": "up",
+            "a": "▲",
+            "n": "Broad but milder lift"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲",
+            "n": "Real-yield tailwind"
+          }
+        },
+        "why": "Dovish remarks from a senior or previously-hawkish member pull the expected rate path down. Yields and the dollar soften and equities re-rate, led by NQ.",
+        "exp": "Same rule: novelty × seniority. Powell softening one word ('patient' → 'confident') can move NQ half a percent; a non-voter's full dovish speech may move nothing.",
+        "nuance": "Intraday Fedspeak often causes sharp but shallow moves that fade within the hour once the full transcript reads more balanced than the headline algo-scrape suggested. Wait for the second read."
+      }
+    },
+    {
+      "id": "geo",
+      "name": "Geopolitical Shock",
+      "sub": "Unscheduled",
+      "meta": "War, strikes, tariffs, oil-supply threats — no calendar, no consensus",
+      "hotLabel": "ESCALATION",
+      "coolLabel": "DE-ESCALATION",
+      "hot": {
+        "ev": "Escalation",
+        "nodes": {
+          "risk": {
+            "d": "down",
+            "t": "▼▼ fear spike"
+          },
+          "usd": {
+            "d": "up",
+            "t": "▲ safe haven"
+          }
+        },
+        "directUsd": true,
+        "mkts": {
+          "NQ": {
+            "d": "down",
+            "a": "▼▼",
+            "n": "Highest-beta index dumps first on de-risking"
+          },
+          "ES": {
+            "d": "down",
+            "a": "▼",
+            "n": "Sold, defensives cushion slightly"
+          },
+          "GC": {
+            "d": "up",
+            "a": "▲▲",
+            "n": "Often receives safe-haven demand, though the response can vary"
+          }
+        },
+        "why": "In a risk-off shock, money may move from risk assets toward perceived havens such as gold, the dollar and Treasuries. Gold and USD can rise together, but liquidity needs, real-yield moves and the shock's location can change the response. If oil supply is threatened, crude may rise and add inflation risk, creating another potential headwind for equities.",
+        "exp": "There is no scheduled consensus forecast; the relevant benchmark is the escalation risk already priced by markets. A well-telegraphed event may have less impact than an unexpected one. Oil, gold, currencies, rates and volatility should be read together rather than relying on one asset.",
+        "nuance": "Equities historically fade geopolitical shocks that don't disrupt oil or supply chains — often within days ('buy the invasion' is a documented pattern). Gold holds its bid longer. Don't short indices late into a shock that's already 5% priced in."
+      },
+      "cool": {
+        "ev": "De-escalation",
+        "nodes": {
+          "risk": {
+            "d": "up",
+            "t": "▲▲ relief"
+          },
+          "usd": {
+            "d": "down",
+            "t": "▼ haven unwind"
+          }
+        },
+        "directUsd": true,
+        "mkts": {
+          "NQ": {
+            "d": "up",
+            "a": "▲▲",
+            "n": "Highest-beta relief rally"
+          },
+          "ES": {
+            "d": "up",
+            "a": "▲",
+            "n": "Broad relief"
+          },
+          "GC": {
+            "d": "down",
+            "a": "▼▼",
+            "n": "Fear premium evaporates fast"
+          }
+        },
+        "why": "Ceasefire, talks, or a shock that fizzles: the safe-haven trade unwinds. Gold gives back its fear premium quickly — geopolitical premium in gold is rented, not owned — while the highest-beta index (NQ) leads the relief rally.",
+        "exp": "The reaction size equals the fear that was priced in. If gold ran $80 on the escalation, a genuine de-escalation can strip most of it in a session. Oil falling is the confirmation signal.",
+        "nuance": "Headline whipsaw risk is extreme — 'ceasefire' headlines get denied within hours regularly. Size down and expect the first move to be tested before it holds."
+      }
+    }
+  ],
+  "nodeInfo": {
+    "event": {
+      "title": "Economic Event",
+      "body": "An event node represents a scheduled economic release or occurrence — like a Fed decision, a jobs report, or an inflation print — that gives traders new information about the economy. Markets react to the surprise between the actual number and what was already expected (priced in), not the number by itself. Use the button list on the left to pick which event this node is showing; every other node on the map reacts to whichever event you select."
+    },
+    "policy": {
+      "title": "Fed Rate-Path Expectations",
+      "body": "This node tracks how traders expect the Federal Reserve's interest-rate path to change. Every release gets compared against what was already priced into futures — a hawkish surprise pushes expected rates higher (fewer or later cuts), a dovish surprise pushes them lower (more or sooner cuts). This repricing is usually the first domino: it flows into bond yields and the dollar, which then move stock and gold prices."
+    },
+    "risk": {
+      "title": "Risk Sentiment",
+      "body": "Risk sentiment is the market's overall appetite for risky assets like stocks versus safe ones like bonds, gold, or the dollar. When traders feel confident (risk-on) they buy stocks; when scared (risk-off) they sell stocks and park money in safe havens. Shock events flip this switch faster than any economic model."
+    },
+    "yields": {
+      "title": "Treasury Yields",
+      "body": "Treasury yields are the return investors demand to lend money to the US government. Real yields (yield minus expected inflation) matter most here: when they rise, future company profits and non-yielding assets like gold become less attractive today, so prices fall. Yields move first on Fed-policy repricing, then push through to stocks and gold — the main pipe connecting rate expectations to asset prices."
+    },
+    "usd": {
+      "title": "US Dollar (DXY)",
+      "body": "The US Dollar Index (DXY) measures the dollar's strength against a basket of other major currencies. A stronger dollar squeezes multinational profits and makes dollar-priced gold more expensive for foreign buyers — bearish for stocks and gold. The dollar usually moves in the same direction as yields, reinforcing rather than offsetting their effect on markets."
+    },
+    "NQ": {
+      "title": "NQ · Nasdaq 100",
+      "body": "NQ is the Nasdaq-100 futures contract — a proxy for large, growth-heavy tech stocks. These companies are priced mostly on profits expected far in the future, so they're the most sensitive of the three markets here to interest-rate changes: higher yields discount those future profits harder, which is why NQ usually moves the most, up or down, of the three on any given event."
+    },
+    "ES": {
+      "title": "ES · S&P 500",
+      "body": "ES is the S&P 500 futures contract — a broad snapshot of large US companies across every sector, not just tech. It reacts to the same rate and dollar forces as NQ, but usually less violently, because banks, energy, and other value-oriented sectors can cushion or offset the swings that hit growth stocks hardest."
+    },
+    "GC": {
+      "title": "GC · Gold",
+      "body": "GC is the Gold futures contract. Gold pays no interest, so its attractiveness depends heavily on real yields — when real yields rise, holding gold costs more in lost interest, so it tends to fall, and vice versa. Gold is also the classic safe haven: in a genuine risk-off shock it can rise even while stocks fall, the one regime where gold and the dollar move together."
+    }
+  },
+  "cheatSheet": {
+    "head": [
+      "If…",
+      "NQ",
+      "ES",
+      "Gold",
+      "Because"
+    ],
+    "rows": [
+      [
+        "Yields ↑ (hawkish repricing)",
+        "▼▼",
+        "▼",
+        "▼",
+        "Higher discount rate hits long-duration tech hardest; gold pays no yield, so rising real yields raise its opportunity cost."
+      ],
+      [
+        "USD ↑",
+        "▼",
+        "▼",
+        "▼",
+        "Strong dollar squeezes multinational earnings and makes dollar-priced gold dearer for foreign buyers."
+      ],
+      [
+        "Risk-off (fear shock)",
+        "▼▼",
+        "▼",
+        "▲▲",
+        "The one regime where gold and the dollar rise together while equities fall — safe-haven flows."
+      ],
+      [
+        "Yields ↓ (dovish repricing)",
+        "▲▲",
+        "▲",
+        "▲",
+        "Mirror image: cheaper money re-rates tech valuations first; gold rallies as real yields fall."
+      ],
+      [
+        "Strong growth, inflation calm",
+        "▲/▼",
+        "▲",
+        "—",
+        "Earnings tailwind favours ES; NQ depends on whether yields rise with it. The regime decides."
+      ]
+    ]
+  },
+  "reactionGame": {
+    "roundLength": 5,
+    "markets": [
+      "NQ",
+      "ES",
+      "GC"
+    ],
+    "description": "A round is 5 prompts. Pick up or down for NQ, ES and GC, then reveal the typical reaction. Uses the same EVENTS data as the impact map."
+  },
+  "positionSizeCalculator": {
+    "instruments": {
+      "NQ": {
+        "perPoint": 20,
+        "caption": "NQ: $20/point ($5/tick)."
+      },
+      "ES": {
+        "perPoint": 50,
+        "caption": "ES: $50/point ($12.50/tick)."
+      },
+      "GC": {
+        "perPoint": 100,
+        "caption": "GC: $100/point (derived: $10/tick x 10 ticks/point)."
+      }
+    },
+    "defaults": {
+      "account": 25000,
+      "riskPct": 1,
+      "instrument": "NQ",
+      "stopPoints": 10
+    },
+    "formula": "dollarRisk = account * (riskPct / 100); contracts = floor(dollarRisk / (stopPoints * perPoint)); actualRisk = contracts * stopPoints * perPoint"
+  },
+  "sessionClock": {
+    "timezone": "America/New_York",
+    "sessions": [
+      {
+        "id": "sydney",
+        "label": "Sydney",
+        "startMinutes": 1020,
+        "endMinutes": 120
+      },
+      {
+        "id": "tokyo",
+        "label": "Tokyo",
+        "startMinutes": 1140,
+        "endMinutes": 240
+      },
+      {
+        "id": "london",
+        "label": "London",
+        "startMinutes": 180,
+        "endMinutes": 690
+      },
+      {
+        "id": "ny",
+        "label": "New York",
+        "startMinutes": 480,
+        "endMinutes": 1020
+      }
+    ],
+    "note": "start > end means the session wraps past midnight ET and renders as two segments."
+  }
+}

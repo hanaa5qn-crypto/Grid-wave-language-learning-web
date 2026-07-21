@@ -7,6 +7,7 @@
    text colors) was silently dropped, leaving invisible/uncoloured states.
    Explicitly scan it so every English utility is generated too. */
 @source "../../english/src";
+@source "../../education/src";
 
 /*
   Vivid Lingua — "Atelier Press" design system
