@@ -6,10 +6,38 @@ import {
   buildEnglishToday, resolveEnglishMistakes, addEnglishMistake, clearEnglishMistake,
   englishProgressPercent, EN_TRACKABLE_TOTAL, buildEnglishUnits, enUnitUnlocked,
   enUnitPassed, buildEnglishCurve, enActivityKey, enSatKey, enVocabKey,
-  appendTestHistory, EN_TEST_HISTORY_LIMIT,
+  appendTestHistory, EN_TEST_HISTORY_LIMIT, promotedEnglishLevel,
   type EnPlacementAnswer, type EnglishTestHistoryEntry,
 } from '../english/src/englishLearning';
 import { READING_LIBRARY, LISTENING_LIBRARY } from '../english/src/content';
+
+function englishUnitActivityIds(level: string): string[] {
+  return buildEnglishUnits(level).flatMap((unit) => unit.activities.map((activity) => activity.activityId));
+}
+
+describe('promotedEnglishLevel', () => {
+  it('returns the next level when every unit is passed', () => {
+    expect(promotedEnglishLevel('A1', new Set(englishUnitActivityIds('A1')))).toBe('A2');
+  });
+
+  it('returns null when one unit is not passed', () => {
+    const units = buildEnglishUnits('A1');
+    const incompleteUnit = units.at(-1)!;
+    const completed = new Set(units
+      .filter((unit) => unit !== incompleteUnit)
+      .flatMap((unit) => unit.activities.map((activity) => activity.activityId)));
+
+    expect(promotedEnglishLevel('A1', completed)).toBeNull();
+  });
+
+  it('returns null for a fully passed top level', () => {
+    expect(promotedEnglishLevel('C2', new Set(englishUnitActivityIds('C2')))).toBeNull();
+  });
+
+  it('returns null for an unknown level', () => {
+    expect(promotedEnglishLevel('X9', new Set())).toBeNull();
+  });
+});
 
 describe('English placement pool', () => {
   it('covers reading + listening for the levels that have content', () => {
@@ -205,6 +233,22 @@ describe('English dashboard engine', () => {
     expect(today.reading?.level).toBe('A1');
     expect(today.listening?.level).toBe('A1');
     expect(today.vocabCount).toBeGreaterThanOrEqual(0);
+  });
+
+  it('falls forward to the next level when the current level is exhausted', () => {
+    const completed = READING_LIBRARY
+      .filter((item) => item.level === 'B1')
+      .map((item) => enActivityKey('read', item.id));
+
+    expect(buildEnglishToday('B1', completed).reading?.level).toBe('B2');
+  });
+
+  it('falls back through lower levels in descending order after higher levels are exhausted', () => {
+    const completed = READING_LIBRARY
+      .filter((item) => ['B1', 'B2', 'C1', 'C2'].includes(item.level))
+      .map((item) => enActivityKey('read', item.id));
+
+    expect(buildEnglishToday('B1', completed).reading?.level).toBe('A2');
   });
 
   it('mistake log adds, dedupes, clears and resolves to library items', () => {

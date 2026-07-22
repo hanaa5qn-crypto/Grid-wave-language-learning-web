@@ -113,8 +113,16 @@ function pickNext<T extends { id: number; level: EnglishLevel }>(
   const isDone = (i: T) => completed.has(enActivityKey(skill, i.id));
   const atLevel = items.filter((i) => i.level === level && !isDone(i));
   if (atLevel.length > 0) return atLevel[0];
-  const anywhere = items.filter((i) => !isDone(i));
-  return anywhere[0] ?? null;
+  const levelIndex = EN_LEVEL_ORDER.indexOf(level as EnglishLevel);
+  if (levelIndex === -1) return items.find((i) => !isDone(i)) ?? null;
+  for (const fallbackLevel of [
+    ...EN_LEVEL_ORDER.slice(levelIndex + 1),
+    ...EN_LEVEL_ORDER.slice(0, levelIndex).reverse(),
+  ]) {
+    const found = items.find((i) => i.level === fallbackLevel && !isDone(i));
+    if (found) return found;
+  }
+  return null;
 }
 
 export function buildEnglishToday(
@@ -240,6 +248,14 @@ export function enUnitPassed(unit: EnUnit, completed: Set<string>): boolean {
   if (completed.has(enUnitPassId(unit.level, unit.index))) return true;
   const { done, total } = enUnitProgress(unit, completed);
   return total > 0 && done / total >= EN_UNIT_PASS_RATIO;
+}
+
+export function promotedEnglishLevel(level: string, completed: Set<string>): EnglishLevel | null {
+  const levelIndex = EN_LEVEL_ORDER.indexOf(level as EnglishLevel);
+  if (levelIndex === -1 || levelIndex === EN_LEVEL_ORDER.length - 1) return null;
+  return buildEnglishUnits(level).every((unit) => enUnitPassed(unit, completed))
+    ? EN_LEVEL_ORDER[levelIndex + 1]
+    : null;
 }
 
 // Units currently passing the LIVE threshold whose ratchet fact is not in the
