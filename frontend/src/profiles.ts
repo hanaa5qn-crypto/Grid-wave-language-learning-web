@@ -138,6 +138,11 @@ export interface UserProfile {
   // this isn't written yet — it's the hook the admin English/German views filter
   // on once track tagging is wired up. Until then a track view shows no rows.
   track?: 'en' | 'de' | 'edu';
+  // Single-active-device slot: the deviceId (deviceSession.ts) of the device
+  // that most recently logged in / restored a session. Written only by the
+  // claim in auth.ts's auth listener; any device seeing a different id in its
+  // profile snapshot signs itself out (newest login wins).
+  activeDeviceId?: string;
   billing?: {
     plan?: string;
     status?: string;

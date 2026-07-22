@@ -15,6 +15,7 @@ type Sub = { onNext: (snap: unknown) => void; onError: (err: unknown) => void };
 const fb = vi.hoisted(() => ({
   setDoc: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {}),
   updateDoc: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {}),
+  signOut: vi.fn<(...args: unknown[]) => Promise<void>>(async () => {}),
   subs: [] as Sub[],
   authCallback: null as null | ((user: unknown) => Promise<void> | void),
 }));
@@ -23,7 +24,7 @@ vi.mock('firebase/auth', () => ({
   createUserWithEmailAndPassword: vi.fn(),
   signInWithEmailAndPassword: vi.fn(),
   sendPasswordResetEmail: vi.fn(),
-  signOut: vi.fn(),
+  signOut: (...args: unknown[]) => fb.signOut(...args),
   onAuthStateChanged: (_auth: unknown, cb: (user: unknown) => void) => {
     fb.authCallback = cb;
     return () => {};
@@ -88,6 +89,15 @@ async function signIn(auth: AuthModule) {
   await fb.authCallback!(USER);
 }
 
+// Every auth event issues one single-device claim write ({ activeDeviceId }) —
+// filter it out when asserting what a code path wrote by itself.
+function nonClaimSetDocCalls() {
+  return fb.setDoc.mock.calls.filter((call) => {
+    const payload = call[1] as Record<string, unknown> | undefined;
+    return !(payload && Object.keys(payload).length === 1 && 'activeDeviceId' in payload);
+  });
+}
+
 // Every field name written across all updateDoc + setDoc calls so far.
 function writtenFieldRoots(): string[] {
   const calls = [...fb.updateDoc.mock.calls, ...fb.setDoc.mock.calls];
@@ -100,6 +110,7 @@ function writtenFieldRoots(): string[] {
 beforeEach(() => {
   fb.setDoc.mockReset().mockResolvedValue(undefined);
   fb.updateDoc.mockReset().mockResolvedValue(undefined);
+  fb.signOut.mockReset().mockResolvedValue(undefined);
   fb.subs = [];
   fb.authCallback = null;
   vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -161,8 +172,9 @@ describe('snapshot channel routing (audit §4.2 #4)', () => {
     const auth = await loadAuth();
     await signIn(auth);
     pushSnap(undefined, { exists: false });
-    expect(fb.setDoc).toHaveBeenCalledTimes(1);
-    expect(fb.setDoc.mock.calls[0][2]).toEqual({ merge: true });
+    const calls = nonClaimSetDocCalls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0][2]).toEqual({ merge: true });
   });
 });
 
@@ -177,7 +189,7 @@ describe('fallback-profile write guard (audit §4.2 #1)', () => {
     expect(received!.isFallback).toBe(true);
     expect(received!.completedActivityIds ?? []).toHaveLength(0);
     // The error branch must not write anything by itself.
-    expect(fb.setDoc).not.toHaveBeenCalled();
+    expect(nonClaimSetDocCalls()).toHaveLength(0);
 
     // A completion recorded against the blank fallback must not persist any
     // ledger; non-ledger fields may still go through.
@@ -202,7 +214,7 @@ describe('fallback-profile write guard (audit §4.2 #1)', () => {
     pushError(new Error('offline'));
     await auth.updateProfileFields({ completedActivityIdsEn: ['en:read:12'], vocabLearnedEn: ['ielts:abate'] });
     expect(fb.updateDoc).not.toHaveBeenCalled();
-    expect(fb.setDoc).not.toHaveBeenCalled();
+    expect(nonClaimSetDocCalls()).toHaveLength(0);
   });
 
   it('a snapshot error AFTER data keeps the data but marks fallback; a good retry restores writes', async () => {
@@ -243,8 +255,9 @@ describe('fallback-profile write guard (audit §4.2 #1)', () => {
       mistakeIds: ['library:read:2'],
     };
     await auth.saveProfileProgress(profile);
-    expect(fb.setDoc).toHaveBeenCalledTimes(1);
-    const payload = fb.setDoc.mock.calls[0][1] as Record<string, unknown>;
+    const calls = nonClaimSetDocCalls();
+    expect(calls).toHaveLength(1);
+    const payload = calls[0][1] as Record<string, unknown>;
     expect(payload.isFallback).toBeUndefined();
     for (const field of LEDGER_FIELDS) expect(payload[field]).toBeUndefined();
     expect(payload.name).toBe('S');
@@ -281,6 +294,49 @@ describe('fallback-profile write guard (audit §4.2 #1)', () => {
     const retry = auth.retryProfileLoad();
     pushError(new Error('still offline'));
     await expect(retry).resolves.toBe(false);
+  });
+});
+
+describe('single-active-device kick (deviceSession.ts)', () => {
+  it('signs out (and never publishes) when a remote snapshot carries another device\'s claim', async () => {
+    const auth = await loadAuth();
+    let received: Profile | null = null;
+    auth.subscribeToProfileUpdates((p) => { received = p; });
+    await fb.authCallback!(USER);
+    pushSnap({ name: 'Real' });
+
+    pushSnap({ name: 'Real', activeDeviceId: 'somebody-elses-device' });
+    expect(fb.signOut).toHaveBeenCalledTimes(1);
+    expect(received!.activeDeviceId).toBeUndefined(); // kicked snapshot not published
+  });
+
+  it('our own claim id in a snapshot does not kick', async () => {
+    const { getDeviceId } = await import('../frontend/src/deviceSession');
+    const auth = await loadAuth();
+    await signIn(auth);
+    pushSnap({ name: 'Real', activeDeviceId: getDeviceId() });
+    pushSnap({ name: 'Real', activeDeviceId: getDeviceId(), streak: 1 });
+    expect(fb.signOut).not.toHaveBeenCalled();
+  });
+
+  it('a pending-write echo with a foreign id does not kick (only settled remote state counts)', async () => {
+    const auth = await loadAuth();
+    await signIn(auth);
+    pushSnap({ name: 'Real' });
+    pushSnap({ name: 'Real', activeDeviceId: 'other' }, { pending: true });
+    expect(fb.signOut).not.toHaveBeenCalled();
+  });
+
+  it('every auth event claims the device slot with a merge write', async () => {
+    const auth = await loadAuth();
+    await signIn(auth);
+    const claim = fb.setDoc.mock.calls.find((call) => {
+      const payload = call[1] as Record<string, unknown>;
+      return payload && 'activeDeviceId' in payload;
+    });
+    expect(claim).toBeDefined();
+    expect(Object.keys(claim![1] as Record<string, unknown>)).toEqual(['activeDeviceId']);
+    expect(claim![2]).toEqual({ merge: true });
   });
 });
 
