@@ -14,7 +14,7 @@ import { useEnglishStats } from '../../stats';
 import { enActivityKey } from '../../englishLearning';
 import { useTheme } from '../../../../frontend/src/lib/theme';
 
-export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent: boolean; onUpgrade: () => void }) {
+export default function IeltsReadingTab({ allContent, onUpgrade, initialItemId }: { allContent: boolean; onUpgrade: () => void; initialItemId?: number }) {
   const { recordStudy, recordEnglishActivity, requireAccount, profile } = useEnglishStats();
   const uiTheme = useTheme();
   const gold = uiTheme === 'gold';
@@ -29,9 +29,11 @@ export default function IeltsReadingTab({ allContent, onUpgrade }: { allContent:
     () => new Set(profile?.mistakeIdsEn ?? []),
     [profile?.mistakeIdsEn],
   );
+  // Deep-link (dashboard mistake review): open that exact passage immediately.
+  const initialItem = initialItemId != null ? READING_LIBRARY.find((p) => p.id === initialItemId) ?? null : null;
   // Free accounts start on the unlocked A1 level; paid users keep the academic default.
-  const [level, setLevel] = useState<EnglishLevel | 'all'>(allContent ? 'B2' : 'A1');
-  const [active, setActive] = useState<ReadingItem | null>(null);
+  const [level, setLevel] = useState<EnglishLevel | 'all'>(initialItem ? initialItem.level : allContent ? 'B2' : 'A1');
+  const [active, setActive] = useState<ReadingItem | null>(initialItem);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
