@@ -49,18 +49,21 @@ export default function IeltsApp({
   onUpgrade: () => void;
 }) {
   const [tab, setTab] = useState<IeltsTabKey>('dashboard');
+  // Deep-link target (mistake review → open that exact passage/section).
+  const [pendingItemId, setPendingItemId] = useState<number | null>(null);
+  const goTab = (k: IeltsTabKey) => { setPendingItemId(null); setTab(k); };
 
   function renderTab() {
     switch (tab) {
-      case 'dashboard': return <DashboardTab onNavigate={(d) => setTab(DASH_TO_IELTS[d])} />;
-      case 'home': return <IeltsHomeTab onGo={setTab} />;
-      case 'reading': return <IeltsReadingTab allContent={access.allContent} onUpgrade={onUpgrade} />;
-      case 'listening': return <IeltsListeningTab allContent={access.allContent} onUpgrade={onUpgrade} />;
+      case 'dashboard': return <DashboardTab onNavigate={(d, itemId) => { setPendingItemId(itemId ?? null); setTab(DASH_TO_IELTS[d]); }} />;
+      case 'home': return <IeltsHomeTab onGo={goTab} />;
+      case 'reading': return <IeltsReadingTab allContent={access.allContent} onUpgrade={onUpgrade} initialItemId={pendingItemId ?? undefined} />;
+      case 'listening': return <IeltsListeningTab allContent={access.allContent} onUpgrade={onUpgrade} initialItemId={pendingItemId ?? undefined} />;
       case 'writing': return <IeltsWritingTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       case 'speaking': return <IeltsSpeakingTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       case 'vocab': return <IeltsVocabTab allContent={access.allContent} onUpgrade={onUpgrade} />;
       case 'tests': return <IeltsTestsTab allContent={access.allContent} onUpgrade={onUpgrade} />;
-      default: return <IeltsHomeTab onGo={setTab} />;
+      default: return <IeltsHomeTab onGo={goTab} />;
     }
   }
 
@@ -69,7 +72,7 @@ export default function IeltsApp({
       brand="IELTS"
       tabs={TABS}
       active={tab}
-      onSelect={(k) => setTab(k as IeltsTabKey)}
+      onSelect={(k) => goTab(k as IeltsTabKey)}
       onBack={onBack}
       onSwitchLanguage={onSwitchLanguage}
     >

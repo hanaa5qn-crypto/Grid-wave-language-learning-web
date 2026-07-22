@@ -47,14 +47,14 @@ const SKILL_LABEL: Record<EnSkill, string> = {
 
 // Theme switch (mirrors German App.tsx): gold renders the full Atelier Press
 // variant component; dark/light keep the original markup below.
-export default function DashboardTab(props: { onNavigate?: (dest: DashDest) => void }) {
+export default function DashboardTab(props: { onNavigate?: (dest: DashDest, itemId?: number) => void }) {
   const uiTheme = useTheme();
   if (uiTheme === 'gold') return <GoldDashboardTab {...props} />;
   if (uiTheme === 'aurora') return <AuroraDashboardTab {...props} />;
   return <BaseDashboardTab {...props} />;
 }
 
-function BaseDashboardTab({ onNavigate }: { onNavigate?: (dest: DashDest) => void }) {
+function BaseDashboardTab({ onNavigate }: { onNavigate?: (dest: DashDest, itemId?: number) => void }) {
   // Gold theme renders the original "Atelier Press" billing markup.
   const uiTheme = useTheme();
   const gold = uiTheme === 'gold';
@@ -194,8 +194,8 @@ function BaseDashboardTab({ onNavigate }: { onNavigate?: (dest: DashDest) => voi
           </div>
           <p className={gold || aurora ? "text-on-surface-variant text-xs leading-relaxed" : "text-paper-2 text-xs leading-relaxed"}>Өнөөдөр санал болгож буй дасгалууд:</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-            <TodayCell skill="read" title={today.reading?.title} onGo={() => onNavigate?.('read')} />
-            <TodayCell skill="listen" title={today.listening?.title} onGo={() => onNavigate?.('listen')} />
+            <TodayCell skill="read" title={today.reading?.title} onGo={() => onNavigate?.('read', today.reading?.id)} />
+            <TodayCell skill="listen" title={today.listening?.title} onGo={() => onNavigate?.('listen', today.listening?.id)} />
             <TodayCell skill="write" title={today.writing?.title} onGo={() => onNavigate?.('write')} />
             <TodayCell skill="speak" title={today.speaking?.title} onGo={() => onNavigate?.('speak')} />
             {/* Vocab review */}
@@ -226,7 +226,7 @@ function BaseDashboardTab({ onNavigate }: { onNavigate?: (dest: DashDest) => voi
                   <span className={gold || aurora ? "text-[9px] bg-surface-container-high text-on-surface-variant px-1.5 py-0.5 rounded border border-on-background uppercase tracking-[0.18em] font-medium" : "text-[9px] bg-ink-2 text-paper-2 px-1.5 py-0.5 rounded border border-ink-line uppercase tracking-[0.18em] font-medium"}>{m.skill === 'read' ? 'Reading' : 'Listening'}</span>
                   <p className={gold || aurora ? "text-xs font-bold text-on-surface truncate mt-1" : "text-xs font-bold text-paper truncate mt-1"}>{m.title}</p>
                 </div>
-                <button onClick={() => onNavigate?.(m.skill)} className={gold || aurora ? "px-3 py-1.5 bg-transparent border border-on-background hover:border-paper/60 hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-medium uppercase tracking-[0.15em] rounded-lg text-[10px] shrink-0" : "px-3 py-1.5 bg-transparent border border-ink-line hover:border-paper/60 hover:bg-ink-2 text-paper-2 hover:text-paper font-medium uppercase tracking-[0.15em] rounded-lg text-[10px] shrink-0"}>Засах</button>
+                <button onClick={() => onNavigate?.(m.skill, m.itemId)} className={gold || aurora ? "px-3 py-1.5 bg-transparent border border-on-background hover:border-paper/60 hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-medium uppercase tracking-[0.15em] rounded-lg text-[10px] shrink-0" : "px-3 py-1.5 bg-transparent border border-ink-line hover:border-paper/60 hover:bg-ink-2 text-paper-2 hover:text-paper font-medium uppercase tracking-[0.15em] rounded-lg text-[10px] shrink-0"}>Засах</button>
               </div>
             )) : (
               <div className={gold || aurora ? "text-center py-6 text-outline text-xs font-medium" : "text-center py-6 text-paper-3 text-xs font-medium"}>✨ Тэмдэглэгдсэн алдаа байхгүй. Сайн байна!</div>
@@ -351,7 +351,7 @@ function BaseDashboardTab({ onNavigate }: { onNavigate?: (dest: DashDest) => voi
                           {unit.activities.map((act, aIdx) => {
                             const done = completedSet.has(act.activityId);
                             return (
-                              <button key={aIdx} onClick={() => { if (!requireAccount()) return; onNavigate?.(act.skill); }} className={gold || aurora ? `flex items-center justify-between text-left p-3 rounded-xl border text-xs font-bold transition-colors ${done ? 'bg-surface-container-high border-outline-variant text-on-surface-variant' : 'bg-surface-container border-on-background text-on-surface hover:border-outline-variant'}` : `flex items-center justify-between text-left p-3 rounded-xl border text-xs font-bold transition-colors ${done ? 'bg-ink-2 border-ink-line-2 text-paper-2' : 'bg-ink-raise border-ink-line text-paper hover:border-ink-line-2'}`}>
+                              <button key={aIdx} onClick={() => { if (!requireAccount()) return; onNavigate?.(act.skill, act.itemId); }} className={gold || aurora ? `flex items-center justify-between text-left p-3 rounded-xl border text-xs font-bold transition-colors ${done ? 'bg-surface-container-high border-outline-variant text-on-surface-variant' : 'bg-surface-container border-on-background text-on-surface hover:border-outline-variant'}` : `flex items-center justify-between text-left p-3 rounded-xl border text-xs font-bold transition-colors ${done ? 'bg-ink-2 border-ink-line-2 text-paper-2' : 'bg-ink-raise border-ink-line text-paper hover:border-ink-line-2'}`}>
                                 <div className="flex items-center gap-2 overflow-hidden mr-2">
                                   <span className={gold || aurora ? `p-1.5 rounded-lg shrink-0 ${done ? 'bg-secondary text-white' : 'bg-surface-container-high text-on-surface-variant'}` : `p-1.5 rounded-lg shrink-0 ${done ? 'bg-paper text-ink' : 'bg-ink-2 text-paper-2'}`}>{SKILL_ICON[act.skill]}</span>
                                   <div className="overflow-hidden">

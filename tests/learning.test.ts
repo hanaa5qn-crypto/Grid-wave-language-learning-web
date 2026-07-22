@@ -2,9 +2,41 @@ import { describe, it, expect } from 'vitest';
 import {
   compareWordsByLevel, suggestedWordLevel, orderTrainerWords,
   reviewSrs, srsWordKey, SrsMap, localDateKey,
-  calculateStreakWithGrace, addDays,
+  calculateStreakWithGrace, addDays, activityKey, buildTodaySession,
+  buildUnitsForLevel, promotedLevel,
 } from '../frontend/src/learning';
 import { VocabularyWord, CEFRLevel } from '../frontend/src/types';
+import { Level, READING_LIBRARY } from '../frontend/src/library';
+import { EXAM_LEVEL_ORDER } from '../frontend/src/exams';
+
+function unitActivityIds(level: Level): string[] {
+  return buildUnitsForLevel(level).flatMap((unit) => unit.activities.map((activity) => activity.activityId));
+}
+
+describe('promotedLevel', () => {
+  it('returns the next level when every unit is passed', () => {
+    expect(promotedLevel('A1', new Set(unitActivityIds('A1')))).toBe('A2');
+  });
+
+  it('returns null when one unit is not passed', () => {
+    const units = buildUnitsForLevel('A1');
+    const incompleteUnit = units.at(-1)!;
+    const completed = new Set(units
+      .filter((unit) => unit !== incompleteUnit)
+      .flatMap((unit) => unit.activities.map((activity) => activity.activityId)));
+
+    expect(promotedLevel('A1', completed)).toBeNull();
+  });
+
+  it('returns null for a fully passed top level', () => {
+    const topLevel = EXAM_LEVEL_ORDER.at(-1)!;
+    expect(promotedLevel(topLevel, new Set(unitActivityIds(topLevel)))).toBeNull();
+  });
+
+  it('returns null for an unknown level', () => {
+    expect(promotedLevel('X9', new Set())).toBeNull();
+  });
+});
 
 function word(german: string, level: CEFRLevel, rank?: number): VocabularyWord {
   return {
@@ -66,6 +98,28 @@ describe('orderTrainerWords', () => {
     expect(lapsed.due).toBe(localDateKey());
     const ordered = orderTrainerWords([word('anders', 'A1', 1), w], { [srsWordKey(w)]: lapsed });
     expect(ordered[0].german).toBe('schwierig');        // due words outrank new ones
+  });
+});
+
+describe('buildTodaySession', () => {
+  it('falls forward to the next level when the current level is exhausted', () => {
+    const completed = new Set(
+      READING_LIBRARY
+        .filter((item) => item.level === 'B1')
+        .map((item) => activityKey('library:read', item.id)),
+    );
+
+    expect(buildTodaySession('B1', completed, {}, []).reading?.level).toBe('B2');
+  });
+
+  it('falls back through lower levels in descending order after higher levels are exhausted', () => {
+    const completed = new Set(
+      READING_LIBRARY
+        .filter((item) => ['B1', 'B2', 'C1', 'C2'].includes(item.level))
+        .map((item) => activityKey('library:read', item.id)),
+    );
+
+    expect(buildTodaySession('B1', completed, {}, []).reading?.level).toBe('A2');
   });
 });
 
