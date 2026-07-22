@@ -21,6 +21,8 @@ import { BillingCard } from '../../frontend/src/components/BillingCard';
 import { GoldBillingCard } from '../../frontend/src/components/GoldBillingCard';
 import { AuroraBillingCard } from '../../frontend/src/components/AuroraBillingCard';
 import { useTheme } from '../../frontend/src/lib/theme';
+import GoldDashboardTab from './GoldDashboardTab';
+import AuroraDashboardTab from './AuroraDashboardTab';
 import { useEnglishPayments } from './useEnglishPayments';
 import { canAccessAllContent, effectivePlan, isFounder, type PlanId } from '../../frontend/src/plans';
 import type { UserProfile } from '../../frontend/src/profiles';
@@ -43,7 +45,16 @@ const SKILL_LABEL: Record<EnSkill, string> = {
   read: 'READING', listen: 'LISTENING', write: 'WRITING', speak: 'SPEAKING',
 };
 
-export default function DashboardTab({ onNavigate }: { onNavigate?: (dest: DashDest) => void }) {
+// Theme switch (mirrors German App.tsx): gold renders the full Atelier Press
+// variant component; dark/light keep the original markup below.
+export default function DashboardTab(props: { onNavigate?: (dest: DashDest) => void }) {
+  const uiTheme = useTheme();
+  if (uiTheme === 'gold') return <GoldDashboardTab {...props} />;
+  if (uiTheme === 'aurora') return <AuroraDashboardTab {...props} />;
+  return <BaseDashboardTab {...props} />;
+}
+
+function BaseDashboardTab({ onNavigate }: { onNavigate?: (dest: DashDest) => void }) {
   // Gold theme renders the original "Atelier Press" billing markup.
   const uiTheme = useTheme();
   const gold = uiTheme === 'gold';
@@ -287,23 +298,24 @@ export default function DashboardTab({ onNavigate }: { onNavigate?: (dest: DashD
               <svg className="w-full min-w-[500px] h-[220px]" viewBox="0 0 600 200">
                 {gridLines.map((line, i) => (
                   <g key={i}>
-                    <line x1="40" y1={line.y} x2="560" y2={line.y} stroke="#262626" strokeDasharray="4 4" />
-                    <text x="10" y={line.y + 4} fill="#66635e" className="text-[10px] font-serif font-bold">{line.label}</text>
+                    <line x1="40" y1={line.y} x2="560" y2={line.y} stroke={gold || aurora ? undefined : "#262626"} className={gold || aurora ? "stroke-white/10" : undefined} strokeDasharray="4 4" />
+                    <text x="10" y={line.y + 4} fill={gold || aurora ? undefined : "#66635e"} className={gold || aurora ? "fill-slate-500 text-[10px] font-space font-bold" : "text-[10px] font-serif font-bold"}>{line.label}</text>
                   </g>
                 ))}
                 <path d={`M ${points[0].x} 160 ${linePath} L ${points[points.length - 1].x} 160 Z`} fill="url(#en-chart-glow)" className="opacity-20" />
-                <path d={linePath} fill="none" stroke="#ededeb" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d={linePath} fill="none" stroke={gold || aurora ? undefined : "#ededeb"} className={gold ? "stroke-amber-400" : aurora ? "stroke-purple-400" : undefined} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
                 {points.map((p, i) => (
                   <g key={i}>
-                    <text x={p.x} y={p.y - 12} textAnchor="middle" fill="#9b9893" className="text-[11px] font-serif font-bold">{p.hours}ц</text>
-                    <circle cx={p.x} cy={p.y} r="6" fill="#ededeb" stroke="#0a0a0a" strokeWidth="2" />
-                    <text x={p.x} y="182" textAnchor="middle" fill="#9b9893" className="text-[11px] font-bold">{p.day}</text>
+                    <text x={p.x} y={p.y - 12} textAnchor="middle" fill={gold || aurora ? undefined : "#9b9893"} className={gold ? "fill-amber-300 text-[11px] font-space font-bold" : aurora ? "fill-purple-300 text-[11px] font-space font-bold" : "text-[11px] font-serif font-bold"}>{p.hours}ц</text>
+                    <circle cx={p.x} cy={p.y} r="6" fill={gold || aurora ? undefined : "#ededeb"} stroke={gold || aurora ? "#020205" : "#0a0a0a"} strokeWidth="2" className={gold ? "fill-amber-400" : aurora ? "fill-purple-400" : undefined} />
+                    {(gold || aurora) && <circle cx={p.x} cy={p.y} r="12" className={gold ? "fill-amber-400/20 stroke-none animate-pulse" : "fill-purple-400/20 stroke-none animate-pulse"} />}
+                    <text x={p.x} y="182" textAnchor="middle" fill={gold || aurora ? undefined : "#9b9893"} className={gold || aurora ? "fill-slate-500 text-[11px] font-bold" : "text-[11px] font-bold"}>{p.day}</text>
                   </g>
                 ))}
                 <defs>
                   <linearGradient id="en-chart-glow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ededeb" />
-                    <stop offset="100%" stopColor="#ededeb" stopOpacity="0" />
+                    <stop offset="0%" stopColor={gold || aurora ? "#c084fc" : "#ededeb"} />
+                    <stop offset="100%" stopColor={gold || aurora ? "#c084fc" : "#ededeb"} stopOpacity="0" />
                   </linearGradient>
                 </defs>
               </svg>
