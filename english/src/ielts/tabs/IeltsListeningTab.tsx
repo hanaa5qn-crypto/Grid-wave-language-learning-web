@@ -20,7 +20,7 @@ import { useTheme } from '../../../../frontend/src/lib/theme';
 // British neural voice — the IELTS listening register.
 const LISTEN_OPTS = { lang: 'en-GB', voice: 'en-GB-SoniaNeural', rate: 0.92 } as const;
 
-export default function IeltsListeningTab({ allContent, onUpgrade }: { allContent: boolean; onUpgrade: () => void }) {
+export default function IeltsListeningTab({ allContent, onUpgrade, initialItemId }: { allContent: boolean; onUpgrade: () => void; initialItemId?: number }) {
   const { recordStudy, recordEnglishActivity, requireAccount, profile } = useEnglishStats();
   const uiTheme = useTheme();
   const gold = uiTheme === 'gold';
@@ -35,9 +35,11 @@ export default function IeltsListeningTab({ allContent, onUpgrade }: { allConten
     () => new Set(profile?.mistakeIdsEn ?? []),
     [profile?.mistakeIdsEn],
   );
+  // Deep-link (dashboard mistake review): open that exact section immediately.
+  const initialItem = initialItemId != null ? LISTENING_LIBRARY.find((p) => p.id === initialItemId) ?? null : null;
   // Free accounts start on the unlocked A1 level; paid users keep the academic default.
-  const [level, setLevel] = useState<EnglishLevel | 'all'>(allContent ? 'B2' : 'A1');
-  const [active, setActive] = useState<ListeningItem | null>(null);
+  const [level, setLevel] = useState<EnglishLevel | 'all'>(initialItem ? initialItem.level : allContent ? 'B2' : 'A1');
+  const [active, setActive] = useState<ListeningItem | null>(initialItem);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitted, setSubmitted] = useState(false);
   const [showTranscript, setShowTranscript] = useState(false);
