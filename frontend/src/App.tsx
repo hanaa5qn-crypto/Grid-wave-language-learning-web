@@ -40,7 +40,7 @@ import {
   countDueWords,
   compareWordsByLevel, suggestedWordLevel,
   buildUnitsForLevel, unitProgress, isUnitPassed, isUnitUnlocked, lockedItemIds, Unit, UnitActivity, UNIT_PASS_RATIO,
-  newlyPassedUnitIds,
+  newlyPassedUnitIds, promotedLevel,
   addMistake, clearMistake, resolveMistakes, MistakeRef,
   buildTodaySession, TodaySession,
   localDateKey as learningLocalDateKey,
@@ -439,7 +439,13 @@ function LearnerApp() {
     const completedSet = new Set(profile.completedActivityIds ?? []);
     const passedNow = newlyPassedUnitIds(buildUnitsForLevel(profile.targetLevel as Level), completedSet);
     if (passedNow.length > 0) {
-      profile = { ...profile, completedActivityIds: [...(profile.completedActivityIds ?? []), ...passedNow] };
+      const completedWithPasses = new Set([...(profile.completedActivityIds ?? []), ...passedNow]);
+      const targetLevel = promotedLevel(profile.targetLevel as Level, completedWithPasses);
+      profile = {
+        ...profile,
+        completedActivityIds: [...(profile.completedActivityIds ?? []), ...passedNow],
+        ...(targetLevel ? { targetLevel } : {}),
+      };
     }
     const normalizedProfile = normalizeProfileMetrics(profile);
     currentUserRef.current = normalizedProfile;

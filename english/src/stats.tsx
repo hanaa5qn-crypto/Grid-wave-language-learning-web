@@ -26,7 +26,7 @@ import { ensureSignupTrial } from '../../frontend/src/promo';
 import { Lock } from 'lucide-react';
 import {
   addEnglishMistake, clearEnglishMistake, appendTestHistory, EN_LEVEL_ORDER,
-  buildEnglishUnits, newlyPassedEnUnitIds,
+  buildEnglishUnits, newlyPassedEnUnitIds, promotedEnglishLevel,
   type EnglishPlacementResult, type EnglishTestHistoryEntry,
 } from './englishLearning';
 
@@ -251,7 +251,13 @@ export function EnglishStatsProvider({
       const completedSet = new Set(patch.completedActivityIdsEn);
       const passedNow = newlyPassedEnUnitIds(buildEnglishUnits(p.targetLevelEn || 'A1'), completedSet);
       if (passedNow.length > 0) {
-        patch = { ...patch, completedActivityIdsEn: [...patch.completedActivityIdsEn, ...passedNow] };
+        const completedWithPasses = new Set([...patch.completedActivityIdsEn, ...passedNow]);
+        const targetLevelEn = promotedEnglishLevel(p.targetLevelEn || 'A1', completedWithPasses);
+        patch = {
+          ...patch,
+          completedActivityIdsEn: [...patch.completedActivityIdsEn, ...passedNow],
+          ...(targetLevelEn ? { targetLevelEn } : {}),
+        };
       }
     }
     const next: UserProfile = { ...p, ...patch, lastActiveAt: new Date().toISOString() };
