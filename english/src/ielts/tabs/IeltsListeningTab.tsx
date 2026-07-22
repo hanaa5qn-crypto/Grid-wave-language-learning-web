@@ -7,7 +7,7 @@
 // =============================================================================
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Headphones, Play, Pause, Eye, EyeOff, ListChecks, RotateCcw, ChevronLeft, CheckCircle2,
+  Headphones, Play, Pause, Eye, EyeOff, ListChecks, RotateCcw, ChevronLeft, ChevronRight, CheckCircle2,
 } from 'lucide-react';
 import { LISTENING_LIBRARY } from '../../content';
 import { playTts, pauseTts, resumeTts, stopTts, type TtsState } from '../../../../frontend/src/utils/tts';
@@ -64,6 +64,13 @@ export default function IeltsListeningTab({ allContent, onUpgrade, initialItemId
         return aFailed - bFailed;
       });
   }, [levelPool, showCompleted, completed, mistakes]);
+
+  // After finishing a section: the next open (unlocked, not-yet-done) one so the
+  // learner never has to walk back to the list between exercises.
+  const nextItem = useMemo(
+    () => sections.find((p) => p.id !== active?.id && !isFreeLessonLocked(allContent, p.level)) ?? null,
+    [sections, active, allContent],
+  );
 
   function open(item: ListeningItem) {
     stopTts();
@@ -170,12 +177,22 @@ export default function IeltsListeningTab({ allContent, onUpgrade, initialItemId
         {submitted ? (
           <div className="space-y-3">
             <ScoreBanner correct={correctCount} total={active.questions.length} />
-            <button
-              onClick={reset}
-              className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-surface-container-high text-on-surface px-5 py-2.5 font-semibold hover:bg-surface-container-high" : "inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"}
-            >
-              <RotateCcw className="w-4 h-4" /> Дахин оролдох
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              {nextItem && (
+                <button
+                  onClick={() => open(nextItem)}
+                  className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-secondary text-white px-6 py-2.5 font-bold hover:bg-secondary/90" : "inline-flex items-center gap-2 rounded-full bg-paper text-ink px-6 py-2.5 font-bold hover:bg-paper-bright"}
+                >
+                  Дараагийн дасгал <ChevronRight className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={reset}
+                className={gold || aurora ? "inline-flex items-center gap-2 rounded-full bg-surface-container-high text-on-surface px-5 py-2.5 font-semibold hover:bg-surface-container-high" : "inline-flex items-center gap-2 rounded-full bg-ink-2 text-paper px-5 py-2.5 font-semibold hover:bg-ink-raise"}
+              >
+                <RotateCcw className="w-4 h-4" /> Дахин оролдох
+              </button>
+            </div>
           </div>
         ) : (
           <button
