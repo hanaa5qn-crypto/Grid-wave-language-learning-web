@@ -7,6 +7,7 @@ import GoldLoginScreen from './GoldLoginScreen';
 import AuroraLoginScreen from './AuroraLoginScreen';
 import HeroPage from './HeroPage';
 import AppErrorBoundary from './components/AppErrorBoundary';
+import DeviceKickBanner from './DeviceKickBanner';
 import { useTheme } from './lib/theme';
 
 // Code-split at the routing seam: a signed-out visitor on the hero page must
@@ -69,6 +70,8 @@ export default function AuthGate() {
   return (
     <AppErrorBoundary>
       <Suspense fallback={<BrandLoader />}>{node}</Suspense>
+      {/* Above the Suspense boundary: must outlive the kick-triggered logout. */}
+      <DeviceKickBanner />
     </AppErrorBoundary>
   );
 }

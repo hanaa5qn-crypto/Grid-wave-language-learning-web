@@ -17,6 +17,7 @@ import {
 import { arrayUnion, doc, onSnapshot, setDoc, updateDoc, type DocumentSnapshot, type UpdateData } from 'firebase/firestore';
 import { getAuthInstance, getDb } from './firebase';
 import { UserProfile, createCustomProfile, stripServerOwnedFields, SERVER_OWNED_PROFILE_FIELDS } from './profiles';
+import { getDeviceId, notifyDeviceKicked } from './deviceSession';
 
 function profileRef(uid: string) {
   return doc(getDb(), 'users', uid);
@@ -112,6 +113,9 @@ export async function saveProfileProgress(profile: UserProfile): Promise<void> {
   // value (e.g. aiUsage updated server-side meanwhile) failing the whole save.
   const payload = stripServerOwnedFields(profile) as unknown as Record<string, unknown>;
   delete payload.isFallback; // in-memory flag, never persisted (audit §4.2 #1)
+  // Written only by the per-auth-event claim — echoing a snapshot's (possibly
+  // stale) value here could kick the device that legitimately claimed since.
+  delete payload.activeDeviceId;
   // A whole-profile setDoc replaces arrays wholesale. The append-only ledgers
   // are persisted solely through updateProfileFields' arrayUnion path, so drop
   // them here — merge:true keeps the server copy intact. (audit §4.2 #2)
@@ -405,6 +409,19 @@ function attachProfileSnapshot(
 
     const onNext = (snap: DocumentSnapshot) => {
       if (seq !== loadSeq) { settle(true); return; } // torn-down / superseded
+      // Single-active-device: a snapshot WITHOUT pending writes carrying some
+      // other device's claim means another device logged in — sign out here.
+      // (Our own claim write is queued before this listener attaches, so every
+      // snapshot that includes it has hasPendingWrites and shows our own id.)
+      if (!snap.metadata.hasPendingWrites && snap.exists()) {
+        const claimed = (snap.data() as UserProfile).activeDeviceId;
+        if (claimed && claimed !== getDeviceId()) {
+          notifyDeviceKicked();
+          settle(true);
+          void logOutUser(); // fires an auth event → teardown + emit(null)
+          return;
+        }
+      }
       if (!hasEmitted) {
         // FIRST snapshot this auth event → auth-channel emit (tab-state reset
         // happens ONLY here). Accepted even with pending writes so a queued
@@ -485,6 +502,13 @@ function startProfileWatcher(): void {
       emitAuthEvent(null);
       return;
     }
+
+    // Single-active-device claim, queued BEFORE the snapshot attaches so every
+    // snapshot this device sees already reflects its own id (no self-kick).
+    // Session restore counts as a login: the device that most recently opened
+    // the app holds the slot; everyone else gets kicked by their snapshot.
+    setDoc(profileRef(user.uid), { activeDeviceId: getDeviceId() }, { merge: true })
+      .catch((err) => console.warn('Could not claim active device:', err));
 
     // Fresh sign-up: emit the profile we just built (avoids the write/read
     // race), then STILL attach the snapshot so the account gets live updates.
