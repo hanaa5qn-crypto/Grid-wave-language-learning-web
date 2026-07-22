@@ -107,7 +107,7 @@ export default function SatTestsTab({
                   {fmtDate(attempt.takenAt) && ` · ${fmtDate(attempt.takenAt)}`}
                 </span>
               )}
-              <span className="mt-4 inline-flex items-center gap-1 text-primary font-semibold">
+              <span className={gold || aurora ? "mt-4 inline-flex items-center gap-1 text-secondary font-semibold" : "mt-4 inline-flex items-center gap-1 text-primary font-semibold"}>
                 {locked ? (
                   <>
                     <Lock className="w-4 h-4" /> Pro-оор нээх

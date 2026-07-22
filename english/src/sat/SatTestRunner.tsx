@@ -322,7 +322,7 @@ function Palette({
             type="button"
             onClick={() => onJump(i)}
             className={`relative h-9 rounded-lg border text-sm font-semibold transition-colors ${state} ${
-              isCurrent ? 'ring-2 ring-paper ring-offset-1 ring-offset-ink' : ''
+              isCurrent ? (gold || aurora ? 'ring-2 ring-secondary ring-offset-1 ring-offset-surface' : 'ring-2 ring-paper ring-offset-1 ring-offset-ink') : ''
             }`}
             aria-label={`Go to question ${i + 1}`}
           >
