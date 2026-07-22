@@ -12,6 +12,7 @@ import {
   READING_LIBRARY, LISTENING_LIBRARY, SPEAKING_LIBRARY, WRITING_LIBRARY,
   Level, ReadingItem, ListeningItem, SpeakingItem, WritingItem,
 } from './library';
+import { EXAM_LEVEL_ORDER } from './exams';
 
 // --- Local date helpers (duplicated from App so this module stays standalone) -
 export function localDateKey(date = new Date()): string {
@@ -313,6 +314,14 @@ export function isUnitPassed(unit: Unit, completed: Set<string>): boolean {
   return total > 0 && done / total >= UNIT_PASS_RATIO;
 }
 
+export function promotedLevel(level: string, completed: Set<string>): Level | null {
+  const levelIndex = EXAM_LEVEL_ORDER.indexOf(level as Level);
+  if (levelIndex === -1 || levelIndex === EXAM_LEVEL_ORDER.length - 1) return null;
+  return buildUnitsForLevel(level as Level).every((unit) => isUnitPassed(unit, completed))
+    ? EXAM_LEVEL_ORDER[levelIndex + 1]
+    : null;
+}
+
 // Units currently passing the LIVE ≥70% threshold whose ratchet fact is not in
 // the ledger yet — the ids the caller should persist (arrayUnion) right away.
 export function newlyPassedUnitIds(units: Unit[], completed: Set<string>): string[] {
@@ -411,8 +420,16 @@ function pickNext<T extends { id: number; level: Level }>(
 ): T | null {
   const atLevel = items.filter((i) => i.level === level && !isCompleted(i));
   if (atLevel.length > 0) return atLevel[0];
-  const anywhere = items.filter((i) => !isCompleted(i));
-  return anywhere[0] ?? null;
+  const levelIndex = EXAM_LEVEL_ORDER.indexOf(level as Level);
+  if (levelIndex === -1) return items.find((i) => !isCompleted(i)) ?? null;
+  for (const fallbackLevel of [
+    ...EXAM_LEVEL_ORDER.slice(levelIndex + 1),
+    ...EXAM_LEVEL_ORDER.slice(0, levelIndex).reverse(),
+  ]) {
+    const found = items.find((i) => i.level === fallbackLevel && !isCompleted(i));
+    if (found) return found;
+  }
+  return null;
 }
 
 export function buildTodaySession(
